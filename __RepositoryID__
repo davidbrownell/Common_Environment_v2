@@ -1,0 +1,8 @@
+This file is used to uniquely identify this repository for the purposes of dependency management.
+Other repositories that depend on this one will intelligently search for this file upon initial
+setup and generate information that can be used when activating development environments.
+
+**** PLEASE DO NOT MODIFY, REMOVE, OR RENAME THIS FILE, AS DOING SO WILL LIKELY BREAK OTHER REPOSITORIES! ****
+
+Friendly Name:      Common_Environment
+GUID:               F4015FA1A91D46FD8D826F6C4F0A50BF

@@ -1,0 +1,121 @@
+﻿# <Invalid module name> pylint: disable = C0103
+# ---------------------------------------------------------------------------
+# |  
+# |  ActivateEnvironment_custom.py
+# |  
+# |  David Brownell (db@DavidBrownell.com)
+# |  
+# |  08/20/2015 07:15:12 AM
+# |  
+# ---------------------------------------------------------------------------
+# |  
+# |  Copyright David Brownell 2015.
+# |          
+# |  Distributed under the Boost Software License, Version 1.0.
+# |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+# |  
+# ---------------------------------------------------------------------------
+"""Custom steps to activate Common_Environment
+"""
+
+import os
+import sys
+
+from CommonEnvironment.CallOnExit import CallOnExit
+from CommonEnvironment import Shell
+
+# ---------------------------------------------------------------------------
+_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
+_script_dir, _script_name = os.path.split(_script_fullpath)
+# ---------------------------------------------------------------------------
+
+sys.path.insert(0, _script_dir)
+with CallOnExit(lambda: sys.path.pop(0)):
+    from SourceRepositoryTools import DynamicPluginArchitecture
+
+# ---------------------------------------------------------------------------
+def CustomActions():
+    commands = []
+
+    commands.extend(DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_COMPILERS",
+                                                                            os.path.join(_script_dir, "Scripts", "Compilers"),
+                                                                            lambda fullpath, name, ext: ext == ".py" and (name.endswith("Compiler") or name.endswith("CodeGenerator") or name.endswith("Verifier")),
+                                                                          ))
+    
+    commands.extend(DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_TEST_PARSERS",
+                                                                            os.path.join(_script_dir, "Scripts", "TestParsers"),
+                                                                            lambda fullpath, name, ext: ext == ".py" and name.endswith("TestParser"),
+                                                                          ))
+
+    commands.extend(DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_EXTRACTORS",
+                                                                            os.path.join(_script_dir, "Scripts", "CodeCoverageExtractors"),
+                                                                            lambda fullpath, name, ext: ext == ".py" and name.endswith("CodeCoverageExtractor"),
+                                                                          ))
+
+    commands.extend(DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_VALIDATORS",
+                                                                            os.path.join(_script_dir, "Scripts", "CodeCoverageValidators"),
+                                                                            lambda fullpath, name, ext: ext == ".py" and name.endswith("CodeCoverageValidator"),
+                                                                          ))
+
+    commands.append(Shell.AugmentSet( "DEVELOPMENT_ENVIRONMENT_TESTER_CONFIGURATIONS",
+                                      [ "python-compiler-PyLint",
+                                        "python-test_parser-Python",
+                                        "python-code_coverage_extractor-Python",
+                                      ],
+                                    ))
+
+    return commands
+
+# ---------------------------------------------------------------------------
+def CustomScriptExtractors(environment):
+    """
+    Returns a list of additional dirs to search and a dictionary
+    that contains lookup functionality organized by file extension.
+    """
+
+    # ---------------------------------------------------------------------------
+    def PythonWrapper(script_filename):
+        # <Redefining name> pylint: disable = W0621
+        # <Reimport> pylint: disable = W0404
+        import os
+
+        if os.path.basename(script_filename) == "__init__.py":
+            return
+
+        return [ environment.Execute('python "{script}" {all_args}'.format( script=script_filename,
+                                                                            all_args=environment.AllArgumentsScriptVariable,
+                                                                          )),
+               ]
+
+    # ---------------------------------------------------------------------------
+    def PythonDocs(script_filename):
+        from CommonEnvironment.StreamDecorator import StreamDecorator
+
+        try:
+            co = compile(open(script_filename).read(), script_filename, "exec")
+            if co and co.co_consts and isinstance(co.co_consts[0], basestring) and co.co_consts[0][0] != '_':
+                return StreamDecorator.Wrap(co.co_consts[0], 100)
+
+        except:
+            pass
+
+    # ---------------------------------------------------------------------------
+    def PowershellScriptWrapper(script_filename):
+        return [ environment.Execute('Powershell -executionpolicy unrestricted "{script}" {all_args}'.format( script=script_filename,
+                                                                                                              all_args=environment.AllArgumentsScriptVariable,
+                                                                                                            )),
+               ]
+
+    # ---------------------------------------------------------------------------
+    def EnvironmentScriptWrapper(script_filename):
+        return [ environment.Call('{script} {all_args}'.format( script=script_filename,
+                                                                all_args=environment.AllArgumentsScriptVariable,
+                                                              )),
+               ]
+
+    # ---------------------------------------------------------------------------
+    
+    return { ".py" : ( PythonWrapper, PythonDocs, ),
+             ".ps1" : PowershellScriptWrapper,
+             environment.ScriptExtension : EnvironmentScriptWrapper,
+           }
