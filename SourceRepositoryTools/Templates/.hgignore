@@ -1,0 +1,12 @@
+syntax: glob
+
+*.pyc
+*.pyo
+Generated/*
+ActivateEnvironment.cmd
+ActivateEnvironment.sh
+
+.tfignore
+
+.git/*
+.gitignore
