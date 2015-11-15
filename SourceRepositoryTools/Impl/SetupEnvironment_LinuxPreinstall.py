@@ -43,6 +43,12 @@ sys.stdout.write(textwrap.dedent(
     
     """))
     
+platform_name = os.uname()[3]
+if "ubuntu" in platform_name.lower():
+    os.system("sudo apt-get install python-setuptools")
+else:
+    raise "Unrecognized Linux"
+
 # Ensure that basic Python libraries are available
 python_dir = os.path.normpath(os.path.join(_script_dir, "..", "..", "Tools", "Python"))
 assert os.path.isdir(python_dir), python_dir
