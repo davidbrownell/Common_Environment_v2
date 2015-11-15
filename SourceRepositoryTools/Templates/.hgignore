@@ -5,6 +5,7 @@ syntax: glob
 Generated/*
 ActivateEnvironment.cmd
 ActivateEnvironment.sh
+.coverage
 
 .tfignore
 

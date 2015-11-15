@@ -44,8 +44,8 @@ class PythonActivationActivity(SourceActivationActivityImpl):
 
     LibrarySubdirs                          = None      # Initialized in __clsinit__
     ScriptSubdirs                           = None      # Initialized in __clsinit__
-    CopyFiles                               = None      # Initialized in __clsinit__
     BinSubdirs                              = None      # Initialized in __clsinit__
+    CopyFiles                               = None      # Initialized in __clsinit__
     
     # ---------------------------------------------------------------------------
     @classmethod
@@ -55,15 +55,20 @@ class PythonActivationActivity(SourceActivationActivityImpl):
         if environment.Name == "Windows":
             cls.LibrarySubdirs = [ "Lib", "site-packages", ]
             cls.ScriptSubdirs = [ "Scripts", ]
-            cls.CopyFiles = [ os.path.join("Lib", "site-packages", "easy-install.pth"),
-                            ]
             cls.BinSubdirs = None
             
+            cls.CopyFiles = [ os.path.join("Lib", "site-packages", "easy-install.pth"),
+                            ]
+            
         elif getattr(environment, "IsLinux", False):
-            cls.LibrarySubdirs = [ "lib", "python2.7", "site-packages", ] # BugBug
+            # Not that this value is hard-coded to v2.7. Any tool changes will need to take this into 
+            # account.
+            python_version = "2.7"
+
+            cls.LibrarySubdirs = [ "lib", "python{}".format(python_version), "site-packages", ]
             cls.ScriptSubdirs = None
+            cls.BinSubdirs = [ "bin", ]
             cls.CopyFiles = None
-            cls.BinSubdirs = os.path.join("bin")
             
         else:
             assert False, environment.Name
@@ -166,20 +171,17 @@ class PythonActivationActivity(SourceActivationActivityImpl):
                                                       os.path.join(dest_dir, *cls.ScriptSubdirs),
                                                     ]))
 
-        # Set the PYTHON_BINARY (BugBug: Fix this)
-        python_binary = os.getenv("PYTHON_BINARY")
-        assert os.path.isfile(python_binary), python_binary
-
-        python_binary = os.path.join(dest_dir, os.path.basename(python_binary))
+        # Set the PYTHON_BINARY - this used to be a pretty important environment variable, but not anymore.
+        # Keep it around for backwards compatability.
         commands.append(environment.Set( "PYTHON_BINARY",
-                                         python_binary,
+                                         "python",
                                          preserve_original=False,
                                        ))
 
         # Add the location to the path
         bin_dir = dest_dir
         if cls.BinSubdirs:
-            bin_dir = os.path.join(bin_dir, cls.BinSubdirs)
+            bin_dir = os.path.join(bin_dir, *cls.BinSubdirs)
             
         commands.append(environment.AugmentPath(bin_dir))
         

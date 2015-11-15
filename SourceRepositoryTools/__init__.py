@@ -293,7 +293,7 @@ def GetCustomizedPath(path, environment=None):
             elif AGNOSTIC_OS_NAME in subdirs:
                 path = os.path.join(path, AGNOSTIC_OS_NAME)
             else:
-                break # BugBug raise Exception("OS names were found in '{}', but no customization was found for '{}' (is '{}' missing?).".format(path, environment.Name, AGNOSTIC_OS_NAME))
+                raise Exception("OS names were found in '{}', but no customization was found for '{}' (is '{}' missing?).".format(path, environment.Name, AGNOSTIC_OS_NAME))
 
         elif Impl.IsOSVersionDirectory(path, environment):
             if environment.OSVersion not in os.listdir(path):
