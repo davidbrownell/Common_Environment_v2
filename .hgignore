@@ -12,4 +12,4 @@ ActivateEnvironment.sh
 .git/*
 .gitignore
 
-Tools/Python/v2.7.10/Windows/DLLs/*
+Tools/Python/v2.7.10/Windows/DLLs/*.*-*
