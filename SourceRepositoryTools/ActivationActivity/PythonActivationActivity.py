@@ -61,11 +61,7 @@ class PythonActivationActivity(SourceActivationActivityImpl):
                             ]
             
         elif getattr(environment, "IsLinux", False):
-            # Not that this value is hard-coded to v2.7. Any tool changes will need to take this into 
-            # account.
-            python_version = "2.7"
-
-            cls.LibrarySubdirs = [ "lib", "python{}".format(python_version), "site-packages", ]
+            cls.LibrarySubdirs = [ "lib", "python{python_version_short}".format(python_version), "site-packages", ]
             cls.ScriptSubdirs = None
             cls.BinSubdirs = [ "bin", ]
             cls.CopyFiles = None
@@ -140,10 +136,20 @@ class PythonActivationActivity(SourceActivationActivityImpl):
         source_dir = os.path.realpath(os.path.join(_script_dir, "..", "..", constants.ToolsDir, cls.Name))
         assert os.path.isdir(source_dir), source_dir
 
-        source_dir = SourceRepositoryTools.GetVersionedDirectory(version_specs.Tools, source_dir)
+        source_dir, version = SourceRepositoryTools.GetVersionedDirectoryEx(version_specs.Tools, source_dir)
         assert os.path.isdir(source_dir), source_dir
+        assert version
 
         dest_dir = os.path.join(generated_dir, cls.Name)
+
+        # Create a substitution dict that can be used to populate subdirs based on the
+        # python version being used.
+        if version[0] == 'v':
+            version = version[1:]
+
+        sub_dict = { "python_version" : version,
+                     "python_version_short" : '.'.join(version.split('.')[0:2]),
+                   }
 
         mappings = {}
         
@@ -153,7 +159,7 @@ class PythonActivationActivity(SourceActivationActivityImpl):
             if k == None:
                 continue
                 
-            mappings[tuple(k)] = v
+            mappings[tuple( part.format(**sub_dict) for part in k )] = v
             
         commands = super(PythonActivationActivity, cls)._CreateCommandsImpl( source_dir,
                                                                              dest_dir,

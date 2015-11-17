@@ -276,8 +276,12 @@ def GetRepositoryUniqueId( repository_root,
 # ---------------------------------------------------------------------------
 def IsOSNameDirectory(path, subdirs=None):
     potential_os_names = { env.Name for env in Shell.GetPotentialEnvironments() }
-    potential_os_names.add(SourceRepositoryTools.AGNOSTIC_OS_NAME)
-    potential_os_names.add("src")
+
+    for os_name in [ SourceRepositoryTools.AGNOSTIC_OS_NAME,
+                     SourceRepositoryTools.LINUX_OS_NAME,
+                     "src",
+                   ]:
+        potential_os_names.add(os_name)
 
     return _IsImpl(path, potential_os_names, subdirs=subdirs)
 

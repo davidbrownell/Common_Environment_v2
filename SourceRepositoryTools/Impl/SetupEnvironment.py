@@ -81,34 +81,16 @@ def EntryPoint( output_filename_or_stdout,
                 if not version_paths:
                     version_paths = [ path, ]
 
-                for version_path in version_paths:
-                    # We cold be looking at os name, version, etc.
-                    while True:
-                        subdirs = { item for item in os.listdir(version_path) if os.path.isdir(os.path.join(version_path, item)) }
-                    
-                        if Impl.IsOSNameDirectory(version_path, subdirs=subdirs):
-                            if environment.Name not in subdirs and SourceRepositoryTools.AGNOSTIC_OS_NAME not in subdirs:
-                                commands.append(Shell.Message("WARNING: A customization for '{}' does not exist in '{}'.".format(environment.Name, version_path)))
-                                break
-                            
-                            version_path = os.path.join(version_path, environment.Name if environment.Name in subdirs else SourceRepositoryTools.AGNOSTIC_OS_NAME)
+                # ---------------------------------------------------------------------------
+                def OnCustomizedPathError(path, error_string):
+                    commands.append(Shell.Message("WARNING: {}".format(s)))
+                    return path
 
-                        elif Impl.IsOSVersionDirectory(version_path, environment, subdirs=subdirs):
-                            if environment.OSVersion not in subdirs:
-                                commands.append(Shell.Message("WARNING: A customization for '{}' does not exist in '{}'.".format(environment.OSVersion, version_path)))
-                                break
-                            
-                            version_path = os.path.join(version_path, environment.OSVersion)
-                    
-                        elif Impl.IsOSArchitectureDirectory(version_path, environment, subdirs=subdirs):
-                            if environment.OSArchitecture not in subdirs:
-                                commands.append(Shell.Message("WARNING: A customization for '{}' does not exist in '{}'.".format(environment.OSArchitecture, version_path)))
-                            
-                            version_path = os.path.join(version_path, environment.OSArchitecture)
-                    
-                        else:
-                            break
-                    
+                # ---------------------------------------------------------------------------
+                
+                for version_path in version_paths:
+                    version_path = SourceRepositoryTools.GetCustomizedPathImpl(version_path, OnCustomizedPathError, environment=environment)
+
                     # On some machines, binaries are expected to be in a well-defined location specified at
                     # compile time (actually, configuration time). Therefore, the binaries that we have created
                     # to eliminate the potential for change need to be installed to the location that they

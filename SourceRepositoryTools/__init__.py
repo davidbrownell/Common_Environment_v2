@@ -100,6 +100,7 @@ SETUP_ENVIRONMENT_CUSTOMIZATION_FILENAME    = "{}_custom.py".format(SETUP_ENVIRO
 ACTIVATE_ENVIRONMENT_CUSTOMIZATION_FILENAME = "{}_custom.py".format(ACTIVATE_ENVIRONMENT_NAME)
 
 AGNOSTIC_OS_NAME                            = "Agnostic"
+LINUX_OS_NAME                               = "Linux"
 
 INSTALL_LOCATION_FILENAME                   = "InstallLocation.txt"
 INSTALL_BINARY_FILENAME                     = "binaries.tar.gz"
@@ -276,6 +277,50 @@ def GetVersionedDirectoryEx(version_info, *path_components_or_fullpath):
     return fullpath, latest_version
 
 # ---------------------------------------------------------------------------
+def GetCustomizedPathImpl( path, 
+                           onError,                     # def Func(path, error_string) -> func result
+                           environment=None,
+                         ):
+    assert os.path.isdir(path), path
+    assert onError
+    environment = environment or Shell.GetEnvironment()
+
+    while True:
+        subdirs = os.listdir(path)
+
+        if Impl.IsOSNameDirectory(path):
+            isLinux = getattr(environment, "IsLinux", False)
+            
+            if environment.Name in subdirs:
+                path = os.path.join(path, environment.Name)
+            elif isLinux and LINUX_OS_NAME in subdirs:
+                path = os.path.join(path, LINUX_OS_NAME)
+            elif AGNOSTIC_OS_NAME in subdirs:
+                path = os.path.join(path, AGNOSTIC_OS_NAME)
+            else:
+                return onError(path, "OS names were found in '{}', but no customization was found for '{}' (is {} missing?).".format( path, 
+                                                                                                                                      environment.Name, 
+                                                                                                                                      ' or '.join([ "'{}'".format(name) for name in ([ LINUX_OS_NAME, ] if isLinux else []) + [ AGNOSTIC_OS_NAME, ] ]),
+                                                                                                                                    ))
+                
+        elif Impl.IsOSVersionDirectory(path, environment):
+            if environment.OSVersion in subdirs:
+                path = os.path.join(path, environment.OSVersion)
+            else:
+                return onError(path, "OS versions were found in '{}', but no customization was found for '{}'.".format(path, environment.OSVersion))
+
+        elif Impl.IsOSArchitectureDirectory(path, environment):
+            if environment.OSArchitecture in subdirs:
+                path = os.path.join(path, environment.OSArchitecture)
+            else:
+                return onError(path, "OS architectures were found in '{}', but no customization was found for '{}'.".format(path, environment.OSArchitecture))
+
+        else:
+            break
+
+    return path
+
+# ---------------------------------------------------------------------------
 def GetCustomizedPath(path, environment=None):
     """\
     Drill into environment-specific folders if they exist.
@@ -284,31 +329,13 @@ def GetCustomizedPath(path, environment=None):
     assert os.path.isdir(path), path
     environment = environment or Shell.GetEnvironment()
 
-    while True:
-        if Impl.IsOSNameDirectory(path):
-            subdirs = os.listdir(path)
+    # ---------------------------------------------------------------------------
+    def OnCustomizedPathError(path, error):
+        raise Exception(error)
 
-            if environment.Name in subdirs:
-                path = os.path.join(path, environment.Name)
-            elif AGNOSTIC_OS_NAME in subdirs:
-                path = os.path.join(path, AGNOSTIC_OS_NAME)
-            else:
-                raise Exception("OS names were found in '{}', but no customization was found for '{}' (is '{}' missing?).".format(path, environment.Name, AGNOSTIC_OS_NAME))
-
-        elif Impl.IsOSVersionDirectory(path, environment):
-            if environment.OSVersion not in os.listdir(path):
-                raise Exception("OS versions were found in '{}', but no customization was found for '{}'.".format(path, environment.OSVersion))
-
-            path = os.path.join(path, environment.OSVersion)
-
-        elif Impl.IsOSArchitectureDirectory(path, environment):
-            if environment.OSArchitecture not in os.listdir(path):
-                raise Exception("OS architectures were found in '{}', but no customization was found for '{}'.".format(path, environment.OSArchitecture))
-
-            path = os.path.join(path, environment.OSArchitecture)
-
-        else:
-            break
+    # ---------------------------------------------------------------------------
+    
+    path = GetCustomizedPathImpl(path, OnCustomizedPathError, environment=environment)    
 
     # At this point, we are either looking at the actual path of the item or a directory
     # that contains the bits that have been installed to a different location. If there
