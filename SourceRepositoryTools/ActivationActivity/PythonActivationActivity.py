@@ -61,7 +61,7 @@ class PythonActivationActivity(SourceActivationActivityImpl):
                             ]
             
         elif getattr(environment, "IsLinux", False):
-            cls.LibrarySubdirs = [ "lib", "python{python_version_short}".format(python_version), "site-packages", ]
+            cls.LibrarySubdirs = [ "lib", "python{python_version_short}", "site-packages", ]
             cls.ScriptSubdirs = None
             cls.BinSubdirs = [ "bin", ]
             cls.CopyFiles = None
