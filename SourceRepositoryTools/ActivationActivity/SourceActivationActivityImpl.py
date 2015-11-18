@@ -138,6 +138,9 @@ def _DelayedCallback( cls,
 
     # ---------------------------------------------------------------------------
     def MapContent(source, dest, mapping_tree):
+        if not os.path.isdir(source):
+            return
+            
         if not os.path.isdir(dest):
             os.makedirs(dest)
 

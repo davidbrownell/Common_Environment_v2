@@ -62,7 +62,7 @@ class PythonActivationActivity(SourceActivationActivityImpl):
             
         elif getattr(environment, "IsLinux", False):
             cls.LibrarySubdirs = [ "lib", "python{python_version_short}", "site-packages", ]
-            cls.ScriptSubdirs = None
+            cls.ScriptSubdirs = [ "Scripts", ]
             cls.BinSubdirs = [ "bin", ]
             cls.CopyFiles = None
             
@@ -213,7 +213,11 @@ def _MapScripts(source, dest, _name):
     if not os.path.isdir(potential_source_dir):
         return
 
+    if not os.path.isdir(dest):
+        os.makedirs(dest)
+        
     potential_source_dir = SourceRepositoryTools.GetCustomizedPath(potential_source_dir)
+    print "BugBug", potential_source_dir, os.path.isdir(dest)
     
     commands = []
 
