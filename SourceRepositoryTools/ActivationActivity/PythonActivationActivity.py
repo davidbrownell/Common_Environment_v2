@@ -217,7 +217,6 @@ def _MapScripts(source, dest, _name):
         os.makedirs(dest)
         
     potential_source_dir = SourceRepositoryTools.GetCustomizedPath(potential_source_dir)
-    print "BugBug", potential_source_dir, os.path.isdir(dest)
     
     commands = []
 
