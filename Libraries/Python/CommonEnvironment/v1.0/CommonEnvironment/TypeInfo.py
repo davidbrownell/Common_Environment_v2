@@ -206,6 +206,11 @@ class TypeInfo(Interface):
 
     # ---------------------------------------------------------------------------
     @staticmethod
+    def PostprocessItem(value):
+        return value
+
+    # ---------------------------------------------------------------------------
+    @staticmethod
     @abstractmethod
     def _ValidateItemNoThrowImpl(value):
         raise Exception("Abstract method")
@@ -567,6 +572,11 @@ class FilenameTypeInfo(FundamentalTypeInfo):
             assert False
 
         return "Value must be a valid {}".format(type)
+
+    # ---------------------------------------------------------------------------
+    @staticmethod
+    def PostprocessItem(value):
+        return os.path.realpath(os.path.normpath(value))
 
     # ---------------------------------------------------------------------------
     def _ValidateItemNoThrowImpl(self, value):

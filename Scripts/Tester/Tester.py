@@ -33,6 +33,7 @@ from CommonEnvironment import CommandLine
 from CommonEnvironment import Compiler
 from CommonEnvironment.QuickObject import QuickObject
 from CommonEnvironment import Shell
+from CommonEnvironment.StreamDecorator import StreamDecorator
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -315,6 +316,18 @@ def MatchTests( configuration,
                                     compiler=CONFIGURATIONS[configuration].stardard_args[0],
                                     verbose=" /verbose" if verbose else '',
                                 ))
+
+# ---------------------------------------------------------------------------
+def CommandLineSuffix():
+    return StreamDecorator.LeftJustify( textwrap.dedent(
+                                            """\
+                                            Where <configuration> can be:
+                                            {}
+
+                                            """).format('\n'.join([ "    - {}".format(config) for config in CONFIGURATIONS.iterkeys() ])),
+                                        4,
+                                        skip_first_line=False,
+                                      )
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------

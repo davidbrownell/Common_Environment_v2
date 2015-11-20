@@ -103,9 +103,10 @@ def WalkFiles( root,
                                      traverse_exclude_dir_paths=traverse_exclude_dir_paths,
                                    ):
         for filename in filenames:
-            name, ext = os.path.splitext(filename)
+            if not process_file_name(filename):
+                continue
 
-            if not process_file_extension(ext) or not process_file_name(name):
+            if not process_file_extension(os.path.splitext(filename)[1]):
                 continue
 
             fullpath = os.path.join(root, filename)

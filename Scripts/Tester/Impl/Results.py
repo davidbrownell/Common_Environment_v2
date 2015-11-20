@@ -14,7 +14,9 @@
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 # |  
 # ---------------------------------------------------------------------------
+import datetime
 import os
+import re
 import sys
 import textwrap
 
@@ -140,12 +142,29 @@ class Results(object):
                        )
         
     # ---------------------------------------------------------------------------
-    def ToXmlNode(self):
-        pass # BugBug
-
-    # ---------------------------------------------------------------------------
     def TotalTime(self):
-        pass # BugBug
+        parser = re.compile(r"(?P<hours>\d+):(?P<minutes>\d+):(?P<seconds>\d+(?:\.\d+)?)")
+        
+        # ---------------------------------------------------------------------------
+        def ToTimeDelta(value):
+            match = parser.match(value)
+            assert match, value
+
+            return datetime.timedelta( hours=int(match.group("hours")),
+                                       minutes=int(match.group("minutes")),
+                                       seconds=float(match.group("seconds")),
+                                     )
+
+        # ---------------------------------------------------------------------------
+        
+        total_time = datetime.timedelta(seconds=0)
+
+        if self.compile_result != None: total_time += ToTimeDelta(self.compile_time)
+        if self.test_result != None: total_time += ToTimeDelta(self.test_time)
+        if self.test_parse_result != None: total_time += ToTimeDelta(self.test_parse_time)
+        if self.coverage_result != None: total_time += ToTimeDelta(self.coverage_time)
+
+        return str(total_time)
 
     # ---------------------------------------------------------------------------
     @staticmethod

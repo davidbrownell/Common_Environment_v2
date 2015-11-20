@@ -84,12 +84,3 @@ class CompleteResults(object):
                          debug="N/A" if not self.debug else StreamDecorator.LeftJustify(self.debug.ToString(compiler, test_parser, code_coverage_extractor, code_coverage_validator), 4, skip_first_line=False),
                          release="N/A" if not self.release else StreamDecorator.LeftJustify(self.release.ToString(compiler, test_parser, code_coverage_extractor, code_coverage_validator), 4, skip_first_line=False),
                        )
-
-    # ---------------------------------------------------------------------------
-    def ToXmlNode( self,
-                   compiler,
-                   test_parser,
-                   code_coverge_extractor,
-                   code_coverage_validator,
-                 ):
-        pass # BugBug

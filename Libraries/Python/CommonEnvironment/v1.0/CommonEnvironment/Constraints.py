@@ -137,6 +137,8 @@ class FunctionConstraint(object):
                 if result:
                     raise TypeInfo.ValidationException("Validation for the arg '{}' failed - {}".format(k, result))
 
+                kwargs[k] = type_info.PostprocessItem(v)
+
         # Invoke the function
         result = wrapped(**kwargs)
 

@@ -600,7 +600,6 @@ def PrettyPrint( complete_results,
                          test_parser_flag=CommandLine.EntryPoint.ArgumentInfo(description="Flags to use when invoking the Test Parser."),
                          code_coverage_extractor_flag=CommandLine.EntryPoint.ArgumentInfo(description="Flags to use when invoking the Code Coverage Extractor."),
                          code_coverage_validator_flag=CommandLine.EntryPoint.ArgumentInfo(description="Flags to use when invoking the Code Coverage Validator."),
-                         xml_output=CommandLine.EntryPoint.ArgumentInfo(description="Generate XML output (generally for external consumption) rather than standard content."),
                          preserve_ansi_escape_sequences=CommandLine.EntryPoint.ArgumentInfo(description="Preserve colorized output when invoking this script from another one."),
                        )
 @CommandLine.FunctionConstraints( input=CommandLine.FilenameTypeInfo(),
@@ -629,7 +628,6 @@ def Execute( input,
              code_coverage_validator_flag=[],
              debug_only=False,
              release_only=False,
-             xml_output=False, # BugBug: JSON
              output_stream=sys.stdout,
              verbose=False,
              preserve_ansi_escape_sequences=False,
@@ -666,22 +664,15 @@ def Execute( input,
 
     output_stream.write("\n")
 
-    if xml_output:
-        output_stream.write(complete_results[0].ToXmlNode( compiler,
-                                                           test_parser,
-                                                           code_coverage_extractor,
-                                                           code_coverage_validator,
-                                                         ))
-    else:
-        PrettyPrint( complete_results,
-                     compiler,
-                     test_parser,
-                     code_coverage_extractor,
-                     code_coverage_validator,
-                     output_stream,
-                     preserve_ansi_escape_sequences,
-                     verbose,
-                   )
+    PrettyPrint( complete_results,
+                 compiler,
+                 test_parser,
+                 code_coverage_extractor,
+                 code_coverage_validator,
+                 output_stream,
+                 preserve_ansi_escape_sequences,
+                 verbose,
+               )
 
     return complete_results[0].CompositeResult()
 
@@ -698,7 +689,6 @@ def Execute( input,
                          test_parser_flag=CommandLine.EntryPoint.ArgumentInfo(description="Flags to use when invoking the Test Parser."),
                          code_coverage_extractor_flag=CommandLine.EntryPoint.ArgumentInfo(description="Flags to use when invoking the Code Coverage Extractor."),
                          code_coverage_validator_flag=CommandLine.EntryPoint.ArgumentInfo(description="Flags to use when invoking the Code Coverage Validator."),
-                         xml_output=CommandLine.EntryPoint.ArgumentInfo(description="Generate XML output (generally for external consumption) rather than standard content."),
                          preserve_ansi_escape_sequences=CommandLine.EntryPoint.ArgumentInfo(description="Preserve colorized output when invoking this script from another one."),
                        )
 @CommandLine.FunctionConstraints( input_dir=CommandLine.DirectoryTypeInfo(),
@@ -731,7 +721,6 @@ def ExecuteTree( input_dir,
                  code_coverage_validator_flag=[],
                  debug_only=False,
                  release_only=False,
-                 xml_output=False, # BugBug: JSON
                  output_stream=sys.stdout,
                  verbose=False,
                  preserve_ansi_escape_sequences=False,
@@ -777,25 +766,15 @@ def ExecuteTree( input_dir,
     if not complete_results:
         return
 
-    if xml_output:
-        root = ET.Element("tests")
-
-        for complete_result in complete_results:
-            root.append(complete_result.ToXmlNode( compiler,
-                                                   test_parser,
-                                                   code_coverage_extractor,
-                                                   code_coverage_validator,
-                                                 ))
-    else:
-        PrettyPrint( complete_results,
-                     compiler,
-                     test_parser,
-                     code_coverage_extractor,
-                     code_coverage_validator,
-                     output_stream,
-                     preserve_ansi_escape_sequences,
-                     verbose,
-                   )
+    PrettyPrint( complete_results,
+                 compiler,
+                 test_parser,
+                 code_coverage_extractor,
+                 code_coverage_validator,
+                 output_stream,
+                 preserve_ansi_escape_sequences,
+                 verbose,
+               )
 
     tests = [ 0, ]
     failures = [ 0, ]
@@ -862,7 +841,7 @@ def ExecuteTree( input_dir,
                          compiler=CommandLine.EntryPoint.ArgumentInfo(description="Index or name of the Compiler to use to compile tests prior to execution."),
                          compiler_flag=CommandLine.EntryPoint.ArgumentInfo(description="Flags to use when invoking the Compiler."),
                        )
-@CommandLine.FunctionConstraints( input_dir=DirectoryTypeInfo(),
+@CommandLine.FunctionConstraints( input_dir=CommandLine.DirectoryTypeInfo(),
                                   test_type=CommandLine.StringTypeInfo(),
                                   compiler=_CompilerTypeInfo,
                                   compiler_flag=CommandLine.StringTypeInfo(arity='*'),
@@ -878,8 +857,89 @@ def MatchTests( input_dir,
     """\
     Matches tests to production code for tests found within 'test_type' subdirectories.
     """
-    pass # BugBug
+    
+    compiler = _GetCompiler(compiler)
+    
+    if not compiler.Type == compiler.TypeValue.File:
+        output_stream.write("Tests can only be matched for compilers that operate on individual files.\n")
+        return 0
 
+    output_stream.write("Parsing '{}'...".format(input_dir))
+    with StreamDecorator(output_stream).DoneManager(output_stream, done_suffix='\n') as dm:
+        source_files = list(FileSystem.WalkFiles( input_dir,
+                                                  include_dir_paths=[ lambda fullpath: os.path.isdir(os.path.join(fullpath, test_type)), ],
+                                                  include_file_paths=[ compiler.IsSupported, ],
+                                                  exclude_file_names=[ "Build.py", "__init__.py", ],
+                                                  traverse_exclude_dir_names=[ "Generated", "Impl", ],
+                                                ))
+
+        test_items = ExtractTestItems( input_dir,
+                                       test_type,
+                                       compiler,
+                                       dm.stream if verbose else None,
+                                     )
+
+    output_stream.write(textwrap.dedent(
+        """\
+        Source Files:   {}
+        Test Files:     {}
+
+        """).format(len(source_files), len(test_items)))
+
+    output_template = "{source:<120} -> {test}\n"
+
+    verbose_stream = StreamDecorator(output_stream if verbose else None)
+
+    index = 0
+    while index < len(source_files):
+        source_filename = source_files[index]
+
+        test_item = compiler.ItemNameToTestName(source_filename, test_type)
+
+        if os.path.isfile(test_item):
+            # We can't be sure that the test is in the file, as multiple source files may map to the
+            # same test file (as in the case of headers with ".h" and ".hpp" extensions)
+            if test_item in test_items:
+                test_items.remove(test_item)
+
+            del source_files[index]
+
+            verbose_stream.write(output_template.format(source=source_filename, test=test_item))
+        else:
+            index += 1
+
+    verbose_stream.write("\n\n")
+
+    if source_files:
+        header = "Source files without corresponding tests: {}".format(len(source_files))
+
+        output_stream.write(textwrap.dedent(
+            """\
+            {header}
+            {sep}
+            {content}
+
+            """).format( header=header,
+                         sep='-' * len(header),
+                         content=''.join('\n'.join(source_files)),
+                       ))
+
+    if test_items:
+        header = "Test files without corresponding sources: {}".format(len(test_items))
+
+        output_stream.write(textwrap.dedent(
+            """\
+            {header}
+            {sep}
+            {content}
+
+            """).format( header=header,
+                         sep='-' * len(header),
+                         content=''.join('\n'.join(test_items)),
+                       ))
+
+    return 0 if not source_files and not test_items else -1
+                       
 # ---------------------------------------------------------------------------
 def CommandLineSuffix():
     return textwrap.dedent(
