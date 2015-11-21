@@ -39,7 +39,7 @@ def Build( output_stream=sys.stdout,
     input_file = os.path.join(_script_dir, "..", "SimpleSchema.g4")
     assert os.path.isfile(input_file), input_file
 
-    output_dir = os.path.join(_script_dir, "..", "Generated")
+    output_dir = os.path.join(_script_dir, "..", "GeneratedCode")
 
     command_line = '{script} Compile Python -o "{output_dir}" -no-listener -visitor "{input_file}"'.format(
                         script=Shell.GetEnvironment().CreateScriptName("ANTLR"),
