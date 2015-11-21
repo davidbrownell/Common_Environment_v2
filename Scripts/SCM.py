@@ -23,6 +23,7 @@ import re
 import sys
 import textwrap
 
+from collections import OrderedDict
 from StringIO import StringIO
 
 from CommonEnvironment import CommandLine
@@ -772,6 +773,65 @@ def AllChangeStatus( directory=None,
 @CommandLine.FunctionConstraints( directory=CommandLine.DirectoryTypeInfo(arity='?'),
                                   output_stream=None,
                                 )
+def WorkingChangeStatus( directory=None,
+                         untracked=False,
+                         output_stream=sys.stdout,
+                       ):
+    if untracked:
+        # ---------------------------------------------------------------------------
+        def QueryRepository(scm, directory):
+            return scm.HasWorkingChanges(directory) or scm.HasUntrackedChanges(directory)
+
+        # ---------------------------------------------------------------------------
+       
+    else:
+        # ---------------------------------------------------------------------------
+        def QueryRepository(scm, directory):
+            return scm.HasWorkingChanges(directory)
+
+        # ---------------------------------------------------------------------------
+        
+    changed_repos = []
+
+    # ---------------------------------------------------------------------------
+    def Query(scm, directory):
+        result = QueryRepository(scm, directory)
+        if result:
+            changed_repos.append((scm, directory))
+
+        return result
+
+    # ---------------------------------------------------------------------------
+    
+    result = _AllImpl( directory,
+                       output_stream,
+               
+                       Query,
+               
+                       "{dir} [{scm}] <GetLocalChanges>",
+                       "Getting changes in '{dir}'",
+                       None,
+               
+                       require_distributed=True,
+                     )
+    if result != 0:
+        return result
+
+    output_stream.write(textwrap.dedent(
+        """\
+        
+        There are working changes in these repositories:
+        {}
+        
+        """).format('\n'.join([ "    - {}".format(directory) for scm, directory in changed_repos ])))
+
+    return 0
+
+# ---------------------------------------------------------------------------
+@CommandLine.EntryPoint
+@CommandLine.FunctionConstraints( directory=CommandLine.DirectoryTypeInfo(arity='?'),
+                                  output_stream=None,
+                                )
 def UpdateAll( directory=None,
                output_stream=sys.stdout,
              ):
@@ -915,7 +975,7 @@ def _AllImpl( directory,
                                                      done_prefix='\n',
                                                    ) as si:
         si.stream.write("Searching for repositories in '{}'...".format(directory))
-        with si.stream.DoneManager():
+        with si.stream.DoneManager(done_suffix='\n'):
             items = list(_GetSCMAndDirs(directory))
 
         output = []
@@ -948,6 +1008,8 @@ def _AllImpl( directory,
         
         if not action_items:
             output_stream.write("There are no repositories to process.\n")
+        elif action_func == None:
+            pass
         else:
             tasks = []
 
