@@ -814,7 +814,7 @@ def WorkingChangeStatus( directory=None,
                
                        require_distributed=True,
                      )
-    if result != 0:
+    if result != 0 or not changed_repos:
         return result
 
     output_stream.write(textwrap.dedent(
