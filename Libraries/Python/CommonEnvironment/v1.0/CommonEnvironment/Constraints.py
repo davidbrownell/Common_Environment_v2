@@ -75,7 +75,13 @@ class FunctionConstraint(object):
                     elif index < first_optional_arg_index:
                         missing.append(arg)
                     else:
-                        self.Preconditions[arg] = TypeInfo.CreateFundamental(type(arg_defaults[index - first_optional_arg_index]))
+                        default_value = arg_defaults[index - first_optional_arg_index]
+                        these_kwargs = {}
+
+                        if isinstance(default_value, str) and default_value == '':
+                            these_kwargs["min_length"] = 0
+
+                        self.Preconditions[arg] = TypeInfo.CreateFundamental(type(default_value), **these_kwargs)
                 
                 if missing:
                     raise Exception("Preconditions for {} were not provided in {}".format( ', '.join([ "'{}'".format(arg) for arg in missing ]),
@@ -125,7 +131,7 @@ class FunctionConstraint(object):
 
         if self.Preconditions:
             assert len(kwargs) == len(self.Preconditions)
-
+            
             for k, v in kwargs.iteritems():
                 assert k in self.Preconditions, k
 
@@ -137,8 +143,8 @@ class FunctionConstraint(object):
                 if result:
                     raise TypeInfo.ValidationException("Validation for the arg '{}' failed - {}".format(k, result))
 
-                kwargs[k] = type_info.PostprocessItem(v)
-
+                kwargs[k] = type_info.Postprocess(v)
+                
         # Invoke the function
         result = wrapped(**kwargs)
 

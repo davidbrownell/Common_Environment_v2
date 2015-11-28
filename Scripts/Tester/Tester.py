@@ -126,9 +126,9 @@ _UNIVERSAL_CODE_COVERAGE_FLAGS = [ "/code_coverage_validator=Standard", ]
 # ---------------------------------------------------------------------------
 @CommandLine.EntryPoint
 @CommandLine.FunctionConstraints( configuration=CommandLine.EnumTypeInfo(values=CONFIGURATIONS.keys()),
-                                  filename_or_dir=CommandLine.DirectoryTypeInfo(),
-                                  test_type=CommandLine.StringTypeInfo(),
-                                  output_dir=CommandLine.StringTypeInfo(),
+                                  filename_or_dir=CommandLine.FilenameTypeInfo(type=CommandLine.FilenameTypeInfo.Type_Either),
+                                  test_type=CommandLine.StringTypeInfo(min_length=0),
+                                  output_dir=CommandLine.StringTypeInfo(min_length=0),
                                   iterations=CommandLine.IntTypeInfo(min=1),
                                 )
 def Test( configuration,
@@ -199,7 +199,7 @@ def Test( configuration,
 # ---------------------------------------------------------------------------
 @CommandLine.EntryPoint
 @CommandLine.FunctionConstraints( input=CommandLine.FilenameTypeInfo(),
-                                  output_dir=CommandLine.StringTypeInfo(),
+                                  output_dir=CommandLine.StringTypeInfo(min_length=0),
                                   iterations=CommandLine.IntTypeInfo(min=1),
                                 )
 def TestFile( input,

@@ -95,9 +95,9 @@ class FundamentalOptionalArity(unittest.TestCase):
 
     # ---------------------------------------------------------------------------
     def test_StringConversion(self):
-        self.assertEqual(None, self._optional_type_info.ItemFromString(self._optional_type_info.ItemToString(None, self._optional_type_info.Format_String), self._optional_type_info.Format_String))
-        self.assertEqual(None, self._optional_type_info.ItemFromString(self._optional_type_info.ItemToString(None, self._optional_type_info.Format_Python), self._optional_type_info.Format_Python))
-        self.assertEqual(None, self._optional_type_info.ItemFromString(self._optional_type_info.ItemToString(None, self._optional_type_info.Format_JSON), self._optional_type_info.Format_JSON))
+        self.assertEqual(None, self._optional_type_info.FromString(self._optional_type_info.ToString(None, self._optional_type_info.Format_String), self._optional_type_info.Format_String))
+        self.assertEqual(None, self._optional_type_info.FromString(self._optional_type_info.ToString(None, self._optional_type_info.Format_Python), self._optional_type_info.Format_Python))
+        self.assertEqual(None, self._optional_type_info.FromString(self._optional_type_info.ToString(None, self._optional_type_info.Format_JSON), self._optional_type_info.Format_JSON))
         
 # ---------------------------------------------------------------------------
 class FundamentalString(unittest.TestCase):
@@ -109,7 +109,7 @@ class FundamentalString(unittest.TestCase):
                                          max_length=5,
                                        )
 
-        cls._empty_type_info = StringTypeInfo()
+        cls._empty_type_info = StringTypeInfo(min_length=0)
 
     # ---------------------------------------------------------------------------
     def test_Validate(self):

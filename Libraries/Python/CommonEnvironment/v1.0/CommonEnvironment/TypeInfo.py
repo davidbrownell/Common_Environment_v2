@@ -89,7 +89,7 @@ class TypeInfo(Interface):
 
     # ---------------------------------------------------------------------------
     def __init__( self, 
-                  arity=None, 
+                  arity=None,
                   validation_func=None,
                 ):
         # arity can be: None, <int>, '?', '*', '+', (<min>, <max>)
@@ -205,6 +205,16 @@ class TypeInfo(Interface):
                 return result
 
     # ---------------------------------------------------------------------------
+    def Postprocess(self, value):
+        if self.Arity == (0, 1) and value == None:
+            return None
+
+        if self.Arity and (self.Arity[1] == None or self.Arity[1] > 1):
+            return [ self.PostprocessItem(v) for v in value ]
+
+        return self.PostprocessItem(value)
+
+    # ---------------------------------------------------------------------------
     @staticmethod
     def PostprocessItem(value):
         return value
@@ -232,6 +242,8 @@ class FundamentalTypeInfo(TypeInfo):
     
     del _format_counter
 
+    SupportedDelimiters                     = [ '|', ';', ',', ]
+
     # ---------------------------------------------------------------------------
     # |  Public Properties
     @abstractproperty
@@ -240,22 +252,40 @@ class FundamentalTypeInfo(TypeInfo):
     
     # ---------------------------------------------------------------------------
     # |  Public Methods
-    def ItemFromString(self, value, format=Format_Python):
+    def FromString(self, value, format=Format_Python):
         if self.Arity == (0, 1) and ( (format in [ self.Format_String, self.Format_Python, ] and value == "None") or
                                       (format == self.Format_JSON and value == "null")
                                     ):
             value = None
-        else:
-            value = self._ItemFromStringImpl(value, format)
-            assert isinstance(value, self.ExpectedType)
+        
+        elif self.Arity and (self.Arity[1] == None or self.Arity[1] > 1):
+            split = False
 
-        self.ValidateItem(value)
+            for potential_delimiter in self.SupportedDelimiters:
+                if potential_delimiter in value:
+                    split = True
+                    value = [ v.strip() for v in value.split(potential_delimiter) if v.strip() ]
+                    break
+
+            if not split:
+                value = [ value, ]
+
+            value = [ self.ItemFromString(v, format=format) for v in value ]
+
+        else:
+            value = self.ItemFromString(v, format=format)
+
+        self.ValidateArity(value)
         return value
 
     # ---------------------------------------------------------------------------
-    def ItemToString(self, value, format=Format_Python):
-        self.ValidateItem(value)
-        
+    def ToString( self, 
+                  value, 
+                  format=Format_Python, 
+                  delimiter=SupportedDelimiters[0],
+                ):
+        assert delimiter in self.SupportedDelimiters, delimiter
+
         if self.Arity == (0, 1) and value == None:
             if format in [ self.Format_String, self.Format_Python, ]:
                 return "None"
@@ -264,7 +294,26 @@ class FundamentalTypeInfo(TypeInfo):
             else:
                 assert False, format
 
-        return self._ItemToStringImpl(value, format)
+        elif self.Arity and (self.Arity[1] == None or self.Arity[1] > 1):
+            if not isinstance(value, list):
+                value = [ value, ]
+
+            return ('{} '.format(delimiter)).join([ self.ItemToString(v) for v in value ])
+
+        return self.ItemToString(value)
+
+    # ---------------------------------------------------------------------------
+    def ItemFromString(self, value, format=Format_Python):
+        value = self._ItemFromStringImpl(value, format=format)
+        assert isinstance(value, self.ExpectedType), value
+
+        self.ValidateItem(value)
+        return value
+
+    # ---------------------------------------------------------------------------
+    def ItemToString(self, value, format=Format_Python):
+        self.ValidateItem(value)
+        return self._ItemToStringImpl(value, format=format)
 
     # ---------------------------------------------------------------------------
     @staticmethod
@@ -585,6 +634,8 @@ class FilenameTypeInfo(FundamentalTypeInfo):
                 type = "file"
             elif self.Type == self.Type_Directory:
                 type = "directory"
+            elif self.Type == self.Type_Either:
+                type = "file or directory"
             else:
                 assert False
 
@@ -1215,3 +1266,43 @@ class AnyOfTypeInfo(TypeInfo):
                 return
 
         return "'{}' could not be validated".format(value)
+
+# ---------------------------------------------------------------------------
+class CustomTypeInfo(TypeInfo):
+
+    ExpectedTypeIsCallable                  = True
+
+    # ---------------------------------------------------------------------------
+    def __init__( self,
+                  expected_type_func,       # def Func(item) -> bool
+                  validate_item_func,       # def Func(item) -> string on error
+                  postprocess_func=None,    # def Func(item) -> item
+                  constraints_desc="Custom constraint",
+                  **type_info_args
+                ):
+        super(CustomTypeInfo, self).__init__(**type_info_args)
+
+        self._expected_type_func            = expected_type_func
+        self._validate_item_func            = validate_item_func
+        self._postprocess_func              = postprocess_func
+        self._constraints_desc              = constraints_desc
+
+    # ---------------------------------------------------------------------------
+    @property
+    def ConstraintsDesc(self):
+        return self._constraints_desc
+
+    # ---------------------------------------------------------------------------
+    def ExpectedType(self, item):
+        return self._expected_type_func(item)
+
+    # ---------------------------------------------------------------------------
+    def Postprocess(self, item):
+        if self._postprocess_func == None:
+            return super(CustomTypeInfo, self).Postprocess(value)
+
+        return self._postprocess_func(item)
+
+    # ---------------------------------------------------------------------------
+    def _ValidateItemNoThrowImpl(self, item):
+        return self._vallidate_item_func(item)
