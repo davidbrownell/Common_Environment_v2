@@ -44,7 +44,10 @@ class PythonActivationActivity(SourceActivationActivityImpl):
 
     LibrarySubdirs                          = None      # Initialized in __clsinit__
     ScriptSubdirs                           = None      # Initialized in __clsinit__
+    
     BinSubdirs                              = None      # Initialized in __clsinit__
+    BinExtension                            = None      # Initialized in __clsinit__
+    
     CopyFiles                               = None      # Initialized in __clsinit__
     
     # ---------------------------------------------------------------------------
@@ -55,7 +58,9 @@ class PythonActivationActivity(SourceActivationActivityImpl):
         if environment.Name == "Windows":
             cls.LibrarySubdirs = [ "Lib", "site-packages", ]
             cls.ScriptSubdirs = [ "Scripts", ]
+            
             cls.BinSubdirs = None
+            cls.BinExtension = ".exe"
             
             cls.CopyFiles = [ os.path.join("Lib", "site-packages", "easy-install.pth"),
                             ]
@@ -63,7 +68,10 @@ class PythonActivationActivity(SourceActivationActivityImpl):
         elif getattr(environment, "IsLinux", False):
             cls.LibrarySubdirs = [ "lib", "python{python_version_short}", "site-packages", ]
             cls.ScriptSubdirs = [ "Scripts", ]
+            
             cls.BinSubdirs = [ "bin", ]
+            cls.BinExtension = ''
+            
             cls.CopyFiles = None
             
         else:
@@ -177,13 +185,6 @@ class PythonActivationActivity(SourceActivationActivityImpl):
                                                       os.path.join(dest_dir, *cls.ScriptSubdirs),
                                                     ]))
 
-        # Set the PYTHON_BINARY - this used to be a pretty important environment variable, but not anymore.
-        # Keep it around for backwards compatability.
-        commands.append(environment.Set( "PYTHON_BINARY",
-                                         "python",
-                                         preserve_original=False,
-                                       ))
-
         # Add the location to the path
         bin_dir = dest_dir
         if cls.BinSubdirs:
@@ -191,6 +192,15 @@ class PythonActivationActivity(SourceActivationActivityImpl):
             
         commands.append(environment.AugmentPath(bin_dir))
         
+        # Get the binary file
+        bin_file = os.path.join(bin_dir, "python{}".format(cls.BinExtension))
+        assert os.path.isfile(bin_file), bin_file
+        
+        commands.append(environment.Set( "PYTHON_BINARY",
+                                         bin_file,
+                                         preserve_original=False,
+                                       ))
+
         return commands
 
 # ---------------------------------------------------------------------------
