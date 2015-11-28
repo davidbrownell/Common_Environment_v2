@@ -1,4 +1,4 @@
-# Generated from C:\Code\v2\Common\Environment\Libraries\Python\CommonEnvironment\v1.0\CommonEnvironment\SimpleSchema\BuildEnvironment\..\SimpleSchema.g4 by ANTLR 4.5.1
+# Generated from C:\Code\v2\Common\Environment\Libraries\Python\CommonEnvironment\v1.0\CommonEnvironment\SimpleSchema\Grammar\BuildEnvironment\..\SimpleSchema.g4 by ANTLR 4.5.1
 from antlr4 import *
 
 # This class defines a complete generic visitor for a parse tree produced by SimpleSchemaParser.

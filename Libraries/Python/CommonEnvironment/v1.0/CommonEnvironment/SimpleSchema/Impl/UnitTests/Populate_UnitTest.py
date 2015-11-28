@@ -1,6 +1,6 @@
 ﻿# ---------------------------------------------------------------------------
 # |  
-# |  Parse_UnitTest.py
+# |  Populate_UnitTest.py
 # |  
 # |  David Brownell (db@DavidBrownell.com)
 # |  
@@ -14,7 +14,7 @@
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 # |  
 # ---------------------------------------------------------------------------
-"""Unit test for Parse.py
+"""Unit test for Populate.py
 """
 
 import os
@@ -34,7 +34,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 
 sys.path.insert(0, os.path.normpath(os.path.join(_script_dir, "..")))
 with CallOnExit.CallOnExit(lambda: sys.path.pop(0)):
-    from Parse import *
+    from Populate import *
 
 # ---------------------------------------------------------------------------
 class FundamentalBaseTestCase(unittest.TestCase):
@@ -615,6 +615,27 @@ class ExtensionTests(unittest.TestCase):
                                                                         ( "two", '"2"' ),
                                                                         ( "three", '"three"' ),
                                                                       ]))
+
+# ---------------------------------------------------------------------------
+class ReferenceTests(unittest.TestCase):
+
+    # ---------------------------------------------------------------------------
+    def test_DeclarationReference(self):
+        definition = textwrap.dedent(
+            """\
+            (foo string max_length="10"):
+                pass
+
+            (bar foo):
+                [child string]
+
+            (baz bar):
+                pass
+            """)
+
+        root = ParseStrings({ "Test" : definition, }, observer=None)
+
+        # BugBug
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------

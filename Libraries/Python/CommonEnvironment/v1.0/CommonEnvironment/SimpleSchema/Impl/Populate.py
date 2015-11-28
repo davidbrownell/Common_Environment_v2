@@ -1,6 +1,6 @@
 ﻿# ---------------------------------------------------------------------------
 # |  
-# |  Parse.py
+# |  Populate.py
 # |  
 # |  David Brownell (db@DavidBrownell.com)
 # |  
@@ -38,7 +38,7 @@ from ..Observer import *
 
 from .Item import *
 
-sys.path.insert(0, os.path.join(_script_dir, "..", "Generated"))
+sys.path.insert(0, os.path.join(_script_dir, "..", "Grammar", "GeneratedCode"))
 assert os.path.isdir(sys.path[0]), sys.path[0]
 
 with CallOnExit(lambda: sys.path.pop(0)):
@@ -51,36 +51,13 @@ with CallOnExit(lambda: sys.path.pop(0)):
 # |  Public Methods
 # |
 # ---------------------------------------------------------------------------
-def ParseFiles( filenames, 
-                observer=None,
-              ):
-    d = OrderedDict()
-
-    for filename in filenames:
-        d[filename] = lambda filename=filename: open(filename).read()
-
-    return ParseEx(d, observer)
-
 # ---------------------------------------------------------------------------
-def ParseStrings( named_strings,            # { "<name>" : "<content>", }
-                  observer=None,
-                ):
-    d = OrderedDict()
-
-    # <Unused variable> pylint: disable = W0612
-    for k, v in named_strings.iteritems():
-        d[k] = lambda v=v: v
-
-    return ParseEx(d, observer)
-
-# ---------------------------------------------------------------------------
-def ParseEx( source_name_content_generators,            # { "name" : def Func() -> content, }
-             observer=None,
-           ):
-    observer = observer or DefaultObserver
+def Populate( source_name_content_generators,            # { "name" : def Func() -> content, }
+              observer,
+            ):
     include_filenames = []
 
-    root = Item( item_type=Item.Type_Standard,
+    root = Item( item_type=Item.ItemType_Standard,
                  parent=None,
                  source="<root>",
                  line=-1,
@@ -195,10 +172,10 @@ def ParseEx( source_name_content_generators,            # { "name" : def Func() 
                         elif line[index] == '\r':
                             break
                         else:
-                            raise ParseInvalidTripleStringPrefix( self._source_name,
-                                                                  token.line + line_offset,
-                                                                  token.column + 1 + whitespace,
-                                                                )
+                            raise ParseInvalidTripleStringPrefixException( self._source_name,
+                                                                           token.line + line_offset,
+                                                                           token.column + 1 + whitespace,
+                                                                         )
 
                         index += 1
 
@@ -210,17 +187,17 @@ def ParseEx( source_name_content_generators,            # { "name" : def Func() 
 
                 initial_line = lines[0].rstrip()
                 if len(initial_line) != 3:
-                    raise ParseInvalidTripleStringHeader( self._source_name,
-                                                          token.line,
-                                                          token.column + 1,
-                                                        )
+                    raise ParseInvalidTripleStringHeaderException( self._source_name,
+                                                                   token.line,
+                                                                   token.column + 1,
+                                                                 )
 
                 final_line = lines[-1]
                 if len(TrimPrefix(final_line, len(lines))) != 3:
-                    raise ParseInvalidTriplStringFooter( self._source_name,
-                                                         token.line,
-                                                         token.column + 1,
-                                                       )
+                    raise ParseInvalidTripleStringFooterException( self._source_name,
+                                                                   token.line,
+                                                                   token.column + 1,
+                                                                 )
 
                 lines = [ TrimPrefix(line, index + 1) for index, line in enumerate(lines[1:-1]) ]
 
@@ -315,6 +292,12 @@ def ParseEx( source_name_content_generators,            # { "name" : def Func() 
 
         # ---------------------------------------------------------------------------
         def visitIncludeStatement_Name(self, ctx):
+            if not observer.Flags & Observer.ParseFlags.SupportIncludeStatements:
+                raise ParseUnsupportedIncludeStatementsException( self._source_name,
+                                                                  ctx.start.line,
+                                                                  ctx.start.column + 1,
+                                                                )
+
             # ---------------------------------------------------------------------------
             def Functor(value):
                 filename = os.path.normpath(os.path.join(os.path.dirname(self._source_name), value))
@@ -336,7 +319,15 @@ def ParseEx( source_name_content_generators,            # { "name" : def Func() 
 
         # ---------------------------------------------------------------------------
         def visitConfigDeclaration(self, ctx):
+            if not observer.Flags & Observer.ParseFlags.SupportConfigDeclarations:
+                raise ParseUnsupportedConfigDeclarationsException( self._source_name,
+                                                                   ctx.start.line,
+                                                                   ctx.start.column + 1,
+                                                                 )
+
             with self._PushNewStackItem(ctx) as item:
+                item.declaration_type = -ctx.parser.RULE_configDeclaration
+
                 self.visitChildren(ctx)
 
             if item.name in root.config:
@@ -350,8 +341,7 @@ def ParseEx( source_name_content_generators,            # { "name" : def Func() 
                                                    )
 
             root.config[item.name] = item
-            item.subtype = Item.SubType_Config
-
+            
             # The config item is not associated with the root and needs to be removed
             # from this parent.
             assert self._stack[-1].items[-1] == item
@@ -372,12 +362,50 @@ def ParseEx( source_name_content_generators,            # { "name" : def Func() 
 
         # ---------------------------------------------------------------------------
         def visitUnnamedObj(self, ctx):
+            if not observer.Flags & Observer.ParseFlags.SupportUnnamedObjects:
+                raise ParseUnsupportedUnnamedObjectsException( self._source_name,
+                                                               ctx.start.line,
+                                                               ctx.start.column + 1,
+                                                             )
+
+            if len(self._stack) == 1:
+                if not observer.Flags & Observer.ParseFlags.SupportRootObjects:
+                    raise ParseUnsupportedRootObjectsException( self._source_name,
+                                                                ctx.start.line,
+                                                                ctx.start.column + 1,
+                                                              )
+            else:
+                if not observer.Flags & Observer.ParseFlags.SupportChildObjects:
+                    raise ParseUnsupportedChildObjectsException( self._source_name,
+                                                                 ctx.start.line,
+                                                                 ctx.start.column + 1,
+                                                               )
+
             with self._PushNewStackItem(ctx) as item:
                 item.declaration_type = -ctx.parser.RULE_obj
                 self.visitChildren(ctx)
 
         # ---------------------------------------------------------------------------
         def visitObj(self, ctx):
+            if not observer.Flags & Observer.ParseFlags.SupportNamedObjects:
+                raise ParseUnsupportedNamedObjectsException( self._source_name,
+                                                             ctx.start.line,
+                                                             ctx.start.column + 1,
+                                                           )
+
+            if len(self._stack) == 1:
+                if not observer.Flags & Observer.ParseFlags.SupportRootObjects:
+                    raise ParseUnsupportedRootObjectsException( self._source_name,
+                                                                ctx.start.line,
+                                                                ctx.start.column + 1,
+                                                              )
+            else:
+                if not observer.Flags & Observer.ParseFlags.SupportChildObjects:
+                    raise ParseUnsupportedChildObjectsException( self._source_name,
+                                                                 ctx.start.line,
+                                                                 ctx.start.column + 1,
+                                                               )
+
             with self._PushNewStackItem(ctx) as item:
                 item.declaration_type = -ctx.parser.RULE_obj
                 self.visitChildren(ctx)
@@ -396,15 +424,59 @@ def ParseEx( source_name_content_generators,            # { "name" : def Func() 
             assert self._stack[-1].items[-1] == item
             self._stack[-1].items.pop()
 
+            if item.declaration_type == ctx.parser.ID:
+                assert isinstance(item.reference, unicode)
+                item = item.reference
+            else:
+                assert item.name == None
+
             self._stack[-1].reference = item
 
         # ---------------------------------------------------------------------------
         def visitUnnamedDeclaration(self, ctx):
+            if not observer.Flags & Observer.ParseFlags.SupportUnnamedDeclarations:
+                raise ParseUnsupportedUnnamedDeclarationsException( self._source_name,
+                                                                    ctx.start.line,
+                                                                    ctx.start.column + 1,
+                                                                  )
+
+            if len(self._stack) == 1:
+                if not observer.Flags & Observer.ParseFlags.SupportRootDeclarations:
+                    raise ParseUnsupportedRootDeclarationsException( self._source_name,
+                                                                     ctx.start.line,
+                                                                     ctx.start.column + 1,
+                                                                   )
+            else:
+                if not observer.Flags & Observer.ParseFlags.SupportChildDeclarations:
+                    raise ParseUnsupportedChildDeclarationsException( self._source_name,
+                                                                      ctx.start.line,
+                                                                      ctx.start.column + 1,
+                                                                    )
+
             with self._PushNewStackItem(ctx):
                 return self.visitChildren(ctx)
 
         # ---------------------------------------------------------------------------
         def visitDeclaration(self, ctx):
+            if not observer.Flags & Observer.ParseFlags.SupportNamedDeclarations:
+                raise ParseUnsupportedNamedDeclarationsException( self._source_name,
+                                                                  ctx.start.line,
+                                                                  ctx.start.column + 1,
+                                                                )
+
+            if len(self._stack) == 1:
+                if not observer.Flags & Observer.ParseFlags.SupportRootDeclarations:
+                    raise ParseUnsupportedRootDeclarationsException( self._source_name,
+                                                                     ctx.start.line,
+                                                                     ctx.start.column + 1,
+                                                                   )
+            else:
+                if not observer.Flags & Observer.ParseFlags.SupportChildDeclarations:
+                    raise ParseUnsupportedChildDeclarationsException( self._source_name,
+                                                                      ctx.start.line,
+                                                                      ctx.start.column + 1,
+                                                                    )
+                
             with self._PushNewStackItem(ctx):
                 return self.visitChildren(ctx)
 
@@ -544,10 +616,10 @@ def ParseEx( source_name_content_generators,            # { "name" : def Func() 
         # ---------------------------------------------------------------------------
         def visitCustomMetadata_Type(self, ctx):
             if not observer.Flags & observer.ParseFlags.SupportCustomTypes:
-                raise ParseUnsupportedCustomTypes( self._source_name,
-                                                   ctx.start.line,
-                                                   ctx.start.column,
-                                                 )
+                raise ParseUnsupportedCustomTypesException( self._source_name,
+                                                            ctx.start.line,
+                                                            ctx.start.column + 1,
+                                                          )
 
             self._ApplyMetadataTag(ctx)
 
@@ -625,20 +697,6 @@ def ParseEx( source_name_content_generators,            # { "name" : def Func() 
                                                       name=name,
                                                     )
 
-            if not extension.AllowDuplicates:
-                siblings = self._stack[-1].Parent.items
-
-                for sibling in siblings:
-                    if sibling.declaration_type == -ctx.parser.RULE_extension and sibling.name == name:
-                        raise ParseDuplicateExtensionException( self._source_name,
-                                                                ctx.start.line,
-                                                                ctx.start.column + 1,
-                                                                name=name,
-                                                                source=sibling.Source,
-                                                                line=sibling.Line,
-                                                                column=sibling.Column,
-                                                              )
-
             self._stack[-1].name = name
 
         # ---------------------------------------------------------------------------
@@ -685,16 +743,16 @@ def ParseEx( source_name_content_generators,            # { "name" : def Func() 
         def _PushNewStackItem(self, ctx):
             if ctx.start.type == ctx.parser.LBRACK:
                 if not observer.Flags & observer.ParseFlags.SupportAttributes:
-                    raise ParseUnsupportedAttributes( self._source_name,
-                                                      ctx.start.line,
-                                                      ctx.start.column + 1,
-                                                    )
+                    raise ParseUnsupportedAttributesException( self._source_name,
+                                                               ctx.start.line,
+                                                               ctx.start.column + 1,
+                                                             )
 
-                item_type = Item.Type_Attribute
+                item_type = Item.ItemType_Attribute
             elif ctx.start.type == ctx.parser.LPAREN:
-                item_type = Item.Type_Definition
+                item_type = Item.ItemType_Definition
             else:
-                item_type = Item.Type_Standard
+                item_type = Item.ItemType_Standard
 
             item = Item( item_type,
                          self._stack[-1],
@@ -724,16 +782,16 @@ def ParseEx( source_name_content_generators,            # { "name" : def Func() 
 
             # ---------------------------------------------------------------------------
             def Functor(value):
-                if tag in obj.metadata:
-                    raise ParseDuplicateMetadataException( self._source_name,
-                                                           ctx.symbol.line,
-                                                           ctx.symbol.column + 1,
-                                                           tag=tag,
-                                                         )
-
                 if validation_functor:
                     validation_functor(value)
 
+                if tag in obj.metadata:
+                    raise ParseDuplicateMetadataException( self._source_name,
+                                                           ctx.start.line,
+                                                           ctx.start.column + 1,
+                                                           name=tag,
+                                                         )
+                    
                 obj.metadata[tag] = value
 
             # ---------------------------------------------------------------------------
@@ -797,210 +855,4 @@ def ParseEx( source_name_content_generators,            # { "name" : def Func() 
 
         index += 1
 
-    # ---------------------------------------------------------------------------
-    def GetLiteral(value):
-        value = SimpleSchemaParser.literalNames[value]
-
-        if value[0] == "'": 
-            value = value[1:]
-
-        if value[-1] == "'":
-            value = value[:-1]
-
-        return value
-
-    # ---------------------------------------------------------------------------
-    def Postprocess(item):
-        
-        # Validate compound metadata
-        if item.declaration_type == SimpleSchemaParser.STRING_TYPE:
-            min_length = GetLiteral(SimpleSchemaParser.STRING_METADATA_MIN_LENGTH)
-            max_length = GetLiteral(SimpleSchemaParser.STRING_METADATA_MAX_LENGTH)
-
-            if ( min_length in item.metadata and 
-                 max_length in item.metadata and 
-                 item.metadata[max_length] < item.metadata[min_length]
-               ):
-                raise ParseInvalidStringLengthException( item.Source,
-                                                         item.Line,
-                                                         item.Column,
-                                                         value=item.metadata[SimpleSchemaParser.literalNames[SimpleSchemaParser.STRING_METADATA_MAX_LENGTH]],
-                                                       )
-
-        if item.declaration_type == SimpleSchemaParser.ENUM_TYPE:
-            values = GetLiteral(SimpleSchemaParser.ENUM_METADATA_VALUES)
-            friendly_values = GetLiteral(SimpleSchemaParser.ENUM_METADATA_FRIENDLY_VALUES)
-
-            if ( values in item.metadata and 
-                 friendly_values in item.metadata and 
-                 len(item.metadata[values]) != len(item.metadata[friendly_values])
-               ):
-                raise ParseMismatchedEnumValuesException( item.Source,
-                                                          item.Line,
-                                                          item.Column,
-                                                          num_values=len(item.metadata[values]),
-                                                          num_friendly_values=len(item.metadata[friendly_values]),
-                                                        )
-
-        if item.declaration_type == SimpleSchemaParser.INTEGER_TYPE:
-            min_value = GetLiteral(SimpleSchemaParser.METADATA_MIN)
-            max_value = GetLiteral(SimpleSchemaParser.METADATA_MAX)
-
-            if ( min_value in item.metadata and
-                 max_value in item.metadata and 
-                 item.metadata[max_value] < item.metadata[min_value]
-               ):
-                raise ParseInvalidMaxValueException( item.Source,
-                                                     item.Line,
-                                                     item.Column,
-                                                     value=item.metdata[max_value],
-                                                   )
-
-        if item.declaration_type == SimpleSchemaParser.NUMBER_TYPE:
-            min_value = GetLiteral(SimpleSchemaParser.METADATA_MIN)
-            max_value = GetLiteral(SimpleSchemaParser.METADATA_MAX)
-
-            if ( min_value in item.metadata and
-                 max_value in item.metadata and 
-                 item.metadata[max_value] < item.metadata[min_value]
-               ):
-                raise ParseInvalidMaxValueException( item.Source,
-                                                     item.Line,
-                                                     item.Column,
-                                                     value=item.metdata[max_value],
-                                                   )
-
-        # Resolve references
-        if item.reference:
-            # ---------------------------------------------------------------------------
-            def FindItemByName_NoThrow(name, i):
-                name_parts = name.split('.')
-                    
-                while i:
-                    query = i
-                        
-                    for name_part in name_parts:
-                        # Ensure that the original item doesn't appear anywhere
-                        # within the item's hierarchy.
-                        query = next((itm for itm in query.items if itm.name == name_part), None)
-                        if not query:
-                            break
-
-                    if query:
-                        return query
-
-                    i = i.Parent
-
-                return None
-
-            # ---------------------------------------------------------------------------
-            
-            reference_name = item.reference
-            if isinstance(reference_name, Item):
-                assert reference_name.declaration_type == SimpleSchemaParser.ID
-                assert reference_name.name == None
-                    
-                reference_name = reference_name.reference
-
-            assert isinstance(reference_name, unicode)
-                
-            reference_item = FindItemByName_NoThrow(reference_name, item)
-            if reference_item:
-                item.reference.referenced_by.append(item)
-
-                # BugBug: This doesn't work quie right (ref to ref to ref)
-                if ( item.declaration_type == -SimpleSchemaParser.RULE_obj and
-                     reference_item.declaration_type != -SimpleSchemaParser.RULE_obj and
-                     not observer.Flags & observer.ParseFlags.SupportSimpleObjects
-                   ):
-                    raise ParseUnsupportedSimpleObjects( item.Source,
-                                                         item.Line,
-                                                         item.Column,
-                                                       )
-            else:
-                if observer.Flags & observer.ParseFlags.ResolveReferences:
-                    raise ParseInvalidReferenceException( item.Source,
-                                                          item.Line,
-                                                          item.Column,
-                                                          name=reference_nam,
-                                                      )
-
-                reference_item = reference_name
-
-            assert reference_item
-            item.reference = reference_item
-                
-
-    # ---------------------------------------------------------------------------
-    def SetSubType(item):
-        if item.subtype != None:
-            return
-
-        if item.declaration_type == -SimpleSchemaParser.RULE_extension:
-            item.subtype = Item.SubType_Extension
-
-        elif item.declaration_type == -SimpleSchemaParser.RULE_obj:
-            if ( item.reference == None or 
-                 isinstance(item.reference, unicode) or 
-                 (isinstance(item.reference, Item) and item.reference.declaration_type < 0)
-               ):
-                item.subtype = Item.SubType_Compound
-            else:
-                assert observer.Flags & observer.SupportSimpleObjects
-                item.subtype = Item.SubType_Simple
-
-                # BugBug: This doesn't work (ref to ref to ref)
-
-                # Everything referencing this item is also a simple type (this will be
-                # verified during Resolution)
-                items_to_modify = list(item.referenced_by)
-
-                while items_to_modify:
-                    item_to_modify = items_to_modify.pop(0)
-
-                    item_to_modify.subtype = Item.SubType_Simple
-                    items_to_modify.extend(item_to_modify.referenced_by)
-
-        elif item.declaration_type == SimpleSchemaParser.ID:
-            # ---------------------------------------------------------------------------
-            def IsAugmented():
-                if item.arity != None:
-                    return True
-
-                for key in item.metadata.iterkeys():
-                    if key.startswith("pragma-"):
-                        continue
-
-                    # Some values doesn't count as augmentation
-                    if key in [ GetLiteral(SimpleSchemaParser.GENERIC_METADATA_PLURAL),
-                                GetLiteral(SimpleSchemaParser.GENERIC_METADATA_DESCRIPTION),
-                              ]:
-                        continue
-
-                    return True
-
-                return False
-
-            # ---------------------------------------------------------------------------
-            
-            item.subtype = Item.SubType_Augmented if IsAugmented() else Item.SubType_Alias
-
-        elif item.declaration_type > 0:
-            item.subtype = Item.SubType_Fundamental
-
-        else:
-            assert False
-
-    # ---------------------------------------------------------------------------
-    def Impl(item, functor):
-        functor(item)
-
-        for child in item.items:
-            Impl(child, functor)
-
-    # ---------------------------------------------------------------------------
-    
-    Impl(root, Postprocess)
-    Impl(root, SetSubType)
-    
     return root

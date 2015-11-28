@@ -29,11 +29,34 @@ class Observer(Interface):
     # ---------------------------------------------------------------------------
     # |  Public Types
     class ParseFlags(object):
-        SupportSimpleObjects                = 1
-        SupportCustomTypes                  = SupportSimpleObjects << 1
-        SupportAttributes                   = SupportCustomTypes << 1
-        ResolveReferences                   = SupportAttributes << 1
+        # Fundamental support
+        SupportAttributes                   = 1
+        SupportIncludeStatements            = SupportAttributes << 1
+        SupportConfigDeclarations           = SupportIncludeStatements << 1
+        
+        SupportUnnamedDeclarations          = SupportConfigDeclarations << 1
+        SupportUnnamedObjects               = SupportUnnamedDeclarations << 1
+        SupportNamedDeclarations            = SupportUnnamedObjects << 1
+        SupportNamedObjects                 = SupportNamedDeclarations << 1
 
+        SupportRootDeclarations             = SupportNamedObjects << 1
+        SupportRootObjects                  = SupportRootDeclarations << 1
+        SupportChildDeclarations            = SupportRootObjects << 1
+        SupportChildObjects                 = SupportChildDeclarations << 1
+
+        SupportCustomTypes                  = SupportChildObjects << 1
+
+        SupportAliases                      = SupportCustomTypes << 1
+        SupportAugmentations                = SupportAliases << 1
+        SupportSimpleObjects                = SupportAugmentations << 1
+        
+        # Parse behavior
+        ResolveReferences                   = SupportSimpleObjects << 1
+
+        # Multi-bit flags
+        SupportDeclarations                 = SupportUnnamedDeclarations | SupportNamedDeclarations
+        SupportObjects                      = SupportUnnamedObjects | SupportNamedObjects
+        
     # ---------------------------------------------------------------------------
     # |  Public Properties
     @abstractproperty

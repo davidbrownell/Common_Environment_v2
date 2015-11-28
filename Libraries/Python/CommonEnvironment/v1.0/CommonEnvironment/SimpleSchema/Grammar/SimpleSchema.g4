@@ -109,7 +109,7 @@ fragment BOOL_VALUES:                       HWS* ('true' | 't' | 'yes' | 'y' | '
 
 DOUBLE_QUOTE_FILENAME_TYPE:                 '"' FILENAME_TYPE_VALUES '"';
 SINGLE_QUOTE_FILENAME_TYPE:                 '\'' FILENAME_TYPE_VALUES '\'';
-fragment FILENAME_TYPE_VALUES:              HWS* ('file' | 'directory') HWS*;
+fragment FILENAME_TYPE_VALUES:              HWS* ('file' | 'directory' | 'either') HWS*;
 
 DOUBLE_QUOTE_STRING:                        '"' (('\\"' | '\\\\') | .)*? '"';
 SINGLE_QUOTE_STRING:                        '\'' (('\\\'' | '\\\\') | .)*? '\'';
@@ -180,6 +180,7 @@ obj_Content__:                              SCOPE_DELIMITER ( PASS |
                                                               ( NEWLINE INDENT ( (PASS NEWLINE) |
                                                                                  (NEWLINE* standardStatement__)+
                                                                                )
+                                                                        DEDENT
                                                               )
                                                             );
 

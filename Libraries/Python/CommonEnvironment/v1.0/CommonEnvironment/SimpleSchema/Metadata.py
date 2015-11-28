@@ -1,4 +1,4 @@
-# ---------------------------------------------------------------------------
+﻿# ---------------------------------------------------------------------------
 # |  
 # |  Metadata.py
 # |  
@@ -35,10 +35,10 @@ class Metadata(object):
     # ---------------------------------------------------------------------------
     def __init__( self,
                   name,
-                  type,
-                  default_value=None,       # specific value or def Func(item) -> value
-                  supported_values=None,
 
+                  type_info,
+                  default_value=None,       # specific value or def Func(item) -> value
+                  
                   # If the following value is True, it is an indication that the presense of this metadata within
                   # a definition indicates that the definition is a new type and not an augmented type. Practically
                   # speaking, this means that the referenced item's metadata will not be copied to the referencing
@@ -46,9 +46,8 @@ class Metadata(object):
                   is_new_type=False,
                 ):
         self.Name                           = name
-        self.Type                           = type
+        self.TypeInfo                       = type_info
         self.DefaultValue                   = default_value
-        self.SuportedValues                 = supported_values
         self.IsNewType                      = is_new_type
 
         self.IsDynamicDefaultValue          = callable(self.DefaultValue)
