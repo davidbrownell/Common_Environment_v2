@@ -47,14 +47,14 @@ class FundamentalBaseTestCase(unittest.TestCase):
     NAMES                                   = [ "MyItem", None, ]
 
     # ---------------------------------------------------------------------------
-    def Test(self, brackets, type, metadata, name=None, observer=None):
+    def Test(self, brackets, type, metadata, name=None, observer=DefaultObserver):
         definition = "{lbrack}{name}{type} {metadata}{rbrack}".format( lbrack=brackets[0],
                                                                        rbrack=brackets[1],
                                                                        name="{} ".format(name) if name else '',
                                                                        type=type,
                                                                        metadata=' '.join([ "{}={}".format(k, v) for k, v in metadata.iteritems() ]),
                                                                      )
-        root = ParseStrings({ "Test" : definition, }, observer=observer)
+        root = Populate({ "Test" : lambda: definition, }, observer=observer)
         self.assertTrue(len(root.items) == 1)
 
         return root.items[0]
@@ -92,7 +92,7 @@ class FundamentalBaseTestCaseNoCustomMetadata(FundamentalBaseTestCase):
 
     TYPE_STRING                             = None
     TYPE_VALUE                              = None
-    OBSERVER                                = None
+    OBSERVER                                = DefaultObserver
 
     # ---------------------------------------------------------------------------
     def test_Basic(self):
@@ -410,7 +410,7 @@ class ObjectTests(unittest.TestCase):
                                                                                              arity=" {}".format(arity) if arity else '',
                                                                                            )
 
-                        root = ParseStrings({ "Test" : definition, }, self._observer)
+                        root = Populate({ "Test" : lambda: definition, }, self._observer)
                         self.assertTrue(len(root.items) == 1)
 
                         item = root.items[0]
@@ -445,7 +445,7 @@ class ObjectTests(unittest.TestCase):
                                                                                                      arity=" {}".format(arity) if arity else '',
                                                                                                    )
 
-                        root = ParseStrings({ "Test" : definition, }, self._observer)
+                        root = Populate({ "Test" : lambda: definition, }, self._observer)
                         self.assertTrue(len(root.items) == 1)
 
                         item = root.items[0]
@@ -467,7 +467,7 @@ class ConfigTests(unittest.TestCase):
         for definition in [ 'config("foo"): pass',
                             'config("foo"):\n    pass',
                           ]:
-            root = ParseStrings({ "Test" : definition, })
+            root = Populate({ "Test" : lambda: definition, }, DefaultObserver)
 
             self.assertEqual(len(root.items), 0)
             self.assertEqual(len(root.config), 1)
@@ -491,7 +491,7 @@ class ConfigTests(unittest.TestCase):
                 single="true"
             """)
     
-        root = ParseStrings({ "Test" : definition, })
+        root = Populate({ "Test" : lambda: definition, }, DefaultObserver)
 
         self.assertEqual(len(root.items), 0)
         self.assertEqual(len(root.config), 3)
@@ -536,7 +536,7 @@ class ExtensionTests(unittest.TestCase):
             baz() {1, 3}
             """)
 
-        root = ParseStrings({ "Test" : definition, }, observer=self._observer)
+        root = Populate({ "Test" : lambda: definition, }, observer=self._observer)
 
         self.assertEqual(len(root.items), 3)
 
@@ -567,7 +567,7 @@ class ExtensionTests(unittest.TestCase):
                              ''', "s2", "30", "40.5", "true", [ [ "one", ], "two", "three", ])
             """)
 
-        root = ParseStrings({ "Test" : definition, }, observer=self._observer)
+        root = Populate({ "Test" : lambda: definition, }, observer=self._observer)
 
         self.assertEqual(len(root.items), 1)
         self.assertEqual(root.items[0].name, "foo")
@@ -583,7 +583,7 @@ class ExtensionTests(unittest.TestCase):
             bar(one=1, two="2", three="three"){3}
             """)
 
-        root = ParseStrings({ "Test" : definition, }, observer=self._observer)
+        root = Populate({ "Test" : lambda: definition, }, observer=self._observer)
 
         self.assertEqual(len(root.items), 1)
         self.assertEqual(root.items[0].name, "bar")
@@ -604,7 +604,7 @@ class ExtensionTests(unittest.TestCase):
                              ''', "s2", "30", "40.5", "true", [ [ "one", ], "two", "three", ], one=1, two="2", three="three"){3, 5}
             """)
 
-        root = ParseStrings({ "Test" : definition, }, observer=self._observer)
+        root = Populate({ "Test" : lambda: definition, }, observer=self._observer)
 
         self.assertEqual(len(root.items), 1)
         self.assertEqual(root.items[0].name, "bar")
@@ -633,7 +633,7 @@ class ReferenceTests(unittest.TestCase):
                 pass
             """)
 
-        root = ParseStrings({ "Test" : definition, }, observer=None)
+        root = Populate({ "Test" : lambda: definition, }, DefaultObserver)
 
         # BugBug
 
