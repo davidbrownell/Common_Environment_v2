@@ -50,6 +50,7 @@ class WindowsEnvironment(Environment):
             release = str(int(sys.getwindowsversion()[0]) + 1)
             
         potential_versions = { "8" : "10",                  # Crazy, but true
+                               "2012Server" : "8",
                                "post2008Server" : "8",
                                "7" : "7",
                                "2008Server" : "7",
