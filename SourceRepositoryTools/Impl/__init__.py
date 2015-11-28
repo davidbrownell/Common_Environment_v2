@@ -399,7 +399,7 @@ def TraverseDependencies(repository_root, configuration):
                 {configs}
                 """).format( configuration=context.configuration,
                              root=context.root,
-                             configs='\n'.join(["    - {}".format((config or "<None>") for config in repo_info.configurations.keys()) ]),
+                             configs='\n'.join([ "    - {}".format(config or "<None>") for config in repo_info.configurations.keys() ]),
                            ))
 
         # Check for consistent locations
