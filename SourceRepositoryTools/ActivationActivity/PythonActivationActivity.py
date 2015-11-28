@@ -194,7 +194,6 @@ class PythonActivationActivity(SourceActivationActivityImpl):
         
         # Get the binary file
         bin_file = os.path.join(bin_dir, "python{}".format(cls.BinExtension))
-        assert os.path.isfile(bin_file), bin_file
         
         commands.append(environment.Set( "PYTHON_BINARY",
                                          bin_file,
