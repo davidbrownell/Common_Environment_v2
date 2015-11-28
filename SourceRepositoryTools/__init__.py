@@ -350,8 +350,8 @@ def GetCustomizedPath(path, environment=None):
 
 # ---------------------------------------------------------------------------
 def DelayExecute(method, *args, **kwargs):
-    return DelayExecuteWithPython("python", method, *args, **kwargs)
-
+    return DelayExecuteWithPython(os.getenv("PYTHON_BINARY"), method, *args, **kwargs)
+    
 # ---------------------------------------------------------------------------
 def DelayExecuteWithPython(python_binary, method, *args, **kwargs):
     """\
