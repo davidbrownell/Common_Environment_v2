@@ -70,9 +70,10 @@ class SmtpMailer(object):
                   host,
                   username=None,
                   password=None,
-                  port=25,
+                  port=26,
                   from_name=None,
                   from_email=None,
+                  ssl=False,
                 ):
         assert from_name or from_email
             
@@ -82,6 +83,7 @@ class SmtpMailer(object):
         self.Port                           = port
         self.FromName                       = from_name or ''
         self.FromEmail                      = from_email or ''
+        self.Ssl                            = ssl
         
     # ---------------------------------------------------------------------------
     def Save(self, configuration_name):
@@ -106,12 +108,17 @@ class SmtpMailer(object):
                      attachment_filenames=None,
                      message_format="plain",
                    ):
-        smtp = smtplib.SMTP()
-        
+        if self.Ssl:
+            smtp = smtplib.SMTP_SSL()
+        else:
+            smtp = smtplib.SMTP()
+            
         smtp.connect(self.Host, self.Port)
         
         if self.Username and self.Password:
-            smtp.starttls()
+            if not self.Ssl:
+                smtp.starttls()
+                
             smtp.login(self.Username, self.Password)
             
         assert self.FromName or self.FromEmail

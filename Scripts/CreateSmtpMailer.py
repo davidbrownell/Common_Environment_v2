@@ -46,6 +46,7 @@ def Create( configuration_name,
             port=25,
             from_name=None,
             from_email=None,
+            ssl=False,
             output_stream=sys.stdout,
           ):
     if not from_name and not from_email:
@@ -57,6 +58,7 @@ def Create( configuration_name,
                 port=port,
                 from_name=from_name,
                 from_email=from_email,
+                ssl=ssl,
               ).Save(configuration_name)
               
     output_stream.write("'{}' has been created.\n".format(configuration_name))
