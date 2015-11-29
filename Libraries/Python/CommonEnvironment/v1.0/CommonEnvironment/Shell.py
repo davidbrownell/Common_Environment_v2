@@ -353,6 +353,13 @@ class Environment(Interface):
         return folder
         
     # ---------------------------------------------------------------------------
+    def CreateDataFilename( self,
+                            application_name,
+                            suffix=".bin",
+                          ):
+        return os.path.join(self.UserDirectory, "{}{}".format(application_name.replace(' ', '_'), suffix))
+    
+    # ---------------------------------------------------------------------------
     @staticmethod
     def IsSymLink(filename):
         return os.path.islink(filename)
