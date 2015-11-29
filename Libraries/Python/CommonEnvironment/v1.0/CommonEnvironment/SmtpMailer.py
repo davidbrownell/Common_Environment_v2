@@ -131,7 +131,7 @@ class SmtpMailer(object):
         
         msg.attach(MIMEText(message, message_format))
         
-        for attachment_filename in attachment_filenames:
+        for attachment_filename in (attachment_filenames or []):
             ctype, encoding = mimetypes.guess_type(attachment_filename)
             if ctype == None or encoding != None:
                 ctype = "application/octet-stream"
