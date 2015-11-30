@@ -114,6 +114,7 @@ class ValidateMetadataInvalidException(SimpleSchemaException):              Disp
 class ValidateMetdataRequiredException(SimpleSchemaException):              Display = "The required attribute '{name}' was not found"
 class ValidateMetadataPluralNoneException(SimpleSchemaException):           Display = "The 'plural' attribute is not supported for elements with names"
 class ValidateMetadataPluralSingleElementException(SimpleSchemaException):  Display = "The 'plural' attribute is only supported for elements with an arity that is greater than 1"
+class ValidateMetadataDefaultException(SimpleSchemaException):              Display = "The 'default' attribute is only suppoted for optional elements"
 class ValidateMetadataPolymorphicException(SimpleSchemaException):          Display = "The 'polymorphic' attribute is only supported for compound elements that are referenced by other elements"
 class ValidateMetadataSuppressPolymorphicException(SimpleSchemaException):  Display = "The 'suppress_polymorphic' attribute is only supported for compound elements that reference a polymorphic compound element"
 class ValidateInvalidMetadataException(SimpleSchemaException):              Display = "The attribute '{name}' is not valid: {info}"

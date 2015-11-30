@@ -365,6 +365,13 @@ def Validate(root, observer):
                                                                     item.Column,
                                                                   )
 
+        if Item.GetLiteral(SimpleSchemaParser.GENERIC_METADATA_DEFAULT) in item.metadata:
+            if item.arity != (0, 1):
+                raise ValidateMetadataDefaultException( item.Source,
+                                                        item.Line,
+                                                        item.Column,
+                                                      )
+                                                      
         if Item.GetLiteral(SimpleSchemaParser.GENERIC_METADATA_POLYMORPHIC) in item.metadata:
             if item.ResolveAugmentations().subtype != Item.SubType_Compound or not item.referenced_by:
                 raise ValidateMetadataPolymorphicException( item.Source,

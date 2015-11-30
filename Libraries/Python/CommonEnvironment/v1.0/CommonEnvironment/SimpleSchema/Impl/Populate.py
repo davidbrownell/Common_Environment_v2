@@ -512,6 +512,10 @@ def Populate( source_name_content_generators,            # { "name" : def Func()
             self._ApplyMetadataTag(ctx)
 
         # ---------------------------------------------------------------------------
+        def visitDeclaration_Metadata_Default(self, ctx):
+            self._ApplyMetadataTag(ctx)
+            
+        # ---------------------------------------------------------------------------
         def visitStringMetadata_Validation(self, ctx):
             self._ApplyMetadataTag(ctx)
 

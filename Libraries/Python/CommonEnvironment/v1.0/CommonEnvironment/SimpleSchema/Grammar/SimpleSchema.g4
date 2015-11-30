@@ -76,8 +76,9 @@ FILENAME_METADATA_TYPE:                     'type';
 FILENAME_METADATA_MUST_EXIST:               'must_exist';
 CUSTOM_METADATA_T:                          't';
 
-GENERIC_METADATA_PLURAL:                    'plural';
 GENERIC_METADATA_DESCRIPTION:               'description';
+GENERIC_METADATA_PLURAL:                    'plural';
+GENERIC_METADATA_DEFAULT:                   'default';
 GENERIC_METADATA_POLYMORPHIC:               'polymorphic';
 GENERIC_METADATA_SUPPRESS_POLYMORPHIC:      'suppress_polymorphic';
 
@@ -211,12 +212,14 @@ declaration_Type:                           (STRING_TYPE stringMetadata__*) |
 
 declaration_Metadata__:                     (declaration_Metadata_Description ASSIGNMENT string) |
                                             (declaration_Metadata_Plural ASSIGNMENT string) |
+                                            (declaration_Metadata_Default ASSIGNMENT string) |
                                             (declaration_Metadata_Polymorphic ASSIGNMENT boolString) |
                                             (declaration_Metadata_SuppressPolymorphic ASSIGNMENT boolString);
                                             
 
 declaration_Metadata_Description:           GENERIC_METADATA_DESCRIPTION;
 declaration_Metadata_Plural:                GENERIC_METADATA_PLURAL;
+declaration_Metadata_Default:               GENERIC_METADATA_DEFAULT;
 declaration_Metadata_Polymorphic:           GENERIC_METADATA_POLYMORPHIC;
 declaration_Metadata_SuppressPolymorphic:   GENERIC_METADATA_SUPPRESS_POLYMORPHIC;
 

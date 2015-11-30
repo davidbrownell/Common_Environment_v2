@@ -81,3 +81,6 @@ COMPOUND_METADATA = [ Metadata("polymorphic", bool, default_value=False),
 
 COLLECTION_METADATA = [ Metadata("plural", str, default_value=lambda item: pluralize.plural(item.Name) if item.Name else None),
                       ]
+                      
+OPTIONAL_METADATA = [ Metadata("default", str),
+                    ]

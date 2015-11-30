@@ -316,7 +316,11 @@ class Item(object):
         if self.subtype == self.SubType_Compound:
             result.optional.extend(COMPOUND_METADATA)
 
-        if self.arity and (self.arity.max > 1 or self.arity.max == None):
-            result.optional.extend(COLLECTION_METADATA)
+        if self.arity:
+            if self.arity == (0, 1):
+                result.optional.extend(OPTIONAL_METADATA)
+                
+            if self.arity[1] > 1 or self.arity[0] == None:
+                result.optional.extend(COLLECTION_METADATA)
 
         return result

@@ -155,6 +155,11 @@ class SimpleSchemaVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by SimpleSchemaParser#declaration_Metadata_Default.
+    def visitDeclaration_Metadata_Default(self, ctx):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by SimpleSchemaParser#declaration_Metadata_Polymorphic.
     def visitDeclaration_Metadata_Polymorphic(self, ctx):
         return self.visitChildren(ctx)
