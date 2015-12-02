@@ -27,7 +27,7 @@ _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ---------------------------------------------------------------------------
 
-def NamedTuple(name, *args):
+def NamedTuple(name, *args, **kwargs):
     """\
     Usage:
 
@@ -39,8 +39,7 @@ def NamedTuple(name, *args):
     Bar = NamedTuple("Bar", "one", **OrderedDict([ ( "two", 2 ), ( "three", 3 ), ]))
     """
 
-    kwargs = {}
-    if len(args) == 1 and isinstance(args[0], dict):
+    if not kwargs and len(args) == 1 and isinstance(args[0], dict):
         kwargs = args[0]
         args = []
 
