@@ -1,12 +1,15 @@
 syntax: glob
+
 *.pyc
+*.pyo
 Generated/*
 ActivateEnvironment.cmd
 ActivateEnvironment.sh
 .coverage
-*.pyo
-src/CreateSSHConfiguration/CreateSSHConfiguration/*
-src/Backup/Backup/*
+
 .tfignore
+
+.git/*
 .gitignore
-Tools/Python/v2.7.10/Windows/DLLs/*
+
+Tools/Python/v2.7.10/Windows/DLLs/*.*-*
