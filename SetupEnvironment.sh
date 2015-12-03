@@ -36,9 +36,8 @@ then
     # *** Python is hard-coded; this file will need to be updated should the python version change ***
     export DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL="$(cd "$(dirname "$0")" && pwd)"
     export PYTHON_BINARY=/usr/bin/python
-    export PYTHON_BINARY_VERSION=2.7
     
-    $PYTHON_BINARY $DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL/SourceRepositoryTools/Impl/SetupEnvironment_LinuxPreinstall.py "$PYTHON_BINARY_VERSION"
+    $PYTHON_BINARY $DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL/SourceRepositoryTools/Impl/SetupEnvironment_LinuxPreinstall.py
     error_bit=$?
     if [ $error_bit != 0 ];
     then
@@ -79,7 +78,6 @@ then
     fi
     
     # Common_Environment BEGIN
-    export PYTHON_BINARY_VERSION=
     export PYTHON_BINARY=
     export DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=
     # Common_Environment END
