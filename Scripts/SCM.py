@@ -723,6 +723,9 @@ def AllChangeStatus( directory=None,
                                         lambda task_index, output_stream, scm=scm, directory=directory: Process(scm, directory, task_index, output_stream),
                                       ))
     
+        if not tasks:
+            return si.result
+
         si.result = TaskPool.Execute(tasks, 1, output_stream=output_stream)
         
         # Display the output
@@ -773,10 +776,10 @@ def AllChangeStatus( directory=None,
 @CommandLine.FunctionConstraints( directory=CommandLine.DirectoryTypeInfo(arity='?'),
                                   output_stream=None,
                                 )
-def WorkingChangeStatus( directory=None,
-                         untracked=False,
-                         output_stream=sys.stdout,
-                       ):
+def AllWorkingChangeStatus( directory=None,
+                            untracked=False,
+                            output_stream=sys.stdout,
+                          ):
     if untracked:
         # ---------------------------------------------------------------------------
         def QueryRepository(scm, directory):
@@ -998,6 +1001,9 @@ def _AllImpl( directory,
                                         "Querying '{}'".format(directory),
                                         lambda task_index, output_stream, scm=scm, directory=directory: QueryProcess(scm, directory, task_index, output_stream),
                                       ))
+
+        if not tasks:
+            return si.result
 
         task_pool_result = TaskPool.Execute(tasks, 1, output_stream=output_stream)
         si.result = si.result or task_pool_result

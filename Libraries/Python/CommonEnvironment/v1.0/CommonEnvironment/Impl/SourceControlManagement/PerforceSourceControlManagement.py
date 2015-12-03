@@ -41,14 +41,15 @@ _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ---------------------------------------------------------------------------
 
-def PerforceSourceControlManagementFactory( username='',
+def PerforceSourceControlManagementFactory( raise_on_username_failure,
+                                            username='',
                                             trunk_suffix='',
                                             trunk_name="trunk",
                                             branches_name="branches",
                                             tags_name="tags",
                                           ):
     username = username or os.getenv("P4USER")
-    if username:
+    if not username and raise_on_username_failure:
         raise Exception("'username' must be provided or defined in the 'P4USER' environment variable.")
 
     trunk_suffix = trunk_suffix or os.getenv("P4TRUNKSUFFIX") or ''
@@ -88,8 +89,11 @@ def PerforceSourceControlManagementFactory( username='',
         def IsAvailable(cls):
             is_available = getattr(cls, "_cached_is_available", None)
             if is_available == None:
-                result, output = cls.Execute(os.getcwd(), "p4 info")
-                is_available = result == 0
+                if not cls.Username:
+                    is_available = False
+                else:
+                    result, output = cls.Execute(os.getcwd(), "p4 info")
+                    is_available = result == 0
     
                 setattr(cls, "_cached_is_available", is_available)
     
@@ -539,7 +543,8 @@ def PerforceSourceControlManagementFactory( username='',
     return SCM
 
 # ---------------------------------------------------------------------------
-PerforceSourceControlManagement = PerforceSourceControlManagementFactory()
+PerforceSourceControlManagement = PerforceSourceControlManagementFactory( raise_on_username_failure=False,
+                                                                        )
 
 # ---------------------------------------------------------------------------
 # |

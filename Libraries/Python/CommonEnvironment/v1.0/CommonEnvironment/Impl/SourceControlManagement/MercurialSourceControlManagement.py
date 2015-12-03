@@ -72,10 +72,29 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
     # ---------------------------------------------------------------------------
     @classmethod
     def IsActive(cls, repo_dir):
+        if not hasattr(cls, "_cached_is_active"):
+            setattr(cls, "_cached_is_active", set())
+
+        cached = getattr(cls, "_cached_is_active")
+
+        for k in cached:
+            if repo_dir.startswith(k):
+                return True
+
         try:
-            return os.path.isdir(cls.GetRoot(repo_dir))
+            result = os.path.isdir(cls.GetRoot(repo_dir))
+
+            # Note that we are only caching positive results. This is to ensure
+            # that we walk into repositories associated with subdirs when provided
+            # with a root that isn't a repository (caching a failure on a root dir
+            # would indicate failure for all subdirs as well).
+            if result:
+                cached.add(repo_dir)
+
         except:
-            return False
+            result = False
+
+        return result
 
     # ---------------------------------------------------------------------------
     @classmethod
@@ -106,10 +125,26 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
     # ---------------------------------------------------------------------------
     @classmethod
     def GetRoot(cls, repo_dir):
-        result, output = cls.Execute(repo_dir, "hg root")
-        assert result == 0, (result, output)
+        if not hasattr(cls, "_cached_roots"):
+            setattr(cls, "_cached_roots", set())
 
-        return output.strip()
+        cached_roots = getattr(cls, "_cached_roots", set())
+        
+        value = None
+        for k in cached_roots:
+            if repo_dir.startswith(k):
+                value = k
+                break
+
+        if not value:
+            result, output = cls.Execute(repo_dir, "hg root")
+            assert result == 0, (result, output)
+            
+            value = output.strip()
+
+            cached_roots.add(value)
+
+        return value
 
     # ---------------------------------------------------------------------------
     @classmethod
