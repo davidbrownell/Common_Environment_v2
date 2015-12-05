@@ -398,8 +398,8 @@ def SetupFunctionFactory( repo_templates,
                                        vars,
                                      )
 
-            if not diff.matches:
-                return 
+        if not diff.matches:
+            return 
 
         setup_environment_script = Shell.GetEnvironment().CreateScriptName(SourceRepositoryTools.SETUP_ENVIRONMENT_NAME)
                 
@@ -429,7 +429,7 @@ def SetupFunctionFactory( repo_templates,
     # ---------------------------------------------------------------------------
     
     return _DefineDynamicFunction( "Setup",
-                                   None,
+                                   config_params,
                                    output_stream,
                                    Impl,
                                    prefix_args=[ ( "code_root", _NoDefault, CommandLine.DirectoryTypeInfo() ),
@@ -469,10 +469,9 @@ def _DefineDynamicFunction( func_name,
     
     ApplyArgs(prefix_args)
 
-    if config_params:
-        for k, v in config_params.iteritems():
-            constraint_params[k] = CommandLine.StringTypeInfo()
-            params[k] = '"{}"'.format(v)
+    for k, v in config_params.iteritems():
+        constraint_params[k] = CommandLine.StringTypeInfo()
+        params[k] = '"{}"'.format(v)
 
     ApplyArgs(suffix_args)
 
@@ -539,7 +538,7 @@ def _CalculateRepoDiff( code_root,
         if result:
             uri, repo = result
 
-            matches.append(RepoInfo(scm, uri, scm.GetCurrentBranch(root), repo.setup_configurations, path=root))
+            matches.append(RepoInfo(scm, uri, repo.branch or scm.DefaultBranch, repo.setup_configurations, path=root))
             del repo_uri_lookup[uri.lower()]
         else:
             local_only.append(RepoInfo(scm, uri, scm.GetCurrentBranch(root), None, path=root))
