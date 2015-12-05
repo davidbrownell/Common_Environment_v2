@@ -428,7 +428,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
             result = 0
             output = output.replace(empty_revision_set_notice, '')
 
-        return result, output
+        return result, "{}\n".format(output.strip())
 
     # ---------------------------------------------------------------------------
     @classmethod
