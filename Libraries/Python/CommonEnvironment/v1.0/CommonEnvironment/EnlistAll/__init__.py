@@ -265,7 +265,6 @@ def EnlistFunctionFactory( repo_templates,
               scm='',
               remove_extra_repos=False,
               preserve_branches=False,
-              display_branch_breadcrumbs=False,
               flat=False,
               **vars
             ):
@@ -278,31 +277,47 @@ def EnlistFunctionFactory( repo_templates,
                                        vars,
                                      )
 
-        branch_breadcrumb_info = []
         branches_to_restore = OrderedDict()
 
         with StreamDecorator(output_stream).DoneManager(line_prefix='', done_prefix='\n', done_suffix='\n') as dm:
+            
             # Update
             for index, repo in enumerate(diff.matches):
                 branch_name = repo.branch or repo.scm.DefaultBranch
                 
-                branch_breadcrumb_info.append(QuickObject( path=repo.path,
-                                                           branch=repo.branch,
-                                                         ))
-
-                dm.stream.write("\nUpdating '{}' [{}] ({} of {})...".format( repo.path,
-                                                                             branch_name,
-                                                                             index + 1,
-                                                                             len(diff.matches),
-                                                                           ))
-                with dm.stream.DoneManager() as this_dm:
+                dm.stream.write("\nUpdating '{}' [{}] ({} of {})...\n".format( repo.path,
+                                                                               branch_name,
+                                                                               index + 1,
+                                                                               len(diff.matches),
+                                                                             ))
+                with dm.stream.DoneManager() as update_dm:
                     if preserve_branches:
                         current_branch_name = repo.scm.GetCurrentBranch(repo.path)
                         if current_branch_name != branch_name:
                             branches_to_restore[repo.path] = current_branch_name
 
-                    this_dm.result, output = repo.scm.SetBranch(repo.path, branch_name)
-                    this_dm.stream.write(output)
+                    # Note that some SCMs will only pull according to the currently set
+                    # branch.
+                    update_dm.stream.write("Setting Branch ({})...".format(branch_name))
+                    with update_dm.stream.DoneManager(done_suffix='\n') as set_branch_dm:
+                        set_branch_dm.result, output = repo.scm.SetBranch(repo.path, branch_name)
+                        set_branch_dm.stream.write(output)
+
+                    if repo.scm.IsDistributed:
+                        update_dm.stream.write("Pulling Changes...")
+                        with update_dm.stream.DoneManager(done_suffix='\n') as pull_dm:
+                            pull_dm.result, output = repo.scm.Pull(repo.path)
+                            pull_dm.stream.write(output)
+
+                    update_dm.stream.write("Updating to '{}'...".format(repo.scm.Tip))
+                    with update_dm.stream.DoneManager(done_suffix='\n') as this_update_dm:
+                        this_update_dm.result, output = repo.scm.Update(repo.path, SourceControlManagement.EmptyUpdateMergeArg())
+                        this_update_dm.stream.write(output)
+
+                    update_dm.stream.write("Updating Branch ({})...".format(branch_name))
+                    with update_dm.stream.DoneManager(done_suffix='\n') as set_branch_dm:
+                        set_branch_dm.result, output = repo.scm.Update(repo.path, SourceControlManagement.BranchUpdateMergeArg(branch_name))
+                        set_branch_dm.stream.write(output)
 
             # Remove any local repos that shouldn't be here
             if remove_extra_repos:
@@ -323,10 +338,6 @@ def EnlistFunctionFactory( repo_templates,
                     output_dir = os.path.join(code_root, name)
                 else:
                     output_dir = os.path.join(code_root, *name.split('_'))
-
-                branch_breadcrumb_info.append(QuickObject( path=output_dir,
-                                                           branch=branch,
-                                                         ))
 
                 dm.stream.write("\nEnlisting in '{}' ['{}'] -> '{}' ({} of {})...".format( uri,
                                                                                            branch,
@@ -349,16 +360,6 @@ def EnlistFunctionFactory( repo_templates,
                     dm.result, output = scm.SetBranch(repo_path, branch_name)
                     dm.stream.write(output)
 
-            # Output branch-specific information
-            if display_branch_breadcrumbs:
-                dm.stream.write(textwrap.dedent(
-                    """\
-
-                    Branch breadcrumbs:
-                    {}
-                    """).format( '\n'.join([ "  ** {} : {} **".format(info.path, info.branch) for info in branch_breadcrumb_info ]),
-                               ))
-
             return dm.result
 
     # ---------------------------------------------------------------------------
@@ -372,7 +373,6 @@ def EnlistFunctionFactory( repo_templates,
                                                ],
                                    suffix_args=[ ( "remove_extra_repos", False ),
                                                  ( "preserve_branches", False ),
-                                                 ( "display_branch_breadcrumbs", False ),
                                                  ( "flat", False ),
                                                ],
                                  )
@@ -398,8 +398,8 @@ def SetupFunctionFactory( repo_templates,
                                        vars,
                                      )
 
-        if not diff.matches:
-            return 
+            if not diff.matches:
+                return 
 
         setup_environment_script = Shell.GetEnvironment().CreateScriptName(SourceRepositoryTools.SETUP_ENVIRONMENT_NAME)
                 
@@ -429,7 +429,7 @@ def SetupFunctionFactory( repo_templates,
     # ---------------------------------------------------------------------------
     
     return _DefineDynamicFunction( "Setup",
-                                   config_params,
+                                   None,
                                    output_stream,
                                    Impl,
                                    prefix_args=[ ( "code_root", _NoDefault, CommandLine.DirectoryTypeInfo() ),
@@ -469,9 +469,10 @@ def _DefineDynamicFunction( func_name,
     
     ApplyArgs(prefix_args)
 
-    for k, v in config_params.iteritems():
-        constraint_params[k] = CommandLine.StringTypeInfo()
-        params[k] = '"{}"'.format(v)
+    if config_params:
+        for k, v in config_params.iteritems():
+            constraint_params[k] = CommandLine.StringTypeInfo()
+            params[k] = '"{}"'.format(v)
 
     ApplyArgs(suffix_args)
 
