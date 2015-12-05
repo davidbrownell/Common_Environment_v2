@@ -511,6 +511,7 @@ class DistributedSourceControlManagementBase(SourceControlManagementBase):
                             local=cls.HasLocalChanges(repo_root),
                             remote=cls.HasRemoteChanges(repo_root),
                             update=cls.HasUpdateChanges(repo_root),
+                            branch=cls.GetMostRecentBranch(repo_root),
                           )
 
     # ---------------------------------------------------------------------------
