@@ -1,0 +1,53 @@
+Acquire packages
+================
+
+Ubuntu (Verified on 2.7.10)
+------
+Package Install: sudo apt-get install <package name>
+
+* build-essential
+* libgdbm-dev
+* libsqlite3-dev
+* libssl-dev
+* tk-dev
+* libncurses-dev
+* libbz2-dev
+* libreadline-dev
+* sqlite3
+
+
+CentOS (Verified on 2.7.1+)
+------
+Package Install: sudo yum install <package Name>
+
+* tk-devel
+* gdbm-devel
+* readline-devel
+* ncurses-devel 
+* zlib-devel
+* bzip2-devel 
+* sqlite-devel 
+* db4-devel 
+* openssl-devel
+* bluez-libs-devel
+
+Build (Python)
+==============
+1) ./configure --prefix=/opt/Common_Environment/python<version> --with-threads --enable-shared
+2) make
+3) sudo make install
+
+Build (semantic_version)
+========================
+1) In setup.py, replace the line
+        "from setuptools import setup"
+   with
+        "from distutils.core import setup"
+        
+Bundle
+======
+# BugBug ? 1) su
+# BugBug ? 2) Copy files to location that matches the directory structure from the root (/opt/Common_Environment/python<version> => /tmp/opt/Common_Environment/python<version>)
+# BugBug ? 	cp <source dir> <dest dir> -r
+3) From the dest dir:
+	tar -cvzf binaries.tar.gz .
