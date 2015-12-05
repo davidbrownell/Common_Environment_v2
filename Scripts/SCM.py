@@ -729,8 +729,8 @@ def AllChangeStatus( directory=None,
         si.result = TaskPool.Execute(tasks, 1, output_stream=output_stream)
         
         # Display the output
-        cols = [ 80, 20, 17, 15, 13, 14, 14, ]
-        template = "{dir:<%d}  {scm:<%d}  {untracked:<%d}  {working:<%d}  {local:<%d}  {remote:<%d}  {update:<%d}" % tuple(cols)
+        cols = [ 80, 17, 10, 17, 15, 13, 14, 14, ]
+        template = "{dir:<%d}  {scm:<%d}  {branch:<%d}  {untracked:<%d}  {working:<%d}  {local:<%d}  {remote:<%d}  {update:<%d}" % tuple(cols)
 
         if any(o for o in output):
             si.stream.write(textwrap.dedent(
@@ -740,6 +740,7 @@ def AllChangeStatus( directory=None,
                 {}
                 """).format( template.format( dir="Directory",
                                               scm="SCM",
+                                              branch="Branch",
                                               untracked="Untracked Changes",
                                               working="Working Changes",
                                               local="Local Changes",
@@ -748,11 +749,12 @@ def AllChangeStatus( directory=None,
                                             ),
                              template.format( dir='-' * cols[0],
                                               scm='-' * cols[1],
-                                              untracked='-' * cols[2],
-                                              working='-' * cols[3],
-                                              local='-' * cols[4],
-                                              remote='-' * cols[5],
-                                              update='-' * cols[6],
+                                              branch='-' * cols[2],
+                                              untracked='-' * cols[3],
+                                              working='-' * cols[4],
+                                              local='-' * cols[5],
+                                              remote='-' * cols[6],
+                                              update='-' * cols[7],
                                             ),
                            ))
 
@@ -762,6 +764,7 @@ def AllChangeStatus( directory=None,
 
                 si.stream.write("{}\n".format(template.format( dir=data.directory,
                                                                scm=data.scm.Name,
+                                                               branch=data.status.branch,
                                                                untracked=str(data.status.untracked) if data.status.untracked != None else "N/A",
                                                                working=str(data.status.working),
                                                                local=str(data.status.local) if hasattr(data.status, "local") else "N/A",
