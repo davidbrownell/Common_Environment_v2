@@ -315,8 +315,11 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
     @classmethod
     def GetRevisionsSinceLastMerge(cls, repo_root, dest_branch, source_update_merge_arg):
         if isinstance(source_update_merge_arg, (BranchUpdateMergeArg, BranchAndDateUpdateMergeArg)):
+            
+            current_branch = cls.GetCurrentBranch()
+            
             if source_update_merge_arg.Branch != cls.GetCurrentBranch():
-                raise Exception("No support for filtering changes across branches")
+                raise Exception("No support for filtering changes across branches (current: {}, source: {}, dest: {})".format(current_branch, source_update_merge_arg.Branch, dest_branch))
                 
             if isinstance(source_update_merge_arg, BranchUpdateMergeArg):
                 source_update_merge_arg = EmptyUpdateMergeArg()
