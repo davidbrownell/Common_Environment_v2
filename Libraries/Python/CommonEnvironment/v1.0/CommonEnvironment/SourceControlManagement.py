@@ -430,10 +430,10 @@ class SourceControlManagementBase(Interface):
                                        stderr=subprocess.STDOUT,
                                        env=os.environ,
                                      )
-            content = result.stdout.read()
+            content = result.stdout.read().strip()
             result = result.wait() or 0
 
-            if append_newline_to_output and content and content[-1] != '\n':
+            if append_newline_to_output and content:
                 content += '\n'
 
             return result, content
