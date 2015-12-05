@@ -315,7 +315,15 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
     @classmethod
     def GetRevisionsSinceLastMerge(cls, repo_root, dest_branch, source_update_merge_arg):
         if isinstance(source_update_merge_arg, (BranchUpdateMergeArg, BranchAndDateUpdateMergeArg)):
-            raise Exception("No support for filtering changes across branches")
+            if source_update_merge_arg.Branch != cls.GetCurrentBranch():
+                raise Exception("No support for filtering changes across branches")
+                
+            if isinstance(source_update_merge_arg, BranchUpdateMergeArg):
+                source_update_merge_arg = EmptyUpdateMergeArg()
+            elif isinstance(source_update_merge_arg, BranchAndDateUpdateMergeArg):
+                source_update_merge_arg = DateUpdateMergeArg(source_update_merge_arg.Date)
+            else:
+                assert False
 
         if isinstance(source_update_merge_arg, EmptyUpdateMergeArg):
             source_update_merge_arg = RevisionUpdateMergeArg("-1")
@@ -562,9 +570,9 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
             assert BranchGenerator
             for branch in BranchGenerator():
                 result, output = cls.Execute(repo_root, '''hg log -b "{branch}" -r "sort(date('<{date}'), -date)" -l 1 --template "{rev}"'''.format( branch=branch,
-                                                                                                                                                date=date,
-                                                                                                                                                rev="{rev}",
-                                                                                                                                              ))
+                                                                                                                                                     date=date,
+                                                                                                                                                     rev="{rev}",
+                                                                                                                                                   ))
                 if result == 0:
                     output = output.strip()
                     if output:
