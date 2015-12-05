@@ -429,7 +429,7 @@ def SetupFunctionFactory( repo_templates,
     # ---------------------------------------------------------------------------
     
     return _DefineDynamicFunction( "Setup",
-                                   None,
+                                   config_params,
                                    output_stream,
                                    Impl,
                                    prefix_args=[ ( "code_root", _NoDefault, CommandLine.DirectoryTypeInfo() ),
@@ -469,10 +469,9 @@ def _DefineDynamicFunction( func_name,
     
     ApplyArgs(prefix_args)
 
-    if config_params:
-        for k, v in config_params.iteritems():
-            constraint_params[k] = CommandLine.StringTypeInfo()
-            params[k] = '"{}"'.format(v)
+    for k, v in config_params.iteritems():
+        constraint_params[k] = CommandLine.StringTypeInfo()
+        params[k] = '"{}"'.format(v)
 
     ApplyArgs(suffix_args)
 
