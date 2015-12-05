@@ -285,11 +285,12 @@ def EnlistFunctionFactory( repo_templates,
             for index, repo in enumerate(diff.matches):
                 branch_name = repo.branch or repo.scm.DefaultBranch
                 
-                dm.stream.write("\nUpdating '{}' [{}] ({} of {})...\n".format( repo.path,
-                                                                               branch_name,
-                                                                               index + 1,
-                                                                               len(diff.matches),
-                                                                             ))
+                title = "Updating '{}' [{}] ({} of {})...".format( repo.path,
+                                                                   branch_name,
+                                                                   index + 1,
+                                                                   len(diff.matches),
+                                                                 )
+                dm.stream.write("\n{}\n{}\n".format(title, '=' * len(title)))
                 with dm.stream.DoneManager() as update_dm:
                     if preserve_branches:
                         current_branch_name = repo.scm.GetCurrentBranch(repo.path)
@@ -298,23 +299,27 @@ def EnlistFunctionFactory( repo_templates,
 
                     # Note that some SCMs will only pull according to the currently set
                     # branch.
-                    update_dm.stream.write("Setting Branch ({})...".format(branch_name))
+                    title = "Setting Branch ({})...".format(branch_name)
+                    update_dm.stream.write("{}\n{}".format(title, '-' * len(title)))
                     with update_dm.stream.DoneManager(done_suffix='\n') as set_branch_dm:
                         set_branch_dm.result, output = repo.scm.SetBranch(repo.path, branch_name)
                         set_branch_dm.stream.write(output)
 
                     if repo.scm.IsDistributed:
-                        update_dm.stream.write("Pulling Changes...")
+                        title = "Pulling Changes..."
+                        update_dm.stream.write("{}\n{}".format(title, '-' * len(title)))
                         with update_dm.stream.DoneManager(done_suffix='\n') as pull_dm:
                             pull_dm.result, output = repo.scm.Pull(repo.path)
                             pull_dm.stream.write(output)
 
-                    update_dm.stream.write("Updating to '{}'...".format(repo.scm.Tip))
+                    title = "Updating to '{}'...".format(repo.scm.Tip)
+                    update_dm.stream.write("{}\n{}".format(title, '-' * len(title)))
                     with update_dm.stream.DoneManager(done_suffix='\n') as this_update_dm:
                         this_update_dm.result, output = repo.scm.Update(repo.path, SourceControlManagement.EmptyUpdateMergeArg())
                         this_update_dm.stream.write(output)
 
-                    update_dm.stream.write("Updating Branch ({})...".format(branch_name))
+                    title = "Updating Branch ({})...".format(branch_name)
+                    update_dm.stream.write("{}\n{}".format(title, '-' * len(title)))
                     with update_dm.stream.DoneManager(done_suffix='\n') as set_branch_dm:
                         set_branch_dm.result, output = repo.scm.Update(repo.path, SourceControlManagement.BranchUpdateMergeArg(branch_name))
                         set_branch_dm.stream.write(output)
@@ -339,26 +344,28 @@ def EnlistFunctionFactory( repo_templates,
                 else:
                     output_dir = os.path.join(code_root, *name.split('_'))
 
-                dm.stream.write("\nEnlisting in '{}' ['{}'] -> '{}' ({} of {})...".format( uri,
-                                                                                           branch,
-                                                                                           output_dir,
-                                                                                           index + 1,
-                                                                                           len(diff.reference_only),
-                                                                                         ))
+                title = "Enlisting in '{}' ['{}'] -> '{}' ({} of {})...".format( uri,
+                                                                                 branch,
+                                                                                 output_dir,
+                                                                                 index + 1,
+                                                                                 len(diff.reference_only),
+                                                                               )
+                dm.stream.write("\n{}\n{}".format(title, '-' * len(title)))
                 with dm.stream.DoneManager() as this_dm:
                     this_dm.result, output = scm.Clone(uri, output_dir, branch=branch)
                     this_dm.stream.write(output)
 
             # Resore any branches
             for index, (repo_path, branch_name) in enumerate(branches_to_restore.iteritems()):
-                dm.stream.write("\nRestoring branch '{}' in '{}' ({} of {})...".format( branch_name,
-                                                                                        repo_path,
-                                                                                        index + 1,
-                                                                                        len(branches_to_restore),
-                                                                                      ))
+                title = "Restoring branch '{}' in '{}' ({} of {})...".format( branch_name,
+                                                                              repo_path,
+                                                                              index + 1,
+                                                                              len(branches_to_restore),
+                                                                            )
+                dm.stream.write("\n{}\n{}".format(title, '-' * len(title)))
                 with dm.stream.DoneManager() as this_dm:
-                    dm.result, output = scm.SetBranch(repo_path, branch_name)
-                    dm.stream.write(output)
+                    this_dm.result, output = scm.SetBranch(repo_path, branch_name)
+                    this_dm.stream.write(output)
 
             return dm.result
 
@@ -408,7 +415,8 @@ def SetupFunctionFactory( repo_templates,
                 filename = os.path.join(repo.path, setup_environment_script)
                 assert os.path.isfile(filename), filename
 
-                dm.stream.write("\nRunning '{}' ({} of {})...".format(filename, index + 1, len(diff.matches)))
+                title = "Running '{}' ({} of {})...".format(filename, index + 1, len(diff.matches))
+                dm.stream.write("\n{}\n{}".format(title, '=' * len(title)))
                 with dm.stream.DoneManager() as this_dm:
                     command_line = filename
 
