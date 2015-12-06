@@ -589,7 +589,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
         dispatch_map = { EmptyUpdateMergeArg :          lambda: "",
                          RevisionUpdateMergeArg :       lambda: NormalizeRevision(arg.Revision),
                          DateUpdateMergeArg :           lambda: DateAndBranch(arg.Date, None),
-                         BranchUpdateMergeArg :         lambda: DateAndBranch(time.asctime(), arg.Branch),
+                         BranchUpdateMergeArg :         lambda: DateAndBranch(DateTimeTypeInfo().Create(), arg.Branch),
                          BranchAndDateUpdateMergeArg :  lambda: DateAndBranch(arg.Date, arg.Branch),
                        }
 
