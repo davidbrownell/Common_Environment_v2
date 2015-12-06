@@ -29,6 +29,7 @@ from ...SourceControlManagement import DistributedSourceControlManagementBase, \
 
 from CommonEnvironment.Interface import staticderived
 from CommonEnvironment.QuickObject import QuickObject
+from CommonEnvironment.TypeInfo import DateTimeTypeInfo
 
 # Note that functionality in this file require the following Mercurial extensions:
 #       Mercurial Extension Name            Functionality
@@ -573,7 +574,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
             assert BranchGenerator
             for branch in BranchGenerator():
                 result, output = cls.Execute(repo_root, '''hg log -b "{branch}" -r "sort(date('<{date}'), -date)" -l 1 --template "{rev}"'''.format( branch=branch,
-                                                                                                                                                     date=date,
+                                                                                                                                                     date=DateTimeTypeInfo().ItemToString(date, DateTimeTypeInfo.Format_String),
                                                                                                                                                      rev="{rev}",
                                                                                                                                                    ))
                 if result == 0:
@@ -588,7 +589,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
         dispatch_map = { EmptyUpdateMergeArg :          lambda: "",
                          RevisionUpdateMergeArg :       lambda: NormalizeRevision(arg.Revision),
                          DateUpdateMergeArg :           lambda: DateAndBranch(arg.Date, None),
-                         BranchUpdateMergeArg :         lambda: DateAndBranch(time.asctime(), arg.Branch),
+                         BranchUpdateMergeArg :         lambda: DateAndBranch(DateTimeTypeInfo().Create(), arg.Branch),
                          BranchAndDateUpdateMergeArg :  lambda: DateAndBranch(arg.Date, arg.Branch),
                        }
 
