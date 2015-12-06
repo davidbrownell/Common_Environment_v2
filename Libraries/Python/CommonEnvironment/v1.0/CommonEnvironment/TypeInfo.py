@@ -809,10 +809,15 @@ class DateTimeTypeInfo(FundamentalTypeInfo):
     # ---------------------------------------------------------------------------
     @classmethod
     def _ItemToStringImpl(cls, value, format):
+        if format == cls.Format_String:
+            return value.strftime("%a %b %d %H:%M:%S %Y")
+
         if format == cls.Format_JSON:
             sep = 'T'
-        else:
+        elif format == cls.Format_Python:
             sep = ' '
+        else:
+            assert False
 
         return value.isoformat(sep=sep)
 
