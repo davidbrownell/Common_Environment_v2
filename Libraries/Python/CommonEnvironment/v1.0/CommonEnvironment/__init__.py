@@ -22,6 +22,7 @@ _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
 def Get( items, 
          functor,                           # def Func(item) -> Bool
          extractor=None,                    # def Func(item) -> Any
@@ -29,3 +30,23 @@ def Get( items,
     for item in items:
         if functor(item):
             return extractor(item) if extractor else item
+
+# ---------------------------------------------------------------------------
+def All( items,
+         functor,                           # def Func(item) -> Bool
+       ):
+    for item in items:
+        if not functor(item):
+            return False
+
+    return bool(items)
+
+# ---------------------------------------------------------------------------
+def Any( items,
+         functor,                           # def Func(item) -> Bool
+       ):
+    for item in items:
+        if functor(item):
+            return True
+
+    return False

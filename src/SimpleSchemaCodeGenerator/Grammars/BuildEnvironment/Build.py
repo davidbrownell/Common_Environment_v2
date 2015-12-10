@@ -24,6 +24,7 @@ import sys
 
 from CommonEnvironment import Build as BuildImpl
 from CommonEnvironment import CommandLine
+from CommonEnvironment import FileSystem
 from CommonEnvironment import Shell
 
 # ---------------------------------------------------------------------------
@@ -31,12 +32,21 @@ _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ---------------------------------------------------------------------------
 
+CONFIGURATIONS = [ os.path.splitext(os.path.basename(filename))[0] for filename in FileSystem.WalkFiles( os.path.join(_script_dir, ".."),
+                                                                                                         include_file_extensions=[ ".g4", ],
+                                                                                                         recurse=False,
+                                                                                                       )
+                 ]
+                                                                        
 # ---------------------------------------------------------------------------
 @CommandLine.EntryPoint
-@CommandLine.FunctionConstraints(output_stream=None)
-def Build( output_stream=sys.stdout,
+@CommandLine.FunctionConstraints( configuration=CommandLine.EnumTypeInfo(CONFIGURATIONS),
+                                  output_stream=None,
+                                )
+def Build( configuration,
+           output_stream=sys.stdout,
          ):
-    input_file = os.path.join(_script_dir, "..", "SimpleSchema.g4")
+    input_file = os.path.join(_script_dir, "..", "{}.g4".format(configuration))
     assert os.path.isfile(input_file), input_file
 
     output_dir = os.path.join(_script_dir, "..", "GeneratedCode")
@@ -64,13 +74,20 @@ def Build( output_stream=sys.stdout,
 
 # ---------------------------------------------------------------------------
 @CommandLine.EntryPoint
-@CommandLine.FunctionConstraints(output_stream=None)
-def Clean( output_stream=sys.stdout,
+@CommandLine.FunctionConstraints( configuration=CommandLine.EnumTypeInfo(CONFIGURATIONS),
+                                  output_stream=None,
+                                )
+def Clean( configuration,
+           output_stream=sys.stdout,
          ):
-    output_dir = os.path.join(_script_dir, "..", "Generated")
+    output_dir = os.path.join(_script_dir, "..", "GeneratedCode")
     
     if os.path.isdir(output_dir):
-        shutil.rmtree(output_dir)
+        for filename in FileSystem.WalkFiles( output_dir,
+                                              include_file_base_names=[ lambda name: name.startswith(configuration),
+                                                                      ],
+                                            ):
+            os.remove(filename)
 
     return 0
 
@@ -80,6 +97,7 @@ def Clean( output_stream=sys.stdout,
 if __name__ == "__main__":
     try:
         sys.exit(BuildImpl.Main(BuildImpl.Configuration( name="BuildSimpleSchemaGrammar",
+                                                         configurations=CONFIGURATIONS,
                                                          requires_output_dir=False,
                                                          priority=1,
                                                        )))

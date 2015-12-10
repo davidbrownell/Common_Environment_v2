@@ -1,4 +1,4 @@
-# Generated from C:\Code\v2\Common\Environment\Libraries\Python\CommonEnvironment\v1.0\CommonEnvironment\SimpleSchema\Grammar\BuildEnvironment\..\SimpleSchema.g4 by ANTLR 4.5.1
+# Generated from C:\Code\v2\Common\Environment\src\SimpleSchemaCodeGenerator\Grammars\BuildEnvironment\..\SimpleSchema.g4 by ANTLR 4.5.1
 # encoding: utf-8
 from __future__ import print_function
 from antlr4 import *
