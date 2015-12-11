@@ -25,17 +25,19 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ---------------------------------------------------------------------------
 def WalkDirs( root,
               
-              include_dir_names=None,      
-              exclude_dir_names=None,
+              include_dir_names=None,                   # ex. "ASingleDir"
+              exclude_dir_names=None,                   # ex. "ASingleDir"
 
-              include_dir_paths=None,
-              exclude_dir_paths=None,
+              include_dir_paths=None,                   # ex. "C:\Foo\Bar"
+              exclude_dir_paths=None,                   # ex. "C:\Foo\Bar"
 
-              traverse_include_dir_names=None,
-              traverse_exclude_dir_names=None,
+              traverse_include_dir_names=None,          # ex. "ASingleDir"
+              traverse_exclude_dir_names=None,          # ex. "ASingleDir"
 
-              traverse_include_dir_paths=None,
-              traverse_exclude_dir_paths=None,
+              traverse_include_dir_paths=None,          # ex. "C:\Foo\Bar"
+              traverse_exclude_dir_paths=None,          # ex. "C:\Foo\Bar"
+
+              recurse=True,
             ):
     process_dir_name = _ProcessArgs(include_dir_names, exclude_dir_names)
     process_dir_path = _ProcessArgs(include_dir_paths, exclude_dir_paths)
@@ -64,34 +66,39 @@ def WalkDirs( root,
             else:
                 index += 1
 
+        if not recurse:
+            dirs[:] = []
+
 # ---------------------------------------------------------------------------
 def WalkFiles( root,
                
-               include_dir_names=None,
-               exclude_dir_names=None,
+               include_dir_names=None,                  # ex. "ASingleDir"
+               exclude_dir_names=None,                  # ex. "ASingleDir"
 
-               include_dir_paths=None,
-               exclude_dir_paths=None,
+               include_dir_paths=None,                  # ex. "c:\foo\bar"
+               exclude_dir_paths=None,                  # ex. "c:\foo\bar"
 
-               traverse_include_dir_names=None,
-               traverse_exclude_dir_names=None,
+               traverse_include_dir_names=None,         # ex. "ASingleDir"
+               traverse_exclude_dir_names=None,         # ex. "ASingleDir"
 
-               traverse_include_dir_paths=None,
-               traverse_exclude_dir_paths=None,
+               traverse_include_dir_paths=None,         # ex. "C:\foo\bar"
+               traverse_exclude_dir_paths=None,         # ex. "C:\foo\bar"
 
-               include_file_extensions=None,
-               exclude_file_extensions=None,
+               include_file_base_names=None,            # ex. "File" where filename is "File.ext"
+               exclude_file_base_names=None,            # ex. "File" where filename is "File.ext"            
 
-               include_file_names=None,
-               exclude_file_names=None,
+               include_file_extensions=None,            # ex. ".py"
+               exclude_file_extensions=None,            # ex. ".py"
 
-               include_file_paths=None,
-               exclude_file_paths=None,
+               include_file_names=None,                 # ex. "File.ext"
+               exclude_file_names=None,                 # ex. "File.ext"
+
+               recurse=True,
              ):
-    process_file_extension = _ProcessArgs(include_file_extensions, exclude_file_extensions)
     process_file_name = _ProcessArgs(include_file_names, exclude_file_names)
-    process_file_path = _ProcessArgs(include_file_paths, exclude_file_paths)
-
+    process_file_base_name = _ProcessArgs(include_file_base_names, exclude_file_base_names)
+    process_file_extension = _ProcessArgs(include_file_extensions, exclude_file_extensions)
+    
     for root, filenames in WalkDirs( root,
                                      include_dir_names=include_dir_names,
                                      exclude_dir_names=exclude_dir_names,
@@ -101,20 +108,19 @@ def WalkFiles( root,
                                      traverse_exclude_dir_names=traverse_exclude_dir_names,
                                      traverse_include_dir_paths=traverse_include_dir_paths,
                                      traverse_exclude_dir_paths=traverse_exclude_dir_paths,
+                                     recurse=recurse,
                                    ):
         for filename in filenames:
             if not process_file_name(filename):
                 continue
 
-            if not process_file_extension(os.path.splitext(filename)[1]):
+            base_name, ext = os.path.splitext(filename)
+            if ( not process_file_extension(ext) or 
+                 not process_file_base_name(base_name)
+               ):
                 continue
 
-            fullpath = os.path.join(root, filename)
-
-            if not process_file_path(fullpath):
-                continue
-
-            yield fullpath
+            yield os.path.join(root, filename)
 
 # ---------------------------------------------------------------------------
 _GetCommonPath_Compare = None
