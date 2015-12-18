@@ -209,10 +209,10 @@ class Base( InputProcessingMixin,
             Impl("InputProcessingMixin", AtomicInputProcessingMixin, IndividualInputProcessingMixin)
 
             # InvocationQueryMixin
-            from CommonEnvironment.Compiler.InvocationQueryMixin.AlwaysInvocationQueryMixin import AlwaysInvocationQueryMixing
+            from CommonEnvironment.Compiler.InvocationQueryMixin.AlwaysInvocationQueryMixin import AlwaysInvocationQueryMixin
             from CommonEnvironment.Compiler.InvocationQueryMixin.ConditionalInvocationQueryMixin import ConditionalInvocationQueryMixin
 
-            Impl("InvocationQueryMixin", AlwaysInvocationQueryMixing, ConditionalInvocationQueryMixin)
+            Impl("InvocationQueryMixin", AlwaysInvocationQueryMixin, ConditionalInvocationQueryMixin)
 
             # InvocationMixin
             from CommonEnvironment.Compiler.InvocationMixin.CommandLineInvocationMixin import CommandLineInvocationMixin
@@ -253,7 +253,6 @@ class Base( InputProcessingMixin,
                     potential_inputs = list(WalkFiles(input))
                 elif cls.Type == cls.TypeValue.Directory:
                     potential_inputs = [ input, ]
-
                 else:
                     assert False, (cls.Name, cls.Type)
 
@@ -402,6 +401,9 @@ class Base( InputProcessingMixin,
                                                 ) or 0
 
             sink = "{}\n".format(sink.getvalue().rstrip())
+
+            if stream_info.result == 0:
+                cls._PersistContext(context)
 
             return stream_info.result, sink
 
@@ -606,7 +608,11 @@ def _CommandLineImpl( compiler,
     output_stream = StreamDecorator(output_stream, suffix='\n')
     
     # Execute
-    with StreamDecorator(output_stream).DoneManager(done_prefix="\n") as stream_info:
+    with StreamDecorator(output_stream).DoneManager( line_prefix='',
+                                                     done_prefix='\n',
+                                                     done_suffix='\n',
+                                                     process_exceptions=False,
+                                                   ) as stream_info:
         verbose_stream = StreamDecorator(stream_info.stream if verbose else None, line_prefix="INFO: ")
 
         contexts = list(compiler.GenerateContextItems(inputs, verbose_stream, **compiler_kwargs))

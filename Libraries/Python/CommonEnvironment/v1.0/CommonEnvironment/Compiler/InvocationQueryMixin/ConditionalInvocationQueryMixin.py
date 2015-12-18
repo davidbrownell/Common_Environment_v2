@@ -23,6 +23,7 @@ import textwrap
 
 import cPickle as pickle
 
+from CommonEnvironment.Interface import *
 from CommonEnvironment import Package
 from CommonEnvironment import RegularExpression
 
@@ -88,6 +89,9 @@ class ConditionalInvocationQueryMixin(InvocationQueryMixin):
         def HaveGeneratorFilesBeenModified(prev_context, prev_modified_time):
             # ---------------------------------------------------------------------------
             def Check(this_cls):
+                if not isinstance(this_cls, type):
+                    this_cls = type(this_cls)
+
                 try:
                     for class_ in inspect.getmro(this_cls):
                         try:
@@ -105,7 +109,7 @@ class ConditionalInvocationQueryMixin(InvocationQueryMixin):
                             # with a builtin.
                             pass
                 except:
-                    sys.stderr.write("ERROR attempting to get the bases for ", this_cls)
+                    sys.stderr.write("ERROR attempting to get the bases for '{}'".format(this_cls.Name))
                     raise
 
             # ---------------------------------------------------------------------------
@@ -126,15 +130,8 @@ class ConditionalInvocationQueryMixin(InvocationQueryMixin):
 
         # ---------------------------------------------------------------------------
         # <Unused argument> pylint: disable = W0613
-        def HaveGeneratorItemsBeenAdded(prev_context, prev_modified_time):
-            for output_item in cls._GetOutputFilenames(context):
-                if output_item not in prev_content.output_items:
-                    return output_item
-
-        # ---------------------------------------------------------------------------
-        # <Unused argument> pylint: disable = W0613
         def HaveGeneratedItesmBeedRemoved(prev_context, prev_modified_time):
-            for output_item in prev_content.output_items:
+            for output_item in prev_context.output_items:
                 if output_item not in cls._GetOutputFilenames(context):
                     return output_item
 
@@ -180,7 +177,7 @@ class ConditionalInvocationQueryMixin(InvocationQueryMixin):
         # ---------------------------------------------------------------------------
         # <Unused argument> pylint: disable = W0613
         def HasMetadataChanged(prev_context, prev_modified_time):
-            prev_metadata_keys = list(prev_content.metadata.keys())
+            prev_metadata_keys = list(prev_context.metadata.keys())
 
             for k, v in context.__dict__.iteritems():
                 if k[0] == '_':
@@ -189,7 +186,7 @@ class ConditionalInvocationQueryMixin(InvocationQueryMixin):
                 if k not in prev_metadata_keys:
                     return "'{}' is new".format(k)
 
-                if v != prev_content.metadata[k]:
+                if v != prev_context.metadata[k]:
                     return "'{}' has been modified".format(k)
 
                 prev_metadata_keys.remove(k)
@@ -199,7 +196,7 @@ class ConditionalInvocationQueryMixin(InvocationQueryMixin):
 
         # ---------------------------------------------------------------------------
         def HasCustomMetadataChanged(prev_context, prev_modified_time):
-            return cls._CustomContextComparison(context, prev_content)
+            return cls._CustomContextComparison(context, prev_context)
 
         # ---------------------------------------------------------------------------
         # <Unused argument> pylint: disable = W0613
@@ -215,16 +212,16 @@ class ConditionalInvocationQueryMixin(InvocationQueryMixin):
 
         filename = cls._GetPersistedFilename(context)
         if os.path.isfile(filename):
-            match = RegularExpression.TemplateStringToRegex(cls._TEMPLATE).match(open(filename).read(), re.MULTILINE | re.DOTALL)
+            match = RegularExpression.TemplateStringToRegex(cls._TEMPLATE).match(open(filename).read())
             if match:
                 try:
-                    prev_content = pickle.loads(match.group("data"))
+                    prev_context = pickle.loads(match.group("data"))
                     prev_modified_time = cls._GetModifiedTime(filename)
                 except:
                     pass
 
-            if not prev_content:
-                verbose_stream.write("WARNING: Context information associated with the previous compilation was corrupt; continuing as if not context is available.\n")
+            if not prev_context:
+                verbose_stream.write("WARNING: Context information associated with the previous compilation was corrupt; continuing as if context is not available.\n")
 
         # We don't want force to be persisted
         force = context.force
@@ -239,13 +236,12 @@ class ConditionalInvocationQueryMixin(InvocationQueryMixin):
                 return invoke_reason
 
         # Check calculated reasons
-        for invoke_reason, desc_template, functor in [ ( cls.InvokeReason.newer_generator, "generator files have been modified ({result})", HaveGeneratorFilesBeenModified ),
-                                                       ( cls.InvokeReason.added_output, "items to generate have been added ({result})", HaveGeneratorItemsBeenAdded ),
-                                                       ( cls.InvokeReason.removed_output, "items to generate have been removed ({result})", HaveGeneratedItesmBeedRemoved ),
+        for invoke_reason, desc_template, functor in [ ( cls.InvokeReason.newer_generators, "generator files have been modified ({result})", HaveGeneratorFilesBeenModified ),
                                                        ( cls.InvokeReason.missing_output, "items to generate are missing ({result})", AreGeneratedItemsMissing ),
+                                                       ( cls.InvokeReason.removed_output, "items to generate have been removed ({result})", HaveGeneratedItesmBeedRemoved ),
                                                        ( cls.InvokeReason.newer_input, "input has been modified ({result})", HaveInputsBeenModified ),
-                                                       ( cls.InvokeReason.different_metadata, "metadata has changed ({result})", HasMetadataChanged ),
-                                                       ( cls.InvokeReason.different_metadata, "metadata has changed ({result})", HasCustomMetadataChanged ),
+                                                       ( cls.InvokeReason.different_metadata, "metadata has changed ({result}) [standard]", HasMetadataChanged ),
+                                                       ( cls.InvokeReason.different_metadata, "metadata has changed ({result}) [custom]", HasCustomMetadataChanged ),
                                                        ( cls.InvokeReason.opt_in, "the generator opted-in to generation", ShouldGenerate ),
                                                      ]:
             result = functor(prev_context, prev_modified_time)
@@ -284,6 +280,16 @@ class ConditionalInvocationQueryMixin(InvocationQueryMixin):
             assert os.path.isfile(filename), filename
 
         return os.stat(filename)[stat.ST_MTIME]
+
+    # ---------------------------------------------------------------------------
+    @staticmethod
+    @abstractmethod
+    def _CustomContextComparison(context, prev_context):
+        """\
+        Opportunity for a compiler to perform custom comparison when determining if invocation should
+        continue. Returns a string describing the miscompare reason.
+        """
+        return
 
 # ---------------------------------------------------------------------------
 class PersistedContext(object):
