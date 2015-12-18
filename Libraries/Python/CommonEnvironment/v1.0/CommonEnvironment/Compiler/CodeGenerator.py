@@ -21,9 +21,6 @@ from CommonEnvironment import Package
 
 Compiler = Package.ImportInit()
 
-from .InvocationQueryMixin.AlwaysInvocationQueryMixin import AlwaysInvocationQueryMixing
-from .OutputMixin.MultipleOutputMixin import MultipleOutputMixin
-
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
@@ -31,10 +28,8 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 
 # <Too few public methods> pylint: disable = R0903
 # <Class has no init method> pylint: disable = W0232
-class CodeGenerator( AlwaysInvocationQueryMixing,
-                     MultipleOutputMixin,
-                     Compiler.Base,
-                   ):
+class CodeGenerator(Compiler.Base):
+
     # ---------------------------------------------------------------------------
     # |
     # |  Public Properties

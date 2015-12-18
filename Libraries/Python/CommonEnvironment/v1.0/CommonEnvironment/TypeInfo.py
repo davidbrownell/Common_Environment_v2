@@ -25,6 +25,7 @@ import uuid
 
 from collections import OrderedDict
 
+from QuickObject import QuickObject
 from Interface import Interface, abstractproperty, abstractmethod
 
 # ---------------------------------------------------------------------------
@@ -180,19 +181,8 @@ class TypeInfo(Interface):
 
         assert is_expected_type != None
         if not is_expected_type:
-            # ---------------------------------------------------------------------------
-            def GetTypeName(t):
-                return getattr(t, "__name__", str(t))
-
-            # ---------------------------------------------------------------------------
-            
-            if isinstance(self.ExpectedType, tuple):
-                type_name = ', '.join([ GetTypeName(t) for t in self.ExpectedType ])
-            else:
-                type_name = GetTypeName(self.ExpectedType)
-
             return "'{}' is not {}".format( item,
-                                            Plural.a(type_name),
+                                            Plural.a(self._GetExpectedTypeString()),
                                           )
 
         result = self._ValidateItemNoThrowImpl(item)
@@ -218,6 +208,19 @@ class TypeInfo(Interface):
     @staticmethod
     def PostprocessItem(value):
         return value
+
+    # ---------------------------------------------------------------------------
+    def _GetExpectedTypeString(self):
+        # ---------------------------------------------------------------------------
+        def GetTypeName(t):
+            return getattr(t, "__name__", str(t))
+
+        # ---------------------------------------------------------------------------
+        
+        if isinstance(self.ExpectedType, tuple):
+            return ', '.join([ GetTypeName(t) for t in self.ExpectedType ])
+        
+        return GetTypeName(self.ExpectedType)
 
     # ---------------------------------------------------------------------------
     @staticmethod
@@ -304,6 +307,19 @@ class FundamentalTypeInfo(TypeInfo):
 
     # ---------------------------------------------------------------------------
     def ItemFromString(self, value, format=Format_Python):
+        if not hasattr(self, "_regexes"):
+            self._regexes = {}
+
+        if format not in self._regexes:
+            regex = self.ItemRegularExpression(format)
+            self._regexes[format] = re.compile(regex)
+                                                
+        if not self._regexes[format].match(value):
+            raise Exception("'{}' is not a valid '{}': {}".format( value,
+                                                                   self._GetExpectedTypeString(),
+                                                                   self.ConstraintsDesc or self.ItemRegularExpression(format),
+                                                                 ))
+                                                                                 
         value = self._ItemFromStringImpl(value, format=format)
         assert isinstance(value, self.ExpectedType), value
 
@@ -314,6 +330,11 @@ class FundamentalTypeInfo(TypeInfo):
     def ItemToString(self, value, format=Format_Python):
         self.ValidateItem(value)
         return self._ItemToStringImpl(value, format=format)
+
+    # ---------------------------------------------------------------------------
+    @staticmethod
+    def ItemRegularExpression(format):
+        raise Exception("Abstract method")
 
     # ---------------------------------------------------------------------------
     @staticmethod
@@ -350,13 +371,17 @@ class StringTypeInfo(FundamentalTypeInfo):
         self.Validation                     = validation
         self.MinLength                      = min_length
         self.MaxLength                      = max_length
-
-        if isinstance(validation, str):
-            regex = re.compile(validation)
-            self._Validate = regex.match
-        else:
-            self._Validate = lambda value: True
         
+    # ---------------------------------------------------------------------------
+    def __getstate__(self):
+        # Help with pickling, as it isn't possible to pickle a function
+        d = dict(self.__dict__)
+
+        if "_Validate" in d:
+            del d["_Validate"]
+        
+        return d
+
     # ---------------------------------------------------------------------------
     @property
     def ConstraintsDesc(self):
@@ -377,7 +402,36 @@ class StringTypeInfo(FundamentalTypeInfo):
         return "Value must {}".format(', '.join(items))
 
     # ---------------------------------------------------------------------------
+    def ItemRegularExpression(self, format):
+        if self.Validation:
+            return self.Validation
+
+        elif self.MinLength == 1 and self.MaxLength == None:
+            return ".+"
+
+        elif self.MinLength in [ 0, None, ] and self.MaxLength == None:
+            return ".*"
+
+        elif self.MinLength != None and self.MaxLength == None:
+            return ".{%d}.*" % self.MinLength
+
+        elif self.MinLength != None and self.MaxLength != None:
+            if self.MinLength == self.MaxLength:
+                return ".{%d}" % self.MaxLength
+
+            return ".{%d,%d}" % (self.MinLength, self.MaxLength)
+
+        assert False, "Unexpected"
+            
+    # ---------------------------------------------------------------------------
     def _ValidateItemNoThrowImpl(self, value):
+        if not hasattr(self, "_Validate"):
+            if self.Validation:
+                regex = re.compile(self.Validation)
+                self._Validate = regex.match
+            else:
+                self._Validate = lambda value: True
+
         if not self._Validate(value):
             return "'{}' did not match the validation expression '{}'".format(value, self.Validation)
 
@@ -437,6 +491,10 @@ class EnumTypeInfo(FundamentalTypeInfo):
         return "Value must be one of {}".format(', '.join([ "'{}'".format(value) for value in self.Values ]))
 
     # ---------------------------------------------------------------------------
+    def ItemRegularExpression(self, format):
+        return "({})".format('|'.join(self.Values))
+
+    # ---------------------------------------------------------------------------
     def _ValidateItemNoThrowImpl(self, value):
         if value not in self.Values:
             return "'{}' is not a valid value ({} expected)".format( value,
@@ -463,6 +521,7 @@ class IntTypeInfo(FundamentalTypeInfo):
     def __init__( self,
                   min=None,
                   max=None,
+                  bytes=None,
                   **type_info_args
                 ):
         super(IntTypeInfo, self).__init__(**type_info_args)
@@ -470,8 +529,12 @@ class IntTypeInfo(FundamentalTypeInfo):
         if min != None and max != None and max < min:
             raise Exception("Invalid argument - max")
 
+        if bytes not in [ None, 1, 2, 4, 8, ]:
+            raise Exception("Invalid argument - bytes")
+
         self.Min                            = min
         self.Max                            = max
+        self.Bytes                          = bytes
 
     # ---------------------------------------------------------------------------
     @property
@@ -490,6 +553,40 @@ class IntTypeInfo(FundamentalTypeInfo):
         return "Value must {}".format(', '.join(items))
 
     # ---------------------------------------------------------------------------
+    def ItemRegularExpression(self, format):
+        return self.ItemRegularExpressionImpl(self.Min, self.Max)
+        
+    # ---------------------------------------------------------------------------
+    @staticmethod
+    def ItemRegularExpressionImpl(min, max):
+        patterns = []
+
+        if min < 0 or min == None:
+            patterns.append('-')
+
+            if max > 0 or max == None:
+                patterns.append('?')
+
+        patterns.append('[0-9]')
+
+        if min == None or max == None:
+            patterns.append('+')
+        else:
+            value = 10
+            count = 1
+
+            while True:
+                if min >= -value and max <= value:
+                    break
+
+                value *= 10
+                count += 1
+
+            patterns.append("{%d}" % count)
+
+        return ''.join(patterns)
+
+    # ---------------------------------------------------------------------------
     def _ValidateItemNoThrowImpl(self, value):
         if self.Min != None and value < self.Min:
             return "{} is not >= {}".format(value, self.Min)
@@ -500,10 +597,7 @@ class IntTypeInfo(FundamentalTypeInfo):
     # ---------------------------------------------------------------------------
     @classmethod
     def _ItemFromStringImpl(cls, value, format):
-        try:
-            return int(value)
-        except:
-            raise cls.ValidationException("'{}' is not a valid int".format(value))
+        return int(value)
 
     # ---------------------------------------------------------------------------
     @staticmethod
@@ -547,6 +641,10 @@ class FloatTypeInfo(FundamentalTypeInfo):
         return "Value must {}".format(', '.join(items))
 
     # ---------------------------------------------------------------------------
+    def ItemRegularExpression(self, format):
+        return r"{}\.[0-9]+".format(IntTypeInfo.ItemRegularExpressionImpl(self.Min, self.Max))
+
+    # ---------------------------------------------------------------------------
     def _ValidateItemNoThrowImpl(self, value):
         if self.Min != None and value < self.Min:
             return "{} is not >= {}".format(value, self.Min)
@@ -557,10 +655,7 @@ class FloatTypeInfo(FundamentalTypeInfo):
     # ---------------------------------------------------------------------------
     @classmethod
     def _ItemFromStringImpl(cls, value, format):
-        try:
-            return float(value)
-        except:
-            raise cls.ValidationException("'{}' is not a valid float".format(value))
+        return float(value)
 
     # ---------------------------------------------------------------------------
     @staticmethod
@@ -624,6 +719,11 @@ class FilenameTypeInfo(FundamentalTypeInfo):
 
     # ---------------------------------------------------------------------------
     @staticmethod
+    def ItemRegularExpression(format):
+        return ".+"
+
+    # ---------------------------------------------------------------------------
+    @staticmethod
     def PostprocessItem(value):
         return os.path.realpath(os.path.normpath(value))
 
@@ -682,6 +782,20 @@ class BoolTypeInfo(FundamentalTypeInfo):
         return ''
 
     # ---------------------------------------------------------------------------
+    @classmethod
+    def ItemRegularExpression(cls, format):
+        if format == cls.Format_String:
+            return "(true|t|yes|y|1|false|f|no|n|0)"
+
+        elif format == cls.Format_Python:
+            return "(True|False)"
+
+        elif format == cls.Format_JSON:
+            return "(true|false)"
+
+        assert False, format
+
+    # ---------------------------------------------------------------------------
     @staticmethod
     def _ValidateItemNoThrowImpl(value):
         return
@@ -689,29 +803,7 @@ class BoolTypeInfo(FundamentalTypeInfo):
     # ---------------------------------------------------------------------------
     @classmethod
     def _ItemFromStringImpl(cls, value, format):
-        if format == cls.Format_String:
-            lower_value = value.lower()
-
-            if lower_value not in [ "true", "t", "yes", "y", "1", 
-                                    "false", "f", "no", "n", "0",
-                                  ]:
-                raise cls.ValidationException("'{}' is not a valid bool".format(value))
-
-            return lower_value in [ "true", "t", "yes", "y", "1", ]
-
-        elif format == cls.Format_Python:
-            if value not in [ "True", "False", ]:
-                raise cls.ValidationException("'{}' is not a valid bool".format(value))
-
-            return value == "True"
-
-        elif format == cls.Format_JSON:
-            if value not in [ "true", "false", ]:
-                raise cls.ValidationException("'{}' is not a valid bool".format(value))
-
-            return value == "true"
-
-        assert False, (value, format)
+        return value.lower() in [ "true", "t", "yes", "y", "1", ]
 
     # ---------------------------------------------------------------------------
     @classmethod
@@ -748,16 +840,24 @@ class GuidTypeInfo(FundamentalTypeInfo):
 
     # ---------------------------------------------------------------------------
     @staticmethod
+    def ItemRegularExpression(format):
+        d = { "char" : "[0-9A-Fa-f]", }
+
+        return "({})".format('|'.join([ r"\{%(char)s{32}\}" % d,
+                                        r"%(char)s{32}" % d,
+                                        r"\{%(char)s{8}-%(char)s{4}-%(char)s{4}-%(char)s{4}-%(char)s{12}\}" % d,
+                                        r"%(char)s{8}-%(char)s{4}-%(char)s{4}-%(char)s{4}-%(char)s{12}" % d,
+                                      ]))
+
+    # ---------------------------------------------------------------------------
+    @staticmethod
     def _ValidateItemNoThrowImpl(value):
         return 
 
     # ---------------------------------------------------------------------------
     @classmethod
     def _ItemFromStringImpl(cls, value, format):
-        try:
-            return uuid.UUID(value)
-        except:
-            raise cls.ValidationException("'{}' is not a valid GUID".format(value))
+        return uuid.UUID(value)
 
     # ---------------------------------------------------------------------------
     @staticmethod
@@ -787,6 +887,19 @@ class DateTimeTypeInfo(FundamentalTypeInfo):
         return ''
 
     # ---------------------------------------------------------------------------
+    @classmethod
+    def ItemRegularExpression(cls, format):
+        if format == cls.Format_String:
+            return ".+ .+ [0-9]{2} ([0-1][0-9]|2[0-4]):[0-5][0-9]:[0-5][0-9] [0-9]{4}"
+
+        elif format in [ cls.Format_JSON, cls.Format_Python, ]:
+            return "{}.{}".format( DateTypeInfo.ItemRegularExpression(format),
+                                   TimeTypeInfo.ItemRegularExpression(format),
+                                 )
+
+        assert False
+
+    # ---------------------------------------------------------------------------
     @staticmethod
     def _ValidateItemNoThrowImpl(value):
         return
@@ -794,17 +907,20 @@ class DateTimeTypeInfo(FundamentalTypeInfo):
     # ---------------------------------------------------------------------------
     @classmethod
     def _ItemFromStringImpl(cls, value, format):
-        try:
-            fmt = "%Y-%m-%d{separator}%H:%M{seconds}{fraction_seconds}{time_zone}".format( 
-                separator='T' if 'T' in value else ' ', 
-                seconds=":%S" if value.count(':') > 1 else '',
-                fraction_seconds=".%f" if '.' in value else '',
-                time_zone="%z" if '+' in value else '',
-            )
+        if format == cls.Format_String:
+            return datetime.datetime.strptime("%a %b %d %H:%M:%S %Y")
+
+        elif format in [ cls.Format_JSON, cls.Format_Python, ]:
+            fmt = "%Y-%m-%d{separator}%H:%M{seconds}{fraction_seconds}{time_zone}".format \
+                      ( separator='T' if 'T' in value else ' ', 
+                        seconds=":%S" if value.count(':') > 1 else '',
+                        fraction_seconds=".%f" if '.' in value else '',
+                        time_zone="%z" if '+' in value else '',
+                      )
 
             return datetime.datetime.strptime(value, fmt)
-        except:
-            raise cls.ValidationException("'{}' is not a valid datetime".format(value))
+
+        assert False
 
     # ---------------------------------------------------------------------------
     @classmethod
@@ -827,8 +943,6 @@ class DateTypeInfo(FundamentalTypeInfo):
     ExpectedType                            = datetime.date
     Desc                                    = "Date"
 
-    _REGEX                                  = re.compile(r"^(?P<year>[1-9][0-9]{3})-(?P<month>0[0-9]|1[0-2])-(?P<day>[0-2][0-9]|3[0-1])$")
-
     # ---------------------------------------------------------------------------
     @staticmethod
     def Create():
@@ -847,19 +961,22 @@ class DateTypeInfo(FundamentalTypeInfo):
 
     # ---------------------------------------------------------------------------
     @staticmethod
+    def ItemRegularExpression(format):
+        return "[0-9]{4}-(0?[0-9]|1[0-2])-([0-2][0-9]|3[0-1])"
+
+    # ---------------------------------------------------------------------------
+    @staticmethod
     def _ValidateItemNoThrowImpl(value):
         return
 
     # ---------------------------------------------------------------------------
     @classmethod
     def _ItemFromStringImpl(cls, value, format):
-        match = cls._REGEX.match(value)
-        if not match:
-            raise cls.ValidationException("'{}' is not a valid date".format(value))
+        parts = value.split('-')
 
-        return datetime.date( int(match.group("year")),
-                              int(match.group("month")),
-                              int(match.group("day")),
+        return datetime.date( int(parts[0]),
+                              int(parts[1]),
+                              int(parts[2]),
                             )
 
     # ---------------------------------------------------------------------------
@@ -891,19 +1008,21 @@ class TimeTypeInfo(FundamentalTypeInfo):
 
     # ---------------------------------------------------------------------------
     @staticmethod
+    def ItemRegularExpression(format):
+        return r"([0-1][0-9]|[2][0-3]):[0-5][0-9]:[0-5][0-9](\.[0-9]+)?(\+[0-9]+:[0-9]+)?"
+
+    # ---------------------------------------------------------------------------
+    @staticmethod
     def _ValidateItemNoThrowImpl(value):
         return
 
     # ---------------------------------------------------------------------------
     @classmethod
     def _ItemFromStringImpl(cls, value, format):
-        try:
-            return datetime.datetime.strptime(value, "%H:%M:%S{microseconds}{time_zone}".format(
-                microseconds=".%f" if '.' in value else '',
-                time_zone="%z" if '+' in value else '',
-            )).time()
-        except:
-            raise cls.ValidationException("'{}' is not a valid time".format(value))
+        return datetime.datetime.strptime(value, "%H:%M:%S{microseconds}{time_zone}".format(
+            microseconds=".%f" if '.' in value else '',
+            time_zone="%z" if '+' in value else '',
+        )).time()
 
     # ---------------------------------------------------------------------------
     @staticmethod
@@ -916,33 +1035,21 @@ class DurationTypeInfo(FundamentalTypeInfo):
     ExpectedType                            = datetime.timedelta
     Desc                                    = "Duration"
 
-    _REGEXES                                = None
-
     # ---------------------------------------------------------------------------
     def __init__( self,
                   **type_info_args
                 ):
         super(DurationTypeInfo, self).__init__(**type_info_args)
 
-        if DurationTypeInfo._REGEXES == None:
-            regexes = []
-
-            # Seconds 
-            seconds_regex_string = r":(?P<seconds>[0-5][0-9])(?:\.(?P<fractional_seconds>[0-9]+))?"
-            regexes.append(re.compile(seconds_regex_string))
-
-            # Minutes and Seconds
-            regexes.append(re.compile(r"(?P<minutes>[0-9]+){seconds}".format(seconds=seconds_regex_string)))
-
-            # Hours, Minutes, and Seconds
-            regexes.append(re.compile(r"(?P<hours>[0-9]+):(?P<minutes>[0-5][0-9]){seconds}".format(seconds=seconds_regex_string)))
-
-            DurationTypeInfo._REGEXES = regexes
-
     # ---------------------------------------------------------------------------
     @property
     def ConstraintsDesc(self):
         return ''
+
+    # ---------------------------------------------------------------------------
+    @staticmethod
+    def ItemRegularExpression(format):
+        return r"[0-9]+:[0-5][0-9](:[0-5][0-9](\.[0-9]+)?)?"
 
     # ---------------------------------------------------------------------------
     @staticmethod
@@ -952,41 +1059,21 @@ class DurationTypeInfo(FundamentalTypeInfo):
     # ---------------------------------------------------------------------------
     @classmethod
     def _ItemFromStringImpl(cls, value, format):
-        # ---------------------------------------------------------------------------
-        def ToTimeDelta():
-            parts = value.split(':')
+        parts = value.split(':')
 
-            if len(parts) not in [ 2, 3, ]:
-                return
-
-            if len(parts) == 2 and not parts[0]:
-                parts.pop(0)
-
-            regex_index = len(parts) - 1
-            assert regex_index < len(cls._REGEXES)
-
-            match = cls._REGEXES[regex_index].match(value)
-            if not match:
-                return
-
-            match_groups = match.groupdict()
-
-            hours = int(match_groups.get("hours", 0))
-            minutes = int(match_groups.get("minutes", 0))
-            seconds = int(match_groups.get("seconds", 0))
-
-            return datetime.timedelta( hours=hours,
-                                       minutes=minutes,
-                                       seconds=seconds,
-                                     )
-
-        # ---------------------------------------------------------------------------
+        if len(parts) > 2:
+            hours = int(parts[0])
+            minutes = int(parts[1])
+            seconds = int(float(parts[2]))
+        else:
+            hours = 0
+            minutes = int(parts[0])
+            seconds = int(float(parts[1]))
         
-        result = ToTimeDelta()
-        if result == None:
-            raise cls.ValidationException("'{}' is not a valid duration".format(value))
-
-        return result
+        return datetime.timedelta( hours=hours,
+                                   minutes=minutes,
+                                   seconds=seconds,
+                                 )
             
     # ---------------------------------------------------------------------------
     @staticmethod

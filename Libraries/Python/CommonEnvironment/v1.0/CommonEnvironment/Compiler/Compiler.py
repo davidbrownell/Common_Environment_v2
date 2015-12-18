@@ -21,9 +21,6 @@ from CommonEnvironment import Package
 
 CompilerMod = Package.ImportInit()
 
-from .InvocationQueryMixin.ConditionalInvocationQueryMixin import ConditionalInvocationQueryMixin
-from .OutputMixin.SingleOutputMixin import SingleOutputMixin
-
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
@@ -31,10 +28,8 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 
 # <Too few public methods> pylint: disable = R0903
 # <Class has no init method> pylint: disable = W0232
-class Compiler( ConditionalInvocationQueryMixin,
-                SingleOutputMixin,
-                CompilerMod.Base,
-              ):
+class Compiler(CompilerMod.Base):
+
     # ---------------------------------------------------------------------------
     # |
     # |  Public Properties
@@ -64,3 +59,4 @@ class Compiler( ConditionalInvocationQueryMixin,
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
 CommandLineCompile = CompilerMod.CommandLineInvoke
+CommandLineClean = CompilerMod.CommandLineCleanOutputDir
