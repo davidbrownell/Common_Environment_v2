@@ -291,7 +291,6 @@ class Interface(object):
 
                 for flag in [ kwargs_flag, var_args_flag, ]:
                     if abstract_info.func_code.co_flags & flag:
-                        abstract_params.pop()
                         require_exact_match = False
 
                 # This is not-standard from an object-oriented perspective, but allow custom parameters

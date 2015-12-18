@@ -49,7 +49,7 @@ class CommandLineInvocationMixin(InvocationMixin):
                      output_stream,
                    ):
         command_line = cls.CreateInvokeCommandLine(context, output_stream)
-
+        
         result = subprocess.Popen( command_line,
                                    shell=True,
                                    stdout=subprocess.PIPE,
@@ -58,7 +58,7 @@ class CommandLineInvocationMixin(InvocationMixin):
 
         while True:
             line = result.stdout.readline()
-            if line == None:
+            if not line:
                 break
 
             output_stream.write(line)

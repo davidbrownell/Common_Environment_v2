@@ -22,7 +22,7 @@ from CommonEnvironment import Package
 Compiler = Package.ImportInit()
  
 from .InputProcessingMixin.IndividualInputProcessingMixin import IndividualInputProcessingMixin
-from .InvocationQueryMixin.AlwaysInvocationQueryMixin import AlwaysInvocationQueryMixing
+from .InvocationQueryMixin.AlwaysInvocationQueryMixin import AlwaysInvocationQueryMixin
 from .OutputMixin.NoOutputMixin import NoOutputMixin
 
 # ---------------------------------------------------------------------------
@@ -34,7 +34,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # <No _Invoke> pylint: disable = E1101
 # <Too few public methods> pylint: disable = R0903
 class Verifier( IndividualInputProcessingMixin,
-                AlwaysInvocationQueryMixing,
+                AlwaysInvocationQueryMixin,
                 NoOutputMixin,
                 Compiler.Base,
               ):

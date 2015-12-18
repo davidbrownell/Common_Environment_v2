@@ -380,7 +380,7 @@ class FundamentalDuration(unittest.TestCase):
     def test_StringConversion(self):
         d = datetime.timedelta(seconds=140)
         self.assertEqual(d, self._type_info.ItemFromString(self._type_info.ItemToString(d)))
-        self.assertEqual(datetime.timedelta(seconds=22), self._type_info.ItemFromString(":22"))
+        self.assertEqual(datetime.timedelta(seconds=22), self._type_info.ItemFromString("0:22"))
         self.assertEqual(datetime.timedelta(seconds=22, minutes=1), self._type_info.ItemFromString("1:22"))
         self.assertEqual(datetime.timedelta(seconds=22, minutes=1, hours=3), self._type_info.ItemFromString("3:01:22"))
 
