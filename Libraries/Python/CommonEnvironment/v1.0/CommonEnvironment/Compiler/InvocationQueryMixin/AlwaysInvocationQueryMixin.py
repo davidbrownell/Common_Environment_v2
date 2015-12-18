@@ -28,7 +28,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 
 # <No __init__> pylint: disable = W0232
 # <Too few public methods> pylint: disable = R0903
-class AlwaysInvocationQueryMixing(InvocationQueryMixin):
+class AlwaysInvocationQueryMixin(InvocationQueryMixin):
 
     # ---------------------------------------------------------------------------
     # <Unused argument> pylint: disable = W0613

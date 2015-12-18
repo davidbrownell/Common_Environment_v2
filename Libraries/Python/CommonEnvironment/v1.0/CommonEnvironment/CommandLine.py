@@ -211,15 +211,15 @@ class EntryPointData(object):
 
             # Calculate the display arity
             if isinstance(type_info, DictTypeInfo):
-                if type_info.Arity:
-                    raise Exception("Dictionaries must have an arity of 1 ({})".format(name))
+                if type_info.Arity not in [ None, (0, 1), ]:
+                    raise Exception("Dictionaries must have an arity of 1 or ? ({})".format(name))
 
                 # <Instance of '<obj>' has no '<name>' member> pylint: disable = E1101, E1103
                 for k, v in type_info.Items.iteritems():
                     if not isinstance(v, StringTypeInfo):
                         raise Exception("Dictionary value types must be strings ({}, {})".format(name, k))
 
-                display_arity = '+' if len(type_info.Items) > 1 else '1'
+                display_arity = '*' if type_info.Arity or not is_positional else '+'
             
             elif type_info.Arity:
                 if type_info.Arity == (0, 1):
@@ -643,14 +643,19 @@ class Executor(object):
             if param.is_required and param.name not in argument_values:
                 return "'{}' is a required argument".format(param.name)
 
-            if isinstance(param.type_info, DictTypeInfo) and param.name in argument_values:
-                result = param.type_info.ValidateNoThrow(argument_values[param.name])
-                if result != None:
-                    return "'{}' is not in a valid state - {}".format(param.name, result)
+            if isinstance(param.type_info, DictTypeInfo):
+                if param.name in argument_values:
+                    result = param.type_info.ValidateNoThrow(argument_values[param.name])
+                    if result != None:
+                        return "'{}' is not in a valid state - {}".format(param.name, result)
+
+                many_default_value = {}
+            else:
+                many_default_value = []
 
             # In theory, this will never trigger because we are ensuring arity through argument
             # positionality. However, better safe than sorry.
-            result = param.type_info.ValidateArityNoThrow(argument_values.get(param.name, [] if param.display_arity in [ '*', '+', ] else None))
+            result = param.type_info.ValidateArityNoThrow(argument_values.get(param.name, many_default_value if param.display_arity in [ '*', '+', ] else None))
             if result != None:
                 return "'{}' is not in a valid state - {}".format(param.name, result)
 
@@ -701,9 +706,9 @@ class Executor(object):
                     else:
                         prefix = ''
 
-                    arg = "{}tag{}value".format( prefix,
-                                                 self.CommandLineDictTagValueSeparator,
-                                               )
+                    arg = "{}<tag>{}<value>".format( prefix,
+                                                     self.CommandLineDictTagValueSeparator,
+                                                   )
 
                 elif not param.is_positional:
                     arg = "{}{}{}<value>".format( self.CommandLineArgPrefix,
