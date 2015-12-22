@@ -17,6 +17,7 @@
 import os
 import sys
 
+from CommonEnvironment import Antlr4Helpers
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import Package
 from CommonEnvironment.StreamDecorator import StreamDecorator
@@ -34,7 +35,7 @@ from ..Observer import *
 
 from .Item import *
 
-sys.path.insert(0, os.path.join(_script_dir, "..", "Grammar", "GeneratedCode"))
+sys.path.insert(0, os.path.join(_script_dir, "..", "..", "Grammars", "GeneratedCode"))
 assert os.path.isdir(sys.path[0]), sys.path[0]
 
 with CallOnExit(lambda: sys.path.pop(0)):
@@ -71,12 +72,12 @@ def Validate(root, observer):
         if not isinstance(item.reference, unicode):
             return
 
-        assert item.declaration_type == SimpleSchemaParser.ID
-        item.declaration_type = 0
-
         if not observer.Flags & Observer.ParseFlags.ResolveReferences:
             return
 
+        if item.declaration_type == SimpleSchemaParser.ID:
+            item.declaration_type = 0
+        
         referenced_item = FindItemByName_NoThrow(item.reference, item)
         if not referenced_item:
             raise ValidateInvalidReferenceException( item.Source,
@@ -114,7 +115,7 @@ def Validate(root, observer):
             return
 
         # Ensure that all referenced items are committed before continuing
-        if isinstance(item.reference, item):
+        if isinstance(item.reference, Item):
             stack.append(item)
             with CallOnExit(stack.pop):
                 Commit(item.reference, stack)
@@ -142,7 +143,8 @@ def Validate(root, observer):
 
                     ref = ref.reference
 
-                return False
+                # If the reference is an integer, that means it is pointing to a fundamental type.
+                return isinstance(ref, int)
 
             # ---------------------------------------------------------------------------
             
@@ -175,8 +177,8 @@ def Validate(root, observer):
                         continue
 
                     # Some values don't cound as augmentation
-                    if key in [ Item.GetLiteral(SimpleSchemaParser.GENERIC_METADATA_PLURAL),
-                                Item.GetLiteral(SimpleSchemaParser.GENERIC_METADATA_DESCRIPTION),
+                    if key in [ Antlr4Helpers.GetLiteral(SimpleSchemaParser, SimpleSchemaParser.GENERIC_METADATA_PLURAL),
+                                Antlr4Helpers.GetLiteral(SimpleSchemaParser, SimpleSchemaParser.GENERIC_METADATA_DESCRIPTION),
                               ]:
                         continue
 
@@ -222,20 +224,20 @@ def Validate(root, observer):
 
         i = item
         while isinstance(i, Item):
-            for child in item.items:
+            for child in i.items:
                 # No need to check extensions if duplicates are allowed or we aren't looking
                 # at the root object.
                 if child.subtype == Item.SubType_Extension and (i != item or next(ext for ext in observer.GetExtensions() if ext.Name == child.name).AllowDuplicates):
                     continue
 
                 if child.name in names:
-                    raise ValidateDuplicateNameException( names[child.name].Source,
-                                                          names[child.name].Line,
-                                                          names[child.name].Column,
+                    raise ValidateDuplicateNameException( child.Source,
+                                                          child.Line,
+                                                          child.Column,
                                                           name=child.name,
-                                                          source=child.Source,
-                                                          line=child.Line,
-                                                          column=child.Column,
+                                                          original_source=names[child.name].Source,
+                                                          original_line=names[child.name].Line,
+                                                          original_column=names[child.name].Column,
                                                         )
 
                 names[child.name] = child
@@ -249,7 +251,7 @@ def Validate(root, observer):
 
         # Augment the existing metadata (if necessary)
         for md in itertools.chain(metadata.required, metadata.optional):
-            if md.name not in item.metadata:
+            if md.Name not in item.metadata:
                 # Can we provide a config value for this item?
                 if observer.Name in root.config and md.Name in root.config[observer.Name]:
                     item.metadata[md.Name] = root.config[observer.Name][md.Name]
@@ -270,8 +272,8 @@ def Validate(root, observer):
         # Validate compound metadata for fundamental types
         if item.subtype == Item.SubType_Fundamental:
             if item.declaration_type == SimpleSchemaParser.STRING_TYPE:
-                min_length = Item.GetLiteral(SimpleSchemaParser.STRING_METATDATA_MIN_LENGTH)
-                max_length = Item.GetLiteral(SimpleSchemaParser.STRING_METATDATA_MAX_LENGTH)
+                min_length = Antlr4Helpers.GetLiteral(SimpleSchemaParser, SimpleSchemaParser.STRING_METADATA_MIN_LENGTH)
+                max_length = Antlr4Helpers.GetLiteral(SimpleSchemaParser, SimpleSchemaParser.STRING_METADATA_MAX_LENGTH)
 
                 for metadata_name in [ min_length, max_length, ]:
                     if isinstance(item.metadata.get(metadata_name, None), list):
@@ -292,8 +294,8 @@ def Validate(root, observer):
                                                               )
 
             elif item.declaration_type == SimpleSchemaParser.ENUM_TYPE:
-                values = Item.GetLiteral(SimpleSchemaParser.ENUM_METADATA_VALUES)
-                friendly_values = Item.GetLiteral(SimpleSchemaParser.ENUM_METADATA_FRIENDLY_VALUES)
+                values = Antlr4Helpers.GetLiteral(SimpleSchemaParser, SimpleSchemaParser.ENUM_METADATA_VALUES)
+                friendly_values = Antlr4Helpers.GetLiteral(SimpleSchemaParser, SimpleSchemaParser.ENUM_METADATA_FRIENDLY_VALUES)
 
                 if ( values in item.metadata and 
                      friendly_values in item.metadata and 
@@ -307,8 +309,8 @@ def Validate(root, observer):
                                                                )
 
             elif item.declaration_type in [ SimpleSchemaParser.METADATA_MIN, SimpleSchemaParser.METADATA_MAX, ]:
-                min_value = Item.GetLiteral(SimpleSchemaParser.METADATA_MIN)
-                max_value = Item.GetLiteral(SimpleSchemaParser.METADATA_MAX)
+                min_value = Antlr4Helpers.GetLiteral(SimpleSchemaParser, SimpleSchemaParser.METADATA_MIN)
+                max_value = Antlr4Helpers.GetLiteral(SimpleSchemaParser, SimpleSchemaParser.METADATA_MAX)
 
                 for metadata_name in [ min_value, max_value, ]:
                     if isinstance(item.metadata.get(metadata_name, None), list):
@@ -352,40 +354,40 @@ def Validate(root, observer):
                                                         name=md.Name,
                                                       )
 
-        if Item.GetLiteral(SimpleSchemaParser.GENERIC_METADATA_PLURAL) in item.metadata:
+        if Antlr4Helpers.GetLiteral(SimpleSchemaParser, SimpleSchemaParser.GENERIC_METADATA_PLURAL) in item.metadata:
             if item.name == None:
                 raise ValidateMetadataPluralNoneException( item.Source,
                                                            item.Line,
                                                            item.Column,
                                                          )
 
-            if item.arity == None or item.arity[1] == 1:
+            if item.arity == None or item.arity.Max == 1:
                 raise ValidateMetadataPluralSingleElementException( item.Source,
                                                                     item.Line,
                                                                     item.Column,
                                                                   )
 
-        if Item.GetLiteral(SimpleSchemaParser.GENERIC_METADATA_DEFAULT) in item.metadata:
-            if item.arity != (0, 1):
+        if Antlr4Helpers.GetLiteral(SimpleSchemaParser, SimpleSchemaParser.GENERIC_METADATA_DEFAULT) in item.metadata:
+            if not item.arity.IsOptional:
                 raise ValidateMetadataDefaultException( item.Source,
                                                         item.Line,
                                                         item.Column,
                                                       )
                                                       
-        if Item.GetLiteral(SimpleSchemaParser.GENERIC_METADATA_POLYMORPHIC) in item.metadata:
-            if item.ResolveAugmentations().subtype != Item.SubType_Compound or not item.referenced_by:
+        if Antlr4Helpers.GetLiteral(SimpleSchemaParser, SimpleSchemaParser.GENERIC_METADATA_POLYMORPHIC) in item.metadata:
+            if item.ResolveAugmentations().subtype != Item.SubType_Compound:
                 raise ValidateMetadataPolymorphicException( item.Source,
                                                             item.Line,
                                                             item.Column,
                                                           )
 
-        if Item.GetLiteral(SimpleSchemaParser.GENERIC_METADATA_SUPPRESS_POLYMORPHIC) in item.metadata:
+        if Antlr4Helpers.GetLiteral(SimpleSchemaParser, SimpleSchemaParser.GENERIC_METADATA_SUPPRESS_POLYMORPHIC) in item.metadata:
             # ---------------------------------------------------------------------------
             def IsError():
                 if item.ResolveAugmentations().subtype != Item.SubType_Compound:
                     return True
 
-                polymorphic = Item.GetLiteral(SimpleSchemaParser.GENERIC_METADATA_POLYMORPHIC)
+                polymorphic = Antlr4Helpers.GetLiteral(SimpleSchemaParser, SimpleSchemaParser.GENERIC_METADATA_POLYMORPHIC)
 
                 # ---------------------------------------------------------------------------
                 def Callback(i):
@@ -418,7 +420,7 @@ def Validate(root, observer):
                 value = item.metadata[md.Name]
 
                 if isinstance(value, (str, unicode)):
-                    item.metadata[md.Name] = md.TypeInfo.FromString(value)
+                    item.metadata[md.Name] = md.TypeInfo.ItemFromString(value, format=FundamentalTypeInfo.Format_JSON)
                 else:
                     md.TypeInfo.Validate(value)
 

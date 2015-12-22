@@ -91,7 +91,7 @@ class ParseInvalidExtensionException(SimpleSchemaException):                Disp
 class ParseInvalidIntegerBytesException(SimpleSchemaException):             Display = "The bytes '{value}' is not a valid value"
 class ParseInvalidArityException(SimpleSchemaException):                    Display = "The arity '{value}' is not a valid value"
 
-class ParseDuplicateConfigException(SimpleSchemaException):                 Display = "Configuration information for '{name}' has already been specified in {source} <{line} [{column}]>"
+class ParseDuplicateConfigException(SimpleSchemaException):                 Display = "Configuration information for '{name}' has already been specified in {original_source} <{original_line} [{original_column}]>"
 class ParseDuplicateMetadataException(SimpleSchemaException):               Display = "Metadata for '{name}' has already been specified"
 class ParseDuplicateKeywordException(SimpleSchemaException):                Display = "The keyword '{keyword}' has already been specified"
 
@@ -103,7 +103,7 @@ class ValidateUnsupportedAugmentationsException(SimpleSchemaException):     Disp
 
 class ValidateInvalidSimpleObjectChildException(SimpleSchemaException):     Display = "Simple objects may only have attributes as children"
 
-class ValidateDuplicateNameException(SimpleSchemaException):                Display = "The name '{name}' has already been specified in {source} <{line} [{column}]>"
+class ValidateDuplicateNameException(SimpleSchemaException):                Display = "The name '{name}' has already been specified in {original_source} <{original_line} [{original_column}]>"
 class ValidateDuplicateMetadataException(SimpleSchemaException):            Display = "Metadata for '{name}' was provided multiple times"
 
 class ValidateInvalidStringLengthException(SimpleSchemaException):          Display = "The string length '{value}' is not a valid value"

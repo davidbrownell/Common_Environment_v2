@@ -14,6 +14,7 @@
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 # |  
 # ---------------------------------------------------------------------------
+import copy
 import os
 import sys
 
@@ -33,44 +34,27 @@ from . import Exceptions
 # |  Public Types
 # |
 # ---------------------------------------------------------------------------
-class Arity(object):
-
-    # ---------------------------------------------------------------------------
-    def __init__(self, min, max=None):
-        self.Min                            = min
-        self.Max                            = max
-
-    # ---------------------------------------------------------------------------
-    def IsOptional(self):
-        return self.Min == 0 and self.Max == 1
-
-    # ---------------------------------------------------------------------------
-    def IsCollection(self):
-        return self.Max == None or self.Max > 1
-
-# ---------------------------------------------------------------------------
 class Element(object):
 
     # ---------------------------------------------------------------------------
     def __init__( self,
                   name,
                   parent,
-                  type_arity,
-                  data_arity,
                   source,
                   line,
                   column,
+                  is_definition_only,
                   is_external,
                   additional_data,
                   pragma_data,
                 ):
-        self.Name                           = name
+        self.GivenName                      = name
+        self.Name                           = additional_data.get("plural", name)
         self.Parent                         = parent
-        self.TypeArity                      = type_arity
-        self.DataArity                      = data_arity
         self.Source                         = source
         self.Line                           = line
         self.Column                         = column
+        self.IsDefinitionOnly               = is_definition_only
         self.IsExternal                     = is_external
         self.AdditionalData                 = additional_data
         self.PragmaData                     = pragma_data
@@ -94,7 +78,7 @@ class Element(object):
     @property
     def DottedName(self):
         if self._dotted_name == None:
-            self._dotted_name = self._DottedNameImpl(lambda e: getattr(e, "plural", ellipsis.Name))
+            self._dotted_name = self._DottedNameImpl(lambda e: e.Name)
 
         return self._dotted_name
 
@@ -102,14 +86,9 @@ class Element(object):
     @property
     def DottedTypeName(self):
         if self._dotted_type_name == None:
-            self._dotted_type_name = self._DottedNameImpl(lambda e: e.Name)
+            self._dotted_type_name = self._DottedNameImpl(lambda e: e.GivenName)
 
         return self._dotted_type_name
-
-    # ---------------------------------------------------------------------------
-    @property
-    def Arity(self):
-        return self.DataArity or self.TypeArity
 
     # ---------------------------------------------------------------------------
     def ResolveAliases(self):
@@ -137,7 +116,7 @@ class Element(object):
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
-class FundamentalTypeMixin(object):
+class TypeInfoMixin(object):
 
     # ---------------------------------------------------------------------------
     def __init__(self, type_info):
@@ -157,13 +136,11 @@ class ReferenceMixin(object):
     def __init__( self,
                   reference,
                   is_new_type,
-                  is_attribute,
                   original_additional_data_names,
                   original_pragma_data_names,
                 ):
         self.Reference                      = reference
         self.IsNewType                      = is_new_type
-        self.IsAttribute                    = is_attribute
         self.OriginalAdditionalDataNames    = original_additional_data_names
         self.OriginalPragmaDataNames        = original_pragma_data_names
 
@@ -174,7 +151,7 @@ class ReferenceMixin(object):
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
-class FundamentalElement(FundamentalTypeMixin, Element):
+class FundamentalElement(TypeInfoMixin, Element):
 
     # ---------------------------------------------------------------------------
     def __init__( self,
@@ -184,15 +161,16 @@ class FundamentalElement(FundamentalTypeMixin, Element):
                   **kwargs
                 ):
         Element.__init__(self, *args, **kwargs)
-        FundamentalTypeMixin.__init__(self, type_info)
+        TypeInfoMixin.__init__(self, type_info)
 
         self.IsAttribute                    = is_attribute
 
 # ---------------------------------------------------------------------------
-class CompoundElement(ChildrenMixin, Element):
+class CompoundElement(TypeInfoMixin, ChildrenMixin, Element):
 
     # ---------------------------------------------------------------------------
     def __init__( self,
+                  type_info,
                   children,
                   base,
                   derived_elements,
@@ -201,31 +179,35 @@ class CompoundElement(ChildrenMixin, Element):
                 ):
         Element.__init__(self, *args, **kwargs)
         ChildrenMixin.__init__(self, children)
+        TypeInfoMixin.__init__(self, type_info)
 
         self.Base                           = base
         self.DerivedElements                = derived_elements
 
 # ---------------------------------------------------------------------------
-class SimpleElement(FundamentalTypeMixin, ChildrenMixin, Element):
+class SimpleElement(TypeInfoMixin, ChildrenMixin, Element):
 
     # ---------------------------------------------------------------------------
     def __init__( self,
                   type_info,
                   children,
+                  children_type_info,
                   *args,
                   **kwargs
                 ):
         Element.__init__(self, *args, **kwargs)
-        FundamentalTypeMixin.__init__(self, type_info)
         ChildrenMixin.__init__(self, children)
+        TypeInfoMixin.__init__(self, type_info)
 
         self.Attributes                     = self.Children
+        self.AttributeTypeInfo              = children_type_info
 
 # ---------------------------------------------------------------------------
-class AliasElement(ReferenceMixin, Element):
-
+class AliasElement(TypeInfoMixin, ReferenceMixin, Element):
+    
     # ---------------------------------------------------------------------------
     def __init__( self,
+                  type_info,
                   reference,
                   is_new_type,
                   is_attribute,
@@ -241,20 +223,23 @@ class AliasElement(ReferenceMixin, Element):
         ReferenceMixin.__init__( self,
                                  reference,
                                  is_new_type,
-                                 is_attribute,
                                  [],
                                  list(pragma_data.keys()),
                                )
+        TypeInfoMixin.__init__(self, type_info)
+
+        self.IsAttribute                    = is_attribute
 
     # ---------------------------------------------------------------------------
     def ResolveAliases(self):
         return self.Reference.ResolveAliases()
 
 # ---------------------------------------------------------------------------
-class AugmentedElement(ReferenceMixin, Element):
+class AugmentedElement(TypeInfoMixin, ReferenceMixin, Element):
 
     # ---------------------------------------------------------------------------
     def __init__( self,
+                  type_info,
                   reference,
                   is_new_type,
                   is_attribute,
@@ -273,11 +258,12 @@ class AugmentedElement(ReferenceMixin, Element):
         ReferenceMixin.__init__( self,
                                  reference,
                                  is_new_type,
-                                 is_attribute,
                                  list(additional_data.keys()),
                                  list(pragma_data.keys()),
                                )
+        TypeInfoMixin.__init__(self, type_info)
 
+        self.IsAttribute                    = is_attribute
         self.WasArityExplicitlyProvided     = was_arity_explicitly_provided
 
 # ---------------------------------------------------------------------------
@@ -285,6 +271,7 @@ class ExtensionElement(Element):
 
     # ---------------------------------------------------------------------------
     def __init__( self,
+                  arity,
                   positional_arguments,
                   keyword_arguments,
                   *args,
@@ -292,5 +279,6 @@ class ExtensionElement(Element):
                 ):
         Element.__init__(self, *args, **kwargs)
 
+        self.Arity                          = arity
         self.PositionalArguments            = positional_arguments
         self.KeywordArguments               = keyword_arguments

@@ -23,8 +23,10 @@ from contextlib import contextmanager
 
 import antlr4
 
+from CommonEnvironment.Antlr4Helpers.ErrorListener import ErrorListener
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import Package
+from CommonEnvironment import TypeInfo as TypeInfoMod
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -38,7 +40,7 @@ from ..Observer import *
 
 from .Item import *
 
-sys.path.insert(0, os.path.join(_script_dir, "..", "Grammar", "GeneratedCode"))
+sys.path.insert(0, os.path.join(_script_dir, "..", "..", "Grammars", "GeneratedCode"))
 assert os.path.isdir(sys.path[0]), sys.path[0]
 
 with CallOnExit(lambda: sys.path.pop(0)):
@@ -64,6 +66,8 @@ def Populate( source_name_content_generators,            # { "name" : def Func()
                  column=-1,
                  is_external=False,
                )
+
+    root.name = "<root>"
     root.declaration_type = -SimpleSchemaParser.RULE_obj
     root.config = OrderedDict()
 
@@ -335,9 +339,9 @@ def Populate( source_name_content_generators,            # { "name" : def Func()
                                                      ctx.start.symbol.line,
                                                      ctx.start.symbol.column + 1,
                                                      name=item.name,
-                                                     source=root.config[item.name].Source,
-                                                     line=root.config[item.name].Line,
-                                                     column=root.config[item.name].Column,
+                                                     original_source=root.config[item.name].Source,
+                                                     original_line=root.config[item.name].Line,
+                                                     original_column=root.config[item.name].Column,
                                                    )
 
             root.config[item.name] = item
@@ -426,11 +430,12 @@ def Populate( source_name_content_generators,            # { "name" : def Func()
 
             if item.declaration_type == ctx.parser.ID:
                 assert isinstance(item.reference, unicode)
-                item = item.reference
+                reference = item.reference
             else:
                 assert item.name == None
+                reference = item.declaration_type
 
-            self._stack[-1].reference = item
+            self._stack[-1].reference = reference
 
         # ---------------------------------------------------------------------------
         def visitUnnamedDeclaration(self, ctx):
@@ -618,7 +623,7 @@ def Populate( source_name_content_generators,            # { "name" : def Func()
             self._ApplyMetadataTag(ctx)
 
         # ---------------------------------------------------------------------------
-        def visitCustomMetadata_Type(self, ctx):
+        def visitCustomValues_Type(self, ctx):
             if not observer.Flags & observer.ParseFlags.SupportCustomTypes:
                 raise ParseUnsupportedCustomTypesException( self._source_name,
                                                             ctx.start.line,
@@ -633,15 +638,15 @@ def Populate( source_name_content_generators,            # { "name" : def Func()
 
         # ---------------------------------------------------------------------------
         def visitArity_Optional(self, ctx):
-            self._stack[-1].arity = (0, 1)
+            self._stack[-1].arity = TypeInfoMod.Arity(0, 1)
 
         # ---------------------------------------------------------------------------
         def visitArity_ZeroOrMore(self, ctx):
-            self._stack[-1].arity = (0, None)
+            self._stack[-1].arity = TypeInfoMod.Arity(0, None)
 
         # ---------------------------------------------------------------------------
         def visitArity_OneOrMore(self, ctx):
-            self._stack[-1].arity = (1, None)
+            self._stack[-1].arity = TypeInfoMod.Arity(1, None)
 
         # ---------------------------------------------------------------------------
         def visitArity_Custom(self, ctx):
@@ -656,7 +661,7 @@ def Populate( source_name_content_generators,            # { "name" : def Func()
                                                   value=value,
                                                 )
 
-            self._stack[-1].arity = (value, value)
+            self._stack[-1].arity = TypeInfoMod.Arity(value, value)
 
         # ---------------------------------------------------------------------------
         def visitArity_CustomRange(self, ctx):
@@ -680,7 +685,7 @@ def Populate( source_name_content_generators,            # { "name" : def Func()
                                                   value=max_value,
                                                 )
 
-            self._stack[-1].arity = (min_value, max_value)
+            self._stack[-1].arity = TypeInfoMod.Arity(min_value, max_value)
 
         # ---------------------------------------------------------------------------
         def visitExtension(self, ctx):
@@ -810,30 +815,11 @@ def Populate( source_name_content_generators,            # { "name" : def Func()
         tokens.fill()
 
         parser = SimpleSchemaParser(tokens)
-
-        # ---------------------------------------------------------------------------
-        class ErrorListener(antlr4.error.ErrorListener.ErrorListener):
-
-            # ---------------------------------------------------------------------------
-            def __init__(self, *args, **kwargs):
-                super(ErrorListener, self).__init__(*args, **kwargs)
-
-            # ---------------------------------------------------------------------------
-            @staticmethod
-            def syntaxError(recognizer, offendingSymbol, line, column, msg, e):
-                raise ANTLRException( msg, 
-                                      name,
-                                      line,
-                                      column + 1,
-                                    )
-
-        # ---------------------------------------------------------------------------
-        
-        parser.addErrorListener(ErrorListener())
+        parser.addErrorListener(ErrorListener(name))
 
         ast = parser.statements()
-
         assert ast
+
         ast.accept(Visitor(name, is_external))
 
     # ---------------------------------------------------------------------------

@@ -69,6 +69,13 @@ class Observer(Interface):
 
     # ---------------------------------------------------------------------------
     # |  Public Methods
+    def VerifyFlags(self):
+        flags = self.Flags
+
+        if flags & self.ParseFlags.SupportSimpleObjects and not flags & self.ParseFlags.SupportAttributes:
+            raise Exception("Attributes are required by SimpleObjects")
+
+    # ---------------------------------------------------------------------------
     @staticmethod
     @abstractmethod
     def GetExtensions():
@@ -85,6 +92,12 @@ class Observer(Interface):
     @staticmethod
     @abstractmethod
     def GetOptionalMetadata(item_type, name):
+        raise Exception("Abstract method")
+
+    # ---------------------------------------------------------------------------
+    @staticmethod
+    @abstractmethod
+    def DoesOptionalReferenceRepresentNewType(is_fundamental_reference):
         raise Exception("Abstract method")
 
 # ---------------------------------------------------------------------------
@@ -112,4 +125,8 @@ class DefaultObserver(Observer):
     def GetOptionalMetadata(item_type, name):
         return []
 
+    # ---------------------------------------------------------------------------
+    @staticmethod
+    def DoesOptionalReferenceRepresentNewType(is_fundamental_reference):
+        return True
     
