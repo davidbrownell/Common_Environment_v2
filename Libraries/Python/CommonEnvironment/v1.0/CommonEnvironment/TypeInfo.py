@@ -47,6 +47,68 @@ Plural = inflect.engine()
 # <Redefining build-in type> pylint: disable = W0622
 
 # ---------------------------------------------------------------------------
+class Arity(object):
+
+    # ---------------------------------------------------------------------------
+    @classmethod
+    def FromString(cls, value):
+        if value == '?':
+            return cls(0, 1)
+        elif value == '*':
+            return cls(0, None)
+        elif value == '+':
+            return cls(1, None)
+        elif value.startswith('{') and value.endswith('}'):
+            values = [ int(v.strip()) for v in value[1:-1].split(',') ]
+
+            if len(values) == 1:
+                return cls(values[0], values[0])
+            else:
+                assert len(values) == 2, values
+                return cls(values[0], values[1])
+        else:
+            raise Exception("'{}' is not a valid arity".format(arity))
+
+    # ---------------------------------------------------------------------------
+    def __init__(self, min, max):
+
+        if max != None and min > max:
+            raise Exception("Invalid argument - max")
+
+        self.Min                            = min
+        self.Max                            = max
+
+    # ---------------------------------------------------------------------------
+    @property
+    def IsOptional(self):
+        return self.Min == 0 and self.Max == 1
+
+    # ---------------------------------------------------------------------------
+    @property
+    def IsCollection(self):
+        return self.Max == None or self.Max > 1
+
+    # ---------------------------------------------------------------------------
+    @property
+    def IsZeroOrMore(self):
+        return self.Min == 0 and self.Max == None
+
+    # ---------------------------------------------------------------------------
+    @property
+    def IsOneOrMore(self):
+        return self.Min == 1 and self.Max == None
+
+    # ---------------------------------------------------------------------------
+    @property
+    def IsSingle(self):
+        return self.Min == 1 and self.Max == 1
+
+    # ---------------------------------------------------------------------------
+    @property
+    def IsRange(self):
+        return self.Max != None and self.Min != self.Max
+
+# ---------------------------------------------------------------------------
 class TypeInfo(Interface):
 
     # ---------------------------------------------------------------------------
@@ -93,25 +155,10 @@ class TypeInfo(Interface):
                   arity=None,
                   validation_func=None,
                 ):
-        # arity can be: None, <int>, '?', '*', '+', (<min>, <max>)
         if isinstance(arity, str):
-            if arity == '?':
-                arity = (0, 1)
-            elif arity == '*':
-                arity = (0, None)
-            elif arity == '+':
-                arity = (1, None)
-            else:
-                raise Exception("'{}' is not a valid arity".format(arity))
-        
-        elif isinstance(arity, int):
-            if arity == 1:
-                raise Exception("Do not provide an arity when the expected number of items is 1")
+            arity = Arity.FromString(arity)
 
-            arity = (arity, arity)
-
-        assert isinstance(arity, (type(None), tuple)), arity
-        self.Arity                          = arity
+        self.Arity                          = arity or Arity(1, 1)
         self.ValidationFunc                 = validation_func
 
     # ---------------------------------------------------------------------------
@@ -138,7 +185,7 @@ class TypeInfo(Interface):
         if result != None:
             return result
 
-        if self.Arity == None or self.Arity[1] == 1:
+        if not self.Arity.IsCollection:
             value = [ value, ]
         
         for item in value:
@@ -148,28 +195,28 @@ class TypeInfo(Interface):
 
     # ---------------------------------------------------------------------------
     def ValidateArityNoThrow(self, value):
-        if self.Arity == None or self.Arity[1] == 1:
+        if not self.Arity.IsCollection:
             if isinstance(value, list):
                 return "Only 1 item was expected"
 
             return
 
         if not isinstance(value, (list, tuple)):
-            return "A list or tuple was expected ({}, {})".format(*self.Arity)
+            return "A list or tuple was expected ({}, {})".format(self.Arity.Min, self.Arity.Max)
 
-        if len(value) < self.Arity[0]:
-            return "At least {} {} expected".format( Plural.no("item", self.Arity[0]), 
-                                                     Plural.plural_verb("was", self.Arity[0]),
+        if len(value) < self.Arity.Min:
+            return "At least {} {} expected".format( Plural.no("item", self.Arity.Min), 
+                                                     Plural.plural_verb("was", self.Arity.Min),
                                                    )
 
-        if self.Arity[1] != None and len(value) > self.Arity[1]:
-            return "At most {} {} expected".format( Plural.no("item", self.Arity[1]),
-                                                    Plural.plural_verb("was", self.Arity[1]),
+        if self.Arity.Max != None and len(value) > self.Arity.Max:
+            return "At most {} {} expected".format( Plural.no("item", self.Arity.Max),
+                                                    Plural.plural_verb("was", self.Arity.Max),
                                                   )
             
     # ---------------------------------------------------------------------------
     def ValidateItemNoThrow(self, item):
-        if self.Arity == (0, 1) and item == None:
+        if self.Arity.IsOptional and item == None:
             return
 
         is_expected_type = None
@@ -196,10 +243,10 @@ class TypeInfo(Interface):
 
     # ---------------------------------------------------------------------------
     def Postprocess(self, value):
-        if self.Arity == (0, 1) and value == None:
+        if self.Arity.IsOptional and value == None:
             return None
 
-        if self.Arity and (self.Arity[1] == None or self.Arity[1] > 1):
+        if self.Arity.IsCollection:
             return [ self.PostprocessItem(v) for v in value ]
 
         return self.PostprocessItem(value)
@@ -210,6 +257,8 @@ class TypeInfo(Interface):
         return value
 
     # ---------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------
     def _GetExpectedTypeString(self):
         # ---------------------------------------------------------------------------
         def GetTypeName(t):
@@ -217,6 +266,9 @@ class TypeInfo(Interface):
 
         # ---------------------------------------------------------------------------
         
+        if self.ExpectedTypeIsCallable:
+            return self.__class__.__name__
+
         if isinstance(self.ExpectedType, tuple):
             return ', '.join([ GetTypeName(t) for t in self.ExpectedType ])
         
@@ -256,22 +308,23 @@ class FundamentalTypeInfo(TypeInfo):
     # ---------------------------------------------------------------------------
     # |  Public Methods
     def FromString(self, value, format=Format_Python):
-        if self.Arity == (0, 1) and ( (format in [ self.Format_String, self.Format_Python, ] and value == "None") or
-                                      (format == self.Format_JSON and value == "null")
-                                    ):
+        if self.Arity.IsOptional and ( (format in [ self.Format_String, self.Format_Python, ] and value == "None") or
+                                       (format == self.Format_JSON and value == "null")
+                                     ):
             value = None
         
-        elif self.Arity and (self.Arity[1] == None or self.Arity[1] > 1):
-            split = False
+        elif self.Arity.IsCollection:
+            if not isinstance(value, (list, tuple)):
+                split = False
 
-            for potential_delimiter in self.SupportedDelimiters:
-                if potential_delimiter in value:
-                    split = True
-                    value = [ v.strip() for v in value.split(potential_delimiter) if v.strip() ]
-                    break
+                for potential_delimiter in self.SupportedDelimiters:
+                    if potential_delimiter in value:
+                        split = True
+                        value = [ v.strip() for v in value.split(potential_delimiter) if v.strip() ]
+                        break
 
-            if not split:
-                value = [ value, ]
+                if not split:
+                    value = [ value, ]
 
             value = [ self.ItemFromString(v, format=format) for v in value ]
 
@@ -289,7 +342,7 @@ class FundamentalTypeInfo(TypeInfo):
                 ):
         assert delimiter in self.SupportedDelimiters, delimiter
 
-        if self.Arity == (0, 1) and value == None:
+        if self.Arity.IsOptional and value == None:
             if format in [ self.Format_String, self.Format_Python, ]:
                 return "None"
             elif format == self.Format_JSON:
@@ -297,8 +350,8 @@ class FundamentalTypeInfo(TypeInfo):
             else:
                 assert False, format
 
-        elif self.Arity and (self.Arity[1] == None or self.Arity[1] > 1):
-            if not isinstance(value, list):
+        elif self.Arity.IsCollection:
+            if not isinstance(value, (list, tuple)):
                 value = [ value, ]
 
             return ('{} '.format(delimiter)).join([ self.ItemToString(v) for v in value ])

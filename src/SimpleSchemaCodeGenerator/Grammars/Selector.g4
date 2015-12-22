@@ -5,7 +5,7 @@ tokens { INDENT, DEDENT }
 @lexer::header {
 
 from CommonEnvironment.Antlr4Helpers.DenterHelper import DenterHelper
-from SimpleSchemaParser import SimpleSchemaParser
+from SelectorParser import SelectorParser
 
 }
 
@@ -15,10 +15,10 @@ multiline_statement_ctr = 0
 
 def nextToken(self):
     if not hasattr(self, "_denter"):
-        self._denter = DenterHelper( super(SimpleSchemaLexer, self).nextToken,
-                                     SimpleSchemaParser.NEWLINE,
-                                     SimpleSchemaParser.INDENT,
-                                     SimpleSchemaParser.DEDENT,
+        self._denter = DenterHelper( super(SelectorLexer, self).nextToken,
+                                     SelectorParser.NEWLINE,
+                                     SelectorParser.INDENT,
+                                     SelectorParser.DEDENT,
                                    )
 
     return self._denter.nextToken()
@@ -30,83 +30,124 @@ def nextToken(self):
 // |  Lexer Rules
 // |
 // ---------------------------------------------------------------------------
-MULTI_LINE_NEWLINE:                         { SimpleSchemaLexer.multiline_statement_ctr != 0 }? '\r'? '\n' -> skip;
-NEWLINE:                                    { SimpleSchemaLexer.multiline_statement_ctr == 0 }? '\r'? '\n' [ \t]*;
+MULTI_LINE_NEWLINE:                         { SelectorLexer.multiline_statement_ctr != 0 }? '\r'? '\n' -> skip;
+NEWLINE:                                    { SelectorLexer.multiline_statement_ctr == 0 }? '\r'? '\n' [ \t]*;
 MULTI_LINE_ESCAPE:                          '\\' '\r'? '\n' -> skip;
 HORIZONTAL_WHITESPACE:                      [ \t]+ -> skip;
 
+MULTI_LINE_COMMENT:                         '#/' .*? '/#' -> skip;
 COMMENT:                                    '#' ~[\r\n]* -> skip;
 
-DECORATOR:                                  '::';
 SCOPE_DELIMITER:                            ':';
 SEP:                                        '/';
-ANY:                                        '*';
+ONE_OR_MORE:                                '+';
+ZERO_OR_MORE:                               '*';
+ANY:                                        '.';
+LT:                                         '<';
+GT:                                         '>';
 LBRACK:                                     '[';
 RBRACK:                                     ']';
 LPAREN:                                     '(';
 RPAREN:                                     ')';
+LBRACE:                                     '{';
+RBRACE:                                     '}';
+COMMA:                                      ',';
 
 INT:                                        '-'? [0-9]+;
-NUMBER:                                     '-'? [0-9]* '.' [0-9]+;
-ID:                                         '@'? [a-zA-Z_][a-zA-Z_0-9\-.]*;
-DOUBLE_QUOTE_STRING:                        '"' (('\\"' | '\\\\') | .)*? '"';
-SINGLE_QUOTE_STRING:                        '\'' (('\\\'' | '\\\\') | .)*? '\'';
+ID:                                         [a-zA-Z_][a-zA-Z_0-9\-.]*;
 
 // Keywords
 PASS:                                       'pass';
+
+PREDICATE_OBJECT:                           'object';
+PREDICATE_SIMPLE_OBJECT:                    'simple';
+PREDICATE_COMPOUND_OBJECT:                  'compound';
+PREDICATE_FUNDAMENTAL:                      'fundamental';
+
+PREDICATE_STRING:                           'string';
+PREDICATE_ENUM:                             'enum';
+PREDICATE_INTEGER:                          'integer';
+PREDICATE_NUMBER:                           'number';
+PREDICATE_BOOLEAN:                          'boolean';
+PREDICATE_GUID:                             'guid';
+PREDICATE_DATETIME:                         'datetime';
+PREDICATE_DATE:                             'date';
+PREDICATE_TIME:                             'time';
+PREDICATE_DURATION:                         'duration';
+PREDICATE_FILENAME:                         'filename';
+PREDICATE_CUSTOM:                           'custom';
+
+CALL_TYPE_PRE:                              'pre';
+CALL_TYPE_POST:                             'post';
+CALL_TYPE_INLINE:                           'inline';
+
+DECORATOR_SELF:                             'self';
 DECORATOR_ANCESTORS:                        'ancestors';
 DECORATOR_ANCESTORS_AND_SELF:               'ancestors_and_self';
-DECORATOR_ATTRIBUTES:                       'attributes';
 DECORATOR_CHILDREN:                         'children';
 DECORATOR_SELF_AND_CHILDREN:                'self_and_children';
 DECORATOR_DESCENDANTS:                      'descendants';
 DECORATOR_SELF_AND_DESCENDANTS:             'self_and_descendants';
 DECORATOR_SIBLINGS:                         'siblings';
-DECORATOR_SIBLINGS_AND_SELF:                'siblings_and_self';
+DECORATOR_SELF_AND_SIBLINGS:                'self_and_siblings';
 
 // ---------------------------------------------------------------------------
 // |
 // |  Parser Rules
 // |
 // ---------------------------------------------------------------------------
-arg:                                        ID | INT | NUMBER | DOUBLE_QUOTE_STRING | SINGLE_QUOTE_STRING;
+statements:                                 statement___+ EOF;
 
-statements:                                 statement+ EOF;
+statement___:                               (single_statement | compound_statement) NEWLINE+;
 
-statement:                                  (singleStatement | groupStatement) NEWLINE+;
+single_statement:                           selector ID call_type___? decorator?;
+compound_statement:                         selector (ID call_type___? decorator?)? SCOPE_DELIMITER ( PASS |
+                                                                                                      single_statement |
+                                                                                                      ( NEWLINE INDENT( (PASS NEWLINE) |
+                                                                                                                        (NEWLINE* statement___)+
+                                                                                                                      )
+                                                                                                        DEDENT
+                                                                                                      )
+                                                                                                    );
 
-singleStatement:                            selector decorator? function;
-groupStatement:                             selector decorator? function? SCOPE_DELIMITER ( PASS |
-                                                                                            singleStatement |
-                                                                                            ( NEWLINE INDENT ( (PASS NEWLINE) |
-                                                                                                                (NEWLINE* statement)+
-                                                                                                             )
-                                                                                              DEDENT
-                                                                                            )
-                                                                                          );
-                                                                              
-function:                                   LPAREN (DOUBLE_QUOTE_STRING | SINGLE_QUOTE_STRING) RPAREN;
+selector:                                   SEP? selector_item selector_predicate? (SEP selector_item selector_predicate?)* SEP?;
 
-selector:                                   SEP? (ANY | ID) selector_Predicate? (SEP (ANY | ID) selector_Predicate?)* SEP?;
-selector_Predicate:                         LBRACK ( selector_Predicate_Index |
-                                                     selector_Predicate_IndexRange |
-                                                     selector_Predicate_Statement
+selector_item:                              ( ANY (LBRACE (INT | INT COMMA INT) RBRACE)? |
+                                              ONE_OR_MORE |
+                                              ZERO_OR_MORE |
+                                              ID
+                                            );
+
+selector_predicate:                         LBRACK ( PREDICATE_OBJECT |
+                                                     PREDICATE_SIMPLE_OBJECT |
+                                                     PREDICATE_COMPOUND_OBJECT |
+                                                     PREDICATE_FUNDAMENTAL |
+                                                     PREDICATE_STRING |
+                                                     PREDICATE_ENUM |
+                                                     PREDICATE_INTEGER |
+                                                     PREDICATE_NUMBER |
+                                                     PREDICATE_BOOLEAN |
+                                                     PREDICATE_GUID |
+                                                     PREDICATE_DATETIME |
+                                                     PREDICATE_DATE |
+                                                     PREDICATE_TIME |
+                                                     PREDICATE_DURATION |
+                                                     PREDICATE_FILENAME |
+                                                     PREDICATE_CUSTOM
                                                    )
                                             RBRACK;
                                             
-selector_Predicate_Index:                   INT;
-selector_Predicate_IndexRange:              INT? SCOPE_DELIMITER INT?;
-selector_Predicate_Statement:               ID selector_Predicate_Statement_Operator arg;
-selector_Predicate_Statement_Operator:      '==' | '!=' | '<' | '<=' | '>' | '>=';
+call_type___:                               LT call_type_type (COMMA call_type_type)* COMMA? GT;
+call_type_type:                             CALL_TYPE_PRE | CALL_TYPE_POST | CALL_TYPE_INLINE;
 
-decorator:                                  DECORATOR ( DECORATOR_ANCESTORS |
-                                                        DECORATOR_ANCESTORS_AND_SELF |
-                                                        DECORATOR_ATTRIBUTES |
-                                                        DECORATOR_CHILDREN |
-                                                        DECORATOR_SELF_AND_CHILDREN |
-                                                        DECORATOR_DESCENDANTS |
-                                                        DECORATOR_SELF_AND_DESCENDANTS |
-                                                        DECORATOR_SIBLINGS |
-                                                        DECORATOR_SIBLINGS_AND_SELF
-                                                      );
-                                            
+decorator:                                  LPAREN ( DECORATOR_SELF |
+                                                     DECORATOR_ANCESTORS |
+                                                     DECORATOR_ANCESTORS_AND_SELF |
+                                                     DECORATOR_CHILDREN |
+                                                     DECORATOR_SELF_AND_CHILDREN |
+                                                     DECORATOR_DESCENDANTS |
+                                                     DECORATOR_SELF_AND_DESCENDANTS |
+                                                     DECORATOR_SIBLINGS |
+                                                     DECORATOR_SELF_AND_SIBLINGS
+                                                   )
+                                            RPAREN;

@@ -44,6 +44,7 @@ GT:                                         '>' { SimpleSchemaLexer.multiline_st
 LBRACE:                                     '{';
 RBRACE:                                     '}';
 
+MULTI_LINE_COMMENT:                         '#/' .*? '/#' -> skip;
 COMMENT:                                    '#' ~[\r\n]* -> skip;
 
 // Keywords
@@ -201,7 +202,7 @@ declaration_Type:                           (STRING_TYPE stringMetadata__*) |
                                             (INTEGER_TYPE integerMetadata__*) |
                                             (NUMBER_TYPE numberMetadata__*) |
                                             (FILENAME_TYPE filenameMetadata__*) |
-                                            (CUSTOM_TYPE customMetadata__*) |
+                                            (CUSTOM_TYPE customValues__*) |
                                             BOOLEAN_TYPE |
                                             GUID_TYPE |
                                             DATETIME_TYPE |
@@ -257,8 +258,8 @@ filenameMetadata__:                         (filenameMetadata_Type ASSIGNMENT fi
 filenameMetadata_Type:                      FILENAME_METADATA_TYPE;
 filenameMetadata_MustExist:                 FILENAME_METADATA_MUST_EXIST;
 
-customMetadata__:                           customMetadata_Type ASSIGNMENT string;
-customMetadata_Type:                        CUSTOM_METADATA_T;
+customValues__:                             customValues_Type ASSIGNMENT string;
+customValues_Type:                          CUSTOM_METADATA_T;
 
 metadata__:                                 metadata_Name ASSIGNMENT string;
 metadata_Name:                              ID;
