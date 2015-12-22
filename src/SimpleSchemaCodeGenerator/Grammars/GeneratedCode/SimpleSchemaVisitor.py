@@ -265,13 +265,13 @@ class SimpleSchemaVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by SimpleSchemaParser#customMetadata__.
-    def visitCustomMetadata__(self, ctx):
+    # Visit a parse tree produced by SimpleSchemaParser#customValues__.
+    def visitCustomValues__(self, ctx):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by SimpleSchemaParser#customMetadata_Type.
-    def visitCustomMetadata_Type(self, ctx):
+    # Visit a parse tree produced by SimpleSchemaParser#customValues_Type.
+    def visitCustomValues_Type(self, ctx):
         return self.visitChildren(ctx)
 
 

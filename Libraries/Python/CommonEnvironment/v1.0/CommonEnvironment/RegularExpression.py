@@ -42,6 +42,7 @@ TemplateStringTagRegex                      = re.compile(r"\{\s*(?P<tag>.+?)(?:\
 def TemplateStringToRegex( content,
                            optional_tags=None,          # []
                            tag_regex=None,              # TemplateStringTagRegex
+                           as_string=False,
                          ):
     newline_tag = "__<<!!??Newline??!!>>__"
     whitespace_tag = "__<<!!??Whitespace??!!>>__"
@@ -108,6 +109,9 @@ def TemplateStringToRegex( content,
 
     output = output.replace(r"\ ", ' ')
     
+    if as_string:
+        return output
+
     return re.compile(output, re.DOTALL | re.MULTILINE)
 
 # ---------------------------------------------------------------------------

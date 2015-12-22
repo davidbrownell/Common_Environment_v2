@@ -162,6 +162,7 @@ class StreamDecorator(object):
                      line_prefix="  ",
                      done_prefix='',
                      done_suffix='',
+                     process_exceptions=True,
                    ):
         start_time = TimeDelta()
 
@@ -184,50 +185,63 @@ class StreamDecorator(object):
                                      line_prefix=line_prefix,
                                    ))
         
-        try:
-            yield info
-
+        # ---------------------------------------------------------------------------
+        def Cleanup():
             if info.result == None:
                 info.result = 0
 
-        except Exception, ex:
-            import traceback
+            suffixes = []
 
-            if display_callstack_on_error:
-                info.stream.write("ERROR: {}\n".format(StreamDecorator.LeftJustify(traceback.format_exc(), len("ERROR: ")).rstrip()))
-            else:
-                info.stream.write("ERROR: {}\n".format(str(ex).rstrip()))
+            if show_rval:
+                suffixes.append(str(info.result))
+    
+            if show_time:
+                suffixes.append(start_time.CalculateDelta(as_string=True))
+    
+            if suffix_functor:
+                suffixes.append(suffix_functor())
+    
+            self.write("{prefix}DONE!{info_suffix}{suffix}\n".format( prefix=done_prefix, 
+                                                                      info_suffix=" ({})".format(', '.join(suffixes)) if suffixes else '',
+                                                                      suffix=done_suffix,
+                                                                    ))
+            self.flush()
+    
+            # Propagate the result
+            if info.result != 0:
+                stream = self
+                
+                while hasattr(stream, "_parent_info"):
+                    if stream._parent_info.result != 0:
+                        break
+    
+                    stream._parent_info.result = info.result
+                    stream = stream._parent_info.stream
+    
+        # ---------------------------------------------------------------------------
+        
+        from .CallOnExit import CallOnExit
 
-            if info.result == None or info.result == 0:
-                info.result = -1
+        with CallOnExit(Cleanup):
+            try:
+                yield info
 
-        suffixes = []
+                if info.result == None:
+                    info.result = 0
 
-        if show_rval:
-            suffixes.append(str(info.result))
+            except Exception, ex:
+                if info.result == None or info.result == 0:
+                    info.result = -1
 
-        if show_time:
-            suffixes.append(start_time.CalculateDelta(as_string=True))
+                if not process_exceptions:
+                    raise ex
 
-        if suffix_functor:
-            suffixes.append(suffix_functor())
+                import traceback
 
-        self.write("{prefix}DONE!{info_suffix}{suffix}\n".format( prefix=done_prefix, 
-                                                                  info_suffix=" ({})".format(', '.join(suffixes)) if suffixes else '',
-                                                                  suffix=done_suffix,
-                                                                ))
-        self.flush()
-
-        # Propagate the result
-        if info.result != 0:
-            stream = self
-            
-            while hasattr(stream, "_parent_info"):
-                if stream._parent_info.result != 0:
-                    break
-
-                stream._parent_info.result = info.result
-                stream = stream._parent_info.stream
+                if display_callstack_on_error:
+                    info.stream.write("ERROR: {}\n".format(StreamDecorator.LeftJustify(traceback.format_exc(), len("ERROR: ")).rstrip()))
+                else:
+                    info.stream.write("ERROR: {}\n".format(str(ex).rstrip()))
 
     # ---------------------------------------------------------------------------
     @classmethod

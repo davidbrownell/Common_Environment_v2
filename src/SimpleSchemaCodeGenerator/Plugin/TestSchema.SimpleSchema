@@ -1,0 +1,329 @@
+#/
+[[[cog
+import textwrap
+
+for lbrace, rbrace, suffix in [ ( '(', ')', "Type" ),
+                                ( '<', '>', "" ),
+                              ]:
+    cog.outl(textwrap.dedent(
+        """\
+        {lbrace} FundamentalTests{suffix} {rbrace}:
+            {lbrace} String{suffix} {rbrace}:
+                {lbrace} default_string string {rbrace}
+                {lbrace} validation_string string validation=".+ .+" {rbrace}
+                {lbrace} min_string string min_length="1" {rbrace}
+                {lbrace} max_string string max_length="3" {rbrace}
+                {lbrace} min_max_string string min_length="2" max_length="5" {rbrace}
+     
+            {lbrace} Enum{suffix} {rbrace}:
+                {lbrace} default_enum enum values=[ "one", "two", "three", ] {rbrace}
+                {lbrace} friendly_enum enum values=[ "one", "two", "three", ] friendly_values=[ "1", "2", "3", ] {rbrace}
+                
+            {lbrace} Integer{suffix} {rbrace}:
+                {lbrace} default_int integer {rbrace}
+                {lbrace} min_int integer min="0" {rbrace}
+                {lbrace} max_int integer max="0" {rbrace}
+                {lbrace} bytes_int integer bytes="2" {rbrace}
+                {lbrace} min_max_int integer min="-10" max="10" {rbrace}
+                {lbrace} complete_int integer min="-10" max="10" bytes="1" {rbrace}
+                
+            {lbrace} Number{suffix} {rbrace}:
+                {lbrace} default_number number {rbrace}
+                {lbrace} min_number number min="0.25" {rbrace}
+                {lbrace} max_number number max="100.0" {rbrace}
+                {lbrace} min_max_number number min="0.0" max="100.0" {rbrace}
+                
+            {lbrace} Boolean{suffix} {rbrace}:
+                {lbrace} default_boolean boolean {rbrace}
+                
+            {lbrace} Guid{suffix} {rbrace}:
+                {lbrace} default_guid guid {rbrace}
+                
+            {lbrace} Datetime{suffix} {rbrace}:
+                {lbrace} default_datetime datetime {rbrace}
+                
+            {lbrace} Date{suffix} {rbrace}:
+                {lbrace} default_date date {rbrace}
+                
+            {lbrace} Time{suffix} {rbrace}:
+                {lbrace} default_time time {rbrace}
+                
+            {lbrace} Duration{suffix} {rbrace}:
+                {lbrace} default_duration duration {rbrace}
+                
+            {lbrace} Filename{suffix} {rbrace}:
+                {lbrace} defalt_filename filename {rbrace}
+                {lbrace} must_exist_true_filename filename must_exist="true" {rbrace}
+                {lbrace} must_exist_false_filename filename must_exist="false" {rbrace}
+                {lbrace} filename_type filename type="file" {rbrace}
+                {lbrace} directory_type filename type="directory" {rbrace}
+                {lbrace} either_type filename type="either" {rbrace}
+                {lbrace} complete filename type="file" must_exist="true" {rbrace}
+             
+        {lbrace} ArityTests{suffix} {rbrace}:
+            {lbrace} one string {rbrace}
+            {lbrace} one_or_many string + {rbrace}
+            {lbrace} optional string ? {rbrace}
+            {lbrace} zero_or_many string * {rbrace}
+            {lbrace} three string {{3}} {rbrace}
+            {lbrace} range string {{1, 3}} {rbrace}
+            
+        {lbrace} SimpleTests{suffix} string min_length="2" {rbrace}:
+            [foo string]
+            [bar string]
+            [baz string ?]
+            [biz1 FundamentalTests{suffix}.String{suffix}.min_string]
+            [biz2 FundamentalTests{suffix}.String{suffix}.min_string ?]
+            
+        {lbrace} Base{suffix} define="false" {rbrace}:
+            <a string>
+            <b string>
+            
+        {lbrace} Derived1{suffix} Base{suffix} {rbrace}:
+            <c string>
+            <d string>
+            
+        {lbrace} Derived2{suffix} Base{suffix} {rbrace}:
+            <c string>
+            <d string>
+            <e string>
+            
+            <NestedType *>:
+                <value1 string ?>
+                <value2 integer>
+            
+        {lbrace} PolymorphicBase{suffix} polymorphic="true" * {rbrace}:
+            pass
+            
+        {lbrace} _PolymorphicDerived1{suffix} PolymorphicBase{suffix} {rbrace}:
+            <a string>
+            <b string ?>
+            
+        {lbrace} _PolymorphicDerived2{suffix} PolymorphicBase{suffix} {rbrace}:
+            <c string>
+            <d string ?>
+            
+        {lbrace} ReferenceTests{suffix} {rbrace}:
+            (foo string)
+            
+            {lbrace} foo_alias foo {rbrace}
+            {lbrace} foo_augmentation foo {rbrace}
+            
+            {lbrace} alias SimpleTests{suffix} {rbrace}
+            {lbrace} augmentation SimpleTests{suffix} + {rbrace}
+                
+        """).format(**locals()))
+]]] /#
+( FundamentalTestsType ):
+    ( StringType ):
+        ( default_string string )
+        ( validation_string string validation=".+ .+" )
+        ( min_string string min_length="1" )
+        ( max_string string max_length="3" )
+        ( min_max_string string min_length="2" max_length="5" )
+
+    ( EnumType ):
+        ( default_enum enum values=[ "one", "two", "three", ] )
+        ( friendly_enum enum values=[ "one", "two", "three", ] friendly_values=[ "1", "2", "3", ] )
+
+    ( IntegerType ):
+        ( default_int integer )
+        ( min_int integer min="0" )
+        ( max_int integer max="0" )
+        ( bytes_int integer bytes="2" )
+        ( min_max_int integer min="-10" max="10" )
+        ( complete_int integer min="-10" max="10" bytes="1" )
+
+    ( NumberType ):
+        ( default_number number )
+        ( min_number number min="0.25" )
+        ( max_number number max="100.0" )
+        ( min_max_number number min="0.0" max="100.0" )
+
+    ( BooleanType ):
+        ( default_boolean boolean )
+
+    ( GuidType ):
+        ( default_guid guid )
+
+    ( DatetimeType ):
+        ( default_datetime datetime )
+
+    ( DateType ):
+        ( default_date date )
+
+    ( TimeType ):
+        ( default_time time )
+
+    ( DurationType ):
+        ( default_duration duration )
+
+    ( FilenameType ):
+        ( defalt_filename filename )
+        ( must_exist_true_filename filename must_exist="true" )
+        ( must_exist_false_filename filename must_exist="false" )
+        ( filename_type filename type="file" )
+        ( directory_type filename type="directory" )
+        ( either_type filename type="either" )
+        ( complete filename type="file" must_exist="true" )
+
+( ArityTestsType ):
+    ( one string )
+    ( one_or_many string + )
+    ( optional string ? )
+    ( zero_or_many string * )
+    ( three string {3} )
+    ( range string {1, 3} )
+
+( SimpleTestsType string min_length="2" ):
+    [foo string]
+    [bar string]
+    [baz string ?]
+    [biz1 FundamentalTestsType.StringType.min_string]
+    [biz2 FundamentalTestsType.StringType.min_string ?]
+
+( BaseType define="false" ):
+    <a string>
+    <b string>
+
+( Derived1Type BaseType ):
+    <c string>
+    <d string>
+
+( Derived2Type BaseType ):
+    <c string>
+    <d string>
+    <e string>
+
+    <NestedType *>:
+        <value1 string ?>
+        <value2 integer>
+
+( PolymorphicBaseType polymorphic="true" * ):
+    pass
+
+( _PolymorphicDerived1Type PolymorphicBaseType ):
+    <a string>
+    <b string ?>
+
+( _PolymorphicDerived2Type PolymorphicBaseType ):
+    <c string>
+    <d string ?>
+
+( ReferenceTestsType ):
+    (foo string)
+
+    ( foo_alias foo )
+    ( foo_augmentation foo )
+
+    ( alias SimpleTestsType )
+    ( augmentation SimpleTestsType + )
+
+
+< FundamentalTests >:
+    < String >:
+        < default_string string >
+        < validation_string string validation=".+ .+" >
+        < min_string string min_length="1" >
+        < max_string string max_length="3" >
+        < min_max_string string min_length="2" max_length="5" >
+
+    < Enum >:
+        < default_enum enum values=[ "one", "two", "three", ] >
+        < friendly_enum enum values=[ "one", "two", "three", ] friendly_values=[ "1", "2", "3", ] >
+
+    < Integer >:
+        < default_int integer >
+        < min_int integer min="0" >
+        < max_int integer max="0" >
+        < bytes_int integer bytes="2" >
+        < min_max_int integer min="-10" max="10" >
+        < complete_int integer min="-10" max="10" bytes="1" >
+
+    < Number >:
+        < default_number number >
+        < min_number number min="0.25" >
+        < max_number number max="100.0" >
+        < min_max_number number min="0.0" max="100.0" >
+
+    < Boolean >:
+        < default_boolean boolean >
+
+    < Guid >:
+        < default_guid guid >
+
+    < Datetime >:
+        < default_datetime datetime >
+
+    < Date >:
+        < default_date date >
+
+    < Time >:
+        < default_time time >
+
+    < Duration >:
+        < default_duration duration >
+
+    < Filename >:
+        < defalt_filename filename >
+        < must_exist_true_filename filename must_exist="true" >
+        < must_exist_false_filename filename must_exist="false" >
+        < filename_type filename type="file" >
+        < directory_type filename type="directory" >
+        < either_type filename type="either" >
+        < complete filename type="file" must_exist="true" >
+
+< ArityTests >:
+    < one string >
+    < one_or_many string + >
+    < optional string ? >
+    < zero_or_many string * >
+    < three string {3} >
+    < range string {1, 3} >
+
+< SimpleTests string min_length="2" >:
+    [foo string]
+    [bar string]
+    [baz string ?]
+    [biz1 FundamentalTests.String.min_string]
+    [biz2 FundamentalTests.String.min_string ?]
+
+< Base define="false" >:
+    <a string>
+    <b string>
+
+< Derived1 Base >:
+    <c string>
+    <d string>
+
+< Derived2 Base >:
+    <c string>
+    <d string>
+    <e string>
+
+    <NestedType *>:
+        <value1 string ?>
+        <value2 integer>
+
+< PolymorphicBase polymorphic="true" * >:
+    pass
+
+< _PolymorphicDerived1 PolymorphicBase >:
+    <a string>
+    <b string ?>
+
+< _PolymorphicDerived2 PolymorphicBase >:
+    <c string>
+    <d string ?>
+
+< ReferenceTests >:
+    (foo string)
+
+    < foo_alias foo >
+    < foo_augmentation foo >
+
+    < alias SimpleTests >
+    < augmentation SimpleTests + >
+
+
+# [[[end]]] (checksum: a5c4f3688caf698d6020592d54e7e907)

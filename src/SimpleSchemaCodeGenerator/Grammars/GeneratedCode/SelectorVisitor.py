@@ -5,33 +5,23 @@ from antlr4 import *
 
 class SelectorVisitor(ParseTreeVisitor):
 
-    # Visit a parse tree produced by SelectorParser#arg.
-    def visitArg(self, ctx):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by SelectorParser#statements.
     def visitStatements(self, ctx):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by SelectorParser#statement.
-    def visitStatement(self, ctx):
+    # Visit a parse tree produced by SelectorParser#statement___.
+    def visitStatement___(self, ctx):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by SelectorParser#singleStatement.
-    def visitSingleStatement(self, ctx):
+    # Visit a parse tree produced by SelectorParser#single_statement.
+    def visitSingle_statement(self, ctx):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by SelectorParser#groupStatement.
-    def visitGroupStatement(self, ctx):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by SelectorParser#function.
-    def visitFunction(self, ctx):
+    # Visit a parse tree produced by SelectorParser#compound_statement.
+    def visitCompound_statement(self, ctx):
         return self.visitChildren(ctx)
 
 
@@ -40,28 +30,23 @@ class SelectorVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by SelectorParser#selector_Predicate.
-    def visitSelector_Predicate(self, ctx):
+    # Visit a parse tree produced by SelectorParser#selector_item.
+    def visitSelector_item(self, ctx):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by SelectorParser#selector_Predicate_Index.
-    def visitSelector_Predicate_Index(self, ctx):
+    # Visit a parse tree produced by SelectorParser#selector_predicate.
+    def visitSelector_predicate(self, ctx):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by SelectorParser#selector_Predicate_IndexRange.
-    def visitSelector_Predicate_IndexRange(self, ctx):
+    # Visit a parse tree produced by SelectorParser#call_type___.
+    def visitCall_type___(self, ctx):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by SelectorParser#selector_Predicate_Statement.
-    def visitSelector_Predicate_Statement(self, ctx):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by SelectorParser#selector_Predicate_Statement_Operator.
-    def visitSelector_Predicate_Statement_Operator(self, ctx):
+    # Visit a parse tree produced by SelectorParser#call_type_type.
+    def visitCall_type_type(self, ctx):
         return self.visitChildren(ctx)
 
 

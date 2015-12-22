@@ -7,49 +7,54 @@ from io import StringIO
 def serializedATN():
     with StringIO() as buf:
         buf.write(u"\3\u0430\ud6d1\u8206\uad2d\u4417\uaef1\u8d80\uaadd\3")
-        buf.write(u"&\u0085\4\2\t\2\4\3\t\3\4\4\t\4\4\5\t\5\4\6\t\6\4\7\t")
-        buf.write(u"\7\4\b\t\b\4\t\t\t\4\n\t\n\4\13\t\13\4\f\t\f\4\r\t\r")
-        buf.write(u"\4\16\t\16\3\2\3\2\3\3\6\3 \n\3\r\3\16\3!\3\3\3\3\3\4")
-        buf.write(u"\3\4\5\4(\n\4\3\4\6\4+\n\4\r\4\16\4,\3\5\3\5\5\5\61\n")
-        buf.write(u"\5\3\5\3\5\3\6\3\6\5\6\67\n\6\3\6\5\6:\n\6\3\6\3\6\3")
-        buf.write(u"\6\3\6\3\6\3\6\3\6\3\6\7\6D\n\6\f\6\16\6G\13\6\3\6\6")
-        buf.write(u"\6J\n\6\r\6\16\6K\5\6N\n\6\3\6\5\6Q\n\6\3\7\3\7\3\7\3")
-        buf.write(u"\7\3\b\5\bX\n\b\3\b\3\b\5\b\\\n\b\3\b\3\b\3\b\5\ba\n")
-        buf.write(u"\b\7\bc\n\b\f\b\16\bf\13\b\3\b\5\bi\n\b\3\t\3\t\3\t\3")
-        buf.write(u"\t\5\to\n\t\3\t\3\t\3\n\3\n\3\13\5\13v\n\13\3\13\3\13")
-        buf.write(u"\5\13z\n\13\3\f\3\f\3\f\3\f\3\r\3\r\3\16\3\16\3\16\3")
-        buf.write(u"\16\2\2\17\2\4\6\b\n\f\16\20\22\24\26\30\32\2\7\3\2\26")
-        buf.write(u"\32\3\2\31\32\4\2\21\21\30\30\3\2\3\b\3\2\34$\u008b\2")
-        buf.write(u"\34\3\2\2\2\4\37\3\2\2\2\6\'\3\2\2\2\b.\3\2\2\2\n\64")
-        buf.write(u"\3\2\2\2\fR\3\2\2\2\16W\3\2\2\2\20j\3\2\2\2\22r\3\2\2")
-        buf.write(u"\2\24u\3\2\2\2\26{\3\2\2\2\30\177\3\2\2\2\32\u0081\3")
-        buf.write(u"\2\2\2\34\35\t\2\2\2\35\3\3\2\2\2\36 \5\6\4\2\37\36\3")
-        buf.write(u"\2\2\2 !\3\2\2\2!\37\3\2\2\2!\"\3\2\2\2\"#\3\2\2\2#$")
-        buf.write(u"\7\2\2\3$\5\3\2\2\2%(\5\b\5\2&(\5\n\6\2\'%\3\2\2\2\'")
-        buf.write(u"&\3\2\2\2(*\3\2\2\2)+\7\n\2\2*)\3\2\2\2+,\3\2\2\2,*\3")
-        buf.write(u"\2\2\2,-\3\2\2\2-\7\3\2\2\2.\60\5\16\b\2/\61\5\32\16")
-        buf.write(u"\2\60/\3\2\2\2\60\61\3\2\2\2\61\62\3\2\2\2\62\63\5\f")
-        buf.write(u"\7\2\63\t\3\2\2\2\64\66\5\16\b\2\65\67\5\32\16\2\66\65")
-        buf.write(u"\3\2\2\2\66\67\3\2\2\2\679\3\2\2\28:\5\f\7\298\3\2\2")
-        buf.write(u"\29:\3\2\2\2:;\3\2\2\2;P\7\17\2\2<Q\7\33\2\2=Q\5\b\5")
-        buf.write(u"\2>?\7\n\2\2?M\7%\2\2@A\7\33\2\2AN\7\n\2\2BD\7\n\2\2")
-        buf.write(u"CB\3\2\2\2DG\3\2\2\2EC\3\2\2\2EF\3\2\2\2FH\3\2\2\2GE")
-        buf.write(u"\3\2\2\2HJ\5\6\4\2IE\3\2\2\2JK\3\2\2\2KI\3\2\2\2KL\3")
-        buf.write(u"\2\2\2LN\3\2\2\2M@\3\2\2\2MI\3\2\2\2NO\3\2\2\2OQ\7&\2")
-        buf.write(u"\2P<\3\2\2\2P=\3\2\2\2P>\3\2\2\2Q\13\3\2\2\2RS\7\24\2")
-        buf.write(u"\2ST\t\3\2\2TU\7\25\2\2U\r\3\2\2\2VX\7\20\2\2WV\3\2\2")
-        buf.write(u"\2WX\3\2\2\2XY\3\2\2\2Y[\t\4\2\2Z\\\5\20\t\2[Z\3\2\2")
-        buf.write(u"\2[\\\3\2\2\2\\d\3\2\2\2]^\7\20\2\2^`\t\4\2\2_a\5\20")
-        buf.write(u"\t\2`_\3\2\2\2`a\3\2\2\2ac\3\2\2\2b]\3\2\2\2cf\3\2\2")
-        buf.write(u"\2db\3\2\2\2de\3\2\2\2eh\3\2\2\2fd\3\2\2\2gi\7\20\2\2")
-        buf.write(u"hg\3\2\2\2hi\3\2\2\2i\17\3\2\2\2jn\7\22\2\2ko\5\22\n")
-        buf.write(u"\2lo\5\24\13\2mo\5\26\f\2nk\3\2\2\2nl\3\2\2\2nm\3\2\2")
-        buf.write(u"\2op\3\2\2\2pq\7\23\2\2q\21\3\2\2\2rs\7\26\2\2s\23\3")
-        buf.write(u"\2\2\2tv\7\26\2\2ut\3\2\2\2uv\3\2\2\2vw\3\2\2\2wy\7\17")
-        buf.write(u"\2\2xz\7\26\2\2yx\3\2\2\2yz\3\2\2\2z\25\3\2\2\2{|\7\30")
-        buf.write(u"\2\2|}\5\30\r\2}~\5\2\2\2~\27\3\2\2\2\177\u0080\t\5\2")
-        buf.write(u"\2\u0080\31\3\2\2\2\u0081\u0082\7\16\2\2\u0082\u0083")
-        buf.write(u"\t\6\2\2\u0083\33\3\2\2\2\24!\',\60\669EKMPW[`dhnuy")
+        buf.write(u"\67\u008c\4\2\t\2\4\3\t\3\4\4\t\4\4\5\t\5\4\6\t\6\4\7")
+        buf.write(u"\t\7\4\b\t\b\4\t\t\t\4\n\t\n\4\13\t\13\3\2\6\2\30\n\2")
+        buf.write(u"\r\2\16\2\31\3\2\3\2\3\3\3\3\5\3 \n\3\3\3\6\3#\n\3\r")
+        buf.write(u"\3\16\3$\3\4\3\4\3\4\5\4*\n\4\3\4\5\4-\n\4\3\5\3\5\3")
+        buf.write(u"\5\5\5\62\n\5\3\5\5\5\65\n\5\5\5\67\n\5\3\5\3\5\3\5\3")
+        buf.write(u"\5\3\5\3\5\3\5\3\5\7\5A\n\5\f\5\16\5D\13\5\3\5\6\5G\n")
+        buf.write(u"\5\r\5\16\5H\5\5K\n\5\3\5\5\5N\n\5\3\6\5\6Q\n\6\3\6\3")
+        buf.write(u"\6\5\6U\n\6\3\6\3\6\3\6\5\6Z\n\6\7\6\\\n\6\f\6\16\6_")
+        buf.write(u"\13\6\3\6\5\6b\n\6\3\7\3\7\3\7\3\7\3\7\3\7\5\7j\n\7\3")
+        buf.write(u"\7\5\7m\n\7\3\7\3\7\3\7\5\7r\n\7\3\b\3\b\3\b\3\b\3\t")
+        buf.write(u"\3\t\3\t\3\t\7\t|\n\t\f\t\16\t\177\13\t\3\t\5\t\u0082")
+        buf.write(u"\n\t\3\t\3\t\3\n\3\n\3\13\3\13\3\13\3\13\3\13\2\2\f\2")
+        buf.write(u"\4\6\b\n\f\16\20\22\24\2\5\3\2\32)\3\2*,\3\2-\65\u009a")
+        buf.write(u"\2\27\3\2\2\2\4\37\3\2\2\2\6&\3\2\2\2\b.\3\2\2\2\nP\3")
+        buf.write(u"\2\2\2\fq\3\2\2\2\16s\3\2\2\2\20w\3\2\2\2\22\u0085\3")
+        buf.write(u"\2\2\2\24\u0087\3\2\2\2\26\30\5\4\3\2\27\26\3\2\2\2\30")
+        buf.write(u"\31\3\2\2\2\31\27\3\2\2\2\31\32\3\2\2\2\32\33\3\2\2\2")
+        buf.write(u"\33\34\7\2\2\3\34\3\3\2\2\2\35 \5\6\4\2\36 \5\b\5\2\37")
+        buf.write(u"\35\3\2\2\2\37\36\3\2\2\2 \"\3\2\2\2!#\7\4\2\2\"!\3\2")
+        buf.write(u"\2\2#$\3\2\2\2$\"\3\2\2\2$%\3\2\2\2%\5\3\2\2\2&\'\5\n")
+        buf.write(u"\6\2\')\7\30\2\2(*\5\20\t\2)(\3\2\2\2)*\3\2\2\2*,\3\2")
+        buf.write(u"\2\2+-\5\24\13\2,+\3\2\2\2,-\3\2\2\2-\7\3\2\2\2.\66\5")
+        buf.write(u"\n\6\2/\61\7\30\2\2\60\62\5\20\t\2\61\60\3\2\2\2\61\62")
+        buf.write(u"\3\2\2\2\62\64\3\2\2\2\63\65\5\24\13\2\64\63\3\2\2\2")
+        buf.write(u"\64\65\3\2\2\2\65\67\3\2\2\2\66/\3\2\2\2\66\67\3\2\2")
+        buf.write(u"\2\678\3\2\2\28M\7\t\2\29N\7\31\2\2:N\5\6\4\2;<\7\4\2")
+        buf.write(u"\2<J\7\66\2\2=>\7\31\2\2>K\7\4\2\2?A\7\4\2\2@?\3\2\2")
+        buf.write(u"\2AD\3\2\2\2B@\3\2\2\2BC\3\2\2\2CE\3\2\2\2DB\3\2\2\2")
+        buf.write(u"EG\5\4\3\2FB\3\2\2\2GH\3\2\2\2HF\3\2\2\2HI\3\2\2\2IK")
+        buf.write(u"\3\2\2\2J=\3\2\2\2JF\3\2\2\2KL\3\2\2\2LN\7\67\2\2M9\3")
+        buf.write(u"\2\2\2M:\3\2\2\2M;\3\2\2\2N\t\3\2\2\2OQ\7\n\2\2PO\3\2")
+        buf.write(u"\2\2PQ\3\2\2\2QR\3\2\2\2RT\5\f\7\2SU\5\16\b\2TS\3\2\2")
+        buf.write(u"\2TU\3\2\2\2U]\3\2\2\2VW\7\n\2\2WY\5\f\7\2XZ\5\16\b\2")
+        buf.write(u"YX\3\2\2\2YZ\3\2\2\2Z\\\3\2\2\2[V\3\2\2\2\\_\3\2\2\2")
+        buf.write(u"][\3\2\2\2]^\3\2\2\2^a\3\2\2\2_]\3\2\2\2`b\7\n\2\2a`")
+        buf.write(u"\3\2\2\2ab\3\2\2\2b\13\3\2\2\2cl\7\r\2\2di\7\24\2\2e")
+        buf.write(u"j\7\27\2\2fg\7\27\2\2gh\7\26\2\2hj\7\27\2\2ie\3\2\2\2")
+        buf.write(u"if\3\2\2\2jk\3\2\2\2km\7\25\2\2ld\3\2\2\2lm\3\2\2\2m")
+        buf.write(u"r\3\2\2\2nr\7\13\2\2or\7\f\2\2pr\7\30\2\2qc\3\2\2\2q")
+        buf.write(u"n\3\2\2\2qo\3\2\2\2qp\3\2\2\2r\r\3\2\2\2st\7\20\2\2t")
+        buf.write(u"u\t\2\2\2uv\7\21\2\2v\17\3\2\2\2wx\7\16\2\2x}\5\22\n")
+        buf.write(u"\2yz\7\26\2\2z|\5\22\n\2{y\3\2\2\2|\177\3\2\2\2}{\3\2")
+        buf.write(u"\2\2}~\3\2\2\2~\u0081\3\2\2\2\177}\3\2\2\2\u0080\u0082")
+        buf.write(u"\7\26\2\2\u0081\u0080\3\2\2\2\u0081\u0082\3\2\2\2\u0082")
+        buf.write(u"\u0083\3\2\2\2\u0083\u0084\7\17\2\2\u0084\21\3\2\2\2")
+        buf.write(u"\u0085\u0086\t\3\2\2\u0086\23\3\2\2\2\u0087\u0088\7\22")
+        buf.write(u"\2\2\u0088\u0089\t\4\2\2\u0089\u008a\7\23\2\2\u008a\25")
+        buf.write(u"\3\2\2\2\30\31\37$),\61\64\66BHJMPTY]ailq}\u0081")
         return buf.getvalue()
 
 
@@ -63,86 +68,107 @@ class SelectorParser ( Parser ):
 
     sharedContextCache = PredictionContextCache()
 
-    literalNames = [ u"<INVALID>", u"'=='", u"'!='", u"'<'", u"'<='", u"'>'", 
-                     u"'>='", u"<INVALID>", u"<INVALID>", u"<INVALID>", 
-                     u"<INVALID>", u"<INVALID>", u"'::'", u"':'", u"'/'", 
-                     u"'*'", u"'['", u"']'", u"'('", u"')'", u"<INVALID>", 
-                     u"<INVALID>", u"<INVALID>", u"<INVALID>", u"<INVALID>", 
-                     u"'pass'", u"'ancestors'", u"'ancestors_and_self'", 
-                     u"'attributes'", u"'children'", u"'self_and_children'", 
-                     u"'descendants'", u"'self_and_descendants'", u"'siblings'", 
-                     u"'siblings_and_self'" ]
+    literalNames = [ u"<INVALID>", u"<INVALID>", u"<INVALID>", u"<INVALID>", 
+                     u"<INVALID>", u"<INVALID>", u"<INVALID>", u"':'", u"'/'", 
+                     u"'+'", u"'*'", u"'.'", u"'<'", u"'>'", u"'['", u"']'", 
+                     u"'('", u"')'", u"'{'", u"'}'", u"','", u"<INVALID>", 
+                     u"<INVALID>", u"'pass'", u"'object'", u"'simple'", 
+                     u"'compound'", u"'fundamental'", u"'string'", u"'enum'", 
+                     u"'integer'", u"'number'", u"'boolean'", u"'guid'", 
+                     u"'datetime'", u"'date'", u"'time'", u"'duration'", 
+                     u"'filename'", u"'custom'", u"'pre'", u"'post'", u"'inline'", 
+                     u"'self'", u"'ancestors'", u"'ancestors_and_self'", 
+                     u"'children'", u"'self_and_children'", u"'descendants'", 
+                     u"'self_and_descendants'", u"'siblings'", u"'self_and_siblings'" ]
 
-    symbolicNames = [ u"<INVALID>", u"<INVALID>", u"<INVALID>", u"<INVALID>", 
-                      u"<INVALID>", u"<INVALID>", u"<INVALID>", u"MULTI_LINE_NEWLINE", 
-                      u"NEWLINE", u"MULTI_LINE_ESCAPE", u"HORIZONTAL_WHITESPACE", 
-                      u"COMMENT", u"DECORATOR", u"SCOPE_DELIMITER", u"SEP", 
-                      u"ANY", u"LBRACK", u"RBRACK", u"LPAREN", u"RPAREN", 
-                      u"INT", u"NUMBER", u"ID", u"DOUBLE_QUOTE_STRING", 
-                      u"SINGLE_QUOTE_STRING", u"PASS", u"DECORATOR_ANCESTORS", 
-                      u"DECORATOR_ANCESTORS_AND_SELF", u"DECORATOR_ATTRIBUTES", 
+    symbolicNames = [ u"<INVALID>", u"MULTI_LINE_NEWLINE", u"NEWLINE", u"MULTI_LINE_ESCAPE", 
+                      u"HORIZONTAL_WHITESPACE", u"MULTI_LINE_COMMENT", u"COMMENT", 
+                      u"SCOPE_DELIMITER", u"SEP", u"ONE_OR_MORE", u"ZERO_OR_MORE", 
+                      u"ANY", u"LT", u"GT", u"LBRACK", u"RBRACK", u"LPAREN", 
+                      u"RPAREN", u"LBRACE", u"RBRACE", u"COMMA", u"INT", 
+                      u"ID", u"PASS", u"PREDICATE_OBJECT", u"PREDICATE_SIMPLE_OBJECT", 
+                      u"PREDICATE_COMPOUND_OBJECT", u"PREDICATE_FUNDAMENTAL", 
+                      u"PREDICATE_STRING", u"PREDICATE_ENUM", u"PREDICATE_INTEGER", 
+                      u"PREDICATE_NUMBER", u"PREDICATE_BOOLEAN", u"PREDICATE_GUID", 
+                      u"PREDICATE_DATETIME", u"PREDICATE_DATE", u"PREDICATE_TIME", 
+                      u"PREDICATE_DURATION", u"PREDICATE_FILENAME", u"PREDICATE_CUSTOM", 
+                      u"CALL_TYPE_PRE", u"CALL_TYPE_POST", u"CALL_TYPE_INLINE", 
+                      u"DECORATOR_SELF", u"DECORATOR_ANCESTORS", u"DECORATOR_ANCESTORS_AND_SELF", 
                       u"DECORATOR_CHILDREN", u"DECORATOR_SELF_AND_CHILDREN", 
                       u"DECORATOR_DESCENDANTS", u"DECORATOR_SELF_AND_DESCENDANTS", 
-                      u"DECORATOR_SIBLINGS", u"DECORATOR_SIBLINGS_AND_SELF", 
+                      u"DECORATOR_SIBLINGS", u"DECORATOR_SELF_AND_SIBLINGS", 
                       u"INDENT", u"DEDENT" ]
 
-    RULE_arg = 0
-    RULE_statements = 1
-    RULE_statement = 2
-    RULE_singleStatement = 3
-    RULE_groupStatement = 4
-    RULE_function = 5
-    RULE_selector = 6
-    RULE_selector_Predicate = 7
-    RULE_selector_Predicate_Index = 8
-    RULE_selector_Predicate_IndexRange = 9
-    RULE_selector_Predicate_Statement = 10
-    RULE_selector_Predicate_Statement_Operator = 11
-    RULE_decorator = 12
+    RULE_statements = 0
+    RULE_statement___ = 1
+    RULE_single_statement = 2
+    RULE_compound_statement = 3
+    RULE_selector = 4
+    RULE_selector_item = 5
+    RULE_selector_predicate = 6
+    RULE_call_type___ = 7
+    RULE_call_type_type = 8
+    RULE_decorator = 9
 
-    ruleNames =  [ u"arg", u"statements", u"statement", u"singleStatement", 
-                   u"groupStatement", u"function", u"selector", u"selector_Predicate", 
-                   u"selector_Predicate_Index", u"selector_Predicate_IndexRange", 
-                   u"selector_Predicate_Statement", u"selector_Predicate_Statement_Operator", 
+    ruleNames =  [ u"statements", u"statement___", u"single_statement", 
+                   u"compound_statement", u"selector", u"selector_item", 
+                   u"selector_predicate", u"call_type___", u"call_type_type", 
                    u"decorator" ]
 
     EOF = Token.EOF
-    T__0=1
-    T__1=2
-    T__2=3
-    T__3=4
-    T__4=5
-    T__5=6
-    MULTI_LINE_NEWLINE=7
-    NEWLINE=8
-    MULTI_LINE_ESCAPE=9
-    HORIZONTAL_WHITESPACE=10
-    COMMENT=11
-    DECORATOR=12
-    SCOPE_DELIMITER=13
-    SEP=14
-    ANY=15
-    LBRACK=16
-    RBRACK=17
-    LPAREN=18
-    RPAREN=19
-    INT=20
-    NUMBER=21
+    MULTI_LINE_NEWLINE=1
+    NEWLINE=2
+    MULTI_LINE_ESCAPE=3
+    HORIZONTAL_WHITESPACE=4
+    MULTI_LINE_COMMENT=5
+    COMMENT=6
+    SCOPE_DELIMITER=7
+    SEP=8
+    ONE_OR_MORE=9
+    ZERO_OR_MORE=10
+    ANY=11
+    LT=12
+    GT=13
+    LBRACK=14
+    RBRACK=15
+    LPAREN=16
+    RPAREN=17
+    LBRACE=18
+    RBRACE=19
+    COMMA=20
+    INT=21
     ID=22
-    DOUBLE_QUOTE_STRING=23
-    SINGLE_QUOTE_STRING=24
-    PASS=25
-    DECORATOR_ANCESTORS=26
-    DECORATOR_ANCESTORS_AND_SELF=27
-    DECORATOR_ATTRIBUTES=28
-    DECORATOR_CHILDREN=29
-    DECORATOR_SELF_AND_CHILDREN=30
-    DECORATOR_DESCENDANTS=31
-    DECORATOR_SELF_AND_DESCENDANTS=32
-    DECORATOR_SIBLINGS=33
-    DECORATOR_SIBLINGS_AND_SELF=34
-    INDENT=35
-    DEDENT=36
+    PASS=23
+    PREDICATE_OBJECT=24
+    PREDICATE_SIMPLE_OBJECT=25
+    PREDICATE_COMPOUND_OBJECT=26
+    PREDICATE_FUNDAMENTAL=27
+    PREDICATE_STRING=28
+    PREDICATE_ENUM=29
+    PREDICATE_INTEGER=30
+    PREDICATE_NUMBER=31
+    PREDICATE_BOOLEAN=32
+    PREDICATE_GUID=33
+    PREDICATE_DATETIME=34
+    PREDICATE_DATE=35
+    PREDICATE_TIME=36
+    PREDICATE_DURATION=37
+    PREDICATE_FILENAME=38
+    PREDICATE_CUSTOM=39
+    CALL_TYPE_PRE=40
+    CALL_TYPE_POST=41
+    CALL_TYPE_INLINE=42
+    DECORATOR_SELF=43
+    DECORATOR_ANCESTORS=44
+    DECORATOR_ANCESTORS_AND_SELF=45
+    DECORATOR_CHILDREN=46
+    DECORATOR_SELF_AND_CHILDREN=47
+    DECORATOR_DESCENDANTS=48
+    DECORATOR_SELF_AND_DESCENDANTS=49
+    DECORATOR_SIBLINGS=50
+    DECORATOR_SELF_AND_SIBLINGS=51
+    INDENT=52
+    DEDENT=53
 
     def __init__(self, input):
         super(SelectorParser, self).__init__(input)
@@ -151,60 +177,6 @@ class SelectorParser ( Parser ):
         self._predicates = None
 
 
-
-    class ArgContext(ParserRuleContext):
-
-        def __init__(self, parser, parent=None, invokingState=-1):
-            super(SelectorParser.ArgContext, self).__init__(parent, invokingState)
-            self.parser = parser
-
-        def ID(self):
-            return self.getToken(SelectorParser.ID, 0)
-
-        def INT(self):
-            return self.getToken(SelectorParser.INT, 0)
-
-        def NUMBER(self):
-            return self.getToken(SelectorParser.NUMBER, 0)
-
-        def DOUBLE_QUOTE_STRING(self):
-            return self.getToken(SelectorParser.DOUBLE_QUOTE_STRING, 0)
-
-        def SINGLE_QUOTE_STRING(self):
-            return self.getToken(SelectorParser.SINGLE_QUOTE_STRING, 0)
-
-        def getRuleIndex(self):
-            return SelectorParser.RULE_arg
-
-        def accept(self, visitor):
-            if hasattr(visitor, "visitArg"):
-                return visitor.visitArg(self)
-            else:
-                return visitor.visitChildren(self)
-
-
-
-
-    def arg(self):
-
-        localctx = SelectorParser.ArgContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 0, self.RULE_arg)
-        self._la = 0 # Token type
-        try:
-            self.enterOuterAlt(localctx, 1)
-            self.state = 26
-            _la = self._input.LA(1)
-            if not((((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << SelectorParser.INT) | (1 << SelectorParser.NUMBER) | (1 << SelectorParser.ID) | (1 << SelectorParser.DOUBLE_QUOTE_STRING) | (1 << SelectorParser.SINGLE_QUOTE_STRING))) != 0)):
-                self._errHandler.recoverInline(self)
-            else:
-                self.consume()
-        except RecognitionException as re:
-            localctx.exception = re
-            self._errHandler.reportError(self, re)
-            self._errHandler.recover(self, re)
-        finally:
-            self.exitRule()
-        return localctx
 
     class StatementsContext(ParserRuleContext):
 
@@ -215,11 +187,11 @@ class SelectorParser ( Parser ):
         def EOF(self):
             return self.getToken(SelectorParser.EOF, 0)
 
-        def statement(self, i=None):
+        def statement___(self, i=None):
             if i is None:
-                return self.getTypedRuleContexts(SelectorParser.StatementContext)
+                return self.getTypedRuleContexts(SelectorParser.Statement___Context)
             else:
-                return self.getTypedRuleContext(SelectorParser.StatementContext,i)
+                return self.getTypedRuleContext(SelectorParser.Statement___Context,i)
 
 
         def getRuleIndex(self):
@@ -237,23 +209,23 @@ class SelectorParser ( Parser ):
     def statements(self):
 
         localctx = SelectorParser.StatementsContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 2, self.RULE_statements)
+        self.enterRule(localctx, 0, self.RULE_statements)
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 29 
+            self.state = 21 
             self._errHandler.sync(self)
             _la = self._input.LA(1)
             while True:
-                self.state = 28
-                self.statement()
-                self.state = 31 
+                self.state = 20
+                self.statement___()
+                self.state = 23 
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if not ((((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << SelectorParser.SEP) | (1 << SelectorParser.ANY) | (1 << SelectorParser.ID))) != 0)):
+                if not ((((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << SelectorParser.SEP) | (1 << SelectorParser.ONE_OR_MORE) | (1 << SelectorParser.ZERO_OR_MORE) | (1 << SelectorParser.ANY) | (1 << SelectorParser.ID))) != 0)):
                     break
 
-            self.state = 33
+            self.state = 25
             self.match(SelectorParser.EOF)
         except RecognitionException as re:
             localctx.exception = re
@@ -263,18 +235,18 @@ class SelectorParser ( Parser ):
             self.exitRule()
         return localctx
 
-    class StatementContext(ParserRuleContext):
+    class Statement___Context(ParserRuleContext):
 
         def __init__(self, parser, parent=None, invokingState=-1):
-            super(SelectorParser.StatementContext, self).__init__(parent, invokingState)
+            super(SelectorParser.Statement___Context, self).__init__(parent, invokingState)
             self.parser = parser
 
-        def singleStatement(self):
-            return self.getTypedRuleContext(SelectorParser.SingleStatementContext,0)
+        def single_statement(self):
+            return self.getTypedRuleContext(SelectorParser.Single_statementContext,0)
 
 
-        def groupStatement(self):
-            return self.getTypedRuleContext(SelectorParser.GroupStatementContext,0)
+        def compound_statement(self):
+            return self.getTypedRuleContext(SelectorParser.Compound_statementContext,0)
 
 
         def NEWLINE(self, i=None):
@@ -284,47 +256,47 @@ class SelectorParser ( Parser ):
                 return self.getToken(SelectorParser.NEWLINE, i)
 
         def getRuleIndex(self):
-            return SelectorParser.RULE_statement
+            return SelectorParser.RULE_statement___
 
         def accept(self, visitor):
-            if hasattr(visitor, "visitStatement"):
-                return visitor.visitStatement(self)
+            if hasattr(visitor, "visitStatement___"):
+                return visitor.visitStatement___(self)
             else:
                 return visitor.visitChildren(self)
 
 
 
 
-    def statement(self):
+    def statement___(self):
 
-        localctx = SelectorParser.StatementContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 4, self.RULE_statement)
+        localctx = SelectorParser.Statement___Context(self, self._ctx, self.state)
+        self.enterRule(localctx, 2, self.RULE_statement___)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 37
+            self.state = 29
             la_ = self._interp.adaptivePredict(self._input,1,self._ctx)
             if la_ == 1:
-                self.state = 35
-                self.singleStatement()
+                self.state = 27
+                self.single_statement()
                 pass
 
             elif la_ == 2:
-                self.state = 36
-                self.groupStatement()
+                self.state = 28
+                self.compound_statement()
                 pass
 
 
-            self.state = 40 
+            self.state = 32 
             self._errHandler.sync(self)
             _alt = 1
             while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
                 if _alt == 1:
-                    self.state = 39
+                    self.state = 31
                     self.match(SelectorParser.NEWLINE)
 
                 else:
                     raise NoViableAltException(self)
-                self.state = 42 
+                self.state = 34 
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,2,self._ctx)
 
@@ -336,18 +308,21 @@ class SelectorParser ( Parser ):
             self.exitRule()
         return localctx
 
-    class SingleStatementContext(ParserRuleContext):
+    class Single_statementContext(ParserRuleContext):
 
         def __init__(self, parser, parent=None, invokingState=-1):
-            super(SelectorParser.SingleStatementContext, self).__init__(parent, invokingState)
+            super(SelectorParser.Single_statementContext, self).__init__(parent, invokingState)
             self.parser = parser
 
         def selector(self):
             return self.getTypedRuleContext(SelectorParser.SelectorContext,0)
 
 
-        def function(self):
-            return self.getTypedRuleContext(SelectorParser.FunctionContext,0)
+        def ID(self):
+            return self.getToken(SelectorParser.ID, 0)
+
+        def call_type___(self):
+            return self.getTypedRuleContext(SelectorParser.Call_type___Context,0)
 
 
         def decorator(self):
@@ -355,35 +330,42 @@ class SelectorParser ( Parser ):
 
 
         def getRuleIndex(self):
-            return SelectorParser.RULE_singleStatement
+            return SelectorParser.RULE_single_statement
 
         def accept(self, visitor):
-            if hasattr(visitor, "visitSingleStatement"):
-                return visitor.visitSingleStatement(self)
+            if hasattr(visitor, "visitSingle_statement"):
+                return visitor.visitSingle_statement(self)
             else:
                 return visitor.visitChildren(self)
 
 
 
 
-    def singleStatement(self):
+    def single_statement(self):
 
-        localctx = SelectorParser.SingleStatementContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 6, self.RULE_singleStatement)
+        localctx = SelectorParser.Single_statementContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 4, self.RULE_single_statement)
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 44
+            self.state = 36
             self.selector()
-            self.state = 46
+            self.state = 37
+            self.match(SelectorParser.ID)
+            self.state = 39
             _la = self._input.LA(1)
-            if _la==SelectorParser.DECORATOR:
-                self.state = 45
+            if _la==SelectorParser.LT:
+                self.state = 38
+                self.call_type___()
+
+
+            self.state = 42
+            _la = self._input.LA(1)
+            if _la==SelectorParser.LPAREN:
+                self.state = 41
                 self.decorator()
 
 
-            self.state = 48
-            self.function()
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -392,10 +374,10 @@ class SelectorParser ( Parser ):
             self.exitRule()
         return localctx
 
-    class GroupStatementContext(ParserRuleContext):
+    class Compound_statementContext(ParserRuleContext):
 
         def __init__(self, parser, parent=None, invokingState=-1):
-            super(SelectorParser.GroupStatementContext, self).__init__(parent, invokingState)
+            super(SelectorParser.Compound_statementContext, self).__init__(parent, invokingState)
             self.parser = parser
 
         def selector(self):
@@ -408,17 +390,12 @@ class SelectorParser ( Parser ):
         def PASS(self):
             return self.getToken(SelectorParser.PASS, 0)
 
-        def singleStatement(self):
-            return self.getTypedRuleContext(SelectorParser.SingleStatementContext,0)
+        def single_statement(self):
+            return self.getTypedRuleContext(SelectorParser.Single_statementContext,0)
 
 
-        def decorator(self):
-            return self.getTypedRuleContext(SelectorParser.DecoratorContext,0)
-
-
-        def function(self):
-            return self.getTypedRuleContext(SelectorParser.FunctionContext,0)
-
+        def ID(self):
+            return self.getToken(SelectorParser.ID, 0)
 
         def NEWLINE(self, i=None):
             if i is None:
@@ -432,161 +409,121 @@ class SelectorParser ( Parser ):
         def DEDENT(self):
             return self.getToken(SelectorParser.DEDENT, 0)
 
-        def statement(self, i=None):
+        def call_type___(self):
+            return self.getTypedRuleContext(SelectorParser.Call_type___Context,0)
+
+
+        def decorator(self):
+            return self.getTypedRuleContext(SelectorParser.DecoratorContext,0)
+
+
+        def statement___(self, i=None):
             if i is None:
-                return self.getTypedRuleContexts(SelectorParser.StatementContext)
+                return self.getTypedRuleContexts(SelectorParser.Statement___Context)
             else:
-                return self.getTypedRuleContext(SelectorParser.StatementContext,i)
+                return self.getTypedRuleContext(SelectorParser.Statement___Context,i)
 
 
         def getRuleIndex(self):
-            return SelectorParser.RULE_groupStatement
+            return SelectorParser.RULE_compound_statement
 
         def accept(self, visitor):
-            if hasattr(visitor, "visitGroupStatement"):
-                return visitor.visitGroupStatement(self)
+            if hasattr(visitor, "visitCompound_statement"):
+                return visitor.visitCompound_statement(self)
             else:
                 return visitor.visitChildren(self)
 
 
 
 
-    def groupStatement(self):
+    def compound_statement(self):
 
-        localctx = SelectorParser.GroupStatementContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 8, self.RULE_groupStatement)
+        localctx = SelectorParser.Compound_statementContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 6, self.RULE_compound_statement)
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 50
+            self.state = 44
             self.selector()
             self.state = 52
             _la = self._input.LA(1)
-            if _la==SelectorParser.DECORATOR:
-                self.state = 51
-                self.decorator()
+            if _la==SelectorParser.ID:
+                self.state = 45
+                self.match(SelectorParser.ID)
+                self.state = 47
+                _la = self._input.LA(1)
+                if _la==SelectorParser.LT:
+                    self.state = 46
+                    self.call_type___()
 
 
-            self.state = 55
-            _la = self._input.LA(1)
-            if _la==SelectorParser.LPAREN:
-                self.state = 54
-                self.function()
+                self.state = 50
+                _la = self._input.LA(1)
+                if _la==SelectorParser.LPAREN:
+                    self.state = 49
+                    self.decorator()
 
 
-            self.state = 57
+
+
+            self.state = 54
             self.match(SelectorParser.SCOPE_DELIMITER)
-            self.state = 78
+            self.state = 75
             token = self._input.LA(1)
             if token in [SelectorParser.PASS]:
-                self.state = 58
+                self.state = 55
                 self.match(SelectorParser.PASS)
 
-            elif token in [SelectorParser.SEP, SelectorParser.ANY, SelectorParser.ID]:
-                self.state = 59
-                self.singleStatement()
+            elif token in [SelectorParser.SEP, SelectorParser.ONE_OR_MORE, SelectorParser.ZERO_OR_MORE, SelectorParser.ANY, SelectorParser.ID]:
+                self.state = 56
+                self.single_statement()
 
             elif token in [SelectorParser.NEWLINE]:
-                self.state = 60
+                self.state = 57
                 self.match(SelectorParser.NEWLINE)
-                self.state = 61
+                self.state = 58
                 self.match(SelectorParser.INDENT)
-                self.state = 75
+                self.state = 72
                 token = self._input.LA(1)
                 if token in [SelectorParser.PASS]:
-                    self.state = 62
+                    self.state = 59
                     self.match(SelectorParser.PASS)
-                    self.state = 63
+                    self.state = 60
                     self.match(SelectorParser.NEWLINE)
 
-                elif token in [SelectorParser.NEWLINE, SelectorParser.SEP, SelectorParser.ANY, SelectorParser.ID]:
-                    self.state = 71 
+                elif token in [SelectorParser.NEWLINE, SelectorParser.SEP, SelectorParser.ONE_OR_MORE, SelectorParser.ZERO_OR_MORE, SelectorParser.ANY, SelectorParser.ID]:
+                    self.state = 68 
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
                     while True:
-                        self.state = 67
+                        self.state = 64
                         self._errHandler.sync(self)
                         _la = self._input.LA(1)
                         while _la==SelectorParser.NEWLINE:
-                            self.state = 64
+                            self.state = 61
                             self.match(SelectorParser.NEWLINE)
-                            self.state = 69
+                            self.state = 66
                             self._errHandler.sync(self)
                             _la = self._input.LA(1)
 
-                        self.state = 70
-                        self.statement()
-                        self.state = 73 
+                        self.state = 67
+                        self.statement___()
+                        self.state = 70 
                         self._errHandler.sync(self)
                         _la = self._input.LA(1)
-                        if not ((((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << SelectorParser.NEWLINE) | (1 << SelectorParser.SEP) | (1 << SelectorParser.ANY) | (1 << SelectorParser.ID))) != 0)):
+                        if not ((((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << SelectorParser.NEWLINE) | (1 << SelectorParser.SEP) | (1 << SelectorParser.ONE_OR_MORE) | (1 << SelectorParser.ZERO_OR_MORE) | (1 << SelectorParser.ANY) | (1 << SelectorParser.ID))) != 0)):
                             break
 
 
                 else:
                     raise NoViableAltException(self)
 
-                self.state = 77
+                self.state = 74
                 self.match(SelectorParser.DEDENT)
 
             else:
                 raise NoViableAltException(self)
 
-        except RecognitionException as re:
-            localctx.exception = re
-            self._errHandler.reportError(self, re)
-            self._errHandler.recover(self, re)
-        finally:
-            self.exitRule()
-        return localctx
-
-    class FunctionContext(ParserRuleContext):
-
-        def __init__(self, parser, parent=None, invokingState=-1):
-            super(SelectorParser.FunctionContext, self).__init__(parent, invokingState)
-            self.parser = parser
-
-        def LPAREN(self):
-            return self.getToken(SelectorParser.LPAREN, 0)
-
-        def RPAREN(self):
-            return self.getToken(SelectorParser.RPAREN, 0)
-
-        def DOUBLE_QUOTE_STRING(self):
-            return self.getToken(SelectorParser.DOUBLE_QUOTE_STRING, 0)
-
-        def SINGLE_QUOTE_STRING(self):
-            return self.getToken(SelectorParser.SINGLE_QUOTE_STRING, 0)
-
-        def getRuleIndex(self):
-            return SelectorParser.RULE_function
-
-        def accept(self, visitor):
-            if hasattr(visitor, "visitFunction"):
-                return visitor.visitFunction(self)
-            else:
-                return visitor.visitChildren(self)
-
-
-
-
-    def function(self):
-
-        localctx = SelectorParser.FunctionContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 10, self.RULE_function)
-        self._la = 0 # Token type
-        try:
-            self.enterOuterAlt(localctx, 1)
-            self.state = 80
-            self.match(SelectorParser.LPAREN)
-            self.state = 81
-            _la = self._input.LA(1)
-            if not(_la==SelectorParser.DOUBLE_QUOTE_STRING or _la==SelectorParser.SINGLE_QUOTE_STRING):
-                self._errHandler.recoverInline(self)
-            else:
-                self.consume()
-            self.state = 82
-            self.match(SelectorParser.RPAREN)
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -601,17 +538,12 @@ class SelectorParser ( Parser ):
             super(SelectorParser.SelectorContext, self).__init__(parent, invokingState)
             self.parser = parser
 
-        def ANY(self, i=None):
+        def selector_item(self, i=None):
             if i is None:
-                return self.getTokens(SelectorParser.ANY)
+                return self.getTypedRuleContexts(SelectorParser.Selector_itemContext)
             else:
-                return self.getToken(SelectorParser.ANY, i)
+                return self.getTypedRuleContext(SelectorParser.Selector_itemContext,i)
 
-        def ID(self, i=None):
-            if i is None:
-                return self.getTokens(SelectorParser.ID)
-            else:
-                return self.getToken(SelectorParser.ID, i)
 
         def SEP(self, i=None):
             if i is None:
@@ -619,11 +551,11 @@ class SelectorParser ( Parser ):
             else:
                 return self.getToken(SelectorParser.SEP, i)
 
-        def selector_Predicate(self, i=None):
+        def selector_predicate(self, i=None):
             if i is None:
-                return self.getTypedRuleContexts(SelectorParser.Selector_PredicateContext)
+                return self.getTypedRuleContexts(SelectorParser.Selector_predicateContext)
             else:
-                return self.getTypedRuleContext(SelectorParser.Selector_PredicateContext,i)
+                return self.getTypedRuleContext(SelectorParser.Selector_predicateContext,i)
 
 
         def getRuleIndex(self):
@@ -641,58 +573,50 @@ class SelectorParser ( Parser ):
     def selector(self):
 
         localctx = SelectorParser.SelectorContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 12, self.RULE_selector)
+        self.enterRule(localctx, 8, self.RULE_selector)
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 85
+            self.state = 78
             _la = self._input.LA(1)
             if _la==SelectorParser.SEP:
-                self.state = 84
+                self.state = 77
                 self.match(SelectorParser.SEP)
 
 
-            self.state = 87
-            _la = self._input.LA(1)
-            if not(_la==SelectorParser.ANY or _la==SelectorParser.ID):
-                self._errHandler.recoverInline(self)
-            else:
-                self.consume()
-            self.state = 89
+            self.state = 80
+            self.selector_item()
+            self.state = 82
             _la = self._input.LA(1)
             if _la==SelectorParser.LBRACK:
-                self.state = 88
-                self.selector_Predicate()
+                self.state = 81
+                self.selector_predicate()
 
 
-            self.state = 98
+            self.state = 91
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input,13,self._ctx)
+            _alt = self._interp.adaptivePredict(self._input,15,self._ctx)
             while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
                 if _alt==1:
-                    self.state = 91
+                    self.state = 84
                     self.match(SelectorParser.SEP)
-                    self.state = 92
-                    _la = self._input.LA(1)
-                    if not(_la==SelectorParser.ANY or _la==SelectorParser.ID):
-                        self._errHandler.recoverInline(self)
-                    else:
-                        self.consume()
-                    self.state = 94
+                    self.state = 85
+                    self.selector_item()
+                    self.state = 87
                     _la = self._input.LA(1)
                     if _la==SelectorParser.LBRACK:
-                        self.state = 93
-                        self.selector_Predicate()
+                        self.state = 86
+                        self.selector_predicate()
 
              
-                self.state = 100
+                self.state = 93
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input,13,self._ctx)
+                _alt = self._interp.adaptivePredict(self._input,15,self._ctx)
 
-            self.state = 102
+            self.state = 95
             _la = self._input.LA(1)
             if _la==SelectorParser.SEP:
-                self.state = 101
+                self.state = 94
                 self.match(SelectorParser.SEP)
 
 
@@ -704,10 +628,117 @@ class SelectorParser ( Parser ):
             self.exitRule()
         return localctx
 
-    class Selector_PredicateContext(ParserRuleContext):
+    class Selector_itemContext(ParserRuleContext):
 
         def __init__(self, parser, parent=None, invokingState=-1):
-            super(SelectorParser.Selector_PredicateContext, self).__init__(parent, invokingState)
+            super(SelectorParser.Selector_itemContext, self).__init__(parent, invokingState)
+            self.parser = parser
+
+        def ANY(self):
+            return self.getToken(SelectorParser.ANY, 0)
+
+        def ONE_OR_MORE(self):
+            return self.getToken(SelectorParser.ONE_OR_MORE, 0)
+
+        def ZERO_OR_MORE(self):
+            return self.getToken(SelectorParser.ZERO_OR_MORE, 0)
+
+        def ID(self):
+            return self.getToken(SelectorParser.ID, 0)
+
+        def LBRACE(self):
+            return self.getToken(SelectorParser.LBRACE, 0)
+
+        def RBRACE(self):
+            return self.getToken(SelectorParser.RBRACE, 0)
+
+        def INT(self, i=None):
+            if i is None:
+                return self.getTokens(SelectorParser.INT)
+            else:
+                return self.getToken(SelectorParser.INT, i)
+
+        def COMMA(self):
+            return self.getToken(SelectorParser.COMMA, 0)
+
+        def getRuleIndex(self):
+            return SelectorParser.RULE_selector_item
+
+        def accept(self, visitor):
+            if hasattr(visitor, "visitSelector_item"):
+                return visitor.visitSelector_item(self)
+            else:
+                return visitor.visitChildren(self)
+
+
+
+
+    def selector_item(self):
+
+        localctx = SelectorParser.Selector_itemContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 10, self.RULE_selector_item)
+        self._la = 0 # Token type
+        try:
+            self.enterOuterAlt(localctx, 1)
+            self.state = 111
+            token = self._input.LA(1)
+            if token in [SelectorParser.ANY]:
+                self.state = 97
+                self.match(SelectorParser.ANY)
+                self.state = 106
+                _la = self._input.LA(1)
+                if _la==SelectorParser.LBRACE:
+                    self.state = 98
+                    self.match(SelectorParser.LBRACE)
+                    self.state = 103
+                    la_ = self._interp.adaptivePredict(self._input,17,self._ctx)
+                    if la_ == 1:
+                        self.state = 99
+                        self.match(SelectorParser.INT)
+                        pass
+
+                    elif la_ == 2:
+                        self.state = 100
+                        self.match(SelectorParser.INT)
+                        self.state = 101
+                        self.match(SelectorParser.COMMA)
+                        self.state = 102
+                        self.match(SelectorParser.INT)
+                        pass
+
+
+                    self.state = 105
+                    self.match(SelectorParser.RBRACE)
+
+
+
+            elif token in [SelectorParser.ONE_OR_MORE]:
+                self.state = 108
+                self.match(SelectorParser.ONE_OR_MORE)
+
+            elif token in [SelectorParser.ZERO_OR_MORE]:
+                self.state = 109
+                self.match(SelectorParser.ZERO_OR_MORE)
+
+            elif token in [SelectorParser.ID]:
+                self.state = 110
+                self.match(SelectorParser.ID)
+
+            else:
+                raise NoViableAltException(self)
+
+        except RecognitionException as re:
+            localctx.exception = re
+            self._errHandler.reportError(self, re)
+            self._errHandler.recover(self, re)
+        finally:
+            self.exitRule()
+        return localctx
+
+    class Selector_predicateContext(ParserRuleContext):
+
+        def __init__(self, parser, parent=None, invokingState=-1):
+            super(SelectorParser.Selector_predicateContext, self).__init__(parent, invokingState)
             self.parser = parser
 
         def LBRACK(self):
@@ -716,57 +747,82 @@ class SelectorParser ( Parser ):
         def RBRACK(self):
             return self.getToken(SelectorParser.RBRACK, 0)
 
-        def selector_Predicate_Index(self):
-            return self.getTypedRuleContext(SelectorParser.Selector_Predicate_IndexContext,0)
+        def PREDICATE_OBJECT(self):
+            return self.getToken(SelectorParser.PREDICATE_OBJECT, 0)
 
+        def PREDICATE_SIMPLE_OBJECT(self):
+            return self.getToken(SelectorParser.PREDICATE_SIMPLE_OBJECT, 0)
 
-        def selector_Predicate_IndexRange(self):
-            return self.getTypedRuleContext(SelectorParser.Selector_Predicate_IndexRangeContext,0)
+        def PREDICATE_COMPOUND_OBJECT(self):
+            return self.getToken(SelectorParser.PREDICATE_COMPOUND_OBJECT, 0)
 
+        def PREDICATE_FUNDAMENTAL(self):
+            return self.getToken(SelectorParser.PREDICATE_FUNDAMENTAL, 0)
 
-        def selector_Predicate_Statement(self):
-            return self.getTypedRuleContext(SelectorParser.Selector_Predicate_StatementContext,0)
+        def PREDICATE_STRING(self):
+            return self.getToken(SelectorParser.PREDICATE_STRING, 0)
 
+        def PREDICATE_ENUM(self):
+            return self.getToken(SelectorParser.PREDICATE_ENUM, 0)
+
+        def PREDICATE_INTEGER(self):
+            return self.getToken(SelectorParser.PREDICATE_INTEGER, 0)
+
+        def PREDICATE_NUMBER(self):
+            return self.getToken(SelectorParser.PREDICATE_NUMBER, 0)
+
+        def PREDICATE_BOOLEAN(self):
+            return self.getToken(SelectorParser.PREDICATE_BOOLEAN, 0)
+
+        def PREDICATE_GUID(self):
+            return self.getToken(SelectorParser.PREDICATE_GUID, 0)
+
+        def PREDICATE_DATETIME(self):
+            return self.getToken(SelectorParser.PREDICATE_DATETIME, 0)
+
+        def PREDICATE_DATE(self):
+            return self.getToken(SelectorParser.PREDICATE_DATE, 0)
+
+        def PREDICATE_TIME(self):
+            return self.getToken(SelectorParser.PREDICATE_TIME, 0)
+
+        def PREDICATE_DURATION(self):
+            return self.getToken(SelectorParser.PREDICATE_DURATION, 0)
+
+        def PREDICATE_FILENAME(self):
+            return self.getToken(SelectorParser.PREDICATE_FILENAME, 0)
+
+        def PREDICATE_CUSTOM(self):
+            return self.getToken(SelectorParser.PREDICATE_CUSTOM, 0)
 
         def getRuleIndex(self):
-            return SelectorParser.RULE_selector_Predicate
+            return SelectorParser.RULE_selector_predicate
 
         def accept(self, visitor):
-            if hasattr(visitor, "visitSelector_Predicate"):
-                return visitor.visitSelector_Predicate(self)
+            if hasattr(visitor, "visitSelector_predicate"):
+                return visitor.visitSelector_predicate(self)
             else:
                 return visitor.visitChildren(self)
 
 
 
 
-    def selector_Predicate(self):
+    def selector_predicate(self):
 
-        localctx = SelectorParser.Selector_PredicateContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 14, self.RULE_selector_Predicate)
+        localctx = SelectorParser.Selector_predicateContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 12, self.RULE_selector_predicate)
+        self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 104
+            self.state = 113
             self.match(SelectorParser.LBRACK)
-            self.state = 108
-            la_ = self._interp.adaptivePredict(self._input,15,self._ctx)
-            if la_ == 1:
-                self.state = 105
-                self.selector_Predicate_Index()
-                pass
-
-            elif la_ == 2:
-                self.state = 106
-                self.selector_Predicate_IndexRange()
-                pass
-
-            elif la_ == 3:
-                self.state = 107
-                self.selector_Predicate_Statement()
-                pass
-
-
-            self.state = 110
+            self.state = 114
+            _la = self._input.LA(1)
+            if not((((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << SelectorParser.PREDICATE_OBJECT) | (1 << SelectorParser.PREDICATE_SIMPLE_OBJECT) | (1 << SelectorParser.PREDICATE_COMPOUND_OBJECT) | (1 << SelectorParser.PREDICATE_FUNDAMENTAL) | (1 << SelectorParser.PREDICATE_STRING) | (1 << SelectorParser.PREDICATE_ENUM) | (1 << SelectorParser.PREDICATE_INTEGER) | (1 << SelectorParser.PREDICATE_NUMBER) | (1 << SelectorParser.PREDICATE_BOOLEAN) | (1 << SelectorParser.PREDICATE_GUID) | (1 << SelectorParser.PREDICATE_DATETIME) | (1 << SelectorParser.PREDICATE_DATE) | (1 << SelectorParser.PREDICATE_TIME) | (1 << SelectorParser.PREDICATE_DURATION) | (1 << SelectorParser.PREDICATE_FILENAME) | (1 << SelectorParser.PREDICATE_CUSTOM))) != 0)):
+                self._errHandler.recoverInline(self)
+            else:
+                self.consume()
+            self.state = 115
             self.match(SelectorParser.RBRACK)
         except RecognitionException as re:
             localctx.exception = re
@@ -776,142 +832,76 @@ class SelectorParser ( Parser ):
             self.exitRule()
         return localctx
 
-    class Selector_Predicate_IndexContext(ParserRuleContext):
+    class Call_type___Context(ParserRuleContext):
 
         def __init__(self, parser, parent=None, invokingState=-1):
-            super(SelectorParser.Selector_Predicate_IndexContext, self).__init__(parent, invokingState)
+            super(SelectorParser.Call_type___Context, self).__init__(parent, invokingState)
             self.parser = parser
 
-        def INT(self):
-            return self.getToken(SelectorParser.INT, 0)
+        def LT(self):
+            return self.getToken(SelectorParser.LT, 0)
 
-        def getRuleIndex(self):
-            return SelectorParser.RULE_selector_Predicate_Index
-
-        def accept(self, visitor):
-            if hasattr(visitor, "visitSelector_Predicate_Index"):
-                return visitor.visitSelector_Predicate_Index(self)
-            else:
-                return visitor.visitChildren(self)
-
-
-
-
-    def selector_Predicate_Index(self):
-
-        localctx = SelectorParser.Selector_Predicate_IndexContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 16, self.RULE_selector_Predicate_Index)
-        try:
-            self.enterOuterAlt(localctx, 1)
-            self.state = 112
-            self.match(SelectorParser.INT)
-        except RecognitionException as re:
-            localctx.exception = re
-            self._errHandler.reportError(self, re)
-            self._errHandler.recover(self, re)
-        finally:
-            self.exitRule()
-        return localctx
-
-    class Selector_Predicate_IndexRangeContext(ParserRuleContext):
-
-        def __init__(self, parser, parent=None, invokingState=-1):
-            super(SelectorParser.Selector_Predicate_IndexRangeContext, self).__init__(parent, invokingState)
-            self.parser = parser
-
-        def SCOPE_DELIMITER(self):
-            return self.getToken(SelectorParser.SCOPE_DELIMITER, 0)
-
-        def INT(self, i=None):
+        def call_type_type(self, i=None):
             if i is None:
-                return self.getTokens(SelectorParser.INT)
+                return self.getTypedRuleContexts(SelectorParser.Call_type_typeContext)
             else:
-                return self.getToken(SelectorParser.INT, i)
+                return self.getTypedRuleContext(SelectorParser.Call_type_typeContext,i)
+
+
+        def GT(self):
+            return self.getToken(SelectorParser.GT, 0)
+
+        def COMMA(self, i=None):
+            if i is None:
+                return self.getTokens(SelectorParser.COMMA)
+            else:
+                return self.getToken(SelectorParser.COMMA, i)
 
         def getRuleIndex(self):
-            return SelectorParser.RULE_selector_Predicate_IndexRange
+            return SelectorParser.RULE_call_type___
 
         def accept(self, visitor):
-            if hasattr(visitor, "visitSelector_Predicate_IndexRange"):
-                return visitor.visitSelector_Predicate_IndexRange(self)
+            if hasattr(visitor, "visitCall_type___"):
+                return visitor.visitCall_type___(self)
             else:
                 return visitor.visitChildren(self)
 
 
 
 
-    def selector_Predicate_IndexRange(self):
+    def call_type___(self):
 
-        localctx = SelectorParser.Selector_Predicate_IndexRangeContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 18, self.RULE_selector_Predicate_IndexRange)
+        localctx = SelectorParser.Call_type___Context(self, self._ctx, self.state)
+        self.enterRule(localctx, 14, self.RULE_call_type___)
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 115
-            _la = self._input.LA(1)
-            if _la==SelectorParser.INT:
-                self.state = 114
-                self.match(SelectorParser.INT)
-
-
             self.state = 117
-            self.match(SelectorParser.SCOPE_DELIMITER)
-            self.state = 119
-            _la = self._input.LA(1)
-            if _la==SelectorParser.INT:
-                self.state = 118
-                self.match(SelectorParser.INT)
-
-
-        except RecognitionException as re:
-            localctx.exception = re
-            self._errHandler.reportError(self, re)
-            self._errHandler.recover(self, re)
-        finally:
-            self.exitRule()
-        return localctx
-
-    class Selector_Predicate_StatementContext(ParserRuleContext):
-
-        def __init__(self, parser, parent=None, invokingState=-1):
-            super(SelectorParser.Selector_Predicate_StatementContext, self).__init__(parent, invokingState)
-            self.parser = parser
-
-        def ID(self):
-            return self.getToken(SelectorParser.ID, 0)
-
-        def selector_Predicate_Statement_Operator(self):
-            return self.getTypedRuleContext(SelectorParser.Selector_Predicate_Statement_OperatorContext,0)
-
-
-        def arg(self):
-            return self.getTypedRuleContext(SelectorParser.ArgContext,0)
-
-
-        def getRuleIndex(self):
-            return SelectorParser.RULE_selector_Predicate_Statement
-
-        def accept(self, visitor):
-            if hasattr(visitor, "visitSelector_Predicate_Statement"):
-                return visitor.visitSelector_Predicate_Statement(self)
-            else:
-                return visitor.visitChildren(self)
-
-
-
-
-    def selector_Predicate_Statement(self):
-
-        localctx = SelectorParser.Selector_Predicate_StatementContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 20, self.RULE_selector_Predicate_Statement)
-        try:
-            self.enterOuterAlt(localctx, 1)
-            self.state = 121
-            self.match(SelectorParser.ID)
-            self.state = 122
-            self.selector_Predicate_Statement_Operator()
+            self.match(SelectorParser.LT)
+            self.state = 118
+            self.call_type_type()
             self.state = 123
-            self.arg()
+            self._errHandler.sync(self)
+            _alt = self._interp.adaptivePredict(self._input,20,self._ctx)
+            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
+                if _alt==1:
+                    self.state = 119
+                    self.match(SelectorParser.COMMA)
+                    self.state = 120
+                    self.call_type_type() 
+                self.state = 125
+                self._errHandler.sync(self)
+                _alt = self._interp.adaptivePredict(self._input,20,self._ctx)
+
+            self.state = 127
+            _la = self._input.LA(1)
+            if _la==SelectorParser.COMMA:
+                self.state = 126
+                self.match(SelectorParser.COMMA)
+
+
+            self.state = 129
+            self.match(SelectorParser.GT)
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -920,35 +910,43 @@ class SelectorParser ( Parser ):
             self.exitRule()
         return localctx
 
-    class Selector_Predicate_Statement_OperatorContext(ParserRuleContext):
+    class Call_type_typeContext(ParserRuleContext):
 
         def __init__(self, parser, parent=None, invokingState=-1):
-            super(SelectorParser.Selector_Predicate_Statement_OperatorContext, self).__init__(parent, invokingState)
+            super(SelectorParser.Call_type_typeContext, self).__init__(parent, invokingState)
             self.parser = parser
 
+        def CALL_TYPE_PRE(self):
+            return self.getToken(SelectorParser.CALL_TYPE_PRE, 0)
+
+        def CALL_TYPE_POST(self):
+            return self.getToken(SelectorParser.CALL_TYPE_POST, 0)
+
+        def CALL_TYPE_INLINE(self):
+            return self.getToken(SelectorParser.CALL_TYPE_INLINE, 0)
 
         def getRuleIndex(self):
-            return SelectorParser.RULE_selector_Predicate_Statement_Operator
+            return SelectorParser.RULE_call_type_type
 
         def accept(self, visitor):
-            if hasattr(visitor, "visitSelector_Predicate_Statement_Operator"):
-                return visitor.visitSelector_Predicate_Statement_Operator(self)
+            if hasattr(visitor, "visitCall_type_type"):
+                return visitor.visitCall_type_type(self)
             else:
                 return visitor.visitChildren(self)
 
 
 
 
-    def selector_Predicate_Statement_Operator(self):
+    def call_type_type(self):
 
-        localctx = SelectorParser.Selector_Predicate_Statement_OperatorContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 22, self.RULE_selector_Predicate_Statement_Operator)
+        localctx = SelectorParser.Call_type_typeContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 16, self.RULE_call_type_type)
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 125
+            self.state = 131
             _la = self._input.LA(1)
-            if not((((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << SelectorParser.T__0) | (1 << SelectorParser.T__1) | (1 << SelectorParser.T__2) | (1 << SelectorParser.T__3) | (1 << SelectorParser.T__4) | (1 << SelectorParser.T__5))) != 0)):
+            if not((((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << SelectorParser.CALL_TYPE_PRE) | (1 << SelectorParser.CALL_TYPE_POST) | (1 << SelectorParser.CALL_TYPE_INLINE))) != 0)):
                 self._errHandler.recoverInline(self)
             else:
                 self.consume()
@@ -966,17 +964,20 @@ class SelectorParser ( Parser ):
             super(SelectorParser.DecoratorContext, self).__init__(parent, invokingState)
             self.parser = parser
 
-        def DECORATOR(self):
-            return self.getToken(SelectorParser.DECORATOR, 0)
+        def LPAREN(self):
+            return self.getToken(SelectorParser.LPAREN, 0)
+
+        def RPAREN(self):
+            return self.getToken(SelectorParser.RPAREN, 0)
+
+        def DECORATOR_SELF(self):
+            return self.getToken(SelectorParser.DECORATOR_SELF, 0)
 
         def DECORATOR_ANCESTORS(self):
             return self.getToken(SelectorParser.DECORATOR_ANCESTORS, 0)
 
         def DECORATOR_ANCESTORS_AND_SELF(self):
             return self.getToken(SelectorParser.DECORATOR_ANCESTORS_AND_SELF, 0)
-
-        def DECORATOR_ATTRIBUTES(self):
-            return self.getToken(SelectorParser.DECORATOR_ATTRIBUTES, 0)
 
         def DECORATOR_CHILDREN(self):
             return self.getToken(SelectorParser.DECORATOR_CHILDREN, 0)
@@ -993,8 +994,8 @@ class SelectorParser ( Parser ):
         def DECORATOR_SIBLINGS(self):
             return self.getToken(SelectorParser.DECORATOR_SIBLINGS, 0)
 
-        def DECORATOR_SIBLINGS_AND_SELF(self):
-            return self.getToken(SelectorParser.DECORATOR_SIBLINGS_AND_SELF, 0)
+        def DECORATOR_SELF_AND_SIBLINGS(self):
+            return self.getToken(SelectorParser.DECORATOR_SELF_AND_SIBLINGS, 0)
 
         def getRuleIndex(self):
             return SelectorParser.RULE_decorator
@@ -1011,18 +1012,20 @@ class SelectorParser ( Parser ):
     def decorator(self):
 
         localctx = SelectorParser.DecoratorContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 24, self.RULE_decorator)
+        self.enterRule(localctx, 18, self.RULE_decorator)
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 127
-            self.match(SelectorParser.DECORATOR)
-            self.state = 128
+            self.state = 133
+            self.match(SelectorParser.LPAREN)
+            self.state = 134
             _la = self._input.LA(1)
-            if not((((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << SelectorParser.DECORATOR_ANCESTORS) | (1 << SelectorParser.DECORATOR_ANCESTORS_AND_SELF) | (1 << SelectorParser.DECORATOR_ATTRIBUTES) | (1 << SelectorParser.DECORATOR_CHILDREN) | (1 << SelectorParser.DECORATOR_SELF_AND_CHILDREN) | (1 << SelectorParser.DECORATOR_DESCENDANTS) | (1 << SelectorParser.DECORATOR_SELF_AND_DESCENDANTS) | (1 << SelectorParser.DECORATOR_SIBLINGS) | (1 << SelectorParser.DECORATOR_SIBLINGS_AND_SELF))) != 0)):
+            if not((((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << SelectorParser.DECORATOR_SELF) | (1 << SelectorParser.DECORATOR_ANCESTORS) | (1 << SelectorParser.DECORATOR_ANCESTORS_AND_SELF) | (1 << SelectorParser.DECORATOR_CHILDREN) | (1 << SelectorParser.DECORATOR_SELF_AND_CHILDREN) | (1 << SelectorParser.DECORATOR_DESCENDANTS) | (1 << SelectorParser.DECORATOR_SELF_AND_DESCENDANTS) | (1 << SelectorParser.DECORATOR_SIBLINGS) | (1 << SelectorParser.DECORATOR_SELF_AND_SIBLINGS))) != 0)):
                 self._errHandler.recoverInline(self)
             else:
                 self.consume()
+            self.state = 135
+            self.match(SelectorParser.RPAREN)
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)

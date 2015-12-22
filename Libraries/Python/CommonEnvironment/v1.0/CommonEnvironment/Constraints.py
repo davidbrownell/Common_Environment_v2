@@ -116,7 +116,7 @@ class FunctionConstraint(object):
                         if ( default_value == None and 
                              arg in self.Preconditions and 
                              self.Preconditions[arg] != None and 
-                             self.Preconditions[arg].Arity == (0, None)
+                             self.Preconditions[arg].Arity.IsCollection
                            ):
                             kwargs[arg] = []
 
