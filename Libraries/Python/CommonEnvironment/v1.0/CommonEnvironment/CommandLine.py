@@ -211,7 +211,7 @@ class EntryPointData(object):
 
             # Calculate the display arity
             if isinstance(type_info, DictTypeInfo):
-                if type_info.Arity not in [ None, (0, 1), ]:
+                if not type_info.Arity.IsSingle and not type_info.Arity.IsOptional:
                     raise Exception("Dictionaries must have an arity of 1 or ? ({})".format(name))
 
                 # <Instance of '<obj>' has no '<name>' member> pylint: disable = E1101, E1103
@@ -219,20 +219,16 @@ class EntryPointData(object):
                     if not isinstance(v, StringTypeInfo):
                         raise Exception("Dictionary value types must be strings ({}, {})".format(name, k))
 
-                display_arity = '*' if type_info.Arity or not is_positional else '+'
-            
-            elif type_info.Arity:
-                if type_info.Arity == (0, 1):
-                    display_arity = '?'
-                elif type_info.Arity == (0, None):
-                    display_arity = '*'
-                elif type_info.Arity == (1, None):
-                    display_arity = '+'
-                else:
-                    raise Exception("Types must have an arity of '1', '?', '+', or '*'")
+                display_arity = '*' if type_info.Arity.IsOptional or not is_positional else '+'
 
+            if type_info.Arity.IsSingle:
+                display_arity = '1'            
+            elif type_info.Arity.IsOptional:
+                display_arity = '?'
+            elif type_info.Arity.IsCollection:
+                display_arity = '*' if type_info.Arity.Min == 0 else '+'
             else:
-                display_arity = '1'
+                raise Exception("Types must have an arity of '1', '?', '+', or '*'")
 
             assert display_arity in [ '1', '?', '+', '*', ], display_arity
             

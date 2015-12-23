@@ -1,4 +1,4 @@
-# ---------------------------------------------------------------------------
+﻿# ---------------------------------------------------------------------------
 # |  
 # |  Parse.py
 # |  
@@ -19,7 +19,7 @@ import sys
 
 from collections import OrderedDict
 
-from CommandLine import Package
+from CommonEnvironment import Package
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -65,6 +65,8 @@ def ParseEx( source_name_content_generators,            # { "name" : def Func() 
              observer=None,
            ):
     observer = observer or DefaultObserver
+
+    observer.VerifyFlags()
 
     root = Populate(source_name_content_generators, observer)
     root = Validate(root, observer)

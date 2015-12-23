@@ -18,6 +18,8 @@ import inflect
 import os
 import sys
 
+from CommonEnvironment.TypeInfo import *
+
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
@@ -66,21 +68,59 @@ class Metadata(object):
 # |  Public Data
 # |
 # ---------------------------------------------------------------------------
-UNIVERSAL_METADATA = [ Metadata("description", str, default_value=''),
+UNIVERSAL_METADATA = [ Metadata("description", StringTypeInfo(min_length=0), default_value=''),
                      ]
 
-COMPOUND_METADATA = [ Metadata("polymorphic", bool, default_value=False),
-                      # Compound elements without children that are based on polymorphic
-                      # elements will also be polymorphic unless this value is explicitly
-                      # set.
-                      Metadata("suppress_polymorphic", bool, default_value=False),
+COMPOUND_METADATA = [ Metadata("polymorphic", BoolTypeInfo(), default_value=False),
+                      
+                      # Compound elements that are based on polymorphic elements will also 
+                      # be polymorphic unless this value is explicitly set.
+                      Metadata("suppress_polymorphic", BoolTypeInfo(), default_value=False),
 
-                      # Note that 'polymorphic_base' will be set to True for a root 
-                      # polymorphic object.
+                      Metadata("define", BoolTypeInfo(), default_value=True),
                     ]
 
-COLLECTION_METADATA = [ Metadata("plural", str, default_value=lambda item: pluralize.plural(item.Name) if item.Name else None),
+COLLECTION_METADATA = [ Metadata("plural", StringTypeInfo(), default_value=lambda item: pluralize.plural(item.name) if item.name else None),
                       ]
                       
-OPTIONAL_METADATA = [ Metadata("default", str),
+OPTIONAL_METADATA = [ Metadata("default", StringTypeInfo()),
                     ]
+
+# ---------------------------------------------------------------------------
+# |  Fundamental Types
+STRING_METADATA = ( [],
+                    [ Metadata("validation", StringTypeInfo()),
+                      Metadata("min_length", IntTypeInfo(min=0)),
+                      Metadata("max_length", IntTypeInfo(min=1)),
+                    ]
+                  )
+
+ENUM_METADATA = ( [ Metadata("values", StringTypeInfo(arity='+')),
+                  ],
+                  [ Metadata("friendly_values", StringTypeInfo(arity='+')),
+                  ]
+                )
+
+INTEGER_METADATA = ( [],
+                     [ Metadata("min", IntTypeInfo()),
+                       Metadata("max", IntTypeInfo()),
+                       Metadata("bytes", IntTypeInfo(validation_func=lambda value: "'{}' must be {}".format(value, ', '.join([ str(v) for v in [ 1, 2, 4, 8, ] ])) if value not in [ 1, 2, 4, 8, ] else None)),
+                     ]
+                   )
+                  
+NUMBER_METADATA = ( [],
+                    [ Metadata("min", FloatTypeInfo()),
+                      Metadata("max", FloatTypeInfo()),
+                    ]
+                  )
+
+FILENAME_METADATA = ( [],
+                      [ Metadata("type", EnumTypeInfo([ "file", "directory", "either", ])),
+                        Metadata("must_exist", BoolTypeInfo()),
+                      ]
+                    )
+
+CUSTOM_METADATA = ( [ Metadata("type", StringTypeInfo()),
+                    ],
+                    []
+                  )
