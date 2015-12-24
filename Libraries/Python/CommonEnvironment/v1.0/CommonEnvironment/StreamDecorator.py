@@ -130,11 +130,11 @@ class StreamDecorator(object):
         return self
 
     # ---------------------------------------------------------------------------
-    def flush(self):
+    def flush(self, force_suffix=False):
         if not self._streams:
             return self
 
-        if self._column != 0:
+        if force_suffix or self._column != 0:
             suffix = self._line_suffix(self._column) if callable(self._line_suffix) else self._line_suffix
 
             for stream in self._streams:
