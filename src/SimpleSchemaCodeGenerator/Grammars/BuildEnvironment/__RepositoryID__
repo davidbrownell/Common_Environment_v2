@@ -1,8 +1,0 @@
-This file is used to uniquely identify this repository for the purposes of dependency management.
-Other repositories that depend on this one will intelligently search for this file upon initial
-setup and generate information that can be used when activating development environments.
-
-**** PLEASE DO NOT MODIFY, REMOVE, OR RENAME THIS FILE, AS DOING SO WILL LIKELY BREAK OTHER REPOSITORIES! ****
-
-Friendly Name:      SimpleSchema_BuildEnvironment
-GUID:               10B9988507B04A32BA06064A9C6D5000

@@ -232,7 +232,7 @@ class Base( InputProcessingMixin,
         EnsureValid()
 
         # Continue with normal processing
-        verbose_stream = StreamDecorator(verbose_stream)
+        verbose_stream = verbose_stream or StreamDecorator(verbose_stream)
 
         if not isinstance(inputs, list):
             inputs = [ inputs, ]
@@ -609,21 +609,22 @@ def _CommandLineImpl( compiler,
     
     # Execute
     with StreamDecorator(output_stream).DoneManager( line_prefix='',
-                                                     done_prefix='\n',
+                                                     done_prefix='\nExecution is ',
                                                      done_suffix='\n',
                                                      process_exceptions=False,
                                                    ) as stream_info:
         verbose_stream = StreamDecorator(stream_info.stream if verbose else None, line_prefix="INFO: ")
 
-        contexts = list(compiler.GenerateContextItems(inputs, verbose_stream, **compiler_kwargs))
+        stream_info.stream.write("Generating context...")
+        with stream_info.stream.DoneManager():
+            contexts = list(compiler.GenerateContextItems(inputs, verbose_stream, **compiler_kwargs))
 
         for index, context in enumerate(contexts):
             output_stream.flush()
 
             result, output = functor(context, output_stream, verbose_stream)
 
-            if stream_info.result == None or stream_info.result == 0:
-                stream_info.result = result
+            stream_info.result = stream_info.result or result
 
             # Print the output
             heading = "Results ({result}) [{index} of {total}]".format( result=result,
