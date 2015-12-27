@@ -35,8 +35,8 @@ class ListTypeInfo(TypeInfo.TypeInfo):
     """
 
     ExpectedType                            = list
-    ConstraintsDesc                         = ''
-
+    Desc                                    = "List"
+    
     # ---------------------------------------------------------------------------
     def __init__( self, 
                   element_type_info,
@@ -46,6 +46,10 @@ class ListTypeInfo(TypeInfo.TypeInfo):
         self.ElementTypeInfo                = element_type_info
 
     # ---------------------------------------------------------------------------
+    @property
+    def ConstraintsDesc(self):
+        return self.ExpectedType.ConstraintsDesc
+
     @property
     def PythonDefinitionString(self):
         return "ListTypeInfo({super}, element_type_info={element_type_info})" \

@@ -33,6 +33,7 @@ Plural = inflect.engine()
 class StringTypeInfo(FundamentalTypeInfo):
 
     ExpectedType                            = (str, unicode)
+    Desc                                    = "String"
 
     # ---------------------------------------------------------------------------
     def __init__( self,

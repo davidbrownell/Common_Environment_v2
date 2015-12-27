@@ -70,6 +70,7 @@ class ClassTypeInfo(ObjectLikeTypeInfo):
     # |  Public Properties
     ExpectedType                            = staticmethod(lambda item: True) # Everything is a class in Python
     ExpectedTypeIsCallable                  = True
+    Desc                                    = "Class"
 
     # ---------------------------------------------------------------------------
     # |  Private Methods

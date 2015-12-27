@@ -28,6 +28,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 class BoolTypeInfo(FundamentalTypeInfo):
 
     ExpectedType                            = bool
+    Desc                                    = "Boolean"
     PythonItemRegularExpressionStrings      = "({})".format( '|'.join([ "true", "t", "yes", "y", "1",
                                                                         "false", "f", "no", "n", "0",
                                                                       ]))

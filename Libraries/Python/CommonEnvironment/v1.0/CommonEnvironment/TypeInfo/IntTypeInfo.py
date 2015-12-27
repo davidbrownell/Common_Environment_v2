@@ -30,6 +30,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 class IntTypeInfo(FundamentalTypeInfo):
 
     ExpectedType                            = int
+    Desc                                    = "Integer"
 
     # ---------------------------------------------------------------------------
     def __init__( self,

@@ -28,6 +28,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 class DurationTypeInfo(FundamentalTypeInfo):
     
     ExpectedType                            = datetime.timedelta
+    Desc                                    = "Duration"
     PythonItemRegularExpressionStrings      = r"([1-9][0-9]*)?:[0-5][0-9](:[0-5][0-9](\.[0-9]+)?)?"
     ConstraintsDesc                         = ''
 

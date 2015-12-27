@@ -30,6 +30,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 class EnumTypeInfo(FundamentalTypeInfo):
 
     ExpectedType                            = (str, unicode)
+    Desc                                    = "Enum"
 
     # ---------------------------------------------------------------------------
     def __init__( self,

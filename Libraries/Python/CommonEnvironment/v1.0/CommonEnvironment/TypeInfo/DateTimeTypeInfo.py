@@ -30,6 +30,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 class DateTimeTypeInfo(FundamentalTypeInfo):
     
     ExpectedType                            = datetime.datetime
+    Desc                                    = "Datetime"
     PythonItemRegularExpressionStrings      = "{}.{}".format(DateTypeInfo.PythonItemRegularExpressionStrings, TimeTypeInfo.PythonItemRegularExpressionStrings)
     ConstraintsDesc                         = ''
 

@@ -30,7 +30,7 @@ TypeInfo = Package.ImportInit()
 class AnyOfTypeInfo(TypeInfo.TypeInfo):
 
     ExpectedTypeIsCallable                  = True
-
+    
     # ---------------------------------------------------------------------------
     def __init__( self,
                   type_info_list,
@@ -51,13 +51,17 @@ class AnyOfTypeInfo(TypeInfo.TypeInfo):
                     return True
 
     @property
+    def Desc(self):
+        return "Any of {}".format(', '.join([ "'{}'".format(eti.Desc) for eti in self.ElementTypeInfos ]))
+
+    @property
     def ConstraintsDesc(self):
         items = []
 
         for eti in self.ElementTypeInfos:
             constraint_desc = eti.ConstraintDesc
             if constraint_desc:
-                items.append(constraint_desc)
+                items.append("{}: {}".format(eti.Desc, constraint_desc))
 
         return '/'.join(items)
 

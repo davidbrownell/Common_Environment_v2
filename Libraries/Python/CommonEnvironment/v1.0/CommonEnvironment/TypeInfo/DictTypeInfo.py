@@ -28,6 +28,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 class DictTypeInfo(ObjectLikeTypeInfo):
 
     ExpectedType                            = dict
+    Desc                                    = "Dictionary"
 
     # ---------------------------------------------------------------------------
     @staticmethod
