@@ -90,6 +90,11 @@ class Arity(object):
 
     # ---------------------------------------------------------------------------
     @property
+    def IsFixedCollection(self):
+        return self.Min == self.Max and self.Min != 1
+
+    # ---------------------------------------------------------------------------
+    @property
     def IsZeroOrMore(self):
         return self.Min == 0 and self.Max == None
 
@@ -107,6 +112,10 @@ class Arity(object):
     @property
     def IsRange(self):
         return self.Max != None and self.Min != self.Max
+
+    # ---------------------------------------------------------------------------
+    def GetPythonDefinitionString(self):
+        return "Arity(min={}, max={})".format(self.Min, self.Max)
 
 # ---------------------------------------------------------------------------
 class TypeInfo(Interface):
@@ -160,6 +169,11 @@ class TypeInfo(Interface):
 
         self.Arity                          = arity or Arity(1, 1)
         self.ValidationFunc                 = validation_func
+
+    # ---------------------------------------------------------------------------
+    @abstractmethod
+    def GetPythonDefinitionString(self):
+        raise Exception("Abstract method")
 
     # ---------------------------------------------------------------------------
     def Validate(self, value):
@@ -354,7 +368,10 @@ class FundamentalTypeInfo(TypeInfo):
             if not isinstance(value, (list, tuple)):
                 value = [ value, ]
 
-            return ('{} '.format(delimiter)).join([ self.ItemToString(v) for v in value ])
+            return ( '{}{}'.format( delimiter,
+                                    '' if delimiter == '|' else ' ',
+                                  )
+                   ).join([ self.ItemToString(v) for v in value ])
 
         return self.ItemToString(value)
 
@@ -455,6 +472,24 @@ class StringTypeInfo(FundamentalTypeInfo):
         return "Value must {}".format(', '.join(items))
 
     # ---------------------------------------------------------------------------
+    def GetPythonDefinitionString(self):
+        args = OrderedDict()
+
+        if self.Validation:
+            args["validation"] = 'r"{}"'.format(self.Validation)
+
+        if self.MinLength != None:
+            args["min_length"] = self.MinLength
+
+        if self.MaxLength != None:
+            args["max_length"] = self.MaxLength
+
+        return "StringTypeInfo(arity={arity}{args})" \
+                    .format( arity=self.Arity.GetPythonDefinitionString(),
+                             args=", ".format(', '.join([ "{}={}".format(k, v) for k, v in args.iteritems() ])) if args else '',
+                           )
+
+    # ---------------------------------------------------------------------------
     def ItemRegularExpression(self, format):
         if self.Validation:
             return self.Validation
@@ -544,6 +579,25 @@ class EnumTypeInfo(FundamentalTypeInfo):
         return "Value must be one of {}".format(', '.join([ "'{}'".format(value) for value in self.Values ]))
 
     # ---------------------------------------------------------------------------
+    def GetPythonDefinitionString(self):
+        # ---------------------------------------------------------------------------
+        def ListToString(values):
+            return "[ {} ]".format(', '.join([ '"{}"'.format(value) for value in values ]))
+
+        # ---------------------------------------------------------------------------
+        
+        args = OrderedDict()
+
+        if self.FriendlyValues:
+            args["friendly_values"] = ListToString(self.FriendlyValues)
+        
+        return "EnumTypeInfo(arity={arity}, values={values}{args})" \
+                    .format( arity=self.Arity.GetPythonDefinitionString(),
+                             values=ListToString(self.Values),
+                             args=", ".format(', '.join([ "{}={}".format(k, v) for k, v in args.iteritems() ])) if args else '',
+                           )
+
+    # ---------------------------------------------------------------------------
     def ItemRegularExpression(self, format):
         return "({})".format('|'.join(self.Values))
 
@@ -604,6 +658,24 @@ class IntTypeInfo(FundamentalTypeInfo):
             return ''
 
         return "Value must {}".format(', '.join(items))
+
+    # ---------------------------------------------------------------------------
+    def GetPythonDefinitionString(self):
+        args = OrderedDict()
+
+        if self.Min != None:
+            args["min"] = self.Min
+
+        if self.Max != None:
+            args["max"] = self.Max
+
+        if self.Bytes != None:
+            args["bytes"] = self.Bytes
+            
+        return "IntTypeInfo(arity={arity}{args})" \
+                    .format( arity=self.Arity.GetPythonDefinitionString(),
+                             args=", ".format(', '.join([ "{}={}".format(k, v) for k, v in args.iteritems() ])) if args else '',
+                           )
 
     # ---------------------------------------------------------------------------
     def ItemRegularExpression(self, format):
@@ -694,6 +766,21 @@ class FloatTypeInfo(FundamentalTypeInfo):
         return "Value must {}".format(', '.join(items))
 
     # ---------------------------------------------------------------------------
+    def GetPythonDefinitionString(self):
+        args = OrderedDict()
+
+        if self.Min != None:
+            args["min"] = self.Min
+
+        if self.Max != None:
+            args["max"] = self.Max
+
+        return "FloatTypeInfo(arity={arity}{args})" \
+                    .format( arity=self.Arity.GetPythonDefinitionString(),
+                             args=", ".format(', '.join([ "{}={}".format(k, v) for k, v in args.iteritems() ])) if args else '',
+                           )
+
+    # ---------------------------------------------------------------------------
     def ItemRegularExpression(self, format):
         return r"{}\.[0-9]+".format(IntTypeInfo.ItemRegularExpressionImpl(self.Min, self.Max))
 
@@ -771,6 +858,15 @@ class FilenameTypeInfo(FundamentalTypeInfo):
         return "Value must be a valid {}".format(type)
 
     # ---------------------------------------------------------------------------
+    def GetPythonDefinitionString(self):
+        return "{name}(arity={arity}, type={type}, ensure_exists={ensure_exists})" \
+                    .format( name=self.__class__.__name__,
+                             arity=self.Arity.GetPythonDefinitionString(),
+                             type="FilenameTypeInfo.Type_File" if self.Type == self.Type_File else "FilenameTypeInfo.Type_Directory" if self.Type == self.Type_Directory else "FilenameTypeInfo.Type_Either",
+                             ensure_exists=str(self.EnsureExists),
+                           )
+
+    # ---------------------------------------------------------------------------
     @staticmethod
     def ItemRegularExpression(format):
         return ".+"
@@ -835,6 +931,12 @@ class BoolTypeInfo(FundamentalTypeInfo):
         return ''
 
     # ---------------------------------------------------------------------------
+    def GetPythonDefinitionString(self):
+        return "BoolTypeInfo(arity={arity})" \
+                    .format( arity=self.Arity.GetPythonDefinitionString(),
+                           )
+    
+    # ---------------------------------------------------------------------------
     @classmethod
     def ItemRegularExpression(cls, format):
         if format == cls.Format_String:
@@ -892,6 +994,12 @@ class GuidTypeInfo(FundamentalTypeInfo):
         return ''
 
     # ---------------------------------------------------------------------------
+    def GetPythonDefinitionString(self):
+        return "GuidTypeInfo(arity={arity})" \
+                    .format( arity=self.Arity.GetPythonDefinitionString(),
+                           )
+    
+    # ---------------------------------------------------------------------------
     @staticmethod
     def ItemRegularExpression(format):
         d = { "char" : "[0-9A-Fa-f]", }
@@ -939,6 +1047,12 @@ class DateTimeTypeInfo(FundamentalTypeInfo):
     def ConstraintsDesc(self):
         return ''
 
+    # ---------------------------------------------------------------------------
+    def GetPythonDefinitionString(self):
+        return "DateTimeTypeInfo(arity={arity})" \
+                    .format( arity=self.Arity.GetPythonDefinitionString(),
+                           )
+    
     # ---------------------------------------------------------------------------
     @classmethod
     def ItemRegularExpression(cls, format):
@@ -1013,9 +1127,15 @@ class DateTypeInfo(FundamentalTypeInfo):
         return ''
 
     # ---------------------------------------------------------------------------
+    def GetPythonDefinitionString(self):
+        return "DateTypeInfo(arity={arity})" \
+                    .format( arity=self.Arity.GetPythonDefinitionString(),
+                           )
+    
+    # ---------------------------------------------------------------------------
     @staticmethod
     def ItemRegularExpression(format):
-        return "[0-9]{4}-(0?[0-9]|1[0-2])-([0-2][0-9]|3[0-1])"
+        return "[0-9]{4}-(0?[1-9]|1[0-2])-([0-2][0-9]|3[0-1])"
 
     # ---------------------------------------------------------------------------
     @staticmethod
@@ -1060,9 +1180,15 @@ class TimeTypeInfo(FundamentalTypeInfo):
         return ''
 
     # ---------------------------------------------------------------------------
+    def GetPythonDefinitionString(self):
+        return "TimeTypeInfo(arity={arity})" \
+                    .format( arity=self.Arity.GetPythonDefinitionString(),
+                           )
+    
+    # ---------------------------------------------------------------------------
     @staticmethod
     def ItemRegularExpression(format):
-        return r"([0-1][0-9]|[2][0-3]):[0-5][0-9]:[0-5][0-9](\.[0-9]+)?(\+[0-9]+:[0-9]+)?"
+        return r"([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\.[0-9]+)?(\+[0-9]+:[0-9]+)?"
 
     # ---------------------------------------------------------------------------
     @staticmethod
@@ -1100,9 +1226,15 @@ class DurationTypeInfo(FundamentalTypeInfo):
         return ''
 
     # ---------------------------------------------------------------------------
+    def GetPythonDefinitionString(self):
+        return "DurationTypeInfo(arity={arity})" \
+                    .format( arity=self.Arity.GetPythonDefinitionString(),
+                           )
+    
+    # ---------------------------------------------------------------------------
     @staticmethod
     def ItemRegularExpression(format):
-        return r"[0-9]+:[0-5][0-9](:[0-5][0-9](\.[0-9]+)?)?"
+        return r"([1-9][0-9]*)?:[0-5][0-9](:[0-5][0-9](\.[0-9]+)?)?"
 
     # ---------------------------------------------------------------------------
     @staticmethod
@@ -1181,6 +1313,15 @@ class _ObjectLikeTypeInfo(TypeInfo):
                                                                          )
 
     # ---------------------------------------------------------------------------
+    def GetPythonDefinitionString(self):
+        return "{name}(arity={arity}, items={items}, require_exact_match={require_exact_match})" \
+                    .format( name=self.__class__.__name__,
+                             arity=self.Arity.GetPythonDefinitionString(),
+                             items="{ %s }" % ', '.join([ '"{}" : {}'.format(k, v.GetPythonDefinitionString()) for k, v in self.Items.iteritems() ]),
+                             require_exact_match=str(self.RequireExactMatch),
+                           )
+    
+    # ---------------------------------------------------------------------------
     def _ValidateItemNoThrowImpl(self, value):
         if self.RequireExactMatch:
             attributes = set(a for a in self.__dict__.keys() if not a.startswith("__"))
@@ -1245,6 +1386,11 @@ class ClassTypeInfo(_ObjectLikeTypeInfo):
         def ConstraintsDesc(self):
             return ''
 
+        def GetPythonDefinitionString(self):
+            return "ClassTypeInfo.{name})" \
+                        .format( name=self.__class__.__name__,
+                               )
+    
         @staticmethod
         def _ValidateItemNoThrowImpl(value):
             return
@@ -1358,6 +1504,13 @@ class ListTypeInfo(TypeInfo):
         return ''
 
     # ---------------------------------------------------------------------------
+    def GetPythonDefinitionString(self):
+        return "ListTypeInfo(arity={arity}, element_type_info={element_type_info})" \
+                    .format( arity=self.Arity.GetPythonDefinitionString(),
+                             element_type_info=self.ElementTypeInfo.GetPythonDefinitionString(),
+                           )
+    
+    # ---------------------------------------------------------------------------
     def _ValidateItemNoThrowImpl(self, value):
         return self.ElementTypeInfo.ValidateNoThrow(value)
 
@@ -1391,6 +1544,13 @@ class AnyOfTypeInfo(TypeInfo):
 
         return '/'.join(items)
 
+    # ---------------------------------------------------------------------------
+    def GetPythonDefinitionString(self):
+        return "AnyOfTypeInfo(arity={arity}, element_type_info_list={etil})" \
+                    .format( arity=self.Arity.GetPythonDefinitionString(),
+                             element_type_info_list="[ {} ]".format(', '.join([ eti.GetPythonDefinitionString() for eti in self.ElementTypeInfos ])),
+                           )
+    
     # ---------------------------------------------------------------------------
     def ExpectedType(self, value):
         for eti in self.ElementTypeInfos:
@@ -1436,6 +1596,10 @@ class CustomTypeInfo(TypeInfo):
     @property
     def ConstraintsDesc(self):
         return self._constraints_desc
+
+    # ---------------------------------------------------------------------------
+    def GetPythonDefinitionString(self):
+        raise Exception("Python definition strings can't be generated for CustomTypeInfo instances, as it isn't posibile to recreate the associated functions")
 
     # ---------------------------------------------------------------------------
     def ExpectedType(self, item):

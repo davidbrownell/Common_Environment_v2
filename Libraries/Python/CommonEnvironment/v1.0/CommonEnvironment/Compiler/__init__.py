@@ -611,14 +611,14 @@ def _CommandLineImpl( compiler,
     with StreamDecorator(output_stream).DoneManager( line_prefix='',
                                                      done_prefix='\nExecution is ',
                                                      done_suffix='\n',
-                                                     process_exceptions=False,
+                                                     display_exceptions=False,
                                                    ) as stream_info:
         verbose_stream = StreamDecorator(stream_info.stream if verbose else None, line_prefix="INFO: ")
 
         stream_info.stream.write("Generating context...")
         with stream_info.stream.DoneManager():
             contexts = list(compiler.GenerateContextItems(inputs, verbose_stream, **compiler_kwargs))
-
+            
         for index, context in enumerate(contexts):
             output_stream.flush()
 
