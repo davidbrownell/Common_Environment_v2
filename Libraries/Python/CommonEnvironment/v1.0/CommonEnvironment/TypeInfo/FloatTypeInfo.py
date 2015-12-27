@@ -19,7 +19,7 @@ import sys
 
 from collections import OrderedDict
 
-from .FundamentalTypeInfo import FundamentalTypeInfo
+from .Impl.FundamentalTypeInfo import FundamentalTypeInfo
 from .IntTypeInfo import IntTypeInfo
 
 # ---------------------------------------------------------------------------

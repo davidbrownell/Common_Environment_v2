@@ -18,7 +18,7 @@ import datetime
 import os
 import sys
 
-from .FundamentalTypeInfo import FundamentalTypeInfo
+from .Impl.FundamentalTypeInfo import FundamentalTypeInfo
 from .DateTypeInfo import DateTypeInfo
 from .TimeTypeInfo import TimeTypeInfo
 

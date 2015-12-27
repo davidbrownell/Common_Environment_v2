@@ -108,6 +108,10 @@ class TypeInfo(Interface):
     # ---------------------------------------------------------------------------
     # |  Public Properties
     @abstractproperty
+    def Desc(self):
+        raise Exception("Abstract property")
+
+    @abstractproperty
     def ExpectedType(self):
         raise Exception("Abstract property")
 

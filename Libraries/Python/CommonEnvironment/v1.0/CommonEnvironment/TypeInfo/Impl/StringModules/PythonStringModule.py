@@ -20,17 +20,20 @@ import sys
 import uuid
 
 from CommonEnvironment.Interface import staticderived
+from CommonEnvironment import Package
 
-from .FundamentalTypeInfo import StringModule
-from .FundamentalTypes import *
+from ...FundamentalTypes import *
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ---------------------------------------------------------------------------
 
+StringModules = Package.ImportInit()
+
+# ---------------------------------------------------------------------------
 @staticderived
-class PythonStringModule(StringModule):
+class PythonStringModule(StringModules.StringModule):
     # ---------------------------------------------------------------------------
     # |  Public Properties
     NoneString                              = "None"

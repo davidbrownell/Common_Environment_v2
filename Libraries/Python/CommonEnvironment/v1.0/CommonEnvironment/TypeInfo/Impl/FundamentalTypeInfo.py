@@ -17,59 +17,15 @@
 import os
 import sys
 
-from CommonEnvironment
 from CommonEnvironment.Interface import *
-from CommonEnvironment import Package
+
+from ... import TypeInfo
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ---------------------------------------------------------------------------
 
-TypeInfo = Package.ImportInit()
-
-# ---------------------------------------------------------------------------
-# |
-# |  Public Types
-# |
-# ---------------------------------------------------------------------------
-class StringModule(object):
-    
-    # ---------------------------------------------------------------------------
-    # |  Public Properties
-    @abstractproperty
-    def NoneString(self):
-        raise Exception("Abstract Property")
-    
-    @abstractmethod
-    def DefaultDelimiter(self):
-        raise Exception("Abstract Property")
-
-    # ---------------------------------------------------------------------------
-    # |  Public Methods
-    @staticmethod
-    @abstractmethod
-    def SplitString(value):
-        raise Exception("Abstract Method")
-
-    # ---------------------------------------------------------------------------
-    @staticmethod
-    @abstractmethod
-    def ToString(type_info, item):
-        raise Exception("Abstract method")
-
-    # ---------------------------------------------------------------------------
-    @staticmethod
-    @abstractmethod
-    def GetItemRegularExpressionStrings(type_info):
-        raise Exception("Abstract Property")
-
-    # ---------------------------------------------------------------------------
-    @staticmethod
-    @abstractmethod
-    def FromString(type_info, item, regex_match, regex_string_index):
-        raise Exception("Abstract method")
-        
 # ---------------------------------------------------------------------------
 class FundamentalTypeInfo(TypeInfo.TypeInfo):
 
@@ -84,7 +40,7 @@ class FundamentalTypeInfo(TypeInfo.TypeInfo):
     @classmethod
     def Init(cls, string_module=None):
         if not string_module:
-            from PythonStringModule import PythonStringModule
+            from .StringModules.PythonStringModule import PythonStringModule
             string_module = PythonStringModule
 
         cls._string_module = string_module

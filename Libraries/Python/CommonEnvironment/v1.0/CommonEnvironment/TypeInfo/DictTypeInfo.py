@@ -1,10 +1,10 @@
 # ---------------------------------------------------------------------------
 # |  
-# |  BoolTypeInfo.py
+# |  DictTypeInfo.py
 # |  
 # |  David Brownell (db@DavidBrownell.com)
 # |  
-# |  12/27/2015 10:10:33 AM
+# |  12/27/2015 11:38:47 AM
 # |  
 # ---------------------------------------------------------------------------
 # |  
@@ -17,7 +17,7 @@
 import os
 import sys
 
-from .Impl.FundamentalTypeInfo import FundamentalTypeInfo
+from .Impl.ObjectLikeTypeInfo import ObjectLikeTypeInfo
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -25,26 +25,16 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
-class BoolTypeInfo(FundamentalTypeInfo):
+class DictTypeInfo(ObjectLikeTypeInfo):
 
-    ExpectedType                            = bool
-    PythonItemRegularExpressionStrings      = "({})".format( '|'.join([ "true", "t", "yes", "y", "1",
-                                                                        "false", "f", "no", "n", "0",
-                                                                      ]))
-    ConstraintsDesc                         = ''
-    
-    # ---------------------------------------------------------------------------
-    @property
-    def PythonDefinitionString(self):
-        return "BoolTypeInfo({})".format(self._PythonDefinitionStringContents)
+    ExpectedType                            = dict
 
     # ---------------------------------------------------------------------------
     @staticmethod
-    def PostprocessItem(item):
-        return item
+    def _HasAttribute(item, attribute_name):
+        return attribute_name in item
 
     # ---------------------------------------------------------------------------
-    # ---------------------------------------------------------------------------
-    # ---------------------------------------------------------------------------
-    def _ValidateItemNoThrowImpl(self, item):
-        return
+    @staticmethod
+    def _GetAttributeValue(type_info, item, attribute_name):
+        return item[attribute_name]

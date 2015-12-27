@@ -18,7 +18,7 @@ import os
 import sys
 import uuid
 
-from .FundamentalTypeInfo import FundamentalTypeInfo
+from .Impl.FundamentalTypeInfo import FundamentalTypeInfo
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable

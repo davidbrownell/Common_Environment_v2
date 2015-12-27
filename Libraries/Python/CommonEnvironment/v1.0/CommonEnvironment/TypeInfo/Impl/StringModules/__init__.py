@@ -1,10 +1,10 @@
 # ---------------------------------------------------------------------------
 # |  
-# |  BoolTypeInfo.py
+# |  __init__.py
 # |  
 # |  David Brownell (db@DavidBrownell.com)
 # |  
-# |  12/27/2015 10:10:33 AM
+# |  12/27/2015 11:16:50 AM
 # |  
 # ---------------------------------------------------------------------------
 # |  
@@ -17,7 +17,7 @@
 import os
 import sys
 
-from .Impl.FundamentalTypeInfo import FundamentalTypeInfo
+from CommonEnvironment.Interface import *
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -25,26 +25,39 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
-class BoolTypeInfo(FundamentalTypeInfo):
-
-    ExpectedType                            = bool
-    PythonItemRegularExpressionStrings      = "({})".format( '|'.join([ "true", "t", "yes", "y", "1",
-                                                                        "false", "f", "no", "n", "0",
-                                                                      ]))
-    ConstraintsDesc                         = ''
+class StringModule(Interface):
     
     # ---------------------------------------------------------------------------
-    @property
-    def PythonDefinitionString(self):
-        return "BoolTypeInfo({})".format(self._PythonDefinitionStringContents)
+    # |  Public Properties
+    @abstractproperty
+    def NoneString(self):
+        raise Exception("Abstract Property")
+    
+    @abstractmethod
+    def DefaultDelimiter(self):
+        raise Exception("Abstract Property")
+
+    # ---------------------------------------------------------------------------
+    # |  Public Methods
+    @staticmethod
+    @abstractmethod
+    def SplitString(value):
+        raise Exception("Abstract Method")
 
     # ---------------------------------------------------------------------------
     @staticmethod
-    def PostprocessItem(item):
-        return item
+    @abstractmethod
+    def ToString(type_info, item):
+        raise Exception("Abstract method")
 
     # ---------------------------------------------------------------------------
+    @staticmethod
+    @abstractmethod
+    def GetItemRegularExpressionStrings(type_info):
+        raise Exception("Abstract Property")
+
     # ---------------------------------------------------------------------------
-    # ---------------------------------------------------------------------------
-    def _ValidateItemNoThrowImpl(self, item):
-        return
+    @staticmethod
+    @abstractmethod
+    def FromString(type_info, item, regex_match, regex_string_index):
+        raise Exception("Abstract method")
