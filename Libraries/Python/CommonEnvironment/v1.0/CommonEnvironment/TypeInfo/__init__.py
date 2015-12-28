@@ -32,6 +32,10 @@ Plural = inflect.engine()
 # |  Public Types
 # |
 # ---------------------------------------------------------------------------
+class ValidationException(Exception):
+    pass
+
+# ---------------------------------------------------------------------------
 class Arity(object):
 
     # ---------------------------------------------------------------------------
@@ -99,11 +103,6 @@ class Arity(object):
 
 # ---------------------------------------------------------------------------
 class TypeInfo(Interface):
-
-    # ---------------------------------------------------------------------------
-    # |  Public Types
-    class ValidationException(Exception):
-        pass
 
     # ---------------------------------------------------------------------------
     # |  Public Properties
@@ -188,7 +187,7 @@ class TypeInfo(Interface):
                                                      Plural.plural_verb("was", self.Arity.Min),
                                                    )
 
-        if self.Arity.Max != Nne and len(value) > self.Arity.Max:
+        if self.Arity.Max != None and len(value) > self.Arity.Max:
             return "At most {} {} expected".format( Plural.no("item", self.Arity.Max),
                                                     Plural.plural_verb("was", self.Arity.Max),
                                                   )
@@ -266,4 +265,3 @@ class TypeInfo(Interface):
     @abstractmethod
     def _ValidateItemNoThrowImpl(item):
         raise Exception("Abstract method")
-

@@ -15,11 +15,12 @@
 # |  
 # ---------------------------------------------------------------------------
 import os
+import re
 import sys
 
 from CommonEnvironment.Interface import *
 
-from ... import TypeInfo
+from .. import TypeInfo
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -27,10 +28,10 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
-class FundamentalTypeInfo(TypeInfo.TypeInfo):
+class FundamentalTypeInfo(TypeInfo):
 
     # ---------------------------------------------------------------------------
-    # |  Public Methods
+    # |  Public Properties
     @abstractproperty
     def PythonItemRegularExpressionStrings(self):
         raise Exception("Abstract Property")
@@ -45,6 +46,28 @@ class FundamentalTypeInfo(TypeInfo.TypeInfo):
 
         cls._string_module = string_module
 
+    # ---------------------------------------------------------------------------
+    @staticmethod
+    def Create(type, **kwargs):
+        from .. import FundamentalTypes
+        
+        if type in [ str, unicode, ]:
+            return FundamentalTypes.StringTypeInfo(**kwargs)
+        
+        for potential_type_info in [ FundamentalTypes.IntTypeInfo,
+                                     FundamentalTypes.FloatTypeInfo,
+                                     FundamentalTypes.BoolTypeInfo,
+                                     FundamentalTypes.GuidTypeInfo,
+                                     FundamentalTypes.DateTimeTypeInfo,
+                                     FundamentalTypes.DateTypeInfo,
+                                     FundamentalTypes.TimeTypeInfo,
+                                     FundamentalTypes.DurationTypeInfo,
+                                   ]:
+            if potential_type_info.ExpectedType == type:
+                return potential_type_info(**kwargs)
+                
+        raise Exception("'{}' is not a recognized type".format(type))
+        
     # ---------------------------------------------------------------------------
     def FromString(self, value):
         string_module = self._GetOrInit()
@@ -127,7 +150,7 @@ class FundamentalTypeInfo(TypeInfo.TypeInfo):
         string_module = self._GetOrInit()
 
         self.ValidateItem(item)
-        return string_module.ToString(self.__class__, item)
+        return string_module.ToString(self, item)
 
     # ---------------------------------------------------------------------------
     # ---------------------------------------------------------------------------
@@ -136,5 +159,5 @@ class FundamentalTypeInfo(TypeInfo.TypeInfo):
         if not hasattr(type(self), "_string_module"):
             type(self).Init()
 
-        return _string_module
+        return self._string_module
     

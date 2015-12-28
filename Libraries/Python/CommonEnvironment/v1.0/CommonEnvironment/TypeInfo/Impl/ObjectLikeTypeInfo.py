@@ -75,7 +75,7 @@ class ObjectLikeTypeInfo(TypeInfo.TypeInfo):
                            )
 
     # ---------------------------------------------------------------------------
-    @staticderived
+    @staticmethod
     def PostprocessItem(item):
         return item
 
@@ -120,7 +120,7 @@ class ObjectLikeTypeInfo(TypeInfo.TypeInfo):
     # ---------------------------------------------------------------------------
     @staticmethod
     @abstractmethod
-    def _HasAttribute(item, atribute_name):
+    def _HasAttribute(item, attribute_name):
         raise Exception("Abstract method")
 
     # ---------------------------------------------------------------------------

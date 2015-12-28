@@ -33,7 +33,7 @@ class StringModule(Interface):
     def NoneString(self):
         raise Exception("Abstract Property")
     
-    @abstractmethod
+    @abstractproperty
     def DefaultDelimiter(self):
         raise Exception("Abstract Property")
 

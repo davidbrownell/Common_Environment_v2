@@ -80,7 +80,7 @@ class PythonStringModule(StringModules.StringModule):
 
             return "{hours}:{minutes:02}:{seconds:02}".format(**locals())
                 
-        assert False, "Unexpected"
+        assert False, ("Unexpected", type_info_type)
 
     # ---------------------------------------------------------------------------
     @classmethod
@@ -141,7 +141,7 @@ class PythonStringModule(StringModules.StringModule):
 
             return datetime.timedelta(**locals())
 
-        assert False, "Unexpected"
+        assert False, ("Unexpected", type_info_type)
 
     # ---------------------------------------------------------------------------
     @staticmethod
