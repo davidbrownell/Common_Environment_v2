@@ -130,11 +130,11 @@ class StreamDecorator(object):
         return self
 
     # ---------------------------------------------------------------------------
-    def flush(self):
+    def flush(self, force_suffix=False):
         if not self._streams:
             return self
 
-        if self._column != 0:
+        if force_suffix or self._column != 0:
             suffix = self._line_suffix(self._column) if callable(self._line_suffix) else self._line_suffix
 
             for stream in self._streams:
@@ -162,7 +162,8 @@ class StreamDecorator(object):
                      line_prefix="  ",
                      done_prefix='',
                      done_suffix='',
-                     process_exceptions=True,
+                     suppress_exceptions=False,
+                     display_exceptions=True,
                    ):
         start_time = TimeDelta()
 
@@ -233,16 +234,16 @@ class StreamDecorator(object):
                 if info.result == None or info.result == 0:
                     info.result = -1
 
-                if not process_exceptions:
+                if display_exceptions:
+                    if display_callstack_on_error:
+                        import traceback
+                        info.stream.write("ERROR: {}\n".format(StreamDecorator.LeftJustify(traceback.format_exc(), len("ERROR: ")).rstrip()))
+                    else:
+                        info.stream.write("ERROR: {}\n".format(str(ex).rstrip()))
+
+                if not suppress_exceptions:
                     raise ex
-
-                import traceback
-
-                if display_callstack_on_error:
-                    info.stream.write("ERROR: {}\n".format(StreamDecorator.LeftJustify(traceback.format_exc(), len("ERROR: ")).rstrip()))
-                else:
-                    info.stream.write("ERROR: {}\n".format(str(ex).rstrip()))
-
+                
     # ---------------------------------------------------------------------------
     @classmethod
     def LeftJustify(cls, content, starting_col=4, skip_first_line=True):
