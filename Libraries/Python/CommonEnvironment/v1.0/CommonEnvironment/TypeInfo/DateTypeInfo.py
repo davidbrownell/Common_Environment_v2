@@ -33,6 +33,11 @@ class DateTypeInfo(FundamentalTypeInfo):
     ConstraintsDesc                         = ''
 
     # ---------------------------------------------------------------------------
+    @staticmethod
+    def Create():
+        return datetime.date.today()
+        
+    # ---------------------------------------------------------------------------
     @property
     def PythonDefinitionString(self):
         return "DateTypeInfo({})".format(self._PythonDefinitionStringContents)

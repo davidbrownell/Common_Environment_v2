@@ -33,6 +33,11 @@ class GuidTypeInfo(FundamentalTypeInfo):
     ConstraintsDesc                         = ''
 
     # ---------------------------------------------------------------------------
+    @staticmethod
+    def Create():
+        return uuid.uuid4()
+        
+    # ---------------------------------------------------------------------------
     @property
     def PythonItemRegularExpressionStrings(self):
         d = { "char" : "[0-9A-Fa-f]", }

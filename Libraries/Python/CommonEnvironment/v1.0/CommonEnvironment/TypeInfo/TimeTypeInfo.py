@@ -33,6 +33,11 @@ class TimeTypeInfo(FundamentalTypeInfo):
     ConstraintsDesc                         = ''
 
     # ---------------------------------------------------------------------------
+    @staticmethod
+    def Create():
+        return datetime.datetime.now().time()
+        
+    # ---------------------------------------------------------------------------
     @property
     def PythonDefinitionString(self):
         return "TimeTypeInfo({})".format(self._PythonDefinitionStringContents)
