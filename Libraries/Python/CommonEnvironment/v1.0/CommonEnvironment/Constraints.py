@@ -22,8 +22,8 @@ import sys
 
 import wrapt
 
-import Decorator
-from TypeInfo import TypeInfo
+import TypeInfo
+from TypeInfo.FundamentalTypes import FundamentalTypeInfo
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -81,7 +81,7 @@ class FunctionConstraint(object):
                         if isinstance(default_value, str) and default_value == '':
                             these_kwargs["min_length"] = 0
 
-                        self.Preconditions[arg] = TypeInfo.CreateFundamental(type(default_value), **these_kwargs)
+                        self.Preconditions[arg] = FundamentalTypeInfo.Create(type(default_value), **these_kwargs)
                 
                 if missing:
                     raise Exception("Preconditions for {} were not provided in {}".format( ', '.join([ "'{}'".format(arg) for arg in missing ]),
