@@ -29,7 +29,7 @@ from ...SourceControlManagement import DistributedSourceControlManagementBase, \
 
 from CommonEnvironment.Interface import staticderived
 from CommonEnvironment.QuickObject import QuickObject
-from CommonEnvironment.TypeInfo import DateTimeTypeInfo
+from CommonEnvironment.TypeInfo.DateTimeTypeInfo import DateTimeTypeInfo
 
 # Note that functionality in this file require the following Mercurial extensions:
 #       Mercurial Extension Name            Functionality
