@@ -149,6 +149,12 @@ class TypeInfo(Interface):
             raise ValidationException(result)
 
     # ---------------------------------------------------------------------------
+    def ValidateArityCount(self, value):
+        result = self.ValidateArityCountNoThrow(value)
+        if result != None:
+            raise ValidationException(result)
+
+    # ---------------------------------------------------------------------------
     def ValidateItem(self, value):
         result = self.ValidateItemNoThrow(value)
         if result != None:
@@ -170,24 +176,25 @@ class TypeInfo(Interface):
 
     # ---------------------------------------------------------------------------
     def ValidateArityNoThrow(self, value):
+        if not self.Arity.IsCollection and isinstance(value, list):
+            return "1 item was expected"
+
+        return self.ValidateArityCountNoThrow(len(value) if isinstance(value, list) else 1 if value != None else 0)
+
+    # ---------------------------------------------------------------------------
+    def ValidateArityCountNoThrow(self, value):
         if not self.Arity.IsCollection:
-            if isinstance(value, list):
-                return "Only 1 item was expected"
+            if (value == None and not self.Arity.IsOptional) or value > 1:
+                return "1 item was expected"
 
             return
 
-        if not isinstance(value, (list, tuple)):
-            return "A list of tuple was expected ({}, min: {}, max: {})".format( type(value),
-                                                                                 self.Arity.Min,
-                                                                                 self.Arity.Max,
-                                                                               )
-
-        if len(value) < self.Arity.Min:
+        if self.Arity.Min != None and value < self.Arity.Min:
             return "At least {} {} expected".format( Plural.no("item", self.Arity.Min),
                                                      Plural.plural_verb("was", self.Arity.Min),
                                                    )
 
-        if self.Arity.Max != None and len(value) > self.Arity.Max:
+        if self.Arity.Max != None and value > self.Arity.Max:
             return "At most {} {} expected".format( Plural.no("item", self.Arity.Max),
                                                     Plural.plural_verb("was", self.Arity.Max),
                                                   )
