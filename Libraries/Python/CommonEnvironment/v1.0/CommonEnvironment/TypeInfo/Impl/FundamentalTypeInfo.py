@@ -41,14 +41,14 @@ class FundamentalTypeInfo(TypeInfo):
     @classmethod
     def Init(cls, string_module=None):
         if not string_module:
-            from .StringModules.PythonStringModule import PythonStringModule
+            from ..StringModules.PythonStringModule import PythonStringModule
             string_module = PythonStringModule
 
         cls._string_module = string_module
 
     # ---------------------------------------------------------------------------
     @staticmethod
-    def Create(type, **kwargs):
+    def CreateTypeInfo(type, **kwargs):
         from .. import FundamentalTypes
         
         if type in [ str, unicode, ]:
@@ -110,14 +110,24 @@ class FundamentalTypeInfo(TypeInfo):
             return self.ItemToString(value)
     
     # ---------------------------------------------------------------------------
-    def ItemFromString(self, item):
-        string_module = self._GetOrInit()
+    def ItemFromString(self, item, string_module=None):
+        string_module = string_module or self._GetOrInit()
         
         if not hasattr(self, "_regexes"):
             self._regexes = {}
 
         if self.__class__ not in self._regexes:
-            self._regexes[self.__class__] = [ re.compile(regex) for regex in string_module.GetItemRegularExpressionStrings(self) ]
+            expressions = []
+            
+            for expression in string_module.GetItemRegularExpressionStrings(self):
+                if isinstance(expression, tuple):
+                    expression, regex_flags = expression
+                else:
+                    regex_flags = 0
+            
+                expressions.append(re.compile(expression, regex_flags))
+                
+            self._regexes[self.__class__] = expressions
 
         # ---------------------------------------------------------------------------
         class NoneType(object): pass
@@ -146,8 +156,8 @@ class FundamentalTypeInfo(TypeInfo):
         return self.PostprocessItem(item)
 
     # ---------------------------------------------------------------------------
-    def ItemToString(self, item):
-        string_module = self._GetOrInit()
+    def ItemToString(self, item, string_module=None):
+        string_module = string_module or self._GetOrInit()
 
         self.ValidateItem(item)
         return string_module.ToString(self, item)

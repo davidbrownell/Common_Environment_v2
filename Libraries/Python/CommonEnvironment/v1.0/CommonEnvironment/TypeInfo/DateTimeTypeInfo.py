@@ -35,6 +35,16 @@ class DateTimeTypeInfo(FundamentalTypeInfo):
     ConstraintsDesc                         = ''
 
     # ---------------------------------------------------------------------------
+    @staticmethod
+    def Create(microseconds=True):
+        result = datetime.datetime.now()
+
+        if not microseconds:
+            result = result.replace(microsecond=0)
+
+        return result
+        
+    # ---------------------------------------------------------------------------
     @property
     def PythonDefinitionString(self):
         return "DateTimeTypeInfo({})".format(self._PythonDefinitionStringContents)

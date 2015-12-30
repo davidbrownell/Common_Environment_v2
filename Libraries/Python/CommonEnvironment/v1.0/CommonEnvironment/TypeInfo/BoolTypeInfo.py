@@ -15,6 +15,7 @@
 # |  
 # ---------------------------------------------------------------------------
 import os
+import re
 import sys
 
 from .Impl.FundamentalTypeInfo import FundamentalTypeInfo
@@ -29,9 +30,11 @@ class BoolTypeInfo(FundamentalTypeInfo):
 
     ExpectedType                            = bool
     Desc                                    = "Boolean"
-    PythonItemRegularExpressionStrings      = "({})".format( '|'.join([ "true", "t", "yes", "y", "1",
-                                                                        "false", "f", "no", "n", "0",
-                                                                      ]))
+    PythonItemRegularExpressionStrings      = ( "({})".format( '|'.join([ "true", "t", "yes", "y", "1",
+                                                                          "false", "f", "no", "n", "0",
+                                                                        ])),
+                                                re.IGNORECASE
+                                              )
     ConstraintsDesc                         = ''
     
     # ---------------------------------------------------------------------------

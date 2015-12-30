@@ -41,6 +41,28 @@ class AnyOfTypeInfo(TypeInfo.TypeInfo):
 
     # ---------------------------------------------------------------------------
     @property
+    def Desc(self):
+        return "Any of {}".format(', '.join([ "'{}'".format(eti.Desc) for eti in self.ElementTypeInfos ]))
+
+    @property
+    def ConstraintsDesc(self):
+        items = []
+
+        for eti in self.ElementTypeInfos:
+            constraint_desc = eti.ConstraintsDesc
+            if constraint_desc:
+                items.append("{}: {}".format(eti.Desc, constraint_desc))
+
+        return "Value where: {}".format(' / '.join(items))
+
+    @property
+    def PythonDefinitionString(self):
+        return "AnyOfTypeInfo({super}, type_info_list={type_info_list})" \
+                    .format( super=self._PythonDefinitionStringContents,    # <Instance of '<obj>' has no '<name>' member> pylint: disable = E1101, E1103
+                             type_info_list="[ {} ]".format(', '.join([ eti.PythonDefinitionString for eti in self.ElementTypeInfos ])),
+                           )
+
+    # ---------------------------------------------------------------------------
     def ExpectedType(self, item):
         for eti in self.ElementTypeInfos:
             if callable(eti.ExpectedType):
@@ -50,33 +72,16 @@ class AnyOfTypeInfo(TypeInfo.TypeInfo):
                 if isinstance(item, eti.ExpectedType):
                     return True
 
-    @property
-    def Desc(self):
-        return "Any of {}".format(', '.join([ "'{}'".format(eti.Desc) for eti in self.ElementTypeInfos ]))
-
-    @property
-    def ConstraintsDesc(self):
-        items = []
-
-        for eti in self.ElementTypeInfos:
-            constraint_desc = eti.ConstraintDesc
-            if constraint_desc:
-                items.append("{}: {}".format(eti.Desc, constraint_desc))
-
-        return '/'.join(items)
-
-    @property
-    def PythonDefinitionString(self):
-        return "AnyOfTypeInfo({super}, type_info_list={type_info_list})" \
-                    .format( super=self._PythonDefinitionStringContents,
-                             type_info_list="[ {} ]".format(', '.join([ eti.PythonDefinitionString for eti in self.ElementTypeInfos ])),
-                           )
-
+    # ---------------------------------------------------------------------------
+    @staticmethod
+    def PostprocessItem(item):
+        return item
+        
     # ---------------------------------------------------------------------------
     def _ValidateItemNoThrowImpl(self, item):
         for eti in self.ElementTypeInfos:
             result = eti.ValidateItemNoThrow(item)
-            if item == None:
+            if result == None:
                 return
 
         return "'{}' could not be validated".format(item)

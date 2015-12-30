@@ -18,6 +18,8 @@ import inspect
 import os
 import sys
 
+from collections import namedtuple
+
 from CommonEnvironment import Package
 
 from .Impl.ObjectLikeTypeInfo import ObjectLikeTypeInfo
@@ -30,41 +32,55 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 TypeInfo = Package.ImportInit()
 
 # ---------------------------------------------------------------------------
+# <Too few public methods> pylint: disable = R0903
+class _MethodTypeInfo(TypeInfo.TypeInfo):
+    ExpectedTypeIsCallable                  = True
+    ConstraintsDesc                         = ''
+
+    # ---------------------------------------------------------------------------
+    def __init__(self):
+        super(_MethodTypeInfo, self).__init__( arity=None,
+                                               validation_func=None,
+                                             )
+
+    # ---------------------------------------------------------------------------
+    @property
+    def PythonDefinitionString(self):
+        return "{name}({super})" \
+                    .format( name=self.__class__.__name__,
+                             super=self._PythonDefinitionStringContents, # <Instance of '<obj>' has no '<name>' member> pylint: disable = E1101, E1103
+                           )
+
+    # ---------------------------------------------------------------------------
+    @staticmethod
+    def PostprocessItem(item):
+        return item
+        
+    # ---------------------------------------------------------------------------
+    @staticmethod
+    def _ValidateItemNoThrowImpl(item):
+        return
+
+# ---------------------------------------------------------------------------
+# <Too few public methods> pylint: disable = R0903
+class MethodTypeInfo(_MethodTypeInfo):
+    Desc                                    = "Method"
+    ExpectedType                            = staticmethod(lambda item: inspect.ismethod(item) and item.__self__ == None)
+
+# ---------------------------------------------------------------------------
+# <Too few public methods> pylint: disable = R0903
+class ClassMethodTypeInfo(_MethodTypeInfo):
+    Desc                                    = "Class Method"
+    ExpectedType                            = staticmethod(lambda item: inspect.ismethod(item) and item.__self__ != None)
+
+# ---------------------------------------------------------------------------
+# <Too few public methods> pylint: disable = R0903
+class StaticMethodTypeInfo(_MethodTypeInfo):
+    Desc                                    = "Static Method"
+    ExpectedType                            = staticmethod(inspect.isfunction)
+
+# ---------------------------------------------------------------------------
 class ClassTypeInfo(ObjectLikeTypeInfo):
-
-    # ---------------------------------------------------------------------------
-    # |  Public Types
-    class _MethodTypeInfo(TypeInfo.TypeInfo):
-        ExpectedTypeIsCallable              = True
-        ConstraintsDesc                     = ''
-
-        def __init__(self):
-            super(ClassTypeInfo._MethodTypeInfo, self).__init__( arity=None,
-                                                                 validation_func=None,
-                                                               )
-
-        @property
-        def PythonDefinitionString(self):
-            return "ClassTypeInfo.{name}({super})" \
-                        .format( name=self.__class__.__name__,
-                                 super=self.PythonDefinitionStringContents,
-                               )
-
-        @staticmethod
-        def _ValidateItemNoThrowImpl(item):
-            return
-
-    # ---------------------------------------------------------------------------
-    class MethodTypeInfo(_MethodTypeInfo):
-        ExpectedType                        = staticmethod(lambda item: inspect.ismethod(item) and item.__self__ == None)
-
-    # ---------------------------------------------------------------------------
-    class ClassMethodTypeInfo(_MethodTypeInfo):
-        ExpectedType                        = staticmethod(lambda item: inspect.ismethod(item) and item.__self__ != None)
-
-    # ---------------------------------------------------------------------------
-    class StaticMethodTypeInfo(_MethodTypeInfo):
-        ExpectedType                        = staticmethod(lambda item: inspect.isfunction(dict_items))
 
     # ---------------------------------------------------------------------------
     # |  Public Properties
@@ -81,10 +97,7 @@ class ClassTypeInfo(ObjectLikeTypeInfo):
     # ---------------------------------------------------------------------------
     @classmethod
     def _GetAttributeValue(cls, type_info, item, attribute_name):
-        if isinstance(type_info, cls._MethodTypeInfo):
+        if isinstance(type_info, _MethodTypeInfo):
             item = type(item)
 
         return getattr(item, attribute_name)
-
-    
-    

@@ -48,15 +48,20 @@ class ListTypeInfo(TypeInfo.TypeInfo):
     # ---------------------------------------------------------------------------
     @property
     def ConstraintsDesc(self):
-        return self.ExpectedType.ConstraintsDesc
+        return "List of items where: {}".format(self.ElementTypeInfo.ConstraintsDesc)
 
     @property
     def PythonDefinitionString(self):
         return "ListTypeInfo({super}, element_type_info={element_type_info})" \
-                    .format( super=self.PythonDefinitionStringContents,
+                    .format( super=self._PythonDefinitionStringContents,    # <Instance of '<obj>' has no '<name>' member> pylint: disable = E1101, E1103
                              element_type_info=self.ElementTypeInfo.PythonDefinitionString,
                            )
 
+    # ---------------------------------------------------------------------------
+    @staticmethod
+    def PostprocessItem(item):
+        return item
+        
     # ---------------------------------------------------------------------------
     def _ValidateItemNoThrowImpl(self, item):
         return self.ElementTypeInfo.ValidateNoThrow(item)

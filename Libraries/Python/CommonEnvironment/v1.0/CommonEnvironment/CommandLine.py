@@ -198,7 +198,7 @@ class EntryPointData(object):
         
         for index, name in enumerate(args):
             if name not in constraints_decorator.Preconditions and index >= first_optional_arg_index:
-                type_info = FundamentalTypeInfo.Create(type(defaults[index - first_optional_arg_index]))
+                type_info = FundamentalTypeInfo.CreateTypeInfo(type(defaults[index - first_optional_arg_index]))
             else:
                 assert name in constraints_decorator.Preconditions, (self.Name, name)
                 type_info = constraints_decorator.Preconditions[name]

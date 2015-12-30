@@ -93,7 +93,7 @@ class Base( InputProcessingMixin,
     IsCompiler                              = False
     IsCodeGenerator                         = False
     IsVerifier                              = False
-
+    
     # ---------------------------------------------------------------------------
     # |
     # |  Public Methods
@@ -116,6 +116,11 @@ class Base( InputProcessingMixin,
         """
         raise Exception("Abstract method")
 
+    # ---------------------------------------------------------------------------
+    @staticmethod
+    def IsSupportedTestFile(item):
+        return True
+        
     # ---------------------------------------------------------------------------
     @classmethod
     def ItemNameToTestName(cls, item_name, test_name):

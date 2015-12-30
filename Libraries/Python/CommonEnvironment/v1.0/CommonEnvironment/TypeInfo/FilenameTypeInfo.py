@@ -18,8 +18,6 @@ import itertools
 import os
 import sys
 
-from collections import OrderedDict
-
 from .Impl.FundamentalTypeInfo import FundamentalTypeInfo
 
 # ---------------------------------------------------------------------------

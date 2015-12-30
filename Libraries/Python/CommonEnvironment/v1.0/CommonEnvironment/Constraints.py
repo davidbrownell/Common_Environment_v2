@@ -81,7 +81,7 @@ class FunctionConstraint(object):
                         if isinstance(default_value, str) and default_value == '':
                             these_kwargs["min_length"] = 0
 
-                        self.Preconditions[arg] = FundamentalTypeInfo.Create(type(default_value), **these_kwargs)
+                        self.Preconditions[arg] = FundamentalTypeInfo.CreateTypeInfo(type(default_value), **these_kwargs)
                 
                 if missing:
                     raise Exception("Preconditions for {} were not provided in {}".format( ', '.join([ "'{}'".format(arg) for arg in missing ]),

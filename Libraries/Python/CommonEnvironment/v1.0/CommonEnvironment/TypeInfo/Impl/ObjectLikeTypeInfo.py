@@ -22,7 +22,7 @@ from collections import OrderedDict
 
 from CommonEnvironment.Interface import *
 
-from ... import TypeInfo
+from .. import TypeInfo
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -32,7 +32,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 Plural = inflect.engine()
 
 # ---------------------------------------------------------------------------
-class ObjectLikeTypeInfo(TypeInfo.TypeInfo):
+class ObjectLikeTypeInfo(TypeInfo):
 
     # ---------------------------------------------------------------------------
     def __init__( self,
@@ -104,7 +104,7 @@ class ObjectLikeTypeInfo(TypeInfo.TypeInfo):
         for attribute_name, type_info in self.Items.iteritems():
             ProcessAttribute(attribute_name)
             
-            if not self._HasAttribute(attribute_name):
+            if not self._HasAttribute(item, attribute_name):
                 return "The attribute '{}' was not found".format(attribute_name)
 
             this_value = self._GetAttributeValue(type_info, item, attribute_name)

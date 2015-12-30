@@ -22,7 +22,7 @@ import uuid
 from CommonEnvironment.Interface import staticderived
 from CommonEnvironment import Package
 
-from ...FundamentalTypes import *
+from ..FundamentalTypes import *
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -67,7 +67,12 @@ class PythonStringModule(StringModules.StringModule):
             return "true" if item else "false"
 
         if type_info_type in [ DateTimeTypeInfo, DateTypeInfo, TimeTypeInfo, ]:
-            return item.isoformat()
+            args = {}
+            
+            if type_info_type == DateTimeTypeInfo:
+                args["sep"] = ' '
+                
+            return item.isoformat(**args)
 
         if type_info_type == DurationTypeInfo:
             seconds = item.total_seconds()
@@ -103,11 +108,11 @@ class PythonStringModule(StringModules.StringModule):
             return item.lower() in [ "true", "t", "yes", "y", "1", ]
 
         if type_info_type == GuidTypeInfo:
-            return uuid.uuid4(item)
+            return uuid.UUID(item)
 
         if type_info_type == DateTimeTypeInfo:
             return datetime.datetime.strptime(item, "%Y-%m-%d{sep}%H:%M{seconds}{fraction_seconds}{time_zone}" \
-                        .format( sep='T' if 'T' in item else '',
+                        .format( sep='T' if 'T' in item else ' ',
                                  seconds=":%S" if item.count(':') > 1 else '',
                                  fraction_seconds=".%f" if '.' in item else '',
                                  time_zone="%z" if '+' in item else '',
@@ -139,7 +144,10 @@ class PythonStringModule(StringModules.StringModule):
                 minutes = int(parts[0])
                 seconds = int(float(parts[1]))
 
-            return datetime.timedelta(**locals())
+            return datetime.timedelta( hours=hours,
+                                       minutes=minutes,
+                                       seconds=seconds,
+                                     )
 
         assert False, ("Unexpected", type_info_type)
 
