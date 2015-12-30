@@ -140,19 +140,19 @@ class TypeInfo(Interface):
     def Validate(self, value):
         result = self.ValidateNoThrow(value)
         if result != None:
-            raise self.ValidationException(result)
+            raise ValidationException(result)
 
     # ---------------------------------------------------------------------------
     def ValidateArity(self, value):
         result = self.ValidateArityNoThrow(value)
         if result != None:
-            raise self.ValidationException(result)
+            raise ValidationException(result)
 
     # ---------------------------------------------------------------------------
     def ValidateItem(self, value):
         result = self.ValidateItemNoThrow(value)
         if result != None:
-            raise self.ValidationException(result)
+            raise ValidationException(result)
 
     # ---------------------------------------------------------------------------
     def ValidateNoThrow(self, value):

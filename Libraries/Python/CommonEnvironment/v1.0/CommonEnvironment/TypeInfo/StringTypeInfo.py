@@ -16,6 +16,7 @@
 # ---------------------------------------------------------------------------
 import inflect
 import os
+import re
 import sys
 
 from collections import OrderedDict
@@ -38,12 +39,18 @@ class StringTypeInfo(FundamentalTypeInfo):
     # ---------------------------------------------------------------------------
     def __init__( self,
                   validation_expression=None,
-                  min_length=1,
+                  min_length=None,
                   max_length=None,
                   **type_info_args
                 ):
         super(StringTypeInfo, self).__init__(**type_info_args)
 
+        if validation_expression:
+            if min_length != None or max_length != None:
+                raise Exception("'min_length' and 'max_length' should not be provided when 'validation_expression' is provided")
+        elif min_length == None:
+            min_length = 1
+            
         if min_length != None and max_length != None and max_length < min_length:
             raise Exception("Invalid argument - max_length")
 
@@ -66,7 +73,7 @@ class StringTypeInfo(FundamentalTypeInfo):
     def PythonItemRegularExpressionStrings(self):
         if self.ValidationExpression:
             return self.ValidationExpression
-
+            
         if self.MinLength == 1 and self.MaxLength == None:
             return ".+"
 
@@ -74,12 +81,12 @@ class StringTypeInfo(FundamentalTypeInfo):
             return ".*"
 
         if self.MinLength != None and (self.MaxLength == None or self.MinLength == self.MaxLength):
-            return ".{%d}" % self.MinLength
+            return ".{%d}" % (self.MinLength)
 
         if self.MinLength != None and self.MaxLength != None:
-            return ".{%d,%d}".format(self.MinLength, self.MaxLength)
+            return ".{%d,%d}" % (self.MinLength, self.MaxLength)
 
-        assert False, "Unexpected"
+        return value
 
     @property
     def ConstraintsDesc(self):
@@ -104,7 +111,7 @@ class StringTypeInfo(FundamentalTypeInfo):
         args = OrderedDict()
 
         if self.ValidationExpression:
-            args["validtion_expression"] = 'r"{}"'.format(self.ValidationExpression)
+            args["validation_expression"] = 'r"{}"'.format(self.ValidationExpression)
 
         if self.MinLength != None:
             args["min_length"] = self.MinLength
@@ -112,9 +119,9 @@ class StringTypeInfo(FundamentalTypeInfo):
         if self.MaxLength != None:
             args["max_length"] = self.MaxLength
 
-        return "StringTypeInfo({super}{args}" \
+        return "StringTypeInfo({super}{args})" \
                     .format( super=self._PythonDefinitionStringContents,
-                             args=", ".format(', '.join([ "{}={}".format(k, v) for k, v in args.iteritems() ])),
+                             args=", {}".format(', '.join([ "{}={}".format(k, v) for k, v in args.iteritems() ])),
                            )
 
     # ---------------------------------------------------------------------------
@@ -128,7 +135,7 @@ class StringTypeInfo(FundamentalTypeInfo):
     def _ValidateItemNoThrowImpl(self, item):
         if not hasattr(self, "_Validate"):
             if self.ValidationExpression:
-                regex = reduce.compile(self.ValidationExpression)
+                regex = re.compile(self.ValidationExpression)
                 self._Validate = regex.match
             else:
                 self._Validate = lambda i: True

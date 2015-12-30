@@ -574,7 +574,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
             assert BranchGenerator
             for branch in BranchGenerator():
                 result, output = cls.Execute(repo_root, '''hg log -b "{branch}" -r "sort(date('<{date}'), -date)" -l 1 --template "{rev}"'''.format( branch=branch,
-                                                                                                                                                     date=DateTimeTypeInfo().ItemToString(date, DateTimeTypeInfo.Format_String),
+                                                                                                                                                     date=DateTimeTypeInfo().ItemToString(date),
                                                                                                                                                      rev="{rev}",
                                                                                                                                                    ))
                 if result == 0:

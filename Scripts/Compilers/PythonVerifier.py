@@ -91,7 +91,7 @@ class Verifier( CustomInvocationMixin,
         if name == "__init__.py":
             return test_filename
 
-        match = re.match( r"^(?P<name>.+?)_(?P<test_type>.+?)(?P<ext>\..+)$",
+        match = re.match( r"^(?P<name>.+)_(?P<test_type>.+?)(?P<ext>\..+)$",
                           name,
                         )
         if not match:
