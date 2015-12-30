@@ -40,7 +40,7 @@ class DateTimeTypeInfo(FundamentalTypeInfo):
         result = datetime.datetime.now()
 
         if not microseconds:
-            result.replace(microsecond=0)
+            result = result.replace(microsecond=0)
 
         return result
         
