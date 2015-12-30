@@ -580,19 +580,12 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
                                                                                                                                                      date=DateTimeTypeInfo().ItemToString(date),
                                                                                                                                                      rev="{rev}",
                                                                                                                                                    ))
-                print "BugBug", result, '''hg log -b "{branch}" -r "sort(date('<{date}'), -date)" -l 1 --template "{rev}"'''.format( branch=branch,
-                                                                                                                                                     date=DateTimeTypeInfo().ItemToString(date),
-                                                                                                                                                     rev="{rev}",
-                                                                                                                                                   )
-                print "BugBug\n", output, "\n\n"
-
                 output = output.strip()
 
                 if result == 0 and output:                    
                     return output
 
                 errors.append(output)
-
 
             raise Exception("Revision not found ({branch}, {date})\n{errors}".format( branch=branch, 
                                                                                       date=date,
@@ -603,9 +596,9 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
         
         dispatch_map = { EmptyUpdateMergeArg :          lambda: "",
                          RevisionUpdateMergeArg :       lambda: NormalizeRevision(arg.Revision),
-                         DateUpdateMergeArg :           lambda: DateAndBranch(arg.Date.replace(microseconds=0), None),
+                         DateUpdateMergeArg :           lambda: DateAndBranch(arg.Date.replace(microsecond=0), None),
                          BranchUpdateMergeArg :         lambda: DateAndBranch(DateTimeTypeInfo.Create(microseconds=False), arg.Branch),
-                         BranchAndDateUpdateMergeArg :  lambda: DateAndBranch(arg.Date.replace(microseconds=0), arg.Branch),
+                         BranchAndDateUpdateMergeArg :  lambda: DateAndBranch(arg.Date.replace(microsecond=0), arg.Branch),
                        }
 
         assert type(arg) in dispatch_map, type(arg)
