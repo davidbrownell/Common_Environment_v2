@@ -20,6 +20,8 @@ import sys
 import textwrap
 import time
 
+from collections import OrderedDict
+
 from ...SourceControlManagement import DistributedSourceControlManagementBase, \
                                        EmptyUpdateMergeArg, \
                                        RevisionUpdateMergeArg, \
@@ -573,23 +575,25 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
 
             assert BranchGenerator
 
-            errors = []
+            errors = OrderedDict()
 
             for branch in BranchGenerator():
-                result, output = cls.Execute(repo_root, '''hg log -b "{branch}" -r "sort(date('<{date}'), -date)" -l 1 --template "{rev}"'''.format( branch=branch,
-                                                                                                                                                     date=DateTimeTypeInfo().ItemToString(date),
-                                                                                                                                                     rev="{rev}",
-                                                                                                                                                   ))
+                command_line = '''hg log -b "{branch}" -r "sort(date('<{date}'), -date)" -l 1 --template "{rev}"'''.format( branch=branch,
+                                                                                                                            date=DateTimeTypeInfo().ItemToString(date),
+                                                                                                                            rev="{rev}",
+                                                                                                                          )
+
+                result, output = cls.Execute(repo_root, command_line)
                 output = output.strip()
 
                 if result == 0 and output:                    
                     return output
 
-                errors.append(output)
+                errors[command_line] = output
 
             raise Exception("Revision not found ({branch}, {date})\n{errors}".format( branch=branch, 
                                                                                       date=date,
-                                                                                      errors='\n\n'.join(errors),
+                                                                                      errors='\n\n'.join([ "{}\n{}".format(k, v) for k, v in errors.iteritems() ]),
                                                                                     ))
 
         # ---------------------------------------------------------------------------
