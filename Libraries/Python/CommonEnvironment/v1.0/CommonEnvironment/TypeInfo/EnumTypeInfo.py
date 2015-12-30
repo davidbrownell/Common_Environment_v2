@@ -74,10 +74,10 @@ class EnumTypeInfo(FundamentalTypeInfo):
         if self.FriendlyValues:
             args["friendly_values"] = ListToString(self.FriendlyValues)
 
-        return "EnumTypeInfo({super}, values={values}{args}" \
+        return "EnumTypeInfo({super}, values={values}{args})" \
                     .format( super=self._PythonDefinitionStringContents,
                              values=ListToString(self.Values),
-                             args=", ".format(', '.join([ "{}={}".format(k, v) for k, v in args.iteritems() ])) if args else '',
+                             args=", {}".format(', '.join([ "{}={}".format(k, v) for k, v in args.iteritems() ])) if args else '',
                            )
 
     # ---------------------------------------------------------------------------

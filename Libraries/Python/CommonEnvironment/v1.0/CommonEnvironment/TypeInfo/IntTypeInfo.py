@@ -86,7 +86,7 @@ class IntTypeInfo(FundamentalTypeInfo):
 
         return "IntTypeInfo({super}{args})" \
                     .format( super=self._PythonDefinitionStringContents,
-                             args=', '.join(', '.join([ "{}={}".format(k, v) for k, v in args.iteritems() ])),
+                             args=', {}'.format(', '.join([ "{}={}".format(k, v) for k, v in args.iteritems() ])),
                            )
 
     # ---------------------------------------------------------------------------
@@ -100,6 +100,8 @@ class IntTypeInfo(FundamentalTypeInfo):
             if max == None or max > 0:
                 patterns.append('?')
 
+        patterns.append("[0-9]")
+        
         if min == None or max == None:
             patterns.append('+')
         else:

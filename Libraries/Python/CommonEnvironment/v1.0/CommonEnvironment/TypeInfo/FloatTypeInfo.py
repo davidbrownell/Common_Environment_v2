@@ -44,8 +44,8 @@ class FloatTypeInfo(FundamentalTypeInfo):
         if min != None and max != None and max < min:
             raise Exception("Invalid argument - max")
 
-        self.Min                            = min
-        self.Max                            = max
+        self.Min                            = float(min) if min != None else None
+        self.Max                            = float(max) if max != None else None
 
     # ---------------------------------------------------------------------------
     @property
@@ -79,7 +79,7 @@ class FloatTypeInfo(FundamentalTypeInfo):
 
         return "FloatTypeInfo({super}{args})" \
                     .format( super=self._PythonDefinitionStringContents,
-                             args=', '.join(', '.join([ "{}={}".format(k, v) for k, v in args.iteritems() ])),
+                             args=', {}'.format(', '.join([ "{}={}".format(k, v) for k, v in args.iteritems() ])),
                            )
 
     # ---------------------------------------------------------------------------
