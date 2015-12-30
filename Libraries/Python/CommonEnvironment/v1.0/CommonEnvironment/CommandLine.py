@@ -16,6 +16,7 @@
 # ---------------------------------------------------------------------------
 import inspect
 import os
+import re
 import sys
 import textwrap
 import types
@@ -30,7 +31,11 @@ from CommonEnvironment.StreamDecorator import StreamDecorator
 
 # <Unused import> pylint: disable = W0611
 from CommonEnvironment.Constraints import *
-from CommonEnvironment.TypeInfo import *
+
+from CommonEnvironment import TypeInfo
+from CommonEnvironment.TypeInfo.AnyOfTypeInfo import AnyOfTypeInfo
+from CommonEnvironment.TypeInfo.DictTypeInfo import DictTypeInfo
+from CommonEnvironment.TypeInfo.FundamentalTypes import *
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -193,7 +198,7 @@ class EntryPointData(object):
         
         for index, name in enumerate(args):
             if name not in constraints_decorator.Preconditions and index >= first_optional_arg_index:
-                type_info = TypeInfo.CreateFundamental(type(defaults[index - first_optional_arg_index]))
+                type_info = FundamentalTypeInfo.CreateTypeInfo(type(defaults[index - first_optional_arg_index]))
             else:
                 assert name in constraints_decorator.Preconditions, (self.Name, name)
                 type_info = constraints_decorator.Preconditions[name]

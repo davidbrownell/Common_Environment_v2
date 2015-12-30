@@ -20,6 +20,8 @@ import sys
 import textwrap
 import time
 
+from collections import OrderedDict
+
 from ...SourceControlManagement import DistributedSourceControlManagementBase, \
                                        EmptyUpdateMergeArg, \
                                        RevisionUpdateMergeArg, \
@@ -29,7 +31,7 @@ from ...SourceControlManagement import DistributedSourceControlManagementBase, \
 
 from CommonEnvironment.Interface import staticderived
 from CommonEnvironment.QuickObject import QuickObject
-from CommonEnvironment.TypeInfo import DateTimeTypeInfo
+from CommonEnvironment.TypeInfo.DateTimeTypeInfo import DateTimeTypeInfo
 
 # Note that functionality in this file require the following Mercurial extensions:
 #       Mercurial Extension Name            Functionality
@@ -572,25 +574,35 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
                         yield branch
 
             assert BranchGenerator
-            for branch in BranchGenerator():
-                result, output = cls.Execute(repo_root, '''hg log -b "{branch}" -r "sort(date('<{date}'), -date)" -l 1 --template "{rev}"'''.format( branch=branch,
-                                                                                                                                                     date=DateTimeTypeInfo().ItemToString(date, DateTimeTypeInfo.Format_String),
-                                                                                                                                                     rev="{rev}",
-                                                                                                                                                   ))
-                if result == 0:
-                    output = output.strip()
-                    if output:
-                        return output
 
-            assert False, "Revision not found ({branch}, {date})".format(branch=branch, date=date)
+            errors = OrderedDict()
+
+            for branch in BranchGenerator():
+                command_line = '''hg log -b "{branch}" -r "sort(date('<{date}'), -date)" -l 1 --template "{rev}"'''.format( branch=branch,
+                                                                                                                            date=DateTimeTypeInfo().ItemToString(date),
+                                                                                                                            rev="{rev}",
+                                                                                                                          )
+
+                result, output = cls.Execute(repo_root, command_line)
+                output = output.strip()
+
+                if result == 0 and output:                    
+                    return output
+
+                errors[command_line] = output
+
+            raise Exception("Revision not found ({branch}, {date})\n{errors}".format( branch=branch, 
+                                                                                      date=date,
+                                                                                      errors='\n\n'.join([ "{}\n{}".format(k, v) for k, v in errors.iteritems() ]),
+                                                                                    ))
 
         # ---------------------------------------------------------------------------
         
         dispatch_map = { EmptyUpdateMergeArg :          lambda: "",
                          RevisionUpdateMergeArg :       lambda: NormalizeRevision(arg.Revision),
-                         DateUpdateMergeArg :           lambda: DateAndBranch(arg.Date, None),
-                         BranchUpdateMergeArg :         lambda: DateAndBranch(DateTimeTypeInfo.Create(), arg.Branch),
-                         BranchAndDateUpdateMergeArg :  lambda: DateAndBranch(arg.Date, arg.Branch),
+                         DateUpdateMergeArg :           lambda: DateAndBranch(arg.Date.replace(microsecond=0), None),
+                         BranchUpdateMergeArg :         lambda: DateAndBranch(DateTimeTypeInfo.Create(microseconds=False), arg.Branch),
+                         BranchAndDateUpdateMergeArg :  lambda: DateAndBranch(arg.Date.replace(microsecond=0), arg.Branch),
                        }
 
         assert type(arg) in dispatch_map, type(arg)
