@@ -36,8 +36,13 @@ class DateTimeTypeInfo(FundamentalTypeInfo):
 
     # ---------------------------------------------------------------------------
     @staticmethod
-    def Create():
-        return datetime.datetime.now()
+    def Create(microseconds=True):
+        result = datetime.datetime.now()
+
+        if not microseconds:
+            result.microsecond = 0
+
+        return result
         
     # ---------------------------------------------------------------------------
     @property
