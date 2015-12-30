@@ -448,7 +448,7 @@ def ExtractTestItems( input_dir,
             if os.path.isfile(TEST_IGNORE_FILENAME_TEMPLATE.format(fullpath)):
                 continue
 
-            if compiler.IsSupported(fullpath):
+            if compiler.IsSupported(fullpath) and compiler.IsSupportedTestFile(fullpath):
                 test_items.append(fullpath)
             else:
                 verbose_stream.write("'{}' is not supported by the compiler.\n".format(fullpath))

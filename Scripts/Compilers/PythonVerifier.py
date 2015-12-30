@@ -75,6 +75,12 @@ class Verifier( CustomInvocationMixin,
 
     # ---------------------------------------------------------------------------
     @staticmethod
+    def IsSupportedTestFile(item):
+        name, ext = os.path.splitext(os.path.basename(item))
+        return ext.lower() in [ ".py", ] and name != "__init__"
+        
+    # ---------------------------------------------------------------------------
+    @staticmethod
     def ItemNameToTestName(item_name, test_name):
         path, filename = os.path.split(item_name)
         filename, ext = os.path.splitext(filename)
@@ -89,7 +95,7 @@ class Verifier( CustomInvocationMixin,
     def GetSystemUnderTest(test_filename):
         path, name = os.path.split(test_filename)
         if name == "__init__.py":
-            return test_filename
+            return
 
         match = re.match( r"^(?P<name>.+)_(?P<test_type>.+?)(?P<ext>\..+)$",
                           name,
