@@ -780,28 +780,13 @@ def AllChangeStatus( directory=None,
                                   output_stream=None,
                                 )
 def AllWorkingChangeStatus( directory=None,
-                            untracked=False,
                             output_stream=sys.stdout,
                           ):
-    if untracked:
-        # ---------------------------------------------------------------------------
-        def QueryRepository(scm, directory):
-            return scm.HasWorkingChanges(directory) or scm.HasUntrackedChanges(directory)
-
-        # ---------------------------------------------------------------------------
-       
-    else:
-        # ---------------------------------------------------------------------------
-        def QueryRepository(scm, directory):
-            return scm.HasWorkingChanges(directory)
-
-        # ---------------------------------------------------------------------------
-        
     changed_repos = []
 
     # ---------------------------------------------------------------------------
     def Query(scm, directory):
-        result = QueryRepository(scm, directory)
+        result = scm.HasWorkingChanges(directory) or scm.HasUntrackedWorkingChanges(directory)
         if result:
             changed_repos.append((scm, directory))
 
