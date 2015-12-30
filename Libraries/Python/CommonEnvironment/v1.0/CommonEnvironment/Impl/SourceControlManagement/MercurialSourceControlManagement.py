@@ -577,6 +577,12 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
                                                                                                                                                      date=DateTimeTypeInfo().ItemToString(date),
                                                                                                                                                      rev="{rev}",
                                                                                                                                                    ))
+                print "BugBug", result, '''hg log -b "{branch}" -r "sort(date('<{date}'), -date)" -l 1 --template "{rev}"'''.format( branch=branch,
+                                                                                                                                                     date=DateTimeTypeInfo().ItemToString(date),
+                                                                                                                                                     rev="{rev}",
+                                                                                                                                                   )
+                print "BugBug\n", output, "\n\n"
+
                 if result == 0:
                     output = output.strip()
                     if output:
