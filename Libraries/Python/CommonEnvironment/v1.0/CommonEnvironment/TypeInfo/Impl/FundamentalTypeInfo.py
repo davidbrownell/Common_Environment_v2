@@ -110,7 +110,10 @@ class FundamentalTypeInfo(TypeInfo):
             return self.ItemToString(value)
     
     # ---------------------------------------------------------------------------
-    def ItemFromString(self, item, string_module=None):
+    def ItemFromString( self, 
+                        item, 
+                        string_module=None, 
+                      ):
         string_module = string_module or self._GetOrInit()
         
         if not hasattr(self, "_regexes"):
@@ -144,19 +147,23 @@ class FundamentalTypeInfo(TypeInfo):
         
         result = GetString()
         if result == NoneType:
-            raise Exception("'{}' is not a valid '{}': {}" \
-                                .format( item,
-                                         self._GetExpectedTypeString(),
-                                         self.ConstraintsDesc or ', '.join([ "'{}'".format(regex) for regex in string_module.GetItemRegularExpressionStrings(self) ]),
-                                       ))
+            error = "'{}' is not a valid '{}': {}" \
+                        .format( item,
+                                 self._GetExpectedTypeString(),
+                                 self.ConstraintsDesc or ', '.join([ "'{}'".format(regex) for regex in string_module.GetItemRegularExpressionStrings(self) ]),
+                               )
+            raise Exception(error)
 
         item = result
         self.ValidateItem(item)
-
+        
         return self.PostprocessItem(item)
 
     # ---------------------------------------------------------------------------
-    def ItemToString(self, item, string_module=None):
+    def ItemToString( self, 
+                      item, 
+                      string_module=None, 
+                    ):
         string_module = string_module or self._GetOrInit()
 
         self.ValidateItem(item)
