@@ -82,7 +82,7 @@ class ObjectLikeTypeInfo(TypeInfo):
     # ---------------------------------------------------------------------------
     # ---------------------------------------------------------------------------
     # ---------------------------------------------------------------------------
-    def _ValidateItemNoThrowImpl(self, item):
+    def _ValidateItemNoThrowImpl(self, item, recurse=True):
         if self.RequireExactMatch:
             attributes = { a for a in item.__dict__.keys() if not a.startswith("__") }
 
@@ -109,7 +109,11 @@ class ObjectLikeTypeInfo(TypeInfo):
 
             this_value = self._GetAttributeValue(type_info, item, attribute_name)
 
-            result = type_info.ValidateNoThrow(this_value)
+            if recurse:
+                result = type_info.ValidateNoThrow(this_value)
+            else:
+                result = type_info.ValidateArityNoThrow(this_value)
+
             if result != None:
                 return "The attribute '{}' is not valid - {}".format(attribute_name, result)
 
@@ -128,6 +132,3 @@ class ObjectLikeTypeInfo(TypeInfo):
     @abstractmethod
     def _GetAttributeValue(type_info, item, attribute_name):
         raise Exception("Abstract method")
-
-    
-
