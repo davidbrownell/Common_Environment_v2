@@ -155,8 +155,8 @@ class TypeInfo(Interface):
             raise ValidationException(result)
 
     # ---------------------------------------------------------------------------
-    def ValidateItem(self, value):
-        result = self.ValidateItemNoThrow(value)
+    def ValidateItem(self, value, **custom_args):
+        result = self.ValidateItemNoThrow(value, **custom_args)
         if result != None:
             raise ValidationException(result)
 
@@ -200,7 +200,7 @@ class TypeInfo(Interface):
                                                   )
 
     # ---------------------------------------------------------------------------
-    def ValidateItemNoThrow(self, item):
+    def ValidateItemNoThrow(self, item, **custom_args):
         if self.Arity.IsOptional and item == None:
             return
 
@@ -218,7 +218,7 @@ class TypeInfo(Interface):
                                             Plural.a(self._GetExpectedTypeString()),
                                           )
 
-        result = self._ValidateItemNoThrowImpl(item)
+        result = self._ValidateItemNoThrowImpl(item, **custom_args)
         if result != None:
             return result
 
@@ -270,5 +270,5 @@ class TypeInfo(Interface):
     # |  Private Methods
     @staticmethod
     @abstractmethod
-    def _ValidateItemNoThrowImpl(item):
+    def _ValidateItemNoThrowImpl(item, **custom_args):
         raise Exception("Abstract method")

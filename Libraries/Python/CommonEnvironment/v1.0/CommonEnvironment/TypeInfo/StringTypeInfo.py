@@ -48,6 +48,7 @@ class StringTypeInfo(FundamentalTypeInfo):
         if validation_expression:
             if min_length != None or max_length != None:
                 raise Exception("'min_length' and 'max_length' should not be provided when 'validation_expression' is provided")
+
         elif min_length == None:
             min_length = 1
             
