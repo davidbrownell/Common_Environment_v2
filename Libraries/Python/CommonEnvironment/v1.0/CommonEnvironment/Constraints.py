@@ -23,7 +23,7 @@ import sys
 import wrapt
 
 import TypeInfo
-from TypeInfo.FundamentalTypes import FundamentalTypeInfo
+from TypeInfo.FundamentalTypes import *
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
