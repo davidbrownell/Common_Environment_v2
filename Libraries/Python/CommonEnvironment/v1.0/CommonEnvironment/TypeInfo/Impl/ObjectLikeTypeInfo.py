@@ -87,7 +87,7 @@ class ObjectLikeTypeInfo(TypeInfo):
             attributes = { a for a in item.__dict__.keys() if not a.startswith("__") }
 
             # ---------------------------------------------------------------------------
-            def ProcessAttribte(attr):
+            def ProcessAttribute(attr):
                 attributes.remove(attr)
 
             # ---------------------------------------------------------------------------
@@ -102,13 +102,13 @@ class ObjectLikeTypeInfo(TypeInfo):
             OnComplete = lambda: None
             
         for attribute_name, type_info in self.Items.iteritems():
-            ProcessAttribute(attribute_name)
-            
             if not self._HasAttribute(item, attribute_name):
-                return "The attribute '{}' was not found".format(attribute_name)
+                return "The required attribute '{}' was not found".format(attribute_name)
+
+            ProcessAttribute(attribute_name)
 
             this_value = self._GetAttributeValue(type_info, item, attribute_name)
-
+            
             if recurse:
                 result = type_info.ValidateNoThrow(this_value)
             else:

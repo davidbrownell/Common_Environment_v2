@@ -388,6 +388,7 @@ class Base( InputProcessingMixin,
 
         invoke_reason = cls._GetInvokeReason(context, verbose_stream)
         if invoke_reason == None:
+            status_stream.write("No changes were detected.\n")
             return 0, "No changes were detected.\n"
 
         verbose_stream.flush()
