@@ -8,7 +8,7 @@
 # |  
 # ---------------------------------------------------------------------------
 # |  
-# |  Copyright David Brownell 2015.
+# |  Copyright David Brownell 2015-16.
 # |          
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -200,7 +200,9 @@ class StreamDecorator(object):
                 suffixes.append(start_time.CalculateDelta(as_string=True))
     
             if suffix_functor:
-                suffixes.append(suffix_functor())
+                result = suffix_functor()
+                if result != None:
+                    suffixes.append(result)
     
             self.write("{prefix}DONE!{info_suffix}{suffix}\n".format( prefix=done_prefix, 
                                                                       info_suffix=" ({})".format(', '.join(suffixes)) if suffixes else '',
