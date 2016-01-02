@@ -8,7 +8,7 @@
 # |  
 # ---------------------------------------------------------------------------
 # |  
-# |  Copyright David Brownell 2015.
+# |  Copyright David Brownell 2015-16.
 # |          
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -23,7 +23,7 @@ import sys
 import wrapt
 
 import TypeInfo
-from TypeInfo.FundamentalTypes import FundamentalTypeInfo
+from TypeInfo.FundamentalTypes import *
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable

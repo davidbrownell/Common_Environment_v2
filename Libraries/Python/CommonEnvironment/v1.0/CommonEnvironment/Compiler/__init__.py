@@ -8,7 +8,7 @@
 # |  
 # ---------------------------------------------------------------------------
 # |  
-# |  Copyright David Brownell 2015.
+# |  Copyright David Brownell 2015-16.
 # |          
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -388,6 +388,7 @@ class Base( InputProcessingMixin,
 
         invoke_reason = cls._GetInvokeReason(context, verbose_stream)
         if invoke_reason == None:
+            status_stream.write("No changes were detected.\n")
             return 0, "No changes were detected.\n"
 
         verbose_stream.flush()
