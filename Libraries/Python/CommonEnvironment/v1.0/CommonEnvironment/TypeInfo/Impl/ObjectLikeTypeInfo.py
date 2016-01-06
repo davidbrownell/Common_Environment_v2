@@ -37,7 +37,6 @@ class ObjectLikeTypeInfo(TypeInfo):
     # ---------------------------------------------------------------------------
     def __init__( self,
                   items=None,               # { "<attribute>" : <TypeInfo>, }
-                  require_exact_match=False,
                   arity=None,
                   validation_func=None,
                   **kwargs
@@ -46,7 +45,6 @@ class ObjectLikeTypeInfo(TypeInfo):
                                                   validation_func=validation_func,
                                                 )
 
-        self.RequireExactMatch              = require_exact_match
         self.Items                          = items or OrderedDict()
 
         for k, v in kwargs.iteritems():
@@ -59,19 +57,17 @@ class ObjectLikeTypeInfo(TypeInfo):
         if not self.Items:
             return ''
 
-        return "Value must {only}contain the {attribute} {values}" \
-                    .format( only="only " if self.RequireExactMatch else '',
-                             attribute=Plural.plural("attribute", len(self.Items)),
+        return "Value must contain the {attribute} {values}" \
+                    .format( attribute=Plural.plural("attribute", len(self.Items)),
                              values=', '.join([ "'{}'".format(name) for name in self.Items.iterkeys() ]),
                            )
 
     @property
     def PythonDefinitionString(self):
-        return "{name}({super}, items={items}, require_exact_match={require_exact_match})" \
+        return "{name}({super}, items={items})" \
                     .format( name=self.__class__.__name__,
                              super=self._PythonDefinitionStringContents,
                              items="{ %s }" % ', '.join([ '"{}" : {}'.format(k, v.PythonDefinitionString) for k, v in self.Items.iteritems() ]),
-                             require_exact_match=self.RequireExactMatch,
                            )
 
     # ---------------------------------------------------------------------------
@@ -82,9 +78,13 @@ class ObjectLikeTypeInfo(TypeInfo):
     # ---------------------------------------------------------------------------
     # ---------------------------------------------------------------------------
     # ---------------------------------------------------------------------------
-    def _ValidateItemNoThrowImpl(self, item, recurse=True):
-        if self.RequireExactMatch:
-            attributes = { a for a in item.__dict__.keys() if not a.startswith("__") }
+    def _ValidateItemNoThrowImpl( self, 
+                                  item, 
+                                  recurse=True,
+                                  require_exact_match=True,
+                                ):
+        if require_exact_match:
+            attributes = { a for a in (item if isinstance(item, dict) else item.__dict__).keys() if not a.startswith("__") }
 
             # ---------------------------------------------------------------------------
             def ProcessAttribute(attr):
