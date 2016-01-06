@@ -21,7 +21,7 @@ import traceback
 
 from contextlib import contextmanager
 
-from .StreamDecorator import StreamDecorator
+from StreamDecorator import StreamDecorator
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -29,29 +29,66 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ---------------------------------------------------------------------------
 
 @contextmanager
-def CallOnExit(output_stream_or_functor, *functors):
+def CallOnExit( # Argument may be:
+                #   functor     +   def Func()
+                #   stream      1   error stream
+                #   bool        1   True: call only if successful
+                #                   False: call only if exceptional
+                #                   Default is call always
+                *arguments
+              ):
     """
     Invokes the provided functors on exit.
     """
 
-    if hasattr(output_stream_or_functor, "write") and callable(output_stream_or_functor.write):
-        output_stream = output_stream_or_functor
-    else:
-        output_stream = sys.stderr
-        functors = [ output_stream_or_functor, ] + list(functors)
+    functors = []
+    stream = None
+    style = None
 
+    for argument in arguments:
+        if isinstance(argument, bool):
+            if style != None:
+                raise Exception("Only 1 bool arg can be specified")
+            style = argument
+
+        elif hasattr(argument, "write") and callable(argument.write):
+            if stream != None:
+                raise Exception("Only 1 stream arg can be specified")
+            stream = argument
+
+        else:
+            functors.append(argument)
+
+    if not functors:
+        raise Exception("No functors provided")
+
+    stream = stream or sys.stderr
+    is_successful = [ True, ]
+
+    # ---------------------------------------------------------------------------
+    def Invoke():
+        if style == None or style == is_successful[0]:
+            for functor in functors:
+                try:
+                    functor()
+                except:
+                    stream.write(textwrap.dedent(
+                        """\
+                        ERROR while attempting to unwind stack in CallOnExit.
+
+                            {error}
+
+                        """).format( error=StreamDecorator.LeftJustify(traceback.format_exc(), 4),
+                                   ))
+
+    # ---------------------------------------------------------------------------
+    
     try:
         yield
+    
+    except:
+        is_successful[0] = False
+        raise
+
     finally:
-        for functor in functors:
-            try:
-                functor()
-            except:
-                output_stream.write(textwrap.dedent(
-                    """\
-                    ERROR while attempting to unwind stack in CallOnExit.
-
-                        {error}
-
-                    """).format( error=StreamDecorator.LeftJustify(traceback.format_exc(), 4),
-                               ))
+        Invoke()
