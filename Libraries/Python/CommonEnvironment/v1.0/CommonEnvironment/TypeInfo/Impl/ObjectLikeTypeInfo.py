@@ -103,6 +103,9 @@ class ObjectLikeTypeInfo(TypeInfo):
             
         for attribute_name, type_info in self.Items.iteritems():
             if not self._HasAttribute(item, attribute_name):
+                if type_info.Arity.IsOptional:
+                    continue
+
                 return "The required attribute '{}' was not found".format(attribute_name)
 
             ProcessAttribute(attribute_name)

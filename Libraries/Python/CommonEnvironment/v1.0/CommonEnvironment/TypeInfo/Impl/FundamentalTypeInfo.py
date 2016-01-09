@@ -126,7 +126,7 @@ class FundamentalTypeInfo(TypeInfo):
                 if isinstance(expression, tuple):
                     expression, regex_flags = expression
                 else:
-                    regex_flags = 0
+                    regex_flags = re.DOTALL | re.MULTILINE
             
                 expressions.append(re.compile(expression, regex_flags))
                 
