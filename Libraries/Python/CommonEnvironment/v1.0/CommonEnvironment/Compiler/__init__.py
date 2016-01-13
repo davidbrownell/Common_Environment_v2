@@ -276,7 +276,28 @@ class Base( InputProcessingMixin,
             if not added_input and os.path.isdir(input):
                 verbose_stream.write("**** '{}' did not yield any inputs to process. ****\n".format(input))
 
-        for k, v in cls._GetOptionalMetadata():
+        optional_metadata = cls._GetOptionalMetadata()
+        
+        if isinstance(optional_metadata, dict):
+            # ---------------------------------------------------------------------------
+            def Generator():
+                for item in optional_metadata.iteritems():
+                    yield item
+
+            # ---------------------------------------------------------------------------
+            
+        elif isinstance(optional_metadata, list):
+            # ---------------------------------------------------------------------------
+            def Generator():
+                for item in optional_metadata:
+                    yield item
+
+            # ---------------------------------------------------------------------------
+            
+        else:
+            assert False, type(optional_metadata)
+
+        for k, v in Generator():
             if k not in kwargs or kwargs[k] == None or kwargs[k] == '':
                 kwargs[k] = v
 
@@ -445,6 +466,9 @@ class Base( InputProcessingMixin,
     # ---------------------------------------------------------------------------
     @staticmethod
     def _GetOptionalMetadata():
+        """\
+        Returns key-value pairs
+        """
         return []
 
     # ---------------------------------------------------------------------------
