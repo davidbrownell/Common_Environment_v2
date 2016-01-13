@@ -226,7 +226,7 @@ class EntryPointData(object):
 
                 display_arity = '*' if type_info.Arity.IsOptional or not is_positional else '+'
 
-            if type_info.Arity.IsSingle:
+            elif type_info.Arity.IsSingle:
                 display_arity = '1'            
             elif type_info.Arity.IsOptional:
                 display_arity = '?'
