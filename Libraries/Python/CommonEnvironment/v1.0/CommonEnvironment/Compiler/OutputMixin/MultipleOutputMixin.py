@@ -40,7 +40,7 @@ class MultipleOutputMixin(OutputMixin):
     # ---------------------------------------------------------------------------
     @classmethod
     def _PostprocessContextItem(cls, context):
-        for output_filename in context.output_filenames:
+        for output_filename in getattr(context, "output_filenames", []):
             output_dir = os.path.dirname(output_filename)
 
             if not os.path.isdir(output_dir):

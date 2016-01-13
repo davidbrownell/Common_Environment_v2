@@ -39,6 +39,7 @@ class ObjectLikeTypeInfo(TypeInfo):
                   items=None,               # { "<attribute>" : <TypeInfo>, }
                   arity=None,
                   validation_func=None,
+                  require_exact_match=None,
                   **kwargs
                 ):
         super(ObjectLikeTypeInfo, self).__init__( arity=arity,
@@ -46,6 +47,7 @@ class ObjectLikeTypeInfo(TypeInfo):
                                                 )
 
         self.Items                          = items or OrderedDict()
+        self.RequireExactMatchDefault       = require_exact_match
 
         for k, v in kwargs.iteritems():
             assert k not in self.Items, k
@@ -81,8 +83,11 @@ class ObjectLikeTypeInfo(TypeInfo):
     def _ValidateItemNoThrowImpl( self, 
                                   item, 
                                   recurse=True,
-                                  require_exact_match=True,
+                                  require_exact_match=None,
                                 ):
+        if require_exact_match == None:
+            require_exact_match = self.RequireExactMatchDefault if self.RequireExactMatchDefault != None else True
+
         if require_exact_match:
             attributes = { a for a in (item if isinstance(item, dict) else item.__dict__).keys() if not a.startswith("__") }
 
