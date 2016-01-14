@@ -73,7 +73,7 @@ class Compiler( AtomicInputProcessingMixin,
     @staticmethod
     def ValidateEnvironment():
         if Shell.GetEnvironment().Name != "Windows":
-            return "This compiler may only be invoked in the Windows environment"
+            return "This compiler may only be invoked in the Windows environment."
 
     # ---------------------------------------------------------------------------
     @staticmethod
