@@ -621,6 +621,11 @@ def _CommandLineImpl( compiler,
     assert inputs
     assert output_stream
 
+    result = compiler.ValidateEnvironment()
+    if result:
+        output_stream.write("{}\n".format(result.rstrip()))
+        return -1
+
     # Validate the input
     inputs = [ os.path.realpath(input) for input in inputs ]
 
