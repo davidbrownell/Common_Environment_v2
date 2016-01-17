@@ -98,6 +98,7 @@ class Compiler( AtomicInputProcessingMixin,
                  "paths" : [],
                  "includes" : [],
                  "excludes" : [],
+                 "packages" : [],
                  "distutil_args" : [],
                  "output_name" : None,
                }
@@ -187,7 +188,7 @@ class Compiler( AtomicInputProcessingMixin,
                     from distutils.core import setup
 
                     {paths}
-
+                    
                     manifest = textwrap.dedent(
                         """\\
                         {manifest}
@@ -197,6 +198,7 @@ class Compiler( AtomicInputProcessingMixin,
                            options={{ "py2exe" : {{ "optimize" : {optimize},
                                                   "bundle_files" : {bundle},
                                                   "dll_excludes" : [ "MSVCP90.dll", "mswsock.dll", "powrprof.dll", "mpr.dll", ],
+                                                  "packages" : [ {packages} ],
                                                   {optional_include_statement}
                                                   {optional_exclude_statement}
                                                 }},
@@ -222,6 +224,7 @@ class Compiler( AtomicInputProcessingMixin,
                                  bundle="3" if context.no_bundle else "1",
                                  optional_include_statement='' if not context.includes else '"includes" : [ {} ],'.format(', '.join([ 'r"{}"'.format(include) for include in context.includes ])),
                                  optional_exclude_statement='' if not context.excludes else '"excludes" : [ {} ],'.format(', '.join([ 'r"{}"'.format(exclude) for exclude in context.excludes ])),
+                                 packages=', '.join([ '"{}"'.format(package) for package in context.packages ]),
                                  script=input_filename,
                                  type=BuildTypeToString(context.build_type),
                                  icon='' if context.icon_filename == None else '"icon_resources" : [ (1, "{}"), ],'.format(context.icon_filename),
@@ -242,8 +245,14 @@ class Compiler( AtomicInputProcessingMixin,
                                                stdout=subprocess.PIPE,
                                                stderr=subprocess.STDOUT,
                                              )
-                    output_stream.write(result.stdout.read())
-            
+                                             
+                    while True:
+                        c = result.stdout.read(1)
+                        if not c:
+                            break
+                            
+                        output_stream.write(c)
+                        
                     this_dm.result = result.wait() or 0
                     if this_dm.result != 0:
                         return this_dm.result
@@ -276,6 +285,7 @@ class Compiler( AtomicInputProcessingMixin,
                                   path=CommandLine.DirectoryTypeInfo(arity='*'),
                                   include=CommandLine.StringTypeInfo(arity='*'),
                                   exclude=CommandLine.StringTypeInfo(arity='*'),
+                                  package=CommandLine.StringTypeInfo(arity='*'),
                                   distutil_arg=CommandLine.StringTypeInfo(arity='*'),
                                   output_stream=None,
                                 )
@@ -291,6 +301,7 @@ def Compile( input,
              path=None,
              include=None,
              exclude=None,
+             package=None,
              distutil_arg=None,
              output_stream=sys.stdout,
              verbose=False,
@@ -318,6 +329,7 @@ def Compile( input,
                                            paths=path or [],
                                            includes=include or [],
                                            excludes=exclude or [],
+                                           packages=package or [],
                                            distutil_args=distutil_arg or [],
                                          )
 
