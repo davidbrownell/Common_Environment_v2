@@ -17,14 +17,12 @@
 import os
 import sys
 
-from CommonEnvironment import Package
+from CommonEnvironment import TypeInfo
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ---------------------------------------------------------------------------
-
-TypeInfo = Package.ImportInit()
 
 # ---------------------------------------------------------------------------
 class ListTypeInfo(TypeInfo.TypeInfo):

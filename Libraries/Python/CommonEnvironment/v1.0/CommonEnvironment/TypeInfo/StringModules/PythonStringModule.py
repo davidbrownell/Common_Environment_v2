@@ -20,7 +20,7 @@ import sys
 import uuid
 
 from CommonEnvironment.Interface import staticderived
-from CommonEnvironment import Package
+from CommonEnvironment.TypeInfo import StringModules
 
 from ..FundamentalTypes import *
 
@@ -28,8 +28,6 @@ from ..FundamentalTypes import *
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ---------------------------------------------------------------------------
-
-StringModules = Package.ImportInit()
 
 # ---------------------------------------------------------------------------
 @staticderived
