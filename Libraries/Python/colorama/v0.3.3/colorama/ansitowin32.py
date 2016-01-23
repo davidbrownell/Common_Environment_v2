@@ -48,7 +48,10 @@ class AnsiToWin32(object):
     def __init__(self, wrapped, convert=None, strip=None, autoreset=False):
         # The wrapped stream (normally sys.stdout or sys.stderr)
         self.wrapped = wrapped
-
+        
+        if self.wrapped and not hasattr(self.wrapped, "closed"):
+            self.wrapped.closed = staticmethod(lambda *args, **kwargs: None)
+            
         # should we reset colors to defaults after every .write()
         self.autoreset = autoreset
 
