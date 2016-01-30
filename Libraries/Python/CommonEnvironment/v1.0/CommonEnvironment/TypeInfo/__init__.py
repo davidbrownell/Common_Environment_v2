@@ -137,8 +137,8 @@ class TypeInfo(Interface):
         self.ValidationFunc                 = validation_func
 
     # ---------------------------------------------------------------------------
-    def Validate(self, value):
-        result = self.ValidateNoThrow(value)
+    def Validate(self, value, **custom_args):
+        result = self.ValidateNoThrow(value, **custom_args)
         if result != None:
             raise ValidationException(result)
 
@@ -161,7 +161,7 @@ class TypeInfo(Interface):
             raise ValidationException(result)
 
     # ---------------------------------------------------------------------------
-    def ValidateNoThrow(self, value):
+    def ValidateNoThrow(self, value, **custom_args):
         result = self.ValidateArityNoThrow(value)
         if result != None:
             return result
@@ -170,7 +170,7 @@ class TypeInfo(Interface):
             value = [ value, ]
 
         for item in value:
-            result = self.ValidateItemNoThrow(item)
+            result = self.ValidateItemNoThrow(item, **custom_args)
             if result != None:
                 return result
 
