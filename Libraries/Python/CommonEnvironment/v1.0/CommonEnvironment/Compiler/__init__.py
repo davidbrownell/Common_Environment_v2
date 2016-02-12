@@ -99,6 +99,7 @@ class Base( InputProcessingMixin,
     # |  Public Methods
     # |
     # ---------------------------------------------------------------------------
+    @extensionmethod
     @staticmethod
     def ValidateEnvironment():
         """\
@@ -117,11 +118,13 @@ class Base( InputProcessingMixin,
         raise Exception("Abstract method")
 
     # ---------------------------------------------------------------------------
+    @extensionmethod
     @staticmethod
     def IsSupportedTestFile(item):
         return True
         
     # ---------------------------------------------------------------------------
+    @extensionmethod
     @classmethod
     def ItemNameToTestName(cls, item_name, test_name):
         """Returns the likely name of the test given the source filename."""
@@ -143,6 +146,7 @@ class Base( InputProcessingMixin,
             assert False, (cls.Name, cls.Type)
     
     # ---------------------------------------------------------------------------
+    @extensionmethod
     @classmethod
     def GetSystemUnderTest(cls, test_filename):
         if cls.Type == cls.TypeValue.Directory:
@@ -446,6 +450,7 @@ class Base( InputProcessingMixin,
 
     # ---------------------------------------------------------------------------
     # |  The following methods MAY be overridden to customize behavior
+    @extensionmethod
     @staticmethod
     def _GetAdditionalGeneratorItems(context):
         """\
@@ -456,6 +461,7 @@ class Base( InputProcessingMixin,
         return []
 
     # ---------------------------------------------------------------------------
+    @extensionmethod
     @staticmethod
     def _GetDisplayName(context):
         """\
@@ -464,6 +470,7 @@ class Base( InputProcessingMixin,
         return None
     
     # ---------------------------------------------------------------------------
+    @extensionmethod
     @staticmethod
     def _GetOptionalMetadata():
         """\
@@ -472,6 +479,7 @@ class Base( InputProcessingMixin,
         return []
 
     # ---------------------------------------------------------------------------
+    @extensionmethod
     @staticmethod
     def _GetRequiredMetadataNames():
         """\
@@ -480,6 +488,7 @@ class Base( InputProcessingMixin,
         return []
 
     # ---------------------------------------------------------------------------
+    @extensionmethod
     @staticmethod
     def _GetRequiredContextNames():
         """\
