@@ -21,6 +21,7 @@ import sys
 import textwrap
 
 from collections import OrderedDict
+from functools import wraps
 
 from QuickObject import QuickObject
 
@@ -71,6 +72,7 @@ class Interface(object):
 
     __metaclass__ = abc.ABCMeta
     
+    ExtensionMethods = []
     _verified_types = set()
 
     # ---------------------------------------------------------------------------
@@ -149,6 +151,13 @@ class Interface(object):
                 these_abstracts = []
 
                 for member_name, member_info in inspect.getmembers(base):
+                    if getattr(member_info, "__extension_method", False):
+                        info = GenerateInfo(member_info)
+                        instance.ExtensionMethods.append("{}.{} {}".format( type(instance).__name__,
+                                                                            member_name,
+                                                                            LocationString(info),
+                                                                          ))
+
                     if getattr(member_info, "__isabstractmethod__", False):
                         these_abstracts.append(member_name)
 
@@ -419,6 +428,7 @@ def final(class_obj):
     
     # ---------------------------------------------------------------------------
     # <Too few public methods> pylint: disable = R0903
+    @wraps(class_obj)
     class Final(class_obj):
         
         # ---------------------------------------------------------------------------
@@ -471,6 +481,7 @@ def immutable(class_obj):
     
     # ---------------------------------------------------------------------------
     # <Too few public methods> pylint: disable = R0903
+    @wraps(class_obj)
     class Immutable(class_obj):
     
         # ---------------------------------------------------------------------------
@@ -500,6 +511,31 @@ def immutable(class_obj):
     return Immutable
 
 # ---------------------------------------------------------------------------
-def clsinit(cls):
-    cls.__clsinit__()
-    return cls
+def clsinit(class_obj):
+    class_obj.__clsinit__()
+    return class_obj
+
+# ----------------------------------------------------------------------
+def extensionmethod(func):
+    """\
+    Decorator that indicates the method is a method that can be extended by
+    a derived class to override functionality (in other words, it is an "extension
+    point"). Note that the class associated with the method must be based
+    on interface for this construct to work properly.
+
+    To view all extensions of an Interface-based type:
+
+        print '\n'.join(MyClass.ExtensionPoints)
+
+    """
+
+    if isinstance(func, (staticmethod, classmethod)):
+        actual_func = func.__func__
+    elif callable(func):
+        actual_func = func
+    else:
+        assert False, type(func)
+
+    setattr(actual_func, "__extension_method", True)
+    
+    return func
