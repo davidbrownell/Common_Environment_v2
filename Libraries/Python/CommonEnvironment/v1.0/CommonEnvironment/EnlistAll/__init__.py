@@ -283,7 +283,8 @@ def EnlistFunctionFactory( repo_templates,
             
             # Update
             for index, repo in enumerate(diff.matches):
-                branch_name = repo.branch or repo.scm.DefaultBranch
+                current_branch_name = repo.scm.GetCurrentBranch(repo.path)
+                branch_name = repo.branch or (current_branch_name if preserve_branches else repo.scm.DefaultBranch)
                 
                 title = "Updating '{}' [{}] ({} of {})...".format( repo.path,
                                                                    branch_name,
@@ -293,7 +294,6 @@ def EnlistFunctionFactory( repo_templates,
                 dm.stream.write("\n{}\n{}\n".format(title, '=' * len(title)))
                 with dm.stream.DoneManager() as update_dm:
                     if preserve_branches:
-                        current_branch_name = repo.scm.GetCurrentBranch(repo.path)
                         if current_branch_name != branch_name:
                             branches_to_restore[repo.path] = current_branch_name
 
@@ -337,8 +337,7 @@ def EnlistFunctionFactory( repo_templates,
             # Clone
             for index, (uri, branch) in enumerate(diff.reference_only):
                 name = uri[uri.rfind('/') + 1:]
-                branch = branch or scm.DefaultBranch
-
+                
                 if flat:
                     output_dir = os.path.join(code_root, name)
                 else:
@@ -354,6 +353,14 @@ def EnlistFunctionFactory( repo_templates,
                 with dm.stream.DoneManager() as this_dm:
                     this_dm.result, output = scm.Clone(uri, output_dir, branch=branch)
                     this_dm.stream.write(output)
+                    
+                    if branch:
+                        title = "Setting Branch ({})...".format(branch)
+                        
+                        this_dm.stream.write("\n{}\n{}".format(title, '-' * len(title)))
+                        with this_dm.stream.DoneManager(done_suffix='\n') as set_branch_dm:
+                            set_branch_dm.result, output = scm.SetBranch(output_dir, branch)
+                            set_branch_dm.stream.write(output)
 
             # Resore any branches
             for index, (repo_path, branch_name) in enumerate(branches_to_restore.iteritems()):
