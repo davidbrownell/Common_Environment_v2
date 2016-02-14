@@ -283,7 +283,8 @@ def EnlistFunctionFactory( repo_templates,
             
             # Update
             for index, repo in enumerate(diff.matches):
-                branch_name = repo.branch or repo.scm.DefaultBranch
+                current_branch_name = repo.scm.GetCurrentBranch(repo.path)
+                branch_name = repo.branch or (current_branch_name if preserve_branches else repo.scm.DefaultBranch)
                 
                 title = "Updating '{}' [{}] ({} of {})...".format( repo.path,
                                                                    branch_name,
@@ -293,7 +294,6 @@ def EnlistFunctionFactory( repo_templates,
                 dm.stream.write("\n{}\n{}\n".format(title, '=' * len(title)))
                 with dm.stream.DoneManager() as update_dm:
                     if preserve_branches:
-                        current_branch_name = repo.scm.GetCurrentBranch(repo.path)
                         if current_branch_name != branch_name:
                             branches_to_restore[repo.path] = current_branch_name
 
