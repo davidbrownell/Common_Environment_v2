@@ -337,8 +337,7 @@ def EnlistFunctionFactory( repo_templates,
             # Clone
             for index, (uri, branch) in enumerate(diff.reference_only):
                 name = uri[uri.rfind('/') + 1:]
-                branch = branch or scm.DefaultBranch
-
+                
                 if flat:
                     output_dir = os.path.join(code_root, name)
                 else:
@@ -354,6 +353,14 @@ def EnlistFunctionFactory( repo_templates,
                 with dm.stream.DoneManager() as this_dm:
                     this_dm.result, output = scm.Clone(uri, output_dir, branch=branch)
                     this_dm.stream.write(output)
+                    
+                    if branch:
+                        title = "Setting Branch ({})...".format(branch)
+                        
+                        this_dm.stream.write("\n{}\n{}".format(title, '-' * len(title)))
+                        with this_dm.stream.DoneManager(done_suffix='\n') as set_branch_dm:
+                            set_branch_dm.result, output = scm.SetBranch(output_dir, branch)
+                            set_branch_dm.stream.write(output)
 
             # Resore any branches
             for index, (repo_path, branch_name) in enumerate(branches_to_restore.iteritems()):
