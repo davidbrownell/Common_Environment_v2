@@ -63,6 +63,8 @@ TYPE_MAP = {
         TypeSpec(['.htm', '.html', '.shtml', '.xhtml'], []),
     'inc':
         TypeSpec(['.inc', '.inl'], []),
+    'ini':
+        TypeSpec(['.ini', ], []),
     'java':
         TypeSpec(['.java', '.properties'], []),
     'js':
