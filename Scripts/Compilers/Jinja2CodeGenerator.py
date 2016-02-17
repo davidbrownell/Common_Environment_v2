@@ -189,7 +189,10 @@ class CodeGenerator( AtomicInputProcessingMixin,
                                                                       ))
             with status_stream.DoneManager(suppress_exceptions=True) as dm:
                 try:
-                    template = Template(open(input_filename).read())
+                    template = Template( open(input_filename).read(),
+                                         trim_blocks=True,
+                                         lstrip_blocks=True,
+                                       )
 
                     with open(output_filename, 'w') as f:
                         f.write(template.render(**context.jinja2_context))
