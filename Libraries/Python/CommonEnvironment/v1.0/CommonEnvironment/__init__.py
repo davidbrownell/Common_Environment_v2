@@ -31,6 +31,14 @@ def Get( items,
         if functor(item):
             return extractor(item) if extractor else item
 
+# ----------------------------------------------------------------------
+def GetIndex( items,
+              functor,                      # def Func(item) -> Bool
+            ):
+    for index, item in enumerate(items):
+        if functor(item):
+            return index
+
 # ---------------------------------------------------------------------------
 def All( items,
          functor,                           # def Func(item) -> Bool
