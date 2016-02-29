@@ -32,7 +32,7 @@ from CommonEnvironment.Compiler.InvocationQueryMixin.ConditionalInvocationQueryM
 from CommonEnvironment.Compiler.InvocationMixin.CustomInvocationMixin import CustomInvocationMixin
 from CommonEnvironment.Compiler.OutputMixin.MultipleOutputMixin import MultipleOutputMixin
 
-from jinja2 import Template
+from jinja2 import Environment
 
 import os
 import sys
@@ -189,11 +189,14 @@ class CodeGenerator( AtomicInputProcessingMixin,
                                                                       ))
             with status_stream.DoneManager(suppress_exceptions=True) as dm:
                 try:
-                    template = Template( open(input_filename).read(),
-                                         trim_blocks=True,
-                                         lstrip_blocks=True,
-                                       )
+                    env = Environment( trim_blocks=True,
+                                       lstrip_blocks=True,
+                                     )
 
+                    env.filters["doubleslash"] = lambda value: value.replace('\\', '\\\\')
+
+                    template = env.from_string(open(input_filename).read())
+                    
                     with open(output_filename, 'w') as f:
                         f.write(template.render(**context.jinja2_context))
 
