@@ -189,12 +189,25 @@ class CodeGenerator( AtomicInputProcessingMixin,
                                                                       ))
             with status_stream.DoneManager(suppress_exceptions=True) as dm:
                 try:
+                    # ----------------------------------------------------------------------
+                    def ReadFileFilter(value):
+                        potential_filename = os.path.join(os.path.dirname(input_filename), value)
+                        if not os.path.isfile(potential_filename):
+                            return "<< '{}' was not found >>".format(potential_filename)
+
+                        return open(potential_filename).read()
+
+                    # ----------------------------------------------------------------------
+                    
                     env = Environment( trim_blocks=True,
                                        lstrip_blocks=True,
                                      )
 
                     env.filters["doubleslash"] = lambda value: value.replace('\\', '\\\\')
 
+                    env.tests["valid_file"] = lambda value: os.path.isfile(os.path.join(os.path.dirname(input_filename), value))
+                    env.filters["read_file"] = ReadFileFilter
+                    
                     template = env.from_string(open(input_filename).read())
                     
                     with open(output_filename, 'w') as f:
