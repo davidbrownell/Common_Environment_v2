@@ -217,7 +217,7 @@ def _SetupBootstrap( environment,
     def EnumerateDirectories():
         
         # ---------------------------------------------------------------------------
-        def Impl(dir, subdir_to_skip=None):
+        def Impl(dir, fullpath_to_skip=None):
             """\
             Assumes that the repositories are siblings of each other. Searches begin in
             sibling dirs, then move up in the directory tree if the values are not found.
@@ -226,7 +226,7 @@ def _SetupBootstrap( environment,
             if environment.Name == "Windows":
                 # If this is the first time through the loop, ensure that the drive letter
                 # in the generated results is uppercase.
-                if subdir_to_skip == None:
+                if fullpath_to_skip == None:
                     drive, remainder = os.path.splitdrive(dir)
                         
                     if drive[-1] == ':':
@@ -236,8 +236,10 @@ def _SetupBootstrap( environment,
 
                 # Don't count the slash that follows the drive name
                 search_depth_offset = -1
+                dir_comparison_decorator = lambda dir: dir.lower()
             else:
                 search_depth_offset = 0
+                dir_comparison_decorator = lambda dir: dir
 
             search_depth_offset -= repository_root.count(os.path.sep)
     
@@ -265,7 +267,7 @@ def _SetupBootstrap( environment,
                 try:
                     # Favor items with code-related keywords to help in the overall search perf
                     for item in os.listdir(search_item):
-                        if item == subdir_to_skip:
+                        if dir_comparison_decorator(os.path.join(search_item, item)) == dir_comparison_decorator(fullpath_to_skip):
                             continue
 
                         fullpath = os.path.join(search_item, item)
@@ -303,7 +305,7 @@ def _SetupBootstrap( environment,
             if parent == dir:
                 return
 
-            for item in Impl(parent, name):
+            for item in Impl(parent, dir):
                 yield item
 
         # ---------------------------------------------------------------------------
