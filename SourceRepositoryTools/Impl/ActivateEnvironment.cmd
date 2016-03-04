@@ -104,6 +104,20 @@ if "%_ACTIVATE_ENVIRONMENT_IS_CONFIGURABLE_REPOSITORY%" NEQ "0" (
         goto reset_and_end
     )
 
+    if "%DEVELOPMENT_ENVIRONMENT_REPOSITORY_CONFIGURATION%" NEQ "" (
+        if "%DEVELOPMENT_ENVIRONMENT_REPOSITORY_CONFIGURATION%" NEQ "%1" (
+            @echo.
+            @echo ERROR: The environment was previously activated with a different configuration.
+            @echo        Please open a new window and reactive the environment with the new 
+            @echo        configuration.
+            @echo.
+            @echo        ["%DEVELOPMENT_ENVIRONMENT_REPOSITORY_CONFIGURATION%" != "%1"]
+            @echo.
+
+            goto reset_and_end
+        )
+    )
+
     set _ACTIVATE_ENVIRONMENT_CLA1=%1
     set _ACTIVATE_ENVIRONMENT_CLA2=%2
     set _ACTIVATE_ENVIRONMENT_CLA3=%3
