@@ -177,6 +177,22 @@ then
             should_continue=0
         fi
         
+        if [ "$DEVELOPMENT_ENVIRONMENT_REPOSITORY_CONFIGURATION" != "" ]
+        then
+            if [ "$DEVELOPMENT_ENVIRONMENT_REPOSITORY_CONFIGURATION" != "$1" ]
+            then
+                echo ""
+                echo "ERROR: The environment was previously activated with a different configuration."
+                echo "       Please open a new window and reactivate the environment with the new"
+                echo "       configuration."
+                echo ""
+                echo "       ['$DEVELOPMENT_ENVIRONMENT_REPOSITORY_CONFIGURATION' != '$1']"
+                echo ""
+
+                should_continue=0
+            fi
+        fi
+
         cla1=$1
         cla2=$2
         cla3=$3
