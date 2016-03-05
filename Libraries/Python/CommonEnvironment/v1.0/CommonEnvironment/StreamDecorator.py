@@ -204,10 +204,11 @@ class StreamDecorator(object):
                 if result != None:
                     suffixes.append(result)
     
-            self.write("{prefix}DONE!{info_suffix}{suffix}\n".format( prefix=done_prefix, 
-                                                                      info_suffix=" ({})".format(', '.join(suffixes)) if suffixes else '',
-                                                                      suffix=done_suffix,
-                                                                    ))
+            self.write("{prefix}{done}{info_suffix}{suffix}\n".format( prefix=done_prefix, 
+                                                                       done='' if done_prefix else "DONE!",
+                                                                       info_suffix=" ({})".format(', '.join(suffixes)) if suffixes else '',
+                                                                       suffix=done_suffix,
+                                                                     ))
             self.flush()
     
             # Propagate the result
