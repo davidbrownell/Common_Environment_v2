@@ -93,12 +93,16 @@ def WalkFiles( root,
                include_file_names=None,                 # ex. "File.ext"
                exclude_file_names=None,                 # ex. "File.ext"
 
+               include_full_paths=None,                 # ex. "C:\foo\bar\file.ext"
+               exclude_full_paths=None,                 # ex. "C:\foo\bar\file.ext"
+
                recurse=True,
              ):
     process_file_name = _ProcessArgs(include_file_names, exclude_file_names)
     process_file_base_name = _ProcessArgs(include_file_base_names, exclude_file_base_names)
     process_file_extension = _ProcessArgs(include_file_extensions, exclude_file_extensions)
-    
+    process_full_path = _ProcessArgs(include_full_paths, exclude_full_paths)
+
     for root, filenames in WalkDirs( root,
                                      include_dir_names=include_dir_names,
                                      exclude_dir_names=exclude_dir_names,
@@ -120,7 +124,12 @@ def WalkFiles( root,
                ):
                 continue
 
-            yield os.path.join(root, filename)
+            fullpath = os.path.join(root, filename)
+
+            if not process_full_path(fullpath):
+                continue
+
+            yield fullpath
 
 # ---------------------------------------------------------------------------
 _GetCommonPath_Compare = None

@@ -868,7 +868,7 @@ def MatchTests( input_dir,
     with StreamDecorator(output_stream).DoneManager(output_stream, done_suffix='\n') as dm:
         source_files = list(FileSystem.WalkFiles( input_dir,
                                                   include_dir_paths=[ lambda fullpath: os.path.isdir(os.path.join(fullpath, test_type)), ],
-                                                  include_file_paths=[ compiler.IsSupported, ],
+                                                  include_full_paths=[ compiler.IsSupported, ],
                                                   exclude_file_names=[ "Build.py", "__init__.py", ],
                                                   traverse_exclude_dir_names=[ "Generated", "Impl", ],
                                                 ))
