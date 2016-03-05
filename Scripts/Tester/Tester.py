@@ -309,13 +309,51 @@ def MatchTests( configuration,
     tester_script = os.path.join(_script_dir, "TesterEx.py")
     assert os.path.isfile(tester_script), tester_script
 
-    return _Execute('python "{script}" MatchTests "{dir}" "{test_type}" {compiler}{verbose}'.format(
-                                    script=tester_script,
-                                    dir=input_dir,
-                                    test_type=test_type,
-                                    compiler=CONFIGURATIONS[configuration].stardard_args[0],
-                                    verbose=" /verbose" if verbose else '',
-                                ))
+    result = subprocess.Popen( 'python "{script}" MatchTests "{dir}" "{test_type}" {compiler}{verbose}' \
+                                    .format( script=tester_script,
+                                             dir=input_dir,
+                                             test_type=test_type,
+                                             compiler=CONFIGURATIONS[configuration].standard_args[0],
+                                             verbose=" /verbose" if verbose else '',
+                                           ),
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.STDOUT,
+                               shell=True,
+                             )
+    while True:
+        c = result.stdout.read()
+        if not c: 
+            break
+
+        output_stream.write(c)
+
+    return result.wait() or 0
+
+# ----------------------------------------------------------------------
+@CommandLine.EntryPoint
+@CommandLine.FunctionConstraints( input_dir=CommandLine.DirectoryTypeInfo(),
+                                  test_type=CommandLine.StringTypeInfo(),
+                                  output_stream=None,
+                                )
+def MatchAllTests( input_dir,
+                   test_type,
+                   output_stream=sys.stdout,
+                   verbose=False,
+                 ):
+    with StreamDecorator(output_stream).DoneManager( done_prefix="\n\nComposite Results:",
+                                                     line_prefix='',
+                                                   ) as dm:
+        for index, configuration in enumerate(CONFIGURATIONS.iterkeys()):
+            dm.stream.write("Matching '{}' ({} of {})...".format(configuration, index + 1, len(CONFIGURATIONS)))
+            with dm.stream.DoneManager() as this_dm:
+                this_dm.result = MatchTests( configuration,
+                                             input_dir,
+                                             test_type,
+                                             this_dm.stream,
+                                             verbose,
+                                           )
+
+        return dm.result
 
 # ---------------------------------------------------------------------------
 def CommandLineSuffix():
