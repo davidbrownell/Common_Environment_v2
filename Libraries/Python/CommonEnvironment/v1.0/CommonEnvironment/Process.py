@@ -20,6 +20,7 @@ import sys
 from StringIO import StringIO
 
 from .CallOnExit import CallOnExit
+from .StreamDecorator import StreamDecorator
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -46,8 +47,9 @@ def ExecuteWithColorama( command_line,
                        ):
     import colorama
 
-    assert not sys.stdout.is_autoreset(), "colorama.init must be called with autoreset=False"
-
+    if not isinstance(sys.stdout, StreamDecorator) and not hasattr(sys.stdout, "_StreamWrapper__wrapped"):
+        colorama.init(autoreset=False)
+        
     with CallOnExit(lambda: sys.stdout.write(colorama.Style.RESET_ALL)):
         return _ExecuteImpl( command_line,
                              convert_newlines=convert_newlines,
@@ -103,7 +105,7 @@ def _ExecuteImpl( command_line,
         newline_sequence = []
 
         while True:
-            c = output_functor.stdout.read(1)
+            c = result.stdout.read(1)
             if not c:
                 break
 

@@ -191,9 +191,9 @@ def _GetBuildInfo(code_dir, output_stream):
     output_stream.write("\nSearching for build files...")
     with StreamDecorator(output_stream).DoneManager(suffix_functor=lambda: "{} found".format(Pluralize.no("build file", len(build_info)))):
         name, ext = os.path.splitext(BUILD_FILENAME)
-
+        
         for fullpath in FileSystem.WalkFiles( code_dir,
-                                              include_file_names=[ name, ],
+                                              include_file_base_names=[ name, ],
                                               include_file_extensions=[ ext, ],
                                             ):
             if os.path.isfile(os.path.join(os.path.dirname(fullpath), BUILD_FILENAME_IGNORE)):
