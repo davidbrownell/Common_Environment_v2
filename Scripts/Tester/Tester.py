@@ -31,6 +31,7 @@ from collections import OrderedDict
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CommandLine
 from CommonEnvironment import Compiler
+from CommonEnvironment import Process
 from CommonEnvironment.QuickObject import QuickObject
 from CommonEnvironment import Shell
 from CommonEnvironment.StreamDecorator import StreamDecorator
@@ -194,8 +195,8 @@ def Test( configuration,
 
     command_line.append("/preserve_ansi_escape_sequences")
 
-    return _Execute("python {}".format(' '.join([ '"{}"'.format(arg) for arg in command_line ])))
-
+    return Process.ExecuteWithColorama("python {}".format(' '.join([ '"{}"'.format(arg) for arg in command_line ])))
+    
 # ---------------------------------------------------------------------------
 @CommandLine.EntryPoint
 @CommandLine.FunctionConstraints( input=CommandLine.FilenameTypeInfo(),
@@ -298,60 +299,48 @@ def TestType( configuration,
 @CommandLine.FunctionConstraints( configuration=CommandLine.EnumTypeInfo(values=CONFIGURATIONS.keys()),
                                   input_dir=CommandLine.DirectoryTypeInfo(),
                                   test_type=CommandLine.StringTypeInfo(),
-                                  output_stream=None,
                                 )
 def MatchTests( configuration,
                 input_dir,
                 test_type,
-                output_stream=sys.stdout,
                 verbose=False,
               ):
-    tester_script = os.path.join(_script_dir, "TesterEx.py")
-    assert os.path.isfile(tester_script), tester_script
-
-    result = subprocess.Popen( 'python "{script}" MatchTests "{dir}" "{test_type}" {compiler}{verbose}' \
-                                    .format( script=tester_script,
-                                             dir=input_dir,
-                                             test_type=test_type,
-                                             compiler=CONFIGURATIONS[configuration].standard_args[0],
-                                             verbose=" /verbose" if verbose else '',
-                                           ),
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.STDOUT,
-                               shell=True,
-                             )
-    while True:
-        c = result.stdout.read()
-        if not c: 
-            break
-
-        output_stream.write(c)
-
-    return result.wait() or 0
+    return Process.ExecuteWithColorama( 'python "{script}" MatchTests "{dir}" "{test_type}" {compiler}{verbose}' \
+                                            .format( script=os.path.join(_script_dir, "TesterEx.py"),
+                                                     dir=input_dir,
+                                                     test_type=test_type,
+                                                     compiler=CONFIGURATIONS[configuration].standard_args[0],
+                                                     verbose='' if not verbose else " /verbose",
+                                                   ),
+                                      )
 
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint
 @CommandLine.FunctionConstraints( input_dir=CommandLine.DirectoryTypeInfo(),
                                   test_type=CommandLine.StringTypeInfo(),
-                                  output_stream=None,
                                 )
 def MatchAllTests( input_dir,
                    test_type,
-                   output_stream=sys.stdout,
                    verbose=False,
                  ):
-    with StreamDecorator(output_stream).DoneManager( done_prefix="\n\nComposite Results:",
-                                                     line_prefix='',
-                                                   ) as dm:
+    colorama.init(autoreset=False)
+
+    with StreamDecorator(sys.stdout).DoneManager( done_prefix="\n\nComposite Results:",
+                                                  line_prefix='',
+                                                ) as dm:
         for index, configuration in enumerate(CONFIGURATIONS.iterkeys()):
             dm.stream.write("Matching '{}' ({} of {})...".format(configuration, index + 1, len(CONFIGURATIONS)))
-            with dm.stream.DoneManager() as this_dm:
+            with dm.stream.DoneManager(line_prefix="    ") as this_dm:
+                original_stdout = sys.stdout
+                sys.stdout = this_dm.stream
+
                 this_dm.result = MatchTests( configuration,
                                              input_dir,
                                              test_type,
-                                             this_dm.stream,
                                              verbose,
                                            )
+
+                sys.stdout = original_stdout
 
         return dm.result
 
@@ -366,62 +355,6 @@ def CommandLineSuffix():
                                         4,
                                         skip_first_line=False,
                                       )
-
-# ---------------------------------------------------------------------------
-# ---------------------------------------------------------------------------
-# ---------------------------------------------------------------------------
-def _Execute(command_line):
-    colorama.init(autoreset=False)
-
-    result = subprocess.Popen( command_line,
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.STDOUT,
-                               shell=True,
-                             )
-
-    escape_sequence = []
-    newline_sequence = []
-
-    while True:
-        c = result.stdout.read(1)
-        if not c:
-            break
-
-        # Escape sequences need to be sent as an atomic string to work
-        # with colorama
-        value = ord(c)
-        if value == 27:                     # ASCII ESC == 27
-            escape_sequence.append(c)
-            continue
-
-        if value == 13:                     # ASCII '\r' == 13
-            newline_sequence.append(c)
-            continue
-
-        if escape_sequence:
-            escape_sequence.append(c)
-
-            if c not in string.ascii_letters:
-                continue
-
-            content = ''.join(escape_sequence)
-            escape_sequence = []
-
-        elif newline_sequence:
-            newline_sequence.append(c)
-
-            content = ''.join(newline_sequence)
-            newline_sequence = []
-
-            if content == '\r\n':
-                content = '\n'
-
-        else:
-            content = c
-
-        sys.stdout.write(content)
-
-    return result.wait() or 0
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
