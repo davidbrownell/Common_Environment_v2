@@ -20,8 +20,8 @@ import sys
 
 from collections import namedtuple
 
-from CommonEnvironment import TypeInfo
-from CommonEnvironment.TypeInfo.Impl.ObjectLikeTypeInfo import ObjectLikeTypeInfo
+from . import TypeInfo
+from .Impl.ObjectLikeTypeInfo import ObjectLikeTypeInfo
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -30,7 +30,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 
 # ---------------------------------------------------------------------------
 # <Too few public methods> pylint: disable = R0903
-class _MethodTypeInfo(TypeInfo.TypeInfo):
+class _MethodTypeInfo(TypeInfo):
     ExpectedTypeIsCallable                  = True
     ConstraintsDesc                         = ''
 
