@@ -17,7 +17,7 @@
 import os
 import sys
 
-from CommonEnvironment import TypeInfo
+from . import TypeInfo
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -25,7 +25,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
-class ListTypeInfo(TypeInfo.TypeInfo):
+class ListTypeInfo(TypeInfo):
     """\
     Useful when itms are lists:
 

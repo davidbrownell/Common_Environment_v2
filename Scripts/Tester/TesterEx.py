@@ -869,7 +869,7 @@ def MatchTests( input_dir,
         source_files = list(FileSystem.WalkFiles( input_dir,
                                                   include_dir_paths=[ lambda fullpath: os.path.isdir(os.path.join(fullpath, test_type)), ],
                                                   include_full_paths=[ compiler.IsSupported, ],
-                                                  exclude_file_names=[ "Build.py", "__init__.py", ],
+                                                  exclude_file_names=[ "Build.py", ],
                                                   traverse_exclude_dir_names=[ "Generated", "Impl", ],
                                                 ))
 
