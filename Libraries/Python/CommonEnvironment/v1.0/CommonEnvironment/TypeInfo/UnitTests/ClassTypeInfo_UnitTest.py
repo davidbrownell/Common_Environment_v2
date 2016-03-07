@@ -47,7 +47,7 @@ class NamedTupleTest(unittest.TestCase):
 
     # ---------------------------------------------------------------------------
     def test_Valid(self):
-        self._type_info.Validate(self._tuple("hello", 15, True))
+        self._type_info.Validate(self._tuple("hello", 15, True), require_exact_match=False)
 
     # ---------------------------------------------------------------------------
     def test_Invalid(self):
@@ -58,7 +58,7 @@ class NamedTupleTest(unittest.TestCase):
         
     # ---------------------------------------------------------------------------
     def test_PythonDefinitionString(self):
-        self.assertEqual(self._type_info.PythonDefinitionString, r'ClassTypeInfo(arity=Arity(min=1, max_or_none=1), items={ "baz" : BoolTypeInfo(arity=Arity(min=1, max_or_none=1)), "foo" : StringTypeInfo(arity=Arity(min=1, max_or_none=1), min_length=1), "bar" : IntTypeInfo(arity=Arity(min=1, max_or_none=1), min=10, max=20) }, require_exact_match=False)')
+        self.assertEqual(self._type_info.PythonDefinitionString, r'ClassTypeInfo(arity=Arity(min=1, max_or_none=1), items={ "baz" : BoolTypeInfo(arity=Arity(min=1, max_or_none=1)), "foo" : StringTypeInfo(arity=Arity(min=1, max_or_none=1), min_length=1), "bar" : IntTypeInfo(arity=Arity(min=1, max_or_none=1), min=10, max=20) })')
         
     # ---------------------------------------------------------------------------
     def test_ConstraintsDesc(self):
@@ -220,7 +220,7 @@ class ClassTest(unittest.TestCase):
 
     # ---------------------------------------------------------------------------
     def test_PythonDefinitionString(self):
-        self.assertEqual(self._type_info.PythonDefinitionString, r'ClassTypeInfo(arity=Arity(min=1, max_or_none=1), items={ "static_method" : StaticMethodTypeInfo(arity=Arity(min=1, max_or_none=1)), "class_method" : ClassMethodTypeInfo(arity=Arity(min=1, max_or_none=1)), "method" : MethodTypeInfo(arity=Arity(min=1, max_or_none=1)), "foo" : StringTypeInfo(arity=Arity(min=1, max_or_none=1), min_length=1, max_length=5) }, require_exact_match=False)')
+        self.assertEqual(self._type_info.PythonDefinitionString, r'ClassTypeInfo(arity=Arity(min=1, max_or_none=1), items={ "static_method" : StaticMethodTypeInfo(arity=Arity(min=1, max_or_none=1)), "class_method" : ClassMethodTypeInfo(arity=Arity(min=1, max_or_none=1)), "method" : MethodTypeInfo(arity=Arity(min=1, max_or_none=1)), "foo" : StringTypeInfo(arity=Arity(min=1, max_or_none=1), min_length=1, max_length=5) })')
         
     # ---------------------------------------------------------------------------
     def test_ConstraintsDesc(self):
