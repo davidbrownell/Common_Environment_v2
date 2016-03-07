@@ -57,8 +57,8 @@ class Results(object):
     # ---------------------------------------------------------------------------
     def CompositeResult(self):
         results = [ self.compile_result,
-                    self.test_result,
                     self.test_parse_result,
+                    self.test_result,
                     self.coverage_result,
                     self.coverage_validation_result,
                   ]

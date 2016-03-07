@@ -60,7 +60,7 @@ class SmtpMailer(object):
             
         if environment.Name == "Windows":
             import win32crypt
-            content = win32crypt.CryptUnprotectData(content, None, None, None, 0)
+            content = win32crypt.CryptUnprotectData(content, None, None, None, 0)   # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
             content = content[1]
             
         return pickle.loads(content)
@@ -93,7 +93,7 @@ class SmtpMailer(object):
         
         if environment.Name == "Windows":
             import win32crypt
-            content = win32crypt.CryptProtectData(content, '', None, None, None, 0)
+            content = win32crypt.CryptProtectData(content, '', None, None, None, 0)     # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
             
         data_filename = environment.CreateDataFilename(configuration_name, suffix=self.EXTENSION)
         
@@ -101,6 +101,7 @@ class SmtpMailer(object):
             f.write(content)
             
     # ---------------------------------------------------------------------------
+    # <Too many braches> pylint: disable = R0912
     def SendMessage( self,
                      recipients,
                      subject,
@@ -138,7 +139,7 @@ class SmtpMailer(object):
         
         msg.attach(MIMEText(message, message_format))
         
-        for attachment_filename in (attachment_filenames or []):
+        for attachment_filename in (attachment_filenames or []):            # <Unnecessary parens> pylint: disable = C0325
             ctype, encoding = mimetypes.guess_type(attachment_filename)
             if ctype == None or encoding != None:
                 ctype = "application/octet-stream"

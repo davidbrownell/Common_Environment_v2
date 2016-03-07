@@ -46,10 +46,10 @@ class TestParser(TestParserBase):
     # ---------------------------------------------------------------------------
     @classmethod
     def Parse(cls, test_data):
-        if re.search(r"FAILED \(\S+=\d+\)\s*$", test_data, re.DOTALL | re.MULTILINE): 
+        if re.search(r"^FAILED", test_data, re.DOTALL | re.MULTILINE): 
             return -1
 
-        if re.search(r"OK\s*$", test_data, re.DOTALL | re.MULTILINE):
+        if re.search(r"^OK\s*$", test_data, re.DOTALL | re.MULTILINE):
             return 0
 
         return 1

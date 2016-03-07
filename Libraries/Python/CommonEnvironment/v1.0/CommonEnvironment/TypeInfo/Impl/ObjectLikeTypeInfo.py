@@ -89,8 +89,15 @@ class ObjectLikeTypeInfo(TypeInfo):
             require_exact_match = self.RequireExactMatchDefault if self.RequireExactMatchDefault != None else True
 
         if require_exact_match:
-            attributes = { a for a in (item if isinstance(item, dict) else item.__dict__).keys() if not a.startswith("__") }
+            if self.Desc == "Class":
+                attributes = dir(item)
+            elif isinstance(item, dict):
+                attributes = item.keys()
+            else:
+                attributes = item.__dict__.keys()
 
+            attributes = { a for a in attributes if not a.startswith('__') }
+            
             # ---------------------------------------------------------------------------
             def ProcessAttribute(attr):
                 attributes.remove(attr)

@@ -380,7 +380,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
     def GetChangedFiles(cls, repo_root, revision_or_revisions):
         revisions = revision_or_revisions if isinstance(revision_or_revisions, list) else [ revision_or_revisions, ]
 
-        command_line = "hg status {}".format(' '.join([ '--rev "{}"'.format(revision) for revision in revisions ]))
+        command_line = "hg status {}".format(' '.join([ '--change "{}"'.format(revision) for revision in revisions ]))
 
         result, output = cls.Execute(repo_root, command_line)
         assert result == 0, (result, output)
