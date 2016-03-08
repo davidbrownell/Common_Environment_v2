@@ -294,6 +294,57 @@ def TestType( configuration,
                  xml_output=xml_output,
                )
 
+# ----------------------------------------------------------------------
+@CommandLine.EntryPoint
+@CommandLine.FunctionConstraints( input_dir=CommandLine.DirectoryTypeInfo(),
+                                  test_type=CommandLine.StringTypeInfo(),
+                                  output_dir=CommandLine.FilenameTypeInfo(ensure_exists=False),
+                                  iterations=CommandLine.IntTypeInfo(min=1),
+                                )
+def TestAll( input_dir,
+             test_type,
+             output_dir,
+             iterations=1,
+             debug_on_error=False,
+             continue_iterations_on_error=False,
+             code_coverage=False,
+             debug_only=False,
+             release_only=False,
+             verbose=False,
+             xml_output=False,
+           ):
+    colorama.init(autoreset=False)
+
+    with StreamDecorator(sys.stdout).DoneManager( done_prefix="\n\nComposite Results:",
+                                                  line_prefix='',
+                                                ) as dm:
+        for index, configuration in enumerate(CONFIGURATIONS.iterkeys()):
+            dm.stream.write("Testing '{}' ({} of {})...".format( configuration,
+                                                                 index + 1,
+                                                                 len(CONFIGURATIONS),
+                                                               ))
+            with dm.stream.DoneManager(line_prefix="    ") as this_dm:
+                original_stdout = sys.stdout
+                sys.stdout = this_dm.stream
+
+                this_dm.result = TestType( configuration,
+                                           input_dir,
+                                           test_type,
+                                           output_dir,
+                                           iterations=iterations,
+                                           debug_on_error=debug_on_error,
+                                           continue_iterations_on_error=continue_iterations_on_error,
+                                           code_coverage=code_coverage,
+                                           debug_only=debug_only,
+                                           release_only=release_only,
+                                           verbose=verbose,
+                                           xml_output=xml_output,
+                                         )
+
+                sys.stdout = original_stdout
+
+            return dm.result
+
 # ---------------------------------------------------------------------------
 @CommandLine.EntryPoint
 @CommandLine.FunctionConstraints( configuration=CommandLine.EnumTypeInfo(values=CONFIGURATIONS.keys()),
@@ -329,7 +380,10 @@ def MatchAllTests( input_dir,
                                                   line_prefix='',
                                                 ) as dm:
         for index, configuration in enumerate(CONFIGURATIONS.iterkeys()):
-            dm.stream.write("Matching '{}' ({} of {})...".format(configuration, index + 1, len(CONFIGURATIONS)))
+            dm.stream.write("Matching '{}' ({} of {})...".format( configuration, 
+                                                                  index + 1, 
+                                                                  len(CONFIGURATIONS),
+                                                                ))
             with dm.stream.DoneManager(line_prefix="    ") as this_dm:
                 original_stdout = sys.stdout
                 sys.stdout = this_dm.stream
