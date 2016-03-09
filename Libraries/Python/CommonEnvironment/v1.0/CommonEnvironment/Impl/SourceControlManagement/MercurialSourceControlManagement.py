@@ -380,19 +380,22 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
     def GetChangedFiles(cls, repo_root, revision_or_revisions):
         revisions = revision_or_revisions if isinstance(revision_or_revisions, list) else [ revision_or_revisions, ]
 
-        command_line = "hg status {}".format(' '.join([ '--change "{}"'.format(revision) for revision in revisions ]))
-
-        result, output = cls.Execute(repo_root, command_line)
-        assert result == 0, (result, output)
+        command_line_template = 'hg status --change "{rev}"'
 
         filenames = []
 
-        for line in [ line.strip() for line in output.split('\n') if line.strip() ]:
-            assert len(line) > 2 and line[1] == ' ' and line[2] != ' ', line
+        for revision in revisions:
+            command_line = command_line_template.format(rev=revision)
+
+            result, output = cls.Execute(repo_root, command_line)
+            assert result == 0, (result, output)
+
+            for line in [ line.strip() for line in output.split('\n') if line.strip() ]:
+                assert len(line) > 2 and line[1] == ' ' and line[2] != ' ', line
             
-            filename = os.path.join(repo_root, line[2:])
-            if filename not in filenames:
-                filenames.append(filename)
+                filename = os.path.join(repo_root, line[2:])
+                if filename not in filenames:
+                    filenames.append(filename)
 
         return filenames
 
