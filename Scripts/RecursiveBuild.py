@@ -14,13 +14,13 @@
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 # |  
 # ---------------------------------------------------------------------------
-"""Recursively builds Build.py files.
-"""
+"""Recursively builds Build.py files."""
 
-import inflect
 import os
 import subprocess
 import sys
+
+import inflect
 
 from CommonEnvironment.Build import CompleteConfiguration as Configuration
 
