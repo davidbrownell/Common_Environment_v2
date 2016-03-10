@@ -59,10 +59,6 @@ class FundamentalDateTime(unittest.TestCase):
     def test_ConstraintsDesc(self):
         self.assertEqual(self._type_info.ConstraintsDesc, "")
         
-    # ---------------------------------------------------------------------------
-    def test_PythonItemRegularExpressionStrings(self):
-        self.assertEqual(self._type_info.PythonItemRegularExpressionStrings, r"[0-9]{4}-(0?[1-9]|1[0-2])-([0-2][0-9]|3[0-1]).([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\.[0-9]+)?(\+[0-9]+:[0-9]+)?")
-
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
     try: sys.exit(unittest.main(verbosity=2))
