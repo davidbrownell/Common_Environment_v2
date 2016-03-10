@@ -22,6 +22,18 @@ _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ---------------------------------------------------------------------------
 
+CODE_EXCLUDE_DIR_NAMES                      = [ "Generated",
+                                                ".hg",                      # Mercurial
+                                                ".git",                     # Git
+                                                ".svn",                     # Subversion
+                                                "$tf",                      # Team Foundation
+                                              ]
+
+CODE_EXCLUDE_FILE_EXTENSIONS                = [ # Python
+                                                ".pyc",
+                                                ".pyo",
+                                              ]
+
 # ---------------------------------------------------------------------------
 def WalkDirs( root,
               

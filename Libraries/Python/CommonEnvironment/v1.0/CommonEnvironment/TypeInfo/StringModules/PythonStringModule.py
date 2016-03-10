@@ -87,51 +87,52 @@ class PythonStringModule(StringModules.StringModule):
 
     # ---------------------------------------------------------------------------
     @classmethod
-    def FromString(cls, type_info, item, regex_match, regex_string_index):
+    def FromString(cls, type_info, string, regex_match, regex_string_index):
         type_info_type = type(type_info)
 
         if type_info_type in [ StringTypeInfo, EnumTypeInfo, ]:
-            return item
+            return string
 
         if type_info_type == IntTypeInfo:
-            return int(item)
+            return int(string)
 
         if type_info_type == FloatTypeInfo:
-            return float(item)
+            return float(string)
 
         if type_info_type in [ FilenameTypeInfo, DirectoryTypeInfo, ]:
-            return item.replace('/', os.path.sep)
+            return string.replace('/', os.path.sep)
 
         if type_info_type == BoolTypeInfo:
-            return item.lower() in [ "true", "t", "yes", "y", "1", ]
+            return string.lower() in [ "true", "t", "yes", "y", "1", ]
 
         if type_info_type == GuidTypeInfo:
-            return uuid.UUID(item)
+            return uuid.UUID(string)
 
         if type_info_type == DateTimeTypeInfo:
-            return datetime.datetime.strptime(item, "%Y-%m-%d{sep}%H:%M{seconds}{fraction_seconds}{time_zone}" \
-                        .format( sep='T' if 'T' in item else ' ',
-                                 seconds=":%S" if item.count(':') > 1 else '',
-                                 fraction_seconds=".%f" if '.' in item else '',
-                                 time_zone="%z" if '+' in item else '',
+            return datetime.datetime.strptime(string, "%Y-%m-%d{sep}%H:%M{seconds}{fraction_seconds}{time_zone}" \
+                        .format( sep='T' if 'T' in string else ' ',
+                                 seconds=":%S" if string.count(':') > 1 else '',
+                                 fraction_seconds=".%f" if '.' in string else '',
+                                 time_zone="%z" if '+' in string else '',
                                ))
 
         if type_info_type == DateTypeInfo:
-            parts = item.split('-')
-
-            return datetime.date( year=int(parts[0]),
-                                  month=int(parts[1]),
-                                  day=int(parts[2]),
-                                )
+            return type_info.ItemFromRegexMatch(string, regex_match, regex_string_index)
+            # BugBug parts = string.split('-')
+            # BugBug 
+            # BugBug return datetime.date( year=int(parts[0]),
+            # BugBug                       month=int(parts[1]),
+            # BugBug                       day=int(parts[2]),
+            # BugBug                     )
 
         if type_info_type == TimeTypeInfo:
-            return datetime.datetime.strptime(item, "%H:%M:%S{fraction_seconds}{time_zone}" \
-                        .format( fraction_seconds=".%f" if '.' in item else '',
-                                 time_zone="%z" if '+' in item else '',
+            return datetime.datetime.strptime(string, "%H:%M:%S{fraction_seconds}{time_zone}" \
+                        .format( fraction_seconds=".%f" if '.' in string else '',
+                                 time_zone="%z" if '+' in string else '',
                                )).time()
 
         if type_info_type == DurationTypeInfo:
-            parts = item.split(':')
+            parts = string.split(':')
 
             if len(parts) > 2:
                 hours = int(parts[0])
