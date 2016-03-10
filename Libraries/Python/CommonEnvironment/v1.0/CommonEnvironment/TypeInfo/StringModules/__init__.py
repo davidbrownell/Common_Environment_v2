@@ -59,5 +59,5 @@ class StringModule(Interface):
     # ---------------------------------------------------------------------------
     @staticmethod
     @abstractmethod
-    def FromString(type_info, item, regex_match, regex_string_index):
+    def FromString(type_info, string, regex_match, regex_string_index):
         raise Exception("Abstract method")
