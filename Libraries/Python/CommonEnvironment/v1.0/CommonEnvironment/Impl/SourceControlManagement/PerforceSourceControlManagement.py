@@ -336,21 +336,8 @@ def PerforceSourceControlManagementFactory( raise_on_username_failure,
         # ---------------------------------------------------------------------------
         @classmethod
         def Update(cls, repo_root, update_merge_arg, force=False):
-            arg = ''
-
-            if isinstance(update_merge_arg, EmptyUpdateMergeArg):
-                pass
-            elif isinstance(update_merge_arg, RevisionUpdateMergeArg):
-                arg = "@{}".format(update_merge_arg.Revision)
-            elif isinstance(update_merge_arg, DateUpdateMergeArg):
-                arg = "@{}".format(update_merge_arg.Date)
-            elif isinstance(update_merge_arg, (BranchUpdateMergeArg, BranchAndDateUpdateMergeArg)):
-                raise Exception("Perforce does not support syncing across branches")
-            else:
-                assert False, update_merge_arg
-
             return cls._GetClient(repo_root).Execute('p4 sync{force} {arg}'.format( force=" -f" if force else '',
-                                                                                    arg=arg,
+                                                                                    arg=cls._UpdateMergeArgToString(update_merge_arg),
                                                                                   ))
     
         # ---------------------------------------------------------------------------
@@ -394,21 +381,10 @@ def PerforceSourceControlManagementFactory( raise_on_username_failure,
 
             client = cls._GetClient(repo_root)
     
-            this_arg = ''
-
-            if isinstance(source_update_merge_arg, EmptyUpdateMergeArg):
-                pass
-            elif isinstance(source_update_merge_arg, RevisionUpdateMergeArg):
-                this_arg = "@{}".format(source_update_merge_arg.Revision)
-            elif isinstance(source_update_merge_arg, DateUpdateMergeARg):
-                this_arg = "@{}".format(source_update_merge_arg.Date)
-            else:
-                assert False, source_update_merge_arg
-
             result, output = client.Execute('p4 interchanges "{mapping_root}/{this_branch}/...{this_arg}" "{mapping_root}/{dest_branch}/..."'.format(
                                 mapping_root=client.GetMappingRoot(),
                                 this_branch=cls._GetBranchName(cls.GetCurrentBranch(repo_root)),
-                                this_arg=this_arg,
+                                this_arg=cls._UpdateMergeArgToString(source_update_merge_arg),
                                 dest_branch=GetBranchName(dest_branch),
                              ))
     
@@ -516,7 +492,7 @@ def PerforceSourceControlManagementFactory( raise_on_username_failure,
         def _UpdateMergeArgToString(arg):
             # ---------------------------------------------------------------------------
             def Revision(rev):
-                return "@{}".format(rev)
+                return "...@{}".format(rev)
     
             # ---------------------------------------------------------------------------
             def Date(date):
@@ -827,10 +803,28 @@ class _Client(object):
     def Execute(self, command_line):
         os.environ["P4CLIENT"] = self.RepoName
         os.environ["P4USER"] = self._username
-
-        results = self._execute_functor(self.RepoRoot, command_line)
         
-        del os.environ["P4USER"]
-        del os.environ["P4CLIENT"]
+        # ----------------------------------------------------------------------
+        def RemoveEnvironmentValues():
+            del os.environ["P4CLIENT"]
+            del os.environ["P4USER"]
+
+        # ----------------------------------------------------------------------
+        
+        with CallOnExit(RemoveEnvironmentValues):
+            # This is strange - Perforce will look at the environment variable PWD before checking for the
+            # working directly, meaning changing into the directory will not have any effect unless PWD changes 
+            # too. Capture the current PWD value, change it to our working directory, and then store it when
+            # the process completes.
+            original_pwd_value = None
+            
+            if "PWD" in os.environ:
+                original_pwd_value = os.environ["PWD"]
+                del os.environ["PWD"]
+            
+            results = self._execute_functor(self.RepoRoot, command_line)
+        
+            if original_pwd_value:
+                os.environ["PWD"] = original_pwd_value
 
         return results
