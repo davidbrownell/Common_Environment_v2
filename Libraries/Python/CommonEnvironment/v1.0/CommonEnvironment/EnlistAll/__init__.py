@@ -263,6 +263,7 @@ def EnlistFunctionFactory( repo_templates,
     # ---------------------------------------------------------------------------
     def Impl( code_root,
               scm='',
+              branch_name=None,
               remove_extra_repos=False,
               preserve_branches=False,
               flat=False,
@@ -284,25 +285,25 @@ def EnlistFunctionFactory( repo_templates,
             # Update
             for index, repo in enumerate(diff.matches):
                 current_branch_name = repo.scm.GetCurrentBranch(repo.path)
-                branch_name = repo.branch or (current_branch_name if preserve_branches else repo.scm.DefaultBranch)
+                repo_branch_name = branch_name or repo.branch or (current_branch_name if preserve_branches else repo.scm.DefaultBranch)
                 
                 title = "Updating '{}' [{}] ({} of {})...".format( repo.path,
-                                                                   branch_name,
+                                                                   repo_branch_name,
                                                                    index + 1,
                                                                    len(diff.matches),
                                                                  )
                 dm.stream.write("\n{}\n{}\n".format(title, '=' * len(title)))
                 with dm.stream.DoneManager() as update_dm:
                     if preserve_branches:
-                        if current_branch_name != branch_name:
+                        if current_branch_name != repo_branch_name:
                             branches_to_restore[repo.path] = current_branch_name
 
                     # Note that some SCMs will only pull according to the currently set
                     # branch.
-                    title = "Setting Branch ({})...".format(branch_name)
+                    title = "Setting Branch ({})...".format(repo_branch_name)
                     update_dm.stream.write("{}\n{}".format(title, '-' * len(title)))
                     with update_dm.stream.DoneManager(done_suffix='\n') as set_branch_dm:
-                        set_branch_dm.result, output = repo.scm.SetBranch(repo.path, branch_name)
+                        set_branch_dm.result, output = repo.scm.SetBranch(repo.path, repo_branch_name)
                         set_branch_dm.stream.write(output)
 
                     if repo.scm.IsDistributed:
@@ -318,10 +319,10 @@ def EnlistFunctionFactory( repo_templates,
                         this_update_dm.result, output = repo.scm.Update(repo.path, SourceControlManagement.EmptyUpdateMergeArg())
                         this_update_dm.stream.write(output)
 
-                    title = "Updating Branch ({})...".format(branch_name)
+                    title = "Updating Branch ({})...".format(repo_branch_name)
                     update_dm.stream.write("{}\n{}".format(title, '-' * len(title)))
                     with update_dm.stream.DoneManager(done_suffix='\n') as set_branch_dm:
-                        set_branch_dm.result, output = repo.scm.Update(repo.path, SourceControlManagement.BranchUpdateMergeArg(branch_name))
+                        set_branch_dm.result, output = repo.scm.Update(repo.path, SourceControlManagement.BranchUpdateMergeArg(repo_branch_name))
                         set_branch_dm.stream.write(output)
 
             # Remove any local repos that shouldn't be here
@@ -363,15 +364,15 @@ def EnlistFunctionFactory( repo_templates,
                             set_branch_dm.stream.write(output)
 
             # Resore any branches
-            for index, (repo_path, branch_name) in enumerate(branches_to_restore.iteritems()):
-                title = "Restoring branch '{}' in '{}' ({} of {})...".format( branch_name,
+            for index, (repo_path, repo_branch_name) in enumerate(branches_to_restore.iteritems()):
+                title = "Restoring branch '{}' in '{}' ({} of {})...".format( repo_branch_name,
                                                                               repo_path,
                                                                               index + 1,
                                                                               len(branches_to_restore),
                                                                             )
                 dm.stream.write("\n{}\n{}".format(title, '-' * len(title)))
                 with dm.stream.DoneManager() as this_dm:
-                    this_dm.result, output = scm.SetBranch(repo_path, branch_name)
+                    this_dm.result, output = scm.SetBranch(repo_path, repo_branch_name)
                     this_dm.stream.write(output)
 
             return dm.result
@@ -383,7 +384,8 @@ def EnlistFunctionFactory( repo_templates,
                                    output_stream,
                                    Impl,
                                    prefix_args=[ ( "code_root", _NoDefault, CommandLine.DirectoryTypeInfo() ),
-                                                 ( "scm", '"{}"'.format(potential_scms[0].Name), CommandLine.EnumTypeInfo(values=[ scm.Name for scm in potential_scms ]) ),
+                                                 ( "scm", '"{}"'.format(potential_scms[0].Name), CommandLine.EnumTypeInfo(values=[ scm.Name for scm in potential_scms ], arity='?') ),
+                                                 ( "branch_name", None, CommandLine.StringTypeInfo(arity='?') ),
                                                ],
                                    suffix_args=[ ( "remove_extra_repos", False ),
                                                  ( "preserve_branches", False ),
