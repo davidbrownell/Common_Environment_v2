@@ -385,7 +385,7 @@ def PerforceSourceControlManagementFactory( raise_on_username_failure,
                                 mapping_root=client.GetMappingRoot(),
                                 this_branch=cls._GetBranchName(cls.GetCurrentBranch(repo_root)),
                                 this_arg=cls._UpdateMergeArgToString(source_update_merge_arg),
-                                dest_branch=GetBranchName(dest_branch),
+                                dest_branch=cls._GetBranchName(dest_branch),
                              ))
     
             assert result == 0, (result, output)
