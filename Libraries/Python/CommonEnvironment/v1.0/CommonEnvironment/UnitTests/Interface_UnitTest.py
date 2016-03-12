@@ -4,16 +4,16 @@ import os
 import sys
 import unittest
 
-from CommonEnvironment.CallOnExit import CallOnExit
+from CommonEnvironment import Package
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ---------------------------------------------------------------------------
 
-sys.path.insert(0, os.path.join(_script_dir, ".."))
-with CallOnExit(lambda: sys.path.pop(0)):
-    from Interface import *
+__package__ = Package.CreateName(__package__, __name__, __file__)
+from ..Interface import *
+__package__ = None
 
 # ----------------------------------------------------------------------
 class Test(unittest.TestCase):
