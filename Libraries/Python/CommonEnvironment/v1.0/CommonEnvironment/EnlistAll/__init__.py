@@ -319,12 +319,6 @@ def EnlistFunctionFactory( repo_templates,
                         this_update_dm.result, output = repo.scm.Update(repo.path, SourceControlManagement.EmptyUpdateMergeArg())
                         this_update_dm.stream.write(output)
 
-                    title = "Updating Branch ({})...".format(repo_branch_name)
-                    update_dm.stream.write("{}\n{}".format(title, '-' * len(title)))
-                    with update_dm.stream.DoneManager(done_suffix='\n') as set_branch_dm:
-                        set_branch_dm.result, output = repo.scm.Update(repo.path, SourceControlManagement.BranchUpdateMergeArg(repo_branch_name))
-                        set_branch_dm.stream.write(output)
-
             # Remove any local repos that shouldn't be here
             if remove_extra_repos:
                 for index, repo in enumerate(diff.local_only):
