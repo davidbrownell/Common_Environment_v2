@@ -48,11 +48,11 @@ def EntryPoint( code_dir,
                       )
 
     output_stream.write("Processing '{}'...".format(code_dir))
-    with StreamDecorator(output_stream).DoneManager( suffix_functor=lambda: "{}, {}, {}".format( inflect_engine.no("file", data.files),
-                                                                                                 inflect_engine.no("comment", data.comments),
-                                                                                                 inflect_engine.no("failure", data.failures),
-                                                                                               ),
-                                                   ) as dm:
+    with StreamDecorator(output_stream).DoneManagerEx( done_suffix_functor=lambda: "{}, {}, {}".format( inflect_engine.no("file", data.files),
+                                                                                                        inflect_engine.no("comment", data.comments),
+                                                                                                        inflect_engine.no("failure", data.failures),
+                                                                                                      ),
+                                                     ) as dm:
         regex = re.compile(textwrap.dedent(
            r"""(?#
             TODO                    )TODO\s+(?#
