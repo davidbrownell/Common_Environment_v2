@@ -187,7 +187,8 @@ class CodeGenerator( AtomicInputProcessingMixin,
                                                                         index + 1,
                                                                         len(context.output_filenames),
                                                                       ))
-            with status_stream.DoneManager(suppress_exceptions=True) as dm:
+            with status_stream.DoneManager( suppress_exceptions=True,
+                                          ) as dm:
                 try:
                     # ----------------------------------------------------------------------
                     def ReadFileFilter(value):

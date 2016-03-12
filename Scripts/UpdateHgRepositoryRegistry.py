@@ -48,7 +48,8 @@ def EntryPoint( root_dir,
     repos = []
 
     output_stream.write("\nSearching for repositories in '{}'...".format(root_dir))
-    with StreamDecorator(output_stream).DoneManager(suffix_functor=lambda: "{} found".format(pluralize.no("repository", len(repos)))):
+    with StreamDecorator(output_stream).DoneManager( done_suffix_functor=lambda: "{} found".format(pluralize.no("repository", len(repos))),
+                                                   ):
         for scm, root in SourceControlManagement.EnumSCMDirectories(root_dir):
             if scm.Name != "Mercurial":
                 continue

@@ -865,7 +865,7 @@ def MatchTests( input_dir,
         return 0
 
     output_stream.write("Parsing '{}'...".format(input_dir))
-    with StreamDecorator(output_stream).DoneManager(output_stream, done_suffix='\n') as dm:
+    with StreamDecorator(output_stream).DoneManager(done_suffix='\n') as dm:
         source_files = list(FileSystem.WalkFiles( input_dir,
                                                   include_dir_paths=[ lambda fullpath: os.path.isdir(os.path.join(fullpath, test_type)), ],
                                                   include_full_paths=[ compiler.IsSupported, ],

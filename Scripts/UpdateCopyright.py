@@ -76,7 +76,7 @@ def EntryPoint( code_dir,
     
     output_stream.write("Processing files in '{}'...".format(code_dir))
     with StreamDecorator(output_stream).DoneManager( display_exceptions=False,
-                                                     suffix_functor=GlobalDoneSuffix,
+                                                     done_suffix_functor=GlobalDoneSuffix,
                                                    ) as dm:
         for fullpath in FileSystem.WalkFiles( code_dir,
                                               exclude_file_extensions=[ ".pyc", ".pyo", ".obj", ".pdb", ".idb", ],
@@ -98,7 +98,8 @@ def EntryPoint( code_dir,
                 # ---------------------------------------------------------------------------
                 
                 dm.stream.write("Processing '{}'...".format(fullpath))
-                with dm.stream.DoneManager(suffix_functor=DoneSuffix) as file_dm:
+                with dm.stream.DoneManager( done_suffix_functor=DoneSuffix,
+                                          ) as file_dm:
                     with io.open(fullpath, 'r') as f:
                         try:
                             lines = f.read().split('\n')
