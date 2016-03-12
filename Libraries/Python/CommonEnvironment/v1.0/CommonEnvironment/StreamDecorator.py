@@ -152,6 +152,119 @@ class StreamDecorator(object):
 
         return self
 
+    # ----------------------------------------------------------------------
+    @contextmanager
+    def DoneManagerEx( self,
+                       
+                       line_prefix="  ",
+
+                       done_prefix='',
+                       done_suffix='',
+                       done_suffix_functor=None,        # Can be functor or list, def Func() -> string
+                       done_result=True,
+                       done_time=True,
+
+                       display_exceptions=True,
+                       display_exception_callstack=True,
+                       suppress_exceptions=False,
+                     ):
+        done_suffix_functors = done_suffix_functor if isinstance(done_suffix_functor, list) else [ done_suffix_functor, ]
+
+        start_time = TimeDelta()
+
+        # ----------------------------------------------------------------------
+        class Info(object):
+            def __init__(self, stream, result=0):
+                self.stream                 = stream
+                self.result                 = result
+
+                self.stream._parent_info = self
+
+        # ----------------------------------------------------------------------
+        
+        info = Info(StreamDecorator( self,
+                                     one_time_prefix='\n' if line_prefix else '',
+                                     line_prefix=line_prefix,
+                                   ))
+
+        # ----------------------------------------------------------------------
+        def Cleanup():
+            assert info.result != None
+
+            suffixes = []
+
+            if done_result:
+                suffixes.append(str(info.result))
+
+            if done_time:
+                suffixes.append(start_time.CalculateDelta(as_string=True))
+
+            for dsf in done_suffix_functors:
+                if not dsf:
+                    continue
+
+                result = dsf()
+                if result != None:
+                    suffixes.append(result)
+
+            if suffixes:
+                content = ', '.join(suffixes)
+
+                if done_prefix.strip():
+                    # Custom Prefix
+                    content = "({})".format(content)
+                elif not line_prefix:
+                    # Used to show composite results
+                    pass
+                else:
+                    # Single-line results
+                    content = "DONE! ({})".format(content)
+            else:
+                content = ''
+
+            self.write("{prefix}{content}{suffix}\n" \
+                            .format( prefix=done_prefix,
+                                     content=content,
+                                     suffix=done_suffix,
+                                   ))
+            self.flush()
+
+            # Propagate the result
+            if info.result != 0:
+                stream = self
+
+                while hasattr(stream, "_parent_info"):
+                    if stream._parent_info.result != 0:
+                        break
+
+                    stream._parent_info.result = info.result
+                    stream = stream._parent_info.stream
+
+        # ----------------------------------------------------------------------
+        
+        from .CallOnExit import CallOnExit
+
+        with CallOnExit(Cleanup):
+            try:
+                yield info
+
+                if info.result == None:
+                    info.result = 0
+
+            except Exception, ex:
+                if info.result == None or info.result == 0:
+                    info.result = -1
+
+                if display_exceptions:
+                    if display_exception_callstack:
+                        import traceback
+                        info.stream.write("ERROR: {}\n".format(StreamDecorator.LeftJustify(traceback.format_exc(), len("ERROR: ")).rstrip()))
+                    else:
+                        info.stream.write("ERROR: {}\n".format(str(ex).rstrip()))
+
+                if not suppress_exceptions:
+                    raise ex
+
     # ---------------------------------------------------------------------------
     @contextmanager
     def DoneManager( self, 
