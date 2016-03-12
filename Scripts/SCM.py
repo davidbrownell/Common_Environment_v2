@@ -962,11 +962,11 @@ def _AllImpl( directory,
             ):
     directory = directory or os.getcwd()
 
-    with StreamDecorator(output_stream).DoneManagerEx( line_prefix='',
-                                                       done_prefix="Composite Results: ",
-                                                     ) as si:
+    with StreamDecorator(output_stream).DoneManager( line_prefix='',
+                                                     done_prefix="Composite Results: ",
+                                                   ) as si:
         si.stream.write("Searching for repositories in '{}'...".format(directory))
-        with si.stream.DoneManagerEx(done_suffix='\n'):
+        with si.stream.DoneManager(done_suffix='\n'):
             items = list(_GetSCMAndDirs(directory))
 
         output = []

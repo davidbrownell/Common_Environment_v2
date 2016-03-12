@@ -52,9 +52,9 @@ def EntryPoint( code_dir,
                 output_stream=sys.stdout,
                 verbose=False,
               ):
-    with StreamDecorator(output_stream).DoneManagerEx( line_prefix='',
-                                                       done_prefix="\n\nComposite Results: ",
-                                                     ) as dm:
+    with StreamDecorator(output_stream).DoneManager( line_prefix='',
+                                                     done_prefix="\n\nComposite Results: ",
+                                                   ) as dm:
         # Get the doxygen files
         doxygen_files = []
 

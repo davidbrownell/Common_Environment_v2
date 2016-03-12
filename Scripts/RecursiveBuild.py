@@ -80,8 +80,8 @@ def Execute( code_dir,
         build_configurations = []
 
         total_si.stream.write("Processing build files...")
-        with total_si.stream.DoneManagerEx( done_suffix_functor=lambda: "{} found".format(Pluralize.no("configuration", len(build_configurations))),
-                                          ):
+        with total_si.stream.DoneManager( done_suffix_functor=lambda: "{} found".format(Pluralize.no("configuration", len(build_configurations))),
+                                        ):
             # ---------------------------------------------------------------------------
             def GetSupportedConfigurations(configurations):
                 # If there is a configuration that indicates completeness, execute that
@@ -190,8 +190,8 @@ def _GetBuildInfo(code_dir, output_stream):
     build_info = []
 
     output_stream.write("\nSearching for build files...")
-    with StreamDecorator(output_stream).DoneManagerEx( done_suffix_functor=lambda: "{} found".format(Pluralize.no("build file", len(build_info))),
-                                                     ):
+    with StreamDecorator(output_stream).DoneManager( done_suffix_functor=lambda: "{} found".format(Pluralize.no("build file", len(build_info))),
+                                                   ):
         name, ext = os.path.splitext(BUILD_FILENAME)
         
         for fullpath in FileSystem.WalkFiles( code_dir,
