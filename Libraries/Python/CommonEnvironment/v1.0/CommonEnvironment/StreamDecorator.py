@@ -22,7 +22,7 @@ import textwrap
 from contextlib import contextmanager
 from StringIO import StringIO
 
-from TimeDelta import TimeDelta
+from .TimeDelta import TimeDelta
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -152,77 +152,95 @@ class StreamDecorator(object):
 
         return self
 
-    # ---------------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     @contextmanager
-    def DoneManager( self, 
-                     show_rval=True,
-                     show_time=True,
-                     suffix_functor=None,      # def Func() -> string
-                     display_callstack_on_error=True,
+    def DoneManager( self,
+                     
                      line_prefix="  ",
+
                      done_prefix='',
                      done_suffix='',
-                     suppress_exceptions=False,
+                     done_suffix_functor=None,        # Can be functor or list, def Func() -> string
+                     done_result=True,
+                     done_time=True,
+
                      display_exceptions=True,
+                     display_exception_callstack=True,
+                     suppress_exceptions=False,
                    ):
+        done_suffix_functors = done_suffix_functor if isinstance(done_suffix_functor, list) else [ done_suffix_functor, ]
+
         start_time = TimeDelta()
 
-        # We are dynamically introducing the '_parent_info' attribute, so disable assocaited warnings
-        # pylint: disable = W0212
-        # pylint: disable = E1101
-
-        # ---------------------------------------------------------------------------
+        # ----------------------------------------------------------------------
         class Info(object):
             def __init__(self, stream, result=0):
-                self.stream = stream
-                self.result = result
+                self.stream                 = stream
+                self.result                 = result
 
-                self.stream._parent_info = self
+                self.stream._parent_info = self         # <Access to a protected member of a client class> pylint: disable = W0212
 
-        # ---------------------------------------------------------------------------
+        # ----------------------------------------------------------------------
         
-        info = Info(StreamDecorator( self, 
-                                     one_time_prefix='\n' if line_prefix else '', 
+        info = Info(StreamDecorator( self,
+                                     one_time_prefix='\n' if line_prefix else '',
                                      line_prefix=line_prefix,
                                    ))
-        
-        # ---------------------------------------------------------------------------
+
+        # ----------------------------------------------------------------------
         def Cleanup():
-            if info.result == None:
-                info.result = 0
+            assert info.result != None
 
             suffixes = []
 
-            if show_rval:
+            if done_result:
                 suffixes.append(str(info.result))
-    
-            if show_time:
+
+            if done_time:
                 suffixes.append(start_time.CalculateDelta(as_string=True))
-    
-            if suffix_functor:
-                result = suffix_functor()
+
+            for dsf in done_suffix_functors:
+                if not dsf:
+                    continue
+
+                result = dsf()
                 if result != None:
                     suffixes.append(result)
-    
-            self.write("{prefix}{done}{info_suffix}{suffix}\n".format( prefix=done_prefix, 
-                                                                       done='' if done_prefix else "DONE!",
-                                                                       info_suffix=" ({})".format(', '.join(suffixes)) if suffixes else '',
-                                                                       suffix=done_suffix,
-                                                                     ))
+
+            if suffixes:
+                content = ', '.join(suffixes)
+
+                if done_prefix.strip():
+                    # Custom Prefix
+                    content = "({})".format(content)
+                elif not line_prefix:
+                    # Used to show composite results
+                    pass
+                else:
+                    # Single-line results
+                    content = "DONE! ({})".format(content)
+            else:
+                content = ''
+
+            self.write("{prefix}{content}{suffix}\n" \
+                            .format( prefix=done_prefix,
+                                     content=content,
+                                     suffix=done_suffix,
+                                   ))
             self.flush()
-    
+
             # Propagate the result
             if info.result != 0:
                 stream = self
-                
+
                 while hasattr(stream, "_parent_info"):
-                    if stream._parent_info.result != 0:
+                    if stream._parent_info.result != 0:                     # <Access to a protected member of a client class> pylint: disable = W0212, E1101
                         break
-    
-                    stream._parent_info.result = info.result
-                    stream = stream._parent_info.stream
-    
-        # ---------------------------------------------------------------------------
+
+                    stream._parent_info.result = info.result                # <Access to a protected member of a client class> pylint: disable = W0212, E1101
+                    stream = stream._parent_info.stream                     # <Access to a protected member of a client class> pylint: disable = W0212, E1101
+
+        # ----------------------------------------------------------------------
         
         from .CallOnExit import CallOnExit
 
@@ -238,7 +256,7 @@ class StreamDecorator(object):
                     info.result = -1
 
                 if display_exceptions:
-                    if display_callstack_on_error:
+                    if display_exception_callstack:
                         import traceback
                         info.stream.write("ERROR: {}\n".format(StreamDecorator.LeftJustify(traceback.format_exc(), len("ERROR: ")).rstrip()))
                     else:
@@ -246,7 +264,7 @@ class StreamDecorator(object):
 
                 if not suppress_exceptions:
                     raise ex
-                
+
     # ---------------------------------------------------------------------------
     @classmethod
     def LeftJustify(cls, content, starting_col=4, skip_first_line=True):

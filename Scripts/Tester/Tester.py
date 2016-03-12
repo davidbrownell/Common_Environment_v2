@@ -315,7 +315,7 @@ def TestAll( input_dir,
            ):
     colorama.init(autoreset=False)
 
-    with StreamDecorator(sys.stdout).DoneManager( done_prefix="\n\nComposite Results:",
+    with StreamDecorator(sys.stdout).DoneManager( done_prefix="\n\nComposite Results: ",
                                                   line_prefix='',
                                                 ) as dm:
         for index, configuration in enumerate(CONFIGURATIONS.iterkeys()):
@@ -376,7 +376,7 @@ def MatchAllTests( input_dir,
                  ):
     colorama.init(autoreset=False)
 
-    with StreamDecorator(sys.stdout).DoneManager( done_prefix="\n\nComposite Results:",
+    with StreamDecorator(sys.stdout).DoneManager( done_prefix="\n\nComposite Results: ",
                                                   line_prefix='',
                                                 ) as dm:
         for index, configuration in enumerate(CONFIGURATIONS.iterkeys()):

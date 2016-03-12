@@ -26,6 +26,8 @@ import textwrap
 from collections import OrderedDict
 from StringIO import StringIO
 
+import inflect
+
 from CommonEnvironment import CommandLine
 from CommonEnvironment import FileSystem
 from CommonEnvironment.QuickObject import QuickObject
@@ -40,6 +42,8 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 
 _SCMTypeInfo = CommandLine.EnumTypeInfo([ scm.Name for scm in SCMMod.GetPotentialSCMs() ])
 _SCMOptionalTypeInfo = CommandLine.EnumTypeInfo(_SCMTypeInfo.Values, arity='?')
+
+inflect_engine = inflect.engine()
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
@@ -692,87 +696,78 @@ def AllChangeStatus( directory=None,
                    ):
     directory = directory or os.getcwd()
 
-    with StreamDecorator(output_stream).DoneManager( line_prefix='',
-                                                     done_prefix='\n',
-                                                   ) as si:
-        si.stream.write("Searching for repositories in '{}'...".format(directory))
-        with si.stream.DoneManager():
-            items = list(_GetSCMAndDirs(directory))
-
-        si.stream.write('\n')
-
-        output = []
-
-        # ---------------------------------------------------------------------------
-        def Process(scm, directory, task_index, _output_stream):
-            status = scm.GetChangeStatus(directory)
-
-            output[task_index] = QuickObject( scm=scm,
-                                              directory=directory,
-                                              status=status,
-                                            )
-
-        # ---------------------------------------------------------------------------
-        
-        tasks = []
-        
-        for scm, directory in items:
-            output.append(None)
-            tasks.append(TaskPool.Task( "{} [{}]".format(directory, scm.Name),
-                                        "Querying '{}'".format(directory),
-                                        lambda task_index, output_stream, scm=scm, directory=directory: Process(scm, directory, task_index, output_stream),
+    changes = []
+    
+    # ----------------------------------------------------------------------
+    def Query(scm, directory):
+        status = scm.GetChangeStatus(directory)
+        if status:
+            changes.append(QuickObject( scm=scm,
+                                        directory=directory,
+                                        status=status,
                                       ))
     
-        if not tasks:
-            return si.result
+        return None
+    
+    # ----------------------------------------------------------------------
+    
+    result = _AllImpl( directory,
+                       output_stream,
 
-        si.result = TaskPool.Execute(tasks, 1, output_stream=output_stream)
-        
-        # Display the output
-        cols = [ 80, 17, 10, 17, 15, 13, 14, 14, ]
-        template = "{dir:<%d}  {scm:<%d}  {branch:<%d}  {untracked:<%d}  {working:<%d}  {local:<%d}  {remote:<%d}  {update:<%d}" % tuple(cols)
+                       Query,
 
-        if any(o for o in output):
-            si.stream.write(textwrap.dedent(
-                """\
+                       # No Action Required
+                       None,
+                       None,
+                       None,
 
-                {}
-                {}
-                """).format( template.format( dir="Directory",
-                                              scm="SCM",
-                                              branch="Branch",
-                                              untracked="Untracked Changes",
-                                              working="Working Changes",
-                                              local="Local Changes",
-                                              remote="Remote Changes",
-                                              update="Update Changes",
-                                            ),
-                             template.format( dir='-' * cols[0],
-                                              scm='-' * cols[1],
-                                              branch='-' * cols[2],
-                                              untracked='-' * cols[3],
-                                              working='-' * cols[4],
-                                              local='-' * cols[5],
-                                              remote='-' * cols[6],
-                                              update='-' * cols[7],
-                                            ),
-                           ))
+                       require_distributed=False,
+                     )
 
-            for data in output:
-                if not data:
-                    continue
+    if not changes:
+        return 0
 
-                si.stream.write("{}\n".format(template.format( dir=data.directory,
-                                                               scm=data.scm.Name,
-                                                               branch=data.status.branch,
-                                                               untracked=str(data.status.untracked) if data.status.untracked != None else "N/A",
-                                                               working=str(data.status.working),
-                                                               local=str(data.status.local) if hasattr(data.status, "local") else "N/A",
-                                                               remote=str(data.status.remote) if hasattr(data.status, "remote") else "N/A",
-                                                               update=str(data.status.update) if hasattr(data.status, "update") else "N/A",
-                                                             )))
+    # Display the output
+    cols = [ 80, 17, 10, 17, 15, 13, 14, 14, ]
+    template = "{dir:<%d}  {scm:<%d}  {branch:<%d}  {untracked:<%d}  {working:<%d}  {local:<%d}  {remote:<%d}  {update:<%d}" % tuple(cols)
+    
+    output_stream.write(textwrap.dedent(
+        """\
 
-        return si.result
+        {}
+        {}
+        """).format( template.format( dir="Directory",
+                                      scm="SCM",
+                                      branch="Branch",
+                                      untracked="Untracked Changes",
+                                      working="Working Changes",
+                                      local="Local Changes",
+                                      remote="Remote Changes",
+                                      update="Update Changes",
+                                    ),
+                     template.format( dir='-' * cols[0],
+                                      scm='-' * cols[1],
+                                      branch='-' * cols[2],
+                                      untracked='-' * cols[3],
+                                      working='-' * cols[4],
+                                      local='-' * cols[5],
+                                      remote='-' * cols[6],
+                                      update='-' * cols[7],
+                                    ),
+                   ))
+
+    for change in changes:
+        output_stream.write("{}\n".format(template.format( dir=change.directory,
+                                                           scm=change.scm.Name,
+                                                           branch=change.status.branch,
+                                                           untracked=str(change.status.untracked) if change.status.untracked != None else "N/A",
+                                                           working=str(change.status.working),
+                                                           local=str(change.status.local) if hasattr(change.status, "local") else "N/A",
+                                                           remote=str(change.status.remote) if hasattr(change.status, "remote") else "N/A",
+                                                           update=str(change.status.update) if hasattr(change.status, "update") else "N/A",
+                                                         )))
+
+    return 0
 
 # ---------------------------------------------------------------------------
 @CommandLine.EntryPoint
@@ -782,6 +777,8 @@ def AllChangeStatus( directory=None,
 def AllWorkingChangeStatus( directory=None,
                             output_stream=sys.stdout,
                           ):
+    directory = directory or os.getcwd()
+
     changed_repos = []
 
     # ---------------------------------------------------------------------------
@@ -799,8 +796,9 @@ def AllWorkingChangeStatus( directory=None,
                
                        Query,
                
-                       "{dir} [{scm}] <GetLocalChanges>",
-                       "Getting changes in '{dir}'",
+                       # No Action required
+                       None,
+                       None,
                        None,
                
                        require_distributed=True,
@@ -811,10 +809,12 @@ def AllWorkingChangeStatus( directory=None,
     output_stream.write(textwrap.dedent(
         """\
         
-        There are working changes in these repositories:
+        There are working changes in {}:
         {}
         
-        """).format('\n'.join([ "    - {}".format(directory) for scm, directory in changed_repos ])))
+        """).format( inflect_engine.no("repository", len(changed_repos)),
+                     '\n'.join([ "    - {}".format(directory) for scm, directory in changed_repos ]),
+                   ))
 
     return 0
 
@@ -963,7 +963,7 @@ def _AllImpl( directory,
     directory = directory or os.getcwd()
 
     with StreamDecorator(output_stream).DoneManager( line_prefix='',
-                                                     done_prefix='\n',
+                                                     done_prefix="Composite Results: ",
                                                    ) as si:
         si.stream.write("Searching for repositories in '{}'...".format(directory))
         with si.stream.DoneManager(done_suffix='\n'):
@@ -1000,11 +1000,10 @@ def _AllImpl( directory,
 
         action_items = [ data for data in output if data != None and data.result ]
         
-        if not action_items:
-            output_stream.write("There are no repositories to process.\n")
-        elif action_func == None:
-            pass
-        else:
+        if action_func:
+            if not action_items:
+                output_stream.write("There are no repositories to process.\n")
+        
             tasks = []
 
             for action_item in action_items:
