@@ -154,20 +154,20 @@ class StreamDecorator(object):
 
     # ----------------------------------------------------------------------
     @contextmanager
-    def DoneManagerEx( self,
-                       
-                       line_prefix="  ",
+    def DoneManager( self,
+                     
+                     line_prefix="  ",
 
-                       done_prefix='',
-                       done_suffix='',
-                       done_suffix_functor=None,        # Can be functor or list, def Func() -> string
-                       done_result=True,
-                       done_time=True,
+                     done_prefix='',
+                     done_suffix='',
+                     done_suffix_functor=None,        # Can be functor or list, def Func() -> string
+                     done_result=True,
+                     done_time=True,
 
-                       display_exceptions=True,
-                       display_exception_callstack=True,
-                       suppress_exceptions=False,
-                     ):
+                     display_exceptions=True,
+                     display_exception_callstack=True,
+                     suppress_exceptions=False,
+                   ):
         done_suffix_functors = done_suffix_functor if isinstance(done_suffix_functor, list) else [ done_suffix_functor, ]
 
         start_time = TimeDelta()
@@ -265,101 +265,6 @@ class StreamDecorator(object):
                 if not suppress_exceptions:
                     raise ex
 
-    # ---------------------------------------------------------------------------
-    @contextmanager
-    def DoneManager( self, 
-                     show_rval=True,
-                     show_time=True,
-                     suffix_functor=None,      # def Func() -> string
-                     display_callstack_on_error=True,
-                     line_prefix="  ",
-                     done_prefix='',
-                     done_suffix='',
-                     suppress_exceptions=False,
-                     display_exceptions=True,
-                   ):
-        start_time = TimeDelta()
-
-        # We are dynamically introducing the '_parent_info' attribute, so disable assocaited warnings
-        # pylint: disable = W0212
-        # pylint: disable = E1101
-
-        # ---------------------------------------------------------------------------
-        class Info(object):
-            def __init__(self, stream, result=0):
-                self.stream = stream
-                self.result = result
-
-                self.stream._parent_info = self
-
-        # ---------------------------------------------------------------------------
-        
-        info = Info(StreamDecorator( self, 
-                                     one_time_prefix='\n' if line_prefix else '', 
-                                     line_prefix=line_prefix,
-                                   ))
-        
-        # ---------------------------------------------------------------------------
-        def Cleanup():
-            if info.result == None:
-                info.result = 0
-
-            suffixes = []
-
-            if show_rval:
-                suffixes.append(str(info.result))
-    
-            if show_time:
-                suffixes.append(start_time.CalculateDelta(as_string=True))
-    
-            if suffix_functor:
-                result = suffix_functor()
-                if result != None:
-                    suffixes.append(result)
-    
-            self.write("{prefix}{done}{info_suffix}{suffix}\n".format( prefix=done_prefix, 
-                                                                       done='' if done_prefix else "DONE!",
-                                                                       info_suffix=" ({})".format(', '.join(suffixes)) if suffixes else '',
-                                                                       suffix=done_suffix,
-                                                                     ))
-            self.flush()
-    
-            # Propagate the result
-            if info.result != 0:
-                stream = self
-                
-                while hasattr(stream, "_parent_info"):
-                    if stream._parent_info.result != 0:
-                        break
-    
-                    stream._parent_info.result = info.result
-                    stream = stream._parent_info.stream
-    
-        # ---------------------------------------------------------------------------
-        
-        from .CallOnExit import CallOnExit
-
-        with CallOnExit(Cleanup):
-            try:
-                yield info
-
-                if info.result == None:
-                    info.result = 0
-
-            except Exception, ex:
-                if info.result == None or info.result == 0:
-                    info.result = -1
-
-                if display_exceptions:
-                    if display_callstack_on_error:
-                        import traceback
-                        info.stream.write("ERROR: {}\n".format(StreamDecorator.LeftJustify(traceback.format_exc(), len("ERROR: ")).rstrip()))
-                    else:
-                        info.stream.write("ERROR: {}\n".format(str(ex).rstrip()))
-
-                if not suppress_exceptions:
-                    raise ex
-                
     # ---------------------------------------------------------------------------
     @classmethod
     def LeftJustify(cls, content, starting_col=4, skip_first_line=True):
