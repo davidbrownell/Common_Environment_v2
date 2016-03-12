@@ -1003,21 +1003,21 @@ def _AllImpl( directory,
         if action_func:
             if not action_items:
                 output_stream.write("There are no repositories to process.\n")
-        
-            tasks = []
-
-            for action_item in action_items:
-                template_args = { "dir" : action_item.directory,
-                                  "scm" : action_item.scm.Name,
-                                }
-
-                tasks.append(TaskPool.Task( action_name_template.format(**template_args),
-                                            action_status_template.format(**template_args),
-                                            lambda task_index, output_stream, action_item=action_item: action_func(action_item.scm, action_item.directory),
-                                          ))
-
-            task_pool_result = TaskPool.Execute(tasks, 1, output_stream=output_stream)
-            si.result = si.result or task_pool_result
+            else:
+                tasks = []
+                
+                for action_item in action_items:
+                    template_args = { "dir" : action_item.directory,
+                                      "scm" : action_item.scm.Name,
+                                    }
+                
+                    tasks.append(TaskPool.Task( action_name_template.format(**template_args),
+                                                action_status_template.format(**template_args),
+                                                lambda task_index, output_stream, action_item=action_item: action_func(action_item.scm, action_item.directory),
+                                              ))
+                
+                task_pool_result = TaskPool.Execute(tasks, 1, output_stream=output_stream)
+                si.result = si.result or task_pool_result
 
         return si.result
 
