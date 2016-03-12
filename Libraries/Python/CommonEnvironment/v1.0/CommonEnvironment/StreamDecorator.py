@@ -22,7 +22,7 @@ import textwrap
 from contextlib import contextmanager
 from StringIO import StringIO
 
-from TimeDelta import TimeDelta
+from .TimeDelta import TimeDelta
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -178,7 +178,7 @@ class StreamDecorator(object):
                 self.stream                 = stream
                 self.result                 = result
 
-                self.stream._parent_info = self
+                self.stream._parent_info = self         # <Access to a protected member of a client class> pylint: disable = W0212
 
         # ----------------------------------------------------------------------
         
@@ -234,11 +234,11 @@ class StreamDecorator(object):
                 stream = self
 
                 while hasattr(stream, "_parent_info"):
-                    if stream._parent_info.result != 0:
+                    if stream._parent_info.result != 0:                     # <Access to a protected member of a client class> pylint: disable = W0212, E1101
                         break
 
-                    stream._parent_info.result = info.result
-                    stream = stream._parent_info.stream
+                    stream._parent_info.result = info.result                # <Access to a protected member of a client class> pylint: disable = W0212, E1101
+                    stream = stream._parent_info.stream                     # <Access to a protected member of a client class> pylint: disable = W0212, E1101
 
         # ----------------------------------------------------------------------
         
