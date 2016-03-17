@@ -197,7 +197,7 @@ def _EntryPointPostInstall(repository_root, debug, optional_configuration_names)
                                  )
 
             if these_commands:
-                commands.extend(these_commands)
+                commands += these_commands
 
         return commands
 
@@ -325,7 +325,7 @@ def _SetupBootstrap( environment,
             drives = [ drive.upper() for drive in win32api.GetLogicalDriveStrings().split("\000") if drive and win32file.GetDriveType(drive) == win32file.DRIVE_FIXED ]
             drives.remove(this_drive)
 
-            search_items.extend(drives)
+            search_items += drives
 
         for search_item in search_items:
             for item in Impl(search_item):

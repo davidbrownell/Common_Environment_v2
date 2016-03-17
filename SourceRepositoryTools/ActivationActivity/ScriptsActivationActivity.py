@@ -104,7 +104,7 @@ class ScriptsActivationActivity(IActivationActivity):
                     if not isinstance(these_generators, list):
                         these_generators = [ these_generators, ]
 
-                    dir_generators.extend(these_generators)
+                    dir_generators += these_generators
                 else:
                     these_extractors = result
 

@@ -198,7 +198,7 @@ def Activate( output_filename_or_stdout,
         commands = []
 
         for method in methods:
-            commands.extend(IActivationActivity.CallMethod(method, **args))
+            commands += IActivationActivity.CallMethod(method, **args)
 
         return commands
 
@@ -388,7 +388,7 @@ def _ActivateCustom(**kwargs):
                                                        **kwargs
                                                      )
         if result != None:
-            commands.extend(result)
+            commands += result
 
     return commands
 

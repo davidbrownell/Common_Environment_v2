@@ -163,27 +163,27 @@ def Test( configuration,
     assert os.path.isfile(command_line[0]), command_line[0]
 
     if os.path.isdir(filename_or_dir):
-        command_line.extend([ "ExecuteTree",
-                              filename_or_dir,
-                              test_type,
-                              output_dir,
-                            ])
+        command_line += [ "ExecuteTree",
+                          filename_or_dir,
+                          test_type,
+                          output_dir,
+                        ]
     elif os.path.isfile(filename_or_dir):
-        command_line.extend([ "Execute",
-                              filename_or_dir,
-                            ])
+        command_line += [ "Execute",
+                          filename_or_dir,
+                        ]
     else:
         assert False
 
-    command_line.extend(CONFIGURATIONS[configuration].standard_args)
+    command_line += CONFIGURATIONS[configuration].standard_args
 
     if code_coverage:
-        command_line.extend(CONFIGURATIONS[configuration].coverage_args)
-        command_line.extend(_UNIVERSAL_CODE_COVERAGE_FLAGS)
+        command_line += CONFIGURATIONS[configuration].coverage_args
+        command_line += _UNIVERSAL_CODE_COVERAGE_FLAGS
     else:
         command_line.append("Noop")
 
-    command_line.extend(_UNIVERSAL_BASIC_FLAGS)
+    command_line += _UNIVERSAL_BASIC_FLAGS
     
     if debug_only:                          command_line.append("/debug_only")
     if release_only:                        command_line.append("/release_only")

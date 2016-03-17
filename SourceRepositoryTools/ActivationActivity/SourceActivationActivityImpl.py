@@ -196,7 +196,7 @@ def _DelayedCallback( cls,
                 if not isinstance(results, list):
                     results = [ results, ]
 
-                commands.extend(results)
+                commands += results
 
             link_map[item] = QuickObject( repository=repository,
                                           version=version,

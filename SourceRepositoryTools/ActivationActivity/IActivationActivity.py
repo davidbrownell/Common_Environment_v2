@@ -89,23 +89,23 @@ class IActivationActivity(Interface):
                    ]
 
         if cls.DelayExecute:
-            commands.extend(SourceRepositoryTools.DelayExecute( _DeferedCallback,
-                                                                cls,
-                                                                constants,
-                                                                environment,
-                                                                configuration,
-                                                                repositories,
-                                                                version_specs,
-                                                                generated_dir,
-                                                              ))
+            commands += SourceRepositoryTools.DelayExecute( _DeferedCallback,
+                                                            cls,
+                                                            constants,
+                                                            environment,
+                                                            configuration,
+                                                            repositories,
+                                                            version_specs,
+                                                            generated_dir,
+                                                          )
         else: 
-            commands.extend(cls._CreateCommandsImpl( constants,
-                                                     environment,
-                                                     configuration,
-                                                     repositories,
-                                                     version_specs,
-                                                     generated_dir,
-                                                   ))
+            commands += cls._CreateCommandsImpl( constants,
+                                                 environment,
+                                                 configuration,
+                                                 repositories,
+                                                 version_specs,
+                                                 generated_dir,
+                                               )
         return commands
 
     # ---------------------------------------------------------------------------
