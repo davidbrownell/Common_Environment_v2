@@ -88,6 +88,6 @@ class ToolsActivationActivity(IActivationActivity):
                 if not actual_paths:
                     actual_paths.append(fullpath)
 
-                paths.extend(actual_paths)
+                paths += actual_paths
 
         return environment.AugmentPath(paths)
