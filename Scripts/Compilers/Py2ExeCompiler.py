@@ -130,7 +130,7 @@ class Compiler( AtomicInputProcessingMixin,
                 context.paths.append(dirname)
 
         if not context.include_tcl:
-            context.excludes.extend([ "Tkconstants", "Tkinter", "tcl", ])
+            context.excludes += [ "Tkconstants", "Tkinter", "tcl", ]
         del context.include_tcl
 
         return super(Compiler, cls)._PostprocessContextItem(context)

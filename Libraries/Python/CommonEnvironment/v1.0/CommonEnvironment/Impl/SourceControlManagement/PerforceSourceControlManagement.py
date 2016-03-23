@@ -177,7 +177,7 @@ def PerforceSourceControlManagementFactory( raise_on_username_failure,
                                    ]:
                 result, output = client.Execute('p4 dirs "{}/{}/*"'.format(client.GetMappingRoot(), name))
                 if result == 0 and output.find("no such file(s)") == -1:
-                    branches.extend(extractor(output))
+                    branches += extractor(output)
     
             return branches
     
@@ -411,7 +411,7 @@ def PerforceSourceControlManagementFactory( raise_on_username_failure,
             files = []
             for revision in revisions:
                 result = client.GetRevisionInfo(revision)
-                files.extend(result.files)
+                files += result.files
     
             return files
     

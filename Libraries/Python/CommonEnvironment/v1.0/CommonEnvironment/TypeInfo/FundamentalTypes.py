@@ -24,6 +24,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 
 # <Unused import> pylint: disable = W0611
 
+from . import Arity
 from .Impl.FundamentalTypeInfo import FundamentalTypeInfo
 
 from .BoolTypeInfo import BoolTypeInfo
