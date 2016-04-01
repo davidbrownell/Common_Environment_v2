@@ -70,7 +70,9 @@ def Execute( code_dir,
 
     modes = mode or [ "clean", "build", ]
     
-    with StreamDecorator(output_stream).DoneManager(line_prefix='', done_prefix='\n') as total_si:
+    with StreamDecorator(output_stream).DoneManager( line_prefix='', 
+                                                     done_prefix="\n\nComposite Results: ",
+                                                   ) as total_si:
         build_info = _GetBuildInfo(code_dir, output_stream)
         if not build_info:
             total_si.result = 0
