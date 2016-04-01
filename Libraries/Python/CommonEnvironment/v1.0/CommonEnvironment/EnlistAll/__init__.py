@@ -494,11 +494,11 @@ def _DefineDynamicFunction( func_name,
 
     exec textwrap.dedent(
         """\
-        @CommandLine.EntryPoint()
-        @CommandLine.FunctionConstraints(**constraint_params)
+        @CommandLine.EntryPoint(){constraints}
         def {name}({params}):
             return Impl({args})
         """).format( name=func_name,
+                     constraints='' if not constraint_params else "\n@CommandLine.FunctionConstraints(**constraint_params)",
                      params=', '.join([ "{}{}".format(k, '' if v == _NoDefault else "={}".format(v)) for k, v in params.iteritems() ]),
                      args=', '.join([ "{k}={k}".format(k=k) for k in params.iterkeys() ]),
                    ) in d
