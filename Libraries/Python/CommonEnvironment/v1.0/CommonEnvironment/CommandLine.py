@@ -151,7 +151,7 @@ class EntryPointData(object):
         self.Func                       = func
         self.EntryPointDecorator        = entry_point_decorator
         self.ConstraintsDecorator       = constraints_decorator
-        self.Name                       = entry_point_decorator.NameOverride or func.__name__
+        self.Name                       = self.EntryPointDecorator.NameOverride or func.__name__
         self.Description                = func.__doc__ or ''
         self.Params                     = []
 
@@ -165,17 +165,17 @@ class EntryPointData(object):
 
         # Remove any explicitly ignored parameters and verify that all items
         # are accounted for.
-        entry_point_decorator_names = entry_point_decorator.Args.keys()
+        entry_point_decorator_names = self.EntryPointDecorator.Args.keys()
         new_args = []
 
         for index, arg in enumerate(args):
             if arg in entry_point_decorator_names:
                 entry_point_decorator_names.remove(arg)
 
-            if ( (arg in constraints_decorator.Preconditions and constraints_decorator.Preconditions[arg] == None) or
-                 (arg in entry_point_decorator.Args and ( entry_point_decorator.Args[arg] == None or 
-                                                          entry_point_decorator.Args[arg].ignore
-                                                        ))
+            if ( (self.ConstraintsDecorator and arg in self.ConstraintsDecorator.Preconditions and self.ConstraintsDecorator.Preconditions[arg] == None) or
+                 (arg in self.EntryPointDecorator.Args and ( entry_point_decorator.Args[arg] == None or 
+                                                             entry_point_decorator.Args[arg].ignore
+                                                           ))
                ):
                 if index < first_optional_arg_index:
                     raise Exception("'{}' was explicitly ignored but does not have a default python value".format(arg))
@@ -197,19 +197,19 @@ class EntryPointData(object):
         is_positional = True
         
         for index, name in enumerate(args):
-            if name not in constraints_decorator.Preconditions and index >= first_optional_arg_index:
+            if not self.ConstraintsDecorator or (name not in self.ConstraintsDecorator.Preconditions and index >= first_optional_arg_index):
                 type_info = FundamentalTypeInfo.CreateTypeInfo(type(defaults[index - first_optional_arg_index]))
             else:
-                assert name in constraints_decorator.Preconditions, (self.Name, name)
-                type_info = constraints_decorator.Preconditions[name]
+                assert name in self.ConstraintsDecorator.Preconditions, (self.Name, name)
+                type_info = self.ConstraintsDecorator.Preconditions[name]
 
             assert type_info, name
             
             if not isinstance(type_info, (FundamentalTypeInfo, DictTypeInfo, AnyOfTypeInfo)):
                 raise Exception("Only fundamental types are supported ({})".format(name))
 
-            if name in entry_point_decorator.Args:
-                provided_argument_info = entry_point_decorator.Args[name]
+            if name in self.EntryPointDecorator.Args:
+                provided_argument_info = self.EntryPointDecorator.Args[name]
                 assert provided_argument_info and not provided_argument_info.ignore
             else:
                 provided_argument_info = EntryPoint.ArgumentInfo()
