@@ -95,7 +95,7 @@ class Verifier( CustomInvocationMixin,
     def GetSystemUnderTest(test_filename):
         path, name = os.path.split(test_filename)
         if name == "__init__.py":
-            return
+            return test_filename
 
         match = re.match( r"^(?P<name>.+)_(?P<test_type>.+?Test)(?P<ext>\..+)$",
                           name,
