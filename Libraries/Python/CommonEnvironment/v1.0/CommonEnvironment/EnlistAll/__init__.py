@@ -281,8 +281,8 @@ def EnlistFunctionFactory( repo_templates,
         branches_to_restore = OrderedDict()
 
         with StreamDecorator(output_stream).DoneManager( line_prefix='', 
-                                                         done_prefix='\n', 
-                                                         done_suffix='\n\nComposite Results: ',
+                                                         done_prefix='\n\nComposite Results: ', 
+                                                         done_suffix='\n',
                                                        ) as dm:
             
             # Update
@@ -417,8 +417,8 @@ def SetupFunctionFactory( repo_templates,
         setup_environment_script = Shell.GetEnvironment().CreateScriptName(SourceRepositoryTools.SETUP_ENVIRONMENT_NAME)
                 
         with StreamDecorator(output_stream).DoneManager( line_prefix='', 
-                                                         done_prefix='\n', 
-                                                         done_suffix='\n\nComposite Results: ',
+                                                         done_prefix='\n\nComposite Results: ', 
+                                                         done_suffix='\n',
                                                        ) as dm:
             for index, repo in enumerate(diff.matches):
                 filename = os.path.join(repo.path, setup_environment_script)
