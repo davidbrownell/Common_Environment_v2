@@ -267,7 +267,12 @@ class StreamDecorator(object):
 
     # ---------------------------------------------------------------------------
     @classmethod
-    def LeftJustify(cls, content, starting_col=4, skip_first_line=True):
+    def LeftJustify( cls, 
+                     content, 
+                     starting_col=4, 
+                     skip_first_line=True,
+                     add_suffix=False,
+                   ):
         whitespace_prefix = ' ' * starting_col
         
         sink = StringIO()
@@ -279,7 +284,12 @@ class StreamDecorator(object):
         decorator.write(content)
         decorator.flush()
 
-        return sink.getvalue()
+        result = sink.getvalue()
+
+        if add_suffix:
+            result += whitespace_prefix
+
+        return result
 
     # ---------------------------------------------------------------------------
     @classmethod
