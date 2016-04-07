@@ -72,7 +72,7 @@ goto end
 @REM ---------------------------------------------------------------------------
 :create_temp_script_name
 setlocal EnableDelayedExpansion
-set _filename=%TMP%\SetupEnvironment-!RANDOM!-!Time:~6,5!.cmd
+set _filename=%~dp0\SetupEnvironment-!RANDOM!-!Time:~6,5!.cmd
 endlocal & set _SETUP_ENVIRONMENT_TEMP_SCRIPT_NAME=%_filename%
 
 if exist "%_SETUP_ENVIRONMENT_TEMP_SCRIPT_NAME%" goto :create_temp_script_name
