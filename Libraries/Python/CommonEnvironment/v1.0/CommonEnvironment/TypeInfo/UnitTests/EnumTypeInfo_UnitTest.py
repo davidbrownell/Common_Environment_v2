@@ -68,8 +68,8 @@ class FundamentalEnum(unittest.TestCase):
         self.assertEqual(self._type_info.ConstraintsDesc, r"Value must be one of 'a', 'b', 'c'")
         
     # ---------------------------------------------------------------------------
-    def test_PythonItemRegularExpressionStrings(self):
-        self.assertEqual(self._type_info.PythonItemRegularExpressionStrings, r"(a|b|c)")
+    def test_PythonItemRegularExpressionString(self):
+        self.assertEqual(self._type_info.PythonItemRegularExpressionString, r"(a|b|c)")
         
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":

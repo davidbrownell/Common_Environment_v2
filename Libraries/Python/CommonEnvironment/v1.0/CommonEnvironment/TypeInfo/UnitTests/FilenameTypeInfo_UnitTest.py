@@ -70,9 +70,9 @@ class FundamentalFilename(unittest.TestCase):
         self.assertEqual(self._two.ConstraintsDesc, "")
         
     # ---------------------------------------------------------------------------
-    def test_PythonItemRegularExpressionStrings(self):
-        self.assertEqual(self._one.PythonItemRegularExpressionStrings, ".+")
-        self.assertEqual(self._two.PythonItemRegularExpressionStrings, ".+")
+    def test_PythonItemRegularExpressionString(self):
+        self.assertEqual(self._one.PythonItemRegularExpressionString, ".+")
+        self.assertEqual(self._two.PythonItemRegularExpressionString, ".+")
         
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":

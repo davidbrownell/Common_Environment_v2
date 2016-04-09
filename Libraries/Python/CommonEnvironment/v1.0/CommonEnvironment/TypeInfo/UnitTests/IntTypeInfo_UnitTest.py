@@ -74,8 +74,8 @@ class FundamentalInt(unittest.TestCase):
         self.assertEqual(self._type_info.ConstraintsDesc, r"Value must be >= 10, be <= 20")
         
     # ---------------------------------------------------------------------------
-    def test_PythonItemRegularExpressionStrings(self):
-        self.assertEqual(self._type_info.PythonItemRegularExpressionStrings, r"[0-9]{2}")
+    def test_PythonItemRegularExpressionString(self):
+        self.assertEqual(self._type_info.PythonItemRegularExpressionString, r"[0-9]{2}")
         
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":

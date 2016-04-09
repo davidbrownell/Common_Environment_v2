@@ -53,10 +53,6 @@ class IntTypeInfo(FundamentalTypeInfo):
 
     # ---------------------------------------------------------------------------
     @property
-    def PythonItemRegularExpressionStrings(self):
-        return self.PythonItemRegularExpressionStringsImpl(self.Min, self.Max)
-
-    @property
     def ConstraintsDesc(self):
         items = []
 
@@ -89,9 +85,13 @@ class IntTypeInfo(FundamentalTypeInfo):
                              args=', {}'.format(', '.join([ "{}={}".format(k, v) for k, v in args.iteritems() ])),
                            )
 
+    @property
+    def PythonItemRegularExpressionInfo(self):
+        return self.PythonItemRegularExpressionInfoImpl(self.Min, self.Max)
+
     # ---------------------------------------------------------------------------
     @staticmethod
-    def PythonItemRegularExpressionStringsImpl(min, max):
+    def PythonItemRegularExpressionInfoImpl(min, max):
         patterns = []
 
         if min == None or min < 0:

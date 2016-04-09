@@ -59,8 +59,8 @@ class FundamentalGuid(unittest.TestCase):
         self.assertEqual(self._type_info.ConstraintsDesc, "")
         
     # ---------------------------------------------------------------------------
-    def test_PythonItemRegularExpressionStrings(self):
-        self.assertEqual(self._type_info.PythonItemRegularExpressionStrings, r"(\{[0-9A-Fa-f]{32}\}|[0-9A-Fa-f]{32}|\{[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\}|[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12})")
+    def test_PythonItemRegularExpressionString(self):
+        self.assertEqual(self._type_info.PythonItemRegularExpressionString, r"(\{[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\})|([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12})|(\{[0-9A-Fa-f]{32}\})|([0-9A-Fa-f]{32})")
         
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
