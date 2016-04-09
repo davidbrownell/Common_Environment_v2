@@ -30,8 +30,7 @@ class FilenameTypeInfo(FundamentalTypeInfo):
 
     ExpectedType                            = (str, unicode)
     Desc                                    = "Filename"
-    PythonItemRegularExpressionStrings      = ".+"
-
+    
     _type_counter = itertools.count()
 
     Type_File                               = _type_counter.next()
@@ -39,6 +38,8 @@ class FilenameTypeInfo(FundamentalTypeInfo):
     Type_Either                             = _type_counter.next()
 
     del _type_counter
+
+    PythonItemRegularExpressionInfo         = ".+"
 
     # ---------------------------------------------------------------------------
     def __init__( self,

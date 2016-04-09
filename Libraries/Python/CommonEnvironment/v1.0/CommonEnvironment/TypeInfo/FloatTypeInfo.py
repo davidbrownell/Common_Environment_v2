@@ -49,10 +49,6 @@ class FloatTypeInfo(FundamentalTypeInfo):
 
     # ---------------------------------------------------------------------------
     @property
-    def PythonItemRegularExpressionStrings(self):
-        return r"{}\.[0-9]+".format(IntTypeInfo.PythonItemRegularExpressionStringsImpl(self.Min, self.Max))
-
-    @property
     def ConstraintsDesc(self):
         items = []
 
@@ -81,6 +77,10 @@ class FloatTypeInfo(FundamentalTypeInfo):
                     .format( super=self._PythonDefinitionStringContents,
                              args=', {}'.format(', '.join([ "{}={}".format(k, v) for k, v in args.iteritems() ])),
                            )
+
+    @property
+    def PythonItemRegularExpressionInfo(self):
+        return r"{}\.[0-9]+".format(IntTypeInfo.PythonItemRegularExpressionInfoImpl(self.Min, self.Max))
 
     # ---------------------------------------------------------------------------
     @staticmethod

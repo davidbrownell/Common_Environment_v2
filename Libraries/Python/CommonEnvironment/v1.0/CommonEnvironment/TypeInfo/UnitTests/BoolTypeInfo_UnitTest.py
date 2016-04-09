@@ -68,8 +68,8 @@ class FundamentalBool(unittest.TestCase):
         self.assertEqual(self._type_info.ConstraintsDesc, "")
         
     # ---------------------------------------------------------------------------
-    def test_PythonItemRegularExpressionStrings(self):
-        self.assertEqual(self._type_info.PythonItemRegularExpressionStrings, ("(true|t|yes|y|1|false|f|no|n|0)", re.IGNORECASE))
+    def test_PythonItemRegularExpressionString(self):
+        self.assertEqual(self._type_info.PythonItemRegularExpressionString, "(true|t|yes|y|1|false|f|no|n|0)")
         
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":

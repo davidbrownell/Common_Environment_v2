@@ -15,6 +15,7 @@
 # |  
 # ---------------------------------------------------------------------------
 import os
+import re
 import sys
 
 from collections import OrderedDict
@@ -51,10 +52,6 @@ class EnumTypeInfo(FundamentalTypeInfo):
     
     # ---------------------------------------------------------------------------
     @property
-    def PythonItemRegularExpressionStrings(self):
-        return "({})".format('|'.join(self.Values))
-
-    @property
     def ConstraintsDesc(self):
         if len(self.Values) == 1:
             return "Value must be '{}'".format(self.Values[0])
@@ -79,6 +76,10 @@ class EnumTypeInfo(FundamentalTypeInfo):
                              values=ListToString(self.Values),
                              args=", {}".format(', '.join([ "{}={}".format(k, v) for k, v in args.iteritems() ])) if args else '',
                            )
+
+    @property
+    def PythonItemRegularExpressionInfo(self):
+        return "({})".format('|'.join([ re.escape(value) for value in self.Values ]))
 
     # ---------------------------------------------------------------------------
     @staticmethod

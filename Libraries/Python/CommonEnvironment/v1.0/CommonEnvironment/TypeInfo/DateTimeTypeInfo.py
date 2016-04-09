@@ -31,8 +31,9 @@ class DateTimeTypeInfo(FundamentalTypeInfo):
     
     ExpectedType                            = datetime.datetime
     Desc                                    = "Datetime"
-    PythonItemRegularExpressionStrings      = "{}.{}".format(DateTypeInfo.PythonItemRegularExpressionStrings[0], TimeTypeInfo.PythonItemRegularExpressionStrings)
     ConstraintsDesc                         = ''
+
+    PythonItemRegularExpressionInfo         = "{}.{}".format(DateTypeInfo.PythonItemRegularExpressionInfo[0], TimeTypeInfo.PythonItemRegularExpressionInfo)
 
     # ---------------------------------------------------------------------------
     @staticmethod

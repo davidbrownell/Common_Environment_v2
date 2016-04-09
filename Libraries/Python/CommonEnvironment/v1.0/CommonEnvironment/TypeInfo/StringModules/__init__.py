@@ -15,6 +15,7 @@
 # |  
 # ---------------------------------------------------------------------------
 import os
+import re
 import sys
 
 from CommonEnvironment.Interface import *
@@ -53,8 +54,27 @@ class StringModule(Interface):
     # ---------------------------------------------------------------------------
     @staticmethod
     @abstractmethod
-    def GetItemRegularExpressionStrings(type_info):
-        raise Exception("Abstract Property")
+    def GetItemRegularExpressions(type_info):
+        """\
+        Decorate any strings prior to their conversion to regular expressions.
+        """
+
+        results = type_info.PythonItemRegularExpressionInfo
+        if not isinstance(results, list):
+            results = [ results, ]
+        
+        expressions = []
+        
+        for result in results:
+            if isinstance(result, tuple):
+                expression, regex_flags = result
+            else:
+                expression = result
+                regex_flags = re.DOTALL | re.MULTILINE
+                
+            expressions.append(re.compile(expression, regex_flags))
+
+        return expressions
 
     # ---------------------------------------------------------------------------
     @staticmethod

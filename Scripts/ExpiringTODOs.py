@@ -60,7 +60,7 @@ def EntryPoint( code_dir,
             [Optional] Left Brace   )(?:[\(\[])?\s*(?#
             Date                    )(?P<date>%s)(?#
             [Optional] Right Brace  )(?:[\)\]])?(?#
-            )""") % '|'.join([ '({})'.format(expr) for expr in DateTypeInfo.PythonItemRegularExpressionStrings ]))
+            )""") % DateTypeInfo().PythonItemRegularExpressionString)
 
         filenames = list(FileSystem.WalkFiles( code_dir,
                                                traverse_exclude_dir_names=FileSystem.CODE_EXCLUDE_DIR_NAMES,
