@@ -32,8 +32,32 @@ class FundamentalTypeInfo(TypeInfo):
 
     # ---------------------------------------------------------------------------
     # |  Public Properties
-    @abstractproperty
+    @property
     def PythonItemRegularExpressionStrings(self):
+        result = self.PythonItemRegularExpressionInfo
+        
+        if isinstance(result, tuple):
+            result = result[0]
+
+        if isinstance(result, list):
+            return result
+
+        return [ result, ]
+
+    @property
+    def PythonItemRegularExpressionString(self):
+        result = self.PythonItemRegularExpressionInfo
+        
+        if isinstance(result, tuple):
+            result = result[0]
+
+        if isinstance(result, list):
+            return '|'.join([ "({})".format(r) for r in result ])
+
+        return result
+
+    @abstractproperty
+    def PythonItemRegularExpressionInfo(self):
         raise Exception("Abstract Property")
     
     # ---------------------------------------------------------------------------
@@ -120,18 +144,8 @@ class FundamentalTypeInfo(TypeInfo):
             self._regexes = {}
 
         if self.__class__ not in self._regexes:
-            expressions = []
+            self._regexes[self.__class__] = string_module.GetItemRegularExpressions(self)
             
-            for expression in string_module.GetItemRegularExpressionStrings(self):
-                if isinstance(expression, tuple):
-                    expression, regex_flags = expression
-                else:
-                    regex_flags = re.DOTALL | re.MULTILINE
-            
-                expressions.append(re.compile(expression, regex_flags))
-                
-            self._regexes[self.__class__] = expressions
-
         # ---------------------------------------------------------------------------
         class NoneType(object): pass
 
@@ -177,4 +191,5 @@ class FundamentalTypeInfo(TypeInfo):
             type(self).Init()
 
         return self._string_module
+
     

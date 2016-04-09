@@ -29,9 +29,10 @@ class DurationTypeInfo(FundamentalTypeInfo):
     
     ExpectedType                            = datetime.timedelta
     Desc                                    = "Duration"
-    PythonItemRegularExpressionStrings      = r"([1-9][0-9]*|0)?:[0-5][0-9](:[0-5][0-9](\.[0-9]+)?)?"
     ConstraintsDesc                         = ''
 
+    PythonItemRegularExpressionInfo         = r"([1-9][0-9]*|0)?:[0-5][0-9](:[0-5][0-9](\.[0-9]+)?)?"
+    
     # ---------------------------------------------------------------------------
     @property
     def PythonDefinitionString(self):

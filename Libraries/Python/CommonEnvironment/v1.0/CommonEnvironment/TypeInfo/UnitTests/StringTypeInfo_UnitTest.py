@@ -77,9 +77,9 @@ class FundamentalString(unittest.TestCase):
         self.assertEqual(self._type_info.ConstraintsDesc, r"Value must match the regular expression '\d{1,5}'")
         
     # ---------------------------------------------------------------------------
-    def test_PythonItemRegularExpressionStrings(self):
-        self.assertEqual(self._empty_type_info.PythonItemRegularExpressionStrings, ".*")
-        self.assertEqual(self._type_info.PythonItemRegularExpressionStrings, r"\d{1,5}")
+    def test_PythonItemRegularExpressionString(self):
+        self.assertEqual(self._empty_type_info.PythonItemRegularExpressionString, ".*")
+        self.assertEqual(self._type_info.PythonItemRegularExpressionString, r"\d{1,5}")
         
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
