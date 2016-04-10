@@ -63,8 +63,8 @@ class FundamentalDuration(unittest.TestCase):
         self.assertEqual(self._type_info.ConstraintsDesc, "")
         
     # ---------------------------------------------------------------------------
-    def test_PythonItemRegularExpressionStrings(self):
-        self.assertEqual(self._type_info.PythonItemRegularExpressionStrings, r"([1-9][0-9]*|0)?:[0-5][0-9](:[0-5][0-9](\.[0-9]+)?)?")
+    def test_PythonItemRegularExpressionString(self):
+        self.assertEqual(self._type_info.PythonItemRegularExpressionString, r"([1-9][0-9]*|0)?:[0-5][0-9](:[0-5][0-9](\.[0-9]+)?)?")
         
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":

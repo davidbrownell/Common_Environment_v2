@@ -118,12 +118,6 @@ class PythonStringModule(StringModules.StringModule):
 
         if type_info_type == DateTypeInfo:
             return type_info.ItemFromRegexMatch(string, regex_match, regex_string_index)
-            # BugBug parts = string.split('-')
-            # BugBug 
-            # BugBug return datetime.date( year=int(parts[0]),
-            # BugBug                       month=int(parts[1]),
-            # BugBug                       day=int(parts[2]),
-            # BugBug                     )
 
         if type_info_type == TimeTypeInfo:
             return datetime.datetime.strptime(string, "%H:%M:%S{fraction_seconds}{time_zone}" \
@@ -151,10 +145,6 @@ class PythonStringModule(StringModules.StringModule):
         assert False, ("Unexpected", type_info_type)
 
     # ---------------------------------------------------------------------------
-    @staticmethod
-    def GetItemRegularExpressionStrings(type_info):
-        result = type_info.PythonItemRegularExpressionStrings
-        if not isinstance(result, list):
-            result = [ result, ]
-
-        return result
+    @classmethod
+    def GetItemRegularExpressions(cls, type_info):
+        return super(cls, PythonStringModule).GetItemRegularExpressions(type_info) 

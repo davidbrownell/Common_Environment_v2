@@ -32,22 +32,21 @@ class GuidTypeInfo(FundamentalTypeInfo):
     Desc                                    = "Guid"
     ConstraintsDesc                         = ''
 
+    _d = { "char" : "[0-9A-Fa-f]", }
+
+    PythonItemRegularExpressionInfo         = [ r"\{%(char)s{8}-%(char)s{4}-%(char)s{4}-%(char)s{4}-%(char)s{12}\}" % _d,
+                                                r"%(char)s{8}-%(char)s{4}-%(char)s{4}-%(char)s{4}-%(char)s{12}" % _d,
+                                                r"\{%(char)s{32}\}" % _d,
+                                                r"%(char)s{32}" % _d,
+                                              ]
+
+    del _d
+
     # ---------------------------------------------------------------------------
     @staticmethod
     def Create():
         return uuid.uuid4()
         
-    # ---------------------------------------------------------------------------
-    @property
-    def PythonItemRegularExpressionStrings(self):
-        d = { "char" : "[0-9A-Fa-f]", }
-
-        return "({})".format('|'.join([ r"\{%(char)s{32}\}" % d,
-                                        r"%(char)s{32}" % d,
-                                        r"\{%(char)s{8}-%(char)s{4}-%(char)s{4}-%(char)s{4}-%(char)s{12}\}" % d,
-                                        r"%(char)s{8}-%(char)s{4}-%(char)s{4}-%(char)s{4}-%(char)s{12}" % d,
-                                      ]))
-
     @property
     def PythonDefinitionString(self):
         return "GuidTypeInfo({})".format(self._PythonDefinitionStringContents)

@@ -35,7 +35,7 @@ class DateTypeInfo(FundamentalTypeInfo):
     
     _sep = r"[-/\.]"
 
-    PythonItemRegularExpressionStrings      = [ expr % { "sep" : _sep, 
+    PythonItemRegularExpressionInfo         = [ expr % { "sep" : _sep, 
                                                          "suffix" : index,
                                                        } 
                                                 for index, expr in enumerate([ # Ordered from most- to lease-specific in the hopes of minimizing ambiguity
@@ -53,7 +53,7 @@ class DateTypeInfo(FundamentalTypeInfo):
                                                                                r"(?P<month%(suffix)s>(0?[1-9]|1[0-2]))%(sep)s(?P<day%(suffix)s>([0-2][0-9]|3[0-1]))%(sep)s(?P<year%(suffix)s>\d{2})",
                                                                              ])
                                               ]
-    
+                
     del _sep
 
     # ---------------------------------------------------------------------------

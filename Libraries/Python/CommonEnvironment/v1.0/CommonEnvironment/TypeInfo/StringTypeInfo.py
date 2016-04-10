@@ -71,25 +71,6 @@ class StringTypeInfo(FundamentalTypeInfo):
 
     # ---------------------------------------------------------------------------
     @property
-    def PythonItemRegularExpressionStrings(self):
-        if self.ValidationExpression:
-            return self.ValidationExpression
-            
-        if self.MinLength == 1 and self.MaxLength == None:
-            return ".+"
-
-        if self.MinLength in [ 0, None, ] and self.MaxLength == None:
-            return ".*"
-
-        if self.MinLength != None and (self.MaxLength == None or self.MinLength == self.MaxLength):
-            return ".{%d}" % (self.MinLength)
-
-        if self.MinLength != None and self.MaxLength != None:
-            return ".{%d,%d}" % (self.MinLength, self.MaxLength)
-
-        return value
-
-    @property
     def ConstraintsDesc(self):
         items = []
 
@@ -124,6 +105,25 @@ class StringTypeInfo(FundamentalTypeInfo):
                     .format( super=self._PythonDefinitionStringContents,
                              args=", {}".format(', '.join([ "{}={}".format(k, v) for k, v in args.iteritems() ])),
                            )
+
+    @property
+    def PythonItemRegularExpressionInfo(self):
+        if self.ValidationExpression:
+            return self.ValidationExpression
+            
+        if self.MinLength == 1 and self.MaxLength == None:
+            return ".+"
+
+        if self.MinLength in [ 0, None, ] and self.MaxLength == None:
+            return ".*"
+
+        if self.MinLength != None and (self.MaxLength == None or self.MinLength == self.MaxLength):
+            return ".{%d}" % (self.MinLength)
+
+        if self.MinLength != None and self.MaxLength != None:
+            return ".{%d,%d}" % (self.MinLength, self.MaxLength)
+
+        return value
 
     # ---------------------------------------------------------------------------
     @staticmethod
