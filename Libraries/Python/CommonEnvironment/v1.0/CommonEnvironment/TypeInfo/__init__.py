@@ -101,6 +101,21 @@ class Arity(object):
     def PythonDefinitionString(self):
         return "Arity(min={}, max_or_none={})".format(self.Min, self.Max)
 
+    # ----------------------------------------------------------------------
+    def ToString(self):
+        if self.IsOptional:
+            return '?'
+        elif self.IsZeroOrMore:
+            return '*'
+        elif self.IsOneOrMore:
+            return '+'
+        elif self.Min == 1 and self.Max == 1:
+            return ''
+        elif self.Min == self.Max:
+            return "{{{}}}}".format(self.Min)
+        else:
+            return "{{{},{}}}".format(self.Min, self.Max)
+
 # ---------------------------------------------------------------------------
 class TypeInfo(Interface):
 
@@ -168,6 +183,8 @@ class TypeInfo(Interface):
 
         if not self.Arity.IsCollection:
             value = [ value, ]
+        elif value == None:
+            value = []
 
         for item in value:
             result = self.ValidateItemNoThrow(item, **custom_args)
