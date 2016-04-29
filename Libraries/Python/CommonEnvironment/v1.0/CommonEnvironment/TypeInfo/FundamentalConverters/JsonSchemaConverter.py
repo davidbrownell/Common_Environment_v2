@@ -129,3 +129,25 @@ class JsonSchemaConverter(FundamentalConverters.Converter):
         return { "type" : "string",
                  "pattern" : "^{}$".format(RegularExpression.PythonToJavaScript(TimeTypeInfo().PythonItemRegularExpressionStrings[0])),
                }
+
+    # ----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    @staticmethod
+    def Collectionize(arity, schema):
+        if not arity.IsCollection:
+            return schema
+    
+        schema = { "type" : "array",
+                   "items" : schema,
+                 }
+    
+        if arity.Min != 0:
+            schema["minItems"] = arity.Min
+    
+        if arity.Max != None:
+            schema["maxItems"] = arity.Max
+    
+        return schema
+    
+    
