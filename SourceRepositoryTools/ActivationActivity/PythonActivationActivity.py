@@ -65,6 +65,27 @@ class PythonActivationActivity(SourceActivationActivityImpl):
             cls.CopyFiles = [ os.path.join("Lib", "site-packages", "easy-install.pth"),
                             ]
             
+            # ----------------------------------------------------------------------
+            def ValidatePythonBinary(bin_name):
+                max = 153
+
+                if len(bin_name) >= max:
+                    raise Exception(textwrap.dedent(
+                        """\
+                        The generated Python location binary name is exceedingly long, which will cause problems on Windows.
+                        Ensure that this name is less than {} characters.
+
+                            {} ({} chars)
+
+                        """).format( max,
+                                     bin_name,
+                                     len(bin_name),
+                                   ))
+
+            # ----------------------------------------------------------------------
+            
+            cls.ValidatePythonBinary = staticmethod(ValidatePythonBinary)
+
         elif getattr(environment, "IsLinux", False):
             cls.LibrarySubdirs = [ "lib", "python{python_version_short}", "site-packages", ]
             cls.ScriptSubdirs = [ "Scripts", ]
@@ -73,6 +94,8 @@ class PythonActivationActivity(SourceActivationActivityImpl):
             cls.BinExtension = ''
             
             cls.CopyFiles = None
+
+            cls.ValidatePythonBinary = staticmethod(lambda item: None)
             
         else:
             assert False, environment.Name
@@ -194,7 +217,8 @@ class PythonActivationActivity(SourceActivationActivityImpl):
         
         # Get the binary file
         bin_file = os.path.join(bin_dir, "python{}".format(cls.BinExtension))
-        
+        cls.ValidatePythonBinary(bin_file)
+
         commands.append(environment.Set( "PYTHON_BINARY",
                                          bin_file,
                                          preserve_original=False,
