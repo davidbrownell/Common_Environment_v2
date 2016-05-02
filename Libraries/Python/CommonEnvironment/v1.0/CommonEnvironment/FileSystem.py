@@ -143,6 +143,29 @@ def WalkFiles( root,
 
             yield fullpath
 
+# ----------------------------------------------------------------------
+def EnumSubdirs( root, 
+                 names=False,
+                 fullpaths=True, 
+               ):
+    assert os.path.isdir(root), root
+
+    if names and fullpaths:
+        Decorator = lambda name, fullpath: name, fullpath
+    elif names:
+        Decorator = lambda name, fullpath: name
+    elif fullpaths:
+        Decorator = lambda name, fullpath: fullpath
+    else:
+        assert False
+
+    for name in os.listdir(root):
+        fullpath = os.path.join(root, name)
+        if not os.path.isdir(fullpath):
+            continue
+
+        yield Decorator(name, fullpath)
+
 # ---------------------------------------------------------------------------
 _GetCommonPath_Compare = None
 
