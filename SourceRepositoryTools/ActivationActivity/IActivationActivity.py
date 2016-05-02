@@ -52,7 +52,7 @@ class Constants(object):
 class IActivationActivity(Interface):
     """\
     Activity that can be performed at any time (during activation or later).
-    Derived classes should account for secondard invocations.
+    Derived classes should account for secondary invocations.
     """
     
     # ---------------------------------------------------------------------------
