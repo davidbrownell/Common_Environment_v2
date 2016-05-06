@@ -292,6 +292,11 @@ class WindowsEnvironment(Environment):
     def _GenerateRemoveFileCommand(filename):
         return 'del "{}"'.format(filename)
     
+    # ----------------------------------------------------------------------
+    @staticmethod
+    def _GenerateRemoveDirectoryCommand(directory):
+        return 'rmdir /S /Q "{}"'.format(directory)
+
     # ---------------------------------------------------------------------------
     @staticmethod
     def _GenerateCopyFileCommand(source, dest):

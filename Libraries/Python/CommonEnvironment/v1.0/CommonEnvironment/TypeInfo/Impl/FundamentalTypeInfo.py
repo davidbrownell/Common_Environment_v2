@@ -154,7 +154,7 @@ class FundamentalTypeInfo(TypeInfo):
                 match = regex.match(item)
                 if match:
                     return string_module.FromString(self, item, match, index)
-                    
+            
             return NoneType
 
         # ---------------------------------------------------------------------------
