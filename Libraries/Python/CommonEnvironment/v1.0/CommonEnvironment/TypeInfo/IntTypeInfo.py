@@ -109,8 +109,8 @@ class IntTypeInfo(FundamentalTypeInfo):
             count = 1
 
             while True:
-                if ( (min == None or min >= -value) and 
-                     (max == None or max <= value)
+                if ( (min == None or min > -value) and 
+                     (max == None or max < value)
                    ):
                     break
 

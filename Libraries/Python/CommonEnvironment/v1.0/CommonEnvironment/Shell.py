@@ -149,6 +149,12 @@ class RemoveFile(Command):
         
 # ---------------------------------------------------------------------------
 # <Too few public methods> pylint: disable = R0903
+class RemoveDirectory(Command):
+    def __init__(self, directory):
+        self.directory = directory
+
+# ---------------------------------------------------------------------------
+# <Too few public methods> pylint: disable = R0903
 class CopyFile(Command):
     def __init__(self, source, dest):
         self.source = source
@@ -176,6 +182,7 @@ class Environment(Interface):
     EchoOff                                 = EchoOff
     SetCommandPrompt                        = SetCommandPrompt
     RemoveFile                              = RemoveFile
+    RemoveDirectory                         = RemoveDirectory
     CopyFile                                = CopyFile
 
     # ---------------------------------------------------------------------------
@@ -285,6 +292,7 @@ class Environment(Interface):
                          EchoOff,
                          SetCommandPrompt,
                          RemoveFile,
+                         RemoveDirectory,
                          CopyFile,
                        ]
                        
@@ -485,6 +493,12 @@ class Environment(Interface):
     def _GenerateRemoveFileCommand(filename):
         raise Exception("Abstract method")
     
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @abstractmethod
+    def _GenerateRemoveDirectoryCommand(directory):
+        raise Exception("Abstract method")
+
     # ---------------------------------------------------------------------------
     @staticmethod
     @abstractmethod

@@ -146,6 +146,7 @@ class Interface(object):
         try:
             # Get all the abstract items and make that information available via the class type
             abstracts = OrderedDict()
+            extension_methods = {}
 
             for base in reversed(inspect.getmro(cls)):
                 these_abstracts = []
@@ -153,11 +154,9 @@ class Interface(object):
                 for member_name, member_info in inspect.getmembers(base):
                     if getattr(member_info, "__extension_method", False):
                         info = GenerateInfo(member_info)
-                        instance.ExtensionMethods.append("{}.{} {}".format( type(instance).__name__,
-                                                                            member_name,
-                                                                            LocationString(info),
-                                                                          ))
 
+                        extension_methods[LocationString(info)] = "{}.{}".format(type(instance).__name__, member_name)
+                        
                     if getattr(member_info, "__isabstractmethod__", False):
                         these_abstracts.append(member_name)
 
@@ -167,6 +166,12 @@ class Interface(object):
                 if these_abstracts and base not in Interface._verified_types:
                     Interface._verified_types.add(base)
                     base.AbstractItems = these_abstracts
+
+            extension_method_keys = extension_methods.keys()
+            extension_method_keys.sort()
+
+            for emk in extension_method_keys:
+                instance.ExtensionMethods.append("{0:<50} {1}".format(extension_methods[emk], emk))
 
             # Verify that all abstracts exist
             errors = []
@@ -525,7 +530,7 @@ def extensionmethod(func):
 
     To view all extensions of an Interface-based type:
 
-        print '\n'.join(MyClass.ExtensionPoints)
+        print '\n'.join(MyClass.ExtensionMethods)
 
     """
 
