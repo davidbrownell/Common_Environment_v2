@@ -39,10 +39,6 @@ class Compiler(CompilerMod.Base):
     IsCompiler                              = True
     InvokeVerb                              = "Compiling"
 
-    @abstractproperty
-    def BinaryExtension(self):
-        raise Exception("Abstract property")
-
     # ---------------------------------------------------------------------------
     # |
     # |  Public Methods
