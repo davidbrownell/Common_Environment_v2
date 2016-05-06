@@ -29,6 +29,7 @@ from CommonEnvironment import Enum
 from CommonEnvironment.FileSystem import *
 from CommonEnvironment.Interface import *
 from CommonEnvironment.QuickObject import QuickObject
+from CommonEnvironment import RegularExpression
 from CommonEnvironment.StreamDecorator import StreamDecorator
 
 from .InputProcessingMixin import InputProcessingMixin
@@ -437,6 +438,103 @@ class Base( InputProcessingMixin,
                 cls._PersistContext(context)
 
             return stream_info.result, sink
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    def ApplyExternalConfigurations( configuration_filename,
+                                     load_filename,             # def Func(config_filename) -> configuration contents
+                                     process_config_info,       # def Func(filename, config_info, normalize_path_functor)
+                                     input_filenames,
+                                   ):
+        for input_filename in input_filenames:
+            # Get all of the external configuration files that exist within the path
+            # hierarchy of this file.
+            configuration_filenames = []
+
+            dirname = os.path.dirname(os.path.abspath(input_filename))
+            while True:
+                potential_filename = os.path.join(dirname, configuration_filename)
+                if os.path.isfile(potential_filename):
+                    configuration_filenames.append(potential_filename)
+
+                new_dirname = os.path.dirname(dirname)
+                if new_dirname == dirname:
+                    break
+
+                dirname = new_dirname
+        
+            # Process the configuration files
+            for configuration_filename in configuration_filenames:
+                dirname = os.path.dirname(configuration_filename)
+                normalize_path_functor = lambda value: os.path.abspath(os.path.join(dirname, ValueError))
+
+                content = load_filename(dirname)
+
+                for source in content.sources:
+                    if not RegularExpression.WildcardSearchToRegularExpression(source.name.replace('/', os.path.sep)).match(input_filename):
+                        continue
+
+                    process_config_info( input_filename, 
+                                         source,
+                                         normalize_path_functor,
+                                       )
+
+    # ----------------------------------------------------------------------
+    @classmethod
+    def ShouldProcessConfigInfo( cls,
+                                 config_info,
+                                 environment,
+                                 is_debug,
+                               ):
+        for attribute_name, required_value in [ ( "environment", environment.Name ),
+                                                ( "compiler_name", cls.Name ),
+                                                ( "compiler_version", cls.Version ),
+                                                ( "build", "debug" if is_debug else "release" ),
+                                              ]:
+            value = getattr(config_info, attribute_name, None)
+            if value != None and value != required_value:
+                return False
+
+        return True
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    def PopulateEnvironmentVars(s, **additional_args):
+        """\
+        Will replace placeholders in the form '$(var)' in the given string with
+        the value in the current environment.
+        """
+
+        placeholder = "<<!!--__"
+
+        additional_args_lower = {}
+        for k, v in additional_args.iteritems():
+            additional_args_lower[k.lower()] = v
+
+        environ_lower = {}
+        for k, v in os.environ.iteritems():
+            environ_lower[k.lower()] = v
+
+        regexp = re.compile(r"\$\((?P<var>.+?)\)")
+
+        # ----------------------------------------------------------------------
+        def Sub(match):
+            var = match.group("var").lower()
+
+            if var in additional_args_lower:
+                return additional_args_lower[var]
+
+            if var in environ_lower:
+                return environ_lower[var]
+
+            return match.string[match.start() : match.end()].replace("$(", placeholder)
+
+        # ----------------------------------------------------------------------
+        
+        while "$(" in s:
+            s = regexp.sub(Sub, s)
+
+        return s.replace(placeholder, "$(")
 
     # ---------------------------------------------------------------------------
     # |

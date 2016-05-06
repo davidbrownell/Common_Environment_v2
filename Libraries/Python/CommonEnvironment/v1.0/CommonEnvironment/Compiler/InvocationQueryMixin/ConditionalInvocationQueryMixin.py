@@ -283,7 +283,7 @@ class ConditionalInvocationQueryMixin(InvocationQueryMixin):
 
     # ---------------------------------------------------------------------------
     @staticmethod
-    @abstractmethod
+    @extensionmethod
     def _CustomContextComparison(context, prev_context):
         """\
         Opportunity for a compiler to perform custom comparison when determining if invocation should

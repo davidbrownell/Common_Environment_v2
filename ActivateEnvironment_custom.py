@@ -31,39 +31,34 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 
 sys.path.insert(0, _script_dir)
 with CallOnExit(lambda: sys.path.pop(0)):
-    from SourceRepositoryTools import DynamicPluginArchitecture
+    from SourceRepositoryTools import DynamicPluginArchitecture, DelayExecute
 
 # ---------------------------------------------------------------------------
 def CustomActions():
     commands = []
 
-    commands.extend(DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_COMPILERS",
-                                                                            os.path.join(_script_dir, "Scripts", "Compilers"),
-                                                                            lambda fullpath, name, ext: ext == ".py" and (name.endswith("Compiler") or name.endswith("CodeGenerator") or name.endswith("Verifier")),
-                                                                          ))
+    commands += DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_COMPILERS",
+                                                                        os.path.join(_script_dir, "Scripts", "Compilers"),
+                                                                        lambda fullpath, name, ext: ext == ".py" and (name.endswith("Compiler") or name.endswith("CodeGenerator") or name.endswith("Verifier")),
+                                                                      )
     
-    commands.extend(DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_TEST_PARSERS",
-                                                                            os.path.join(_script_dir, "Scripts", "TestParsers"),
-                                                                            lambda fullpath, name, ext: ext == ".py" and name.endswith("TestParser"),
-                                                                          ))
+    commands += DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_TEST_PARSERS",
+                                                                        os.path.join(_script_dir, "Scripts", "TestParsers"),
+                                                                        lambda fullpath, name, ext: ext == ".py" and name.endswith("TestParser"),
+                                                                      )
 
-    commands.extend(DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_EXTRACTORS",
-                                                                            os.path.join(_script_dir, "Scripts", "CodeCoverageExtractors"),
-                                                                            lambda fullpath, name, ext: ext == ".py" and name.endswith("CodeCoverageExtractor"),
-                                                                          ))
+    commands += DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_EXTRACTORS",
+                                                                        os.path.join(_script_dir, "Scripts", "CodeCoverageExtractors"),
+                                                                        lambda fullpath, name, ext: ext == ".py" and name.endswith("CodeCoverageExtractor"),
+                                                                      )
 
-    commands.extend(DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_VALIDATORS",
-                                                                            os.path.join(_script_dir, "Scripts", "CodeCoverageValidators"),
-                                                                            lambda fullpath, name, ext: ext == ".py" and name.endswith("CodeCoverageValidator"),
-                                                                          ))
+    commands += DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_VALIDATORS",
+                                                                        os.path.join(_script_dir, "Scripts", "CodeCoverageValidators"),
+                                                                        lambda fullpath, name, ext: ext == ".py" and name.endswith("CodeCoverageValidator"),
+                                                                      )
 
-    commands.append(Shell.AugmentSet( "DEVELOPMENT_ENVIRONMENT_TESTER_CONFIGURATIONS",
-                                      [ "python-compiler-PyLint",
-                                        "python-test_parser-Python",
-                                        "python-code_coverage_extractor-Python",
-                                      ],
-                                    ))
-
+    commands += DelayExecute(_DelayExecute)
+    
     return commands
 
 # ---------------------------------------------------------------------------
@@ -119,3 +114,15 @@ def CustomScriptExtractors(environment):
              ".ps1" : PowershellScriptWrapper,
              environment.ScriptExtension : EnvironmentScriptWrapper,
            }
+
+# ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+def _DelayExecute():
+    return [ Shell.AugmentSet( "DEVELOPMENT_ENVIRONMENT_TESTER_CONFIGURATIONS",
+                               [ "python-compiler-PyLint",
+                                 "python-test_parser-Python",
+                                 "python-code_coverage_extractor-Python",
+                               ],
+                             ),
+           ]

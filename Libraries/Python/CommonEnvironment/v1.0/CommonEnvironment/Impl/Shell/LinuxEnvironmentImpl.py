@@ -185,6 +185,11 @@ class LinuxEnvironmentImpl(Environment):
     def _GenerateRemoveFileCommand(filename):
         return 'rm "{}"'.format(filename)
     
+    # ----------------------------------------------------------------------
+    @staticmethod
+    def _GenerateRemoveDirectoryCommand(directory):
+        return 'rm -rf "{}"'.format(filename)
+
     # ---------------------------------------------------------------------------
     @staticmethod
     def _GenerateCopyFileCommand(source, dest):

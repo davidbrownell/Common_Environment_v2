@@ -17,6 +17,7 @@
 import os
 import sys
 
+from CommonEnvironment.Interface import abstractproperty, extensionmethod
 from CommonEnvironment import Package
 
 CompilerMod = Package.ImportInit()
@@ -54,6 +55,12 @@ class Compiler(CompilerMod.Base):
                             status_stream=status_stream,
                             verbose_stream=verbose_stream,
                           )
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @extensionmethod
+    def RemoveTemporaryArtifacts(context):
+        pass
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
