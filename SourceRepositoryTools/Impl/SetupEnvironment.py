@@ -83,7 +83,7 @@ def EntryPoint( output_filename_or_stdout,
 
                 # ---------------------------------------------------------------------------
                 def OnCustomizedPathError(path, error_string):
-                    commands.append(Shell.Message("WARNING: {}".format(s)))
+                    commands.append(Shell.Message("WARNING: {}".format(error_string)))
                     return path
 
                 # ---------------------------------------------------------------------------

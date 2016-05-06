@@ -126,3 +126,21 @@ def PythonToJavaScript(regex_string):
         regex_string = expr.sub(sub, regex_string)
 
     return regex_string
+
+# ----------------------------------------------------------------------
+def WildcardSearchToRegularExpression( value,
+                                       as_string=False,
+                                     ):
+    value = re.escape(value)
+
+    for source, dest in [ ( r"\*", ".*" ),
+                          ( r"\?", "." ),
+                        ]:
+        value = value.replace(source, dest)
+
+    value = "^{}$".format(value)
+
+    if as_string:
+        return value
+
+    return re.compile(value)
