@@ -187,8 +187,9 @@ def Test( test_items,
                 results.compiler_binary = result.complete_results.Item
             else:
                 results.compile_binary = os.path.join(output_dir, "test")
-                if compiler.IsCompiler and compiler.BinaryExtension:
-                    results.compile_binary += compiler.BinaryExtension
+                ext = getattr(compiler, "BinaryExtension", None)
+                if ext:
+                    results.compile_binary += ext
 
             results.compile_log = os.path.join(output_dir, "compile.txt")
 
