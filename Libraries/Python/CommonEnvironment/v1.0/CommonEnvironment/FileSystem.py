@@ -151,7 +151,7 @@ def EnumSubdirs( root,
     assert os.path.isdir(root), root
 
     if names and fullpaths:
-        Decorator = lambda name, fullpath: name, fullpath
+        Decorator = lambda name, fullpath: (name, fullpath)
     elif names:
         Decorator = lambda name, fullpath: name
     elif fullpaths:
