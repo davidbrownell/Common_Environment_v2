@@ -81,7 +81,7 @@ def EntryPoint( code_dir,
 
         # ----------------------------------------------------------------------
         def GetDoxygenValue(tag, content):
-            match = re.search( r"{}\s*=\s*(?P<value>.*)\r?\n".format(re.escape(tag)),
+            match = re.search( r"{}[ \t]*=[ \t]*(?P<value>.*?)\r?\n".format(re.escape(tag)),
                                content,
                                re.IGNORECASE,
                              )

@@ -590,7 +590,6 @@ class _Client(object):
                             this_host_name = line[len("Host:"):].strip()
                             break
 
-                    assert this_host_name, output
                     return this_host_name == host_name
 
                 # ---------------------------------------------------------------------------
