@@ -122,7 +122,7 @@ def EntryPoint( repo_name,
                             if f.file_size:
                                 progress.update(f.file_size)
                         except:
-                            output_stream.write("WARNING: Unable to extract '{}'.\n".format(zf.filename))
+                            output_stream.write("WARNING: Unable to extract '{}'.\n".format(f.filename))
 
             # Write the unique_id (if necessary)
             if unique_id:
