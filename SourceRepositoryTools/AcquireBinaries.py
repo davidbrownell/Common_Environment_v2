@@ -116,10 +116,13 @@ def EntryPoint( repo_name,
                                 leave=True,
                               ) as progress:
                     for f in zf.infolist():
-                        zf.extract(f, output_dir)
+                        try:
+                            zf.extract(f, output_dir)
 
-                        if f.file_size:
-                            progress.update(f.file_size)
+                            if f.file_size:
+                                progress.update(f.file_size)
+                        except:
+                            output_stream.write("WARNING: Unable to extract '{}'.\n".format(zf.filename))
 
             # Write the unique_id (if necessary)
             if unique_id:
