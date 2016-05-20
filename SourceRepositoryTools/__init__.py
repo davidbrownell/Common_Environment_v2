@@ -83,6 +83,7 @@ from . import Impl
 
 # The following items are logically part of this global interface, but defined
 # within Impl to support better encapsulation.
+from .Impl.ActivateEnvironment import IsToolRepository
 from .Impl.ActivateEnvironment import LoadOriginalEnvironment
 from .Impl.ActivateEnvironment import LoadRepoData
 
@@ -350,13 +351,18 @@ def GetCustomizedPath(path, environment=None):
 
 # ---------------------------------------------------------------------------
 def DelayExecute(method, *args, **kwargs):
+    """\
+    Delay executes a method within a python file. See DelayExecuteWithPython
+    for more information.
+    """
+
     return DelayExecuteWithPython(os.getenv("PYTHON_BINARY"), method, *args, **kwargs)
     
 # ---------------------------------------------------------------------------
 def DelayExecuteWithPython(python_binary, method, *args, **kwargs):
     """\
     The vast majority of activation activities can be created at script generation time.
-    But, there are some action that must be run at execution time, as they rely on information
+    But, there are some actions that must be run at execution time, as they rely on information
     or state changes output by the statements that run immediately before them.
 
     For example, an action may rely on an environment variable being created; this environment

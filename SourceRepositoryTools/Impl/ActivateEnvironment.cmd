@@ -79,6 +79,7 @@ if "%1" == "ListConfigurations" (
 REM Indicate if this is a tool repository if requested
 if "%1" == "IsToolRepository" (
     %PYTHON_BINARY% "%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\SourceRepositoryTools\Impl\ActivateEnvironment.py" IsToolRepository %~dp0
+    goto reset_and_end
 )
 
 REM If we are working with a repository that requires a configuration name, extract the value. If

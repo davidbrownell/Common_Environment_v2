@@ -368,7 +368,7 @@ def _SetupBootstrap( environment,
            configurations.values()[0].VersionSpecs.Libraries
          )
        ):
-        raise Exception("A tool repository cannot have any dependencies or version specs")
+        raise Exception("A tool repository cannot have any configurations, dependencies, or version specs")
 
     # Calculate all of the repositories that we need to find
     fundamental_name, fundamental_guid = Impl.GetRepositoryUniqueId(SourceRepositoryTools.DE_FUNDAMENTAL)

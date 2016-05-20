@@ -156,17 +156,19 @@ def Activate( output_filename_or_stdout,
         if is_tool_repository:
             this_dependency_info = Impl.TraverseDependencies(repository_root, configuration)
             
-            assert len(this_dependency_info.prioritized_repositories) == 1
             assert not this_dependency_info.version_specs.Tools
             assert not this_dependency_info.version_specs.Libraries
+            
+            assert len(this_dependency_info.prioritized_repositories) == 1
+            tool_repository = this_dependency_info.prioritized_repositories[0]
 
-            # Check to see if this tool has already been activated
-            if any(r.id == this_dependency_info.prioritized_repositories[0].id for r in dependency_info.prioritized_repositories):
-                assert this_dependency_info.prioritized_repositories[0].is_tool_repository == False
-                this_dependency_info.prioritized_repositories[0].is_tool_repository = True
+            # Activate the repository if it hasn't been activated already
+            if not any(r.id == tool_repository.id for r in dependency_info.prioritized_repositories):
+                assert tool_repository.is_tool_repository == False
+                tool_repository.is_tool_repository = True
 
-                dependency_info.prioritized_repositories += this_dependency_info.prioritized_repositories 
-
+                dependency_info.prioritized_repositories.append(tool_repository)
+                
         # Create the methods to invoke
         methods = [ _ActivateRepoData,
                     _ActivateNames,
@@ -259,7 +261,6 @@ def IsToolRepository(repository_root):
     result = repo_info.is_tool_repository
 
     sys.stdout.write("{}\n".format(result))
-    return 0 if result else 0
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
