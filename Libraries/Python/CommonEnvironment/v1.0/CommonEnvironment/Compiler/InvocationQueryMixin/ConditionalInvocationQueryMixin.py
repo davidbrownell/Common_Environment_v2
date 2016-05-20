@@ -221,7 +221,7 @@ class ConditionalInvocationQueryMixin(InvocationQueryMixin):
                     pass
 
             if not prev_context:
-                verbose_stream.write("WARNING: Context information associated with the previous compilation was corrupt; continuing as if context is not available.\n")
+                verbose_stream.write("WARNING: Context information associated with the previous compilation is corrupt; continuing as if context is not available.\n")
 
         # We don't want force to be persisted
         force = context.force
