@@ -638,6 +638,7 @@ def CommandLineInvoke( compiler,
                        inputs,
                        output_stream,
                        verbose, 
+                       output_via_stderr=False,
                        **compiler_kwargs
                      ):
     # ---------------------------------------------------------------------------
@@ -661,6 +662,7 @@ def CommandLineInvoke( compiler,
                              output_stream,
                              verbose,
                              compiler_kwargs,
+                             output_via_stderr=output_via_stderr,
                            )
     
 # ---------------------------------------------------------------------------
@@ -723,6 +725,7 @@ def _CommandLineImpl( compiler,
                       output_stream,
                       verbose,
                       compiler_kwargs,
+                      output_via_stderr=False,
                     ):
     assert compiler
     assert inputs
@@ -765,7 +768,7 @@ def _CommandLineImpl( compiler,
             output_stream.flush()
 
             result, output = functor(context, output_stream, verbose_stream)
-
+            
             stream_info.result = stream_info.result or result
 
             # Print the output
@@ -796,8 +799,11 @@ def _CommandLineImpl( compiler,
             if result != 0:
                 output_stream.write(output)
                 output_stream.flush()
+            elif output_via_stderr:
+                sys.stderr.write(output)
+                sys.stderr.flush()
             else:
                 verbose_stream.write(output)
                 verbose_stream.flush()
-        
+            
     return stream_info.result

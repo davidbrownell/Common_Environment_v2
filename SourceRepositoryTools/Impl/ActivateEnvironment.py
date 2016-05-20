@@ -161,12 +161,12 @@ def Activate( output_filename_or_stdout,
             assert not this_dependency_info.version_specs.Libraries
 
             # Check to see if this tool has already been activated
-            if any(r.id == this_dependency_info.prioritized_repositories[0].id for r in dependency_info.prioritized_repositories):
+            if not any(r.id == this_dependency_info.prioritized_repositories[0].id for r in dependency_info.prioritized_repositories):
                 assert this_dependency_info.prioritized_repositories[0].is_tool_repository == False
                 this_dependency_info.prioritized_repositories[0].is_tool_repository = True
 
                 dependency_info.prioritized_repositories += this_dependency_info.prioritized_repositories 
-
+                
         # Create the methods to invoke
         methods = [ _ActivateRepoData,
                     _ActivateNames,
