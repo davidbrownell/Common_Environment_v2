@@ -64,4 +64,7 @@ class TestParser(Interface):
             if hasattr(context, potential_attribute):
                 return getattr(context, potential_attribute)
 
+        if hasattr(context, "input_filenames"):
+            return context.input_filenames[0]
+
         assert False, "Unknown input"
