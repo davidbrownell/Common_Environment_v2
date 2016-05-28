@@ -865,13 +865,15 @@ def MatchTests( input_dir,
         output_stream.write("Tests can only be matched for compilers that operate on individual files.\n")
         return 0
 
+    traverse_exclude_dir_names = [ "Generated", "Impl", "Details", ]
+
     output_stream.write("Parsing '{}'...".format(input_dir))
     with StreamDecorator(output_stream).DoneManager(done_suffix='\n') as dm:
         source_files = list(FileSystem.WalkFiles( input_dir,
                                                   include_dir_paths=[ lambda fullpath: os.path.isdir(os.path.join(fullpath, test_type)), ],
                                                   include_full_paths=[ compiler.IsSupported, ],
                                                   exclude_file_names=[ "Build.py", ],
-                                                  traverse_exclude_dir_names=[ "Generated", "Impl", ],
+                                                  traverse_exclude_dir_names=traverse_exclude_dir_names,
                                                 ))
 
         test_items = ExtractTestItems( input_dir,
@@ -880,6 +882,23 @@ def MatchTests( input_dir,
                                        dm.stream if verbose else None,
                                      )
 
+        # Remove any test items that correspond to sources that were explicitly removed.
+        # We want to run these tests, but don't want to report them as an error.
+
+        # ----------------------------------------------------------------------
+        def IsMissingTest(filename):
+            parts = filename.split(os.path.sep)
+
+            for part in parts:
+                if part in traverse_exclude_dir_names:
+                    return False
+
+            return True
+
+        # ----------------------------------------------------------------------
+        
+        test_items = [ test_item for test_item in test_items if IsMissingTest(test_item) ]
+        
     output_stream.write(textwrap.dedent(
         """\
         Source Files:   {}
