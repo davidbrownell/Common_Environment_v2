@@ -271,6 +271,15 @@ def Normalize(path):
     drive, suffix = os.path.splitdrive(os.path.normpath(path))
     return "{}{}".format(drive.upper(), suffix)
 
+# ----------------------------------------------------------------------
+def GetSizeDisplay(bytes, suffix='B'):
+    for unit in [ '', 'K', 'M', 'G', 'T', 'P', 'E', 'Z', ]:
+        if bytes < 1024.0:
+            return "%3.1f %s%s" % (bytes, unit, suffix)
+        bytes /= 1024.0
+
+    return "%.1f %s%s" % (num, 'Yi', suffix)
+
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
