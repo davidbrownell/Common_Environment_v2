@@ -272,13 +272,13 @@ def Normalize(path):
     return "{}{}".format(drive.upper(), suffix)
 
 # ----------------------------------------------------------------------
-def GetSizeDisplay(bytes, suffix='B'):
+def GetSizeDisplay(num_bytes, suffix='B'):
     for unit in [ '', 'K', 'M', 'G', 'T', 'P', 'E', 'Z', ]:
-        if bytes < 1024.0:
-            return "%3.1f %s%s" % (bytes, unit, suffix)
-        bytes /= 1024.0
+        if num_bytes < 1024.0:
+            return "%3.1f %s%s" % (num_bytes, unit, suffix)
+        num_bytes /= 1024.0
 
-    return "%.1f %s%s" % (num, 'Yi', suffix)
+    return "%.1f %s%s" % (num_bytes, 'Yi', suffix)
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
