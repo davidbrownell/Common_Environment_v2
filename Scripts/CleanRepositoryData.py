@@ -83,6 +83,7 @@ def EntryPoint( delete_days=7,
                                               type_=type_,
                                               filename=filename,
                                               age=age,
+                                              size=os.stat(filename)[stat.ST_SIZE],
                                             ))
     
     output_stream.write('\n')
@@ -106,23 +107,29 @@ def EntryPoint( delete_days=7,
         return 0
 
     if not no_prompt:
+        total_size = 0
+        for fi in file_info:
+            total_size += fi.size
+
         output_stream.write(textwrap.dedent(
             """\
             Would you like to delete the following '{num}' files:
 
-                Name                        Type                Age (days)  Fullpath
-                --------------------------  ------------------  ----------  -----------------------------------------------
+                Name                        Type                Size     Age (days)  Fullpath
+                --------------------------  ------------------  -------  ----------  -----------------------------------------------
             {files}
 
-            ? [y/N] """).format( num=len(file_info),
-                                 files='\n'.join([ "    {name:<26}  {type:18}  {age:<11}  {fullpath}".format( name=fi.name,
-                                                                                                              type=fi.type_,
-                                                                                                              age=fi.age,
-                                                                                                              fullpath=fi.filename,
-                                                                                                            )
-                                                   for fi in file_info
-                                                 ]),
-                               ))
+            ? ({total_size}) [y/N] """).format( num=len(file_info),
+                                                files='\n'.join([ "    {name:<26}  {type:18}  {size:<7}  {age:<11}  {fullpath}".format( name=fi.name,
+                                                                                                                                        type=fi.type_,
+                                                                                                                                        size=fi.size,
+                                                                                                                                        age=fi.age,
+                                                                                                                                        fullpath=fi.filename,
+                                                                                                                                      )
+                                                                  for fi in file_info
+                                                                ]),
+                                                total_size=FileSystem.GetSizeDisplay(total_size),
+                                              ))
         value = raw_input().strip()
         if not value:
             value = 'N'
