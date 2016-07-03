@@ -63,7 +63,7 @@ class AnyOfTypeInfo(TypeInfo):
     # ---------------------------------------------------------------------------
     def ExpectedType(self, item):
         for eti in self.ElementTypeInfos:
-            if callable(eti.ExpectedType):
+            if eti.ExpectedTypeIsCallable:
                 if eti.ExpectedType(item):
                     return True
             else:
@@ -76,11 +76,17 @@ class AnyOfTypeInfo(TypeInfo):
         return item
         
     # ---------------------------------------------------------------------------
-    def _ValidateItemNoThrowImpl(self, item):
+    def _ValidateItemNoThrowImpl(self, item, *args, **kwargs):
+        error_results = []
+
         for eti in self.ElementTypeInfos:
-            result = eti.ValidateItemNoThrow(item)
+            result = eti.ValidateItemNoThrow(item, *args, **kwargs)
             if result == None:
                 return
 
-        return "'{}' could not be validated".format(item)
+            error_results.append("{}: {}".format(eti.__class__.__name__, result))
+
+        return "'{}' could not be validated:\n{}".format( item,
+                                                          '\n'.join([ "  {}".format(error_result) for error_result in error_results ]),
+                                                        )
                          
