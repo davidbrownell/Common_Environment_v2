@@ -50,6 +50,9 @@ class Arity(object):
         if value == '+':
             return cls(1, None)
 
+        if value == '1':
+            return cls(1, 1)
+
         if value.startswith('{') and value.endswith('}'):
             values = [ int(v.strip()) for v in value[1:-1].split(',') ]
 
@@ -199,19 +202,19 @@ class TypeInfo(Interface):
         return self.ValidateArityCountNoThrow(len(value) if isinstance(value, list) else 1 if value != None else 0)
 
     # ---------------------------------------------------------------------------
-    def ValidateArityCountNoThrow(self, value):
+    def ValidateArityCountNoThrow(self, count):
         if not self.Arity.IsCollection:
-            if (value == None and not self.Arity.IsOptional) or value > 1:
+            if (count == 0 and not self.Arity.IsOptional) or count > 1:
                 return "1 item was expected"
 
             return
 
-        if self.Arity.Min != None and value < self.Arity.Min:
+        if self.Arity.Min != None and count < self.Arity.Min:
             return "At least {} {} expected".format( Plural.no("item", self.Arity.Min),
                                                      Plural.plural_verb("was", self.Arity.Min),
                                                    )
 
-        if self.Arity.Max != None and value > self.Arity.Max:
+        if self.Arity.Max != None and count > self.Arity.Max:
             return "At most {} {} expected".format( Plural.no("item", self.Arity.Max),
                                                     Plural.plural_verb("was", self.Arity.Max),
                                                   )
