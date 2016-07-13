@@ -77,7 +77,9 @@ class FunctionConstraint(object):
                         missing.append(arg)
                     else:
                         default_value = arg_defaults[index - first_optional_arg_index]
-                        these_kwargs = {}
+                        
+                        these_kwargs = { "arity" : '?',
+                                       }
 
                         if isinstance(default_value, str) and default_value == '':
                             these_kwargs["min_length"] = 0

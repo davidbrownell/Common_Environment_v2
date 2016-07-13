@@ -656,9 +656,9 @@ class Executor(object):
 
             # In theory, this will never trigger because we are ensuring arity through argument
             # positionality. However, better safe than sorry.
-            result = param.type_info.ValidateArityNoThrow(argument_values.get(param.name, many_default_value if param.display_arity in [ '*', '+', ] else None))
+            result = param.type_info.ValidateArityNoThrow(argument_values.get(param.name, many_default_value if param.display_arity in [ '*', '+', ] else 0))
             if result != None:
-                return "'{}' is not in a valid state - {}".format(param.name, result)
+                return "'{}' is not in a valid state - {} [unexpected]".format(param.name, result)
 
         return argument_values
     
