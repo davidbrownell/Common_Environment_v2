@@ -149,17 +149,25 @@ class FundamentalTypeInfo(TypeInfo):
         # ---------------------------------------------------------------------------
         class NoneType(object): pass
 
-        def GetString():
-            for index, regex in enumerate(self._regexes[self.__class__]):
-                match = regex.match(item)
-                if match:
-                    return string_module.FromString(self, item, match, index)
-            
+        def ExtractValue():
+            # Don't attempt to convert from a string if the item is already the expected type. Note
+            # that we have to ignore string types, as they may have a regex that needs application.
+            if not self.ExpectedTypeIsCallable and isinstance(item, self.ExpectedType) and self.ExpectedType != str:
+                return item
+
+            try:
+                for index, regex in enumerate(self._regexes[self.__class__]):
+                    match = regex.match(item)
+                    if match:
+                        return string_module.FromString(self, item, match, index)
+            except:
+                pass
+
             return NoneType
 
         # ---------------------------------------------------------------------------
         
-        result = GetString()
+        result = ExtractValue()
         if result == NoneType:
             error = "'{}' is not a valid '{}': {}" \
                         .format( item,

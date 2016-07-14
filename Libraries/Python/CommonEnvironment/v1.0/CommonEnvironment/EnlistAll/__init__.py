@@ -487,7 +487,7 @@ def _DefineDynamicFunction( func_name,
     ApplyArgs(prefix_args)
 
     for k, v in config_params.iteritems():
-        constraint_params[k] = CommandLine.StringTypeInfo()
+        constraint_params[k] = CommandLine.StringTypeInfo(arity='?')
         params[k] = '"{}"'.format(v)
 
     ApplyArgs(suffix_args)

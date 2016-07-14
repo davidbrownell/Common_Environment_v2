@@ -355,6 +355,31 @@ class Interface(object):
 # |  Decorators
 # |
 # ---------------------------------------------------------------------------
+def extensionmethod(func):
+    """\
+    Decorator that indicates the method is a method that can be extended by
+    a derived class to override functionality (in other words, it is an "extension
+    point"). Note that the class associated with the method must be based
+    on interface for this construct to work properly.
+
+    To view all extensions of an Interface-based type:
+
+        print '\n'.join(MyClass.ExtensionMethods)
+
+    """
+
+    if isinstance(func, (staticmethod, classmethod)):
+        actual_func = func.__func__
+    elif callable(func):
+        actual_func = func
+    else:
+        assert False, type(func)
+
+    setattr(actual_func, "__extension_method", True)
+    
+    return func
+
+# ----------------------------------------------------------------------
 def staticderived(cls):
     """\
     Decorator designed to be used by concrete classes that only implement static
@@ -519,28 +544,3 @@ def immutable(class_obj):
 def clsinit(class_obj):
     class_obj.__clsinit__()
     return class_obj
-
-# ----------------------------------------------------------------------
-def extensionmethod(func):
-    """\
-    Decorator that indicates the method is a method that can be extended by
-    a derived class to override functionality (in other words, it is an "extension
-    point"). Note that the class associated with the method must be based
-    on interface for this construct to work properly.
-
-    To view all extensions of an Interface-based type:
-
-        print '\n'.join(MyClass.ExtensionMethods)
-
-    """
-
-    if isinstance(func, (staticmethod, classmethod)):
-        actual_func = func.__func__
-    elif callable(func):
-        actual_func = func
-    else:
-        assert False, type(func)
-
-    setattr(actual_func, "__extension_method", True)
-    
-    return func
