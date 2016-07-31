@@ -437,7 +437,7 @@ def ExtractTestItems( input_dir,
 
     verbose_stream = StreamDecorator(verbose_stream, prefix='\n', line_prefix='  ')
 
-    traverse_exclude_dir_names = [ lambda d: d.lower().endswith("impl"), "Generated", ]
+    traverse_exclude_dir_names = [ "Generated", ]
 
     test_items = []
 

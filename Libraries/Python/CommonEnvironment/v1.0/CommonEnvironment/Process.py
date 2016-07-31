@@ -29,7 +29,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 
 # ----------------------------------------------------------------------
 def Execute( command_line,
-             optional_output_stream_or_functor,
+             optional_output_stream_or_functor=None,
              convert_newlines=True,
              environment=None,
            ):
