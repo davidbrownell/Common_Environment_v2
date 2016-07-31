@@ -20,7 +20,7 @@ import sys
 
 from CommonEnvironment.Interface import *
 
-from .. import TypeInfo
+from .. import TypeInfo, ValidationException
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -174,7 +174,7 @@ class FundamentalTypeInfo(TypeInfo):
                                  self._GetExpectedTypeString(),
                                  self.ConstraintsDesc or ', '.join([ "'{}'".format(regex) for regex in string_module.GetItemRegularExpressionStrings(self) ]),
                                )
-            raise Exception(error)
+            raise ValidationException(error)
 
         item = result
         self.ValidateItem(item)
