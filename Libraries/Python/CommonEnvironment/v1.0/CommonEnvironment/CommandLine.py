@@ -296,8 +296,8 @@ class Executor(object):
         self._keyword_regex                             = re.compile(r"^{prefix}(?P<tag>\S+?)(?:\s*{separator}\s*(?P<value>.+)\s*)?$".format( prefix=re.escape(self.CommandLineArgPrefix),
                                                                                                                                               separator=re.escape(self.CommandLineKeywordSeparator),
                                                                                                                                             ))
-        self._dict_regex                                = re.compile(r"^(?P<tag>\S+)\s*{sep}\s*(?P<value>.+)$".format( sep=re.escape(self.CommandLineDictTagValueSeparator),
-                                                                                                                     ))
+        self._dict_regex                                = re.compile(r"^(?P<tag>\S+?)\s*{sep}\s*(?P<value>.+)$".format( sep=re.escape(self.CommandLineDictTagValueSeparator),
+                                                                                                                      ))
 
     # ---------------------------------------------------------------------------
     # <Too many return statements> pylint: disable = R0911
