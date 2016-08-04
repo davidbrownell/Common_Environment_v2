@@ -145,14 +145,20 @@ class TypeInfo(Interface):
     # ---------------------------------------------------------------------------
     # |  Public Methods
     def __init__( self, 
-                  arity=None,               # default is Arity(1, 1)
-                  validation_func=None,     # def Func(value) -> string on error
+                  arity=None,                           # default is Arity(1, 1)
+                  validation_func=None,                 # def Func(value) -> string on error
+                  collection_validation_func=None,      # def Func(values) -> string on error
                 ):
         if isinstance(arity, (str, unicode)):
             arity = Arity.FromString(arity)
 
         self.Arity                          = arity or Arity(1, 1)
         self.ValidationFunc                 = validation_func
+
+        if collection_validation_func and not self.Arity.IsCollection:
+            raise Exception("'collection_validation_func' should only be used for types that are collections")
+
+        self.CollectionValidationFunc       = collection_validation_func
 
     # ---------------------------------------------------------------------------
     def Validate(self, value, **custom_args):
@@ -189,6 +195,12 @@ class TypeInfo(Interface):
         elif value == None:
             value = []
 
+        if self.CollectionValidationFunc:
+            assert isinstance(value, list), type(value)
+            result = self.CollectionValidationFunc(value)
+            if result != None:
+                return result
+
         for item in value:
             result = self.ValidateItemNoThrow(item, **custom_args)
             if result != None:
@@ -197,7 +209,7 @@ class TypeInfo(Interface):
     # ---------------------------------------------------------------------------
     def ValidateArityNoThrow(self, value):
         if not self.Arity.IsCollection and isinstance(value, list):
-            return "1 item was expected"
+            return "Only 1 item was expected"
 
         return self.ValidateArityCountNoThrow(len(value) if isinstance(value, list) else 1 if value != None else 0)
 
@@ -267,6 +279,9 @@ class TypeInfo(Interface):
     # |  Protected Properties
     @property
     def _PythonDefinitionStringContents(self):
+        assert not self.ValidationFunc
+        assert not self.CollectionValidationFunc
+
         return "arity={}".format(self.Arity.PythonDefinitionString)
     
     # ---------------------------------------------------------------------------
