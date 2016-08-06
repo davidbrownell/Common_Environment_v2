@@ -195,6 +195,7 @@ def Activate( output_filename_or_stdout,
                  "version_specs" : dependency_info.version_specs,
                  "generated_dir" : generated_dir,
                  "debug" : debug,
+                 "is_tool_repository" : is_tool_repository,
                }
 
         commands = []
@@ -394,7 +395,11 @@ def _ActivateCustom(**kwargs):
     return commands
 
 # ---------------------------------------------------------------------------
-def _ActivatePrompt(repositories, configuration):
+def _ActivatePrompt(repositories, configuration, is_tool_repository):
+    if is_tool_repository and os.getenv(SourceRepositoryTools.DE_REPO_CONFIGURATION_NAME):
+        assert configuration == None, configuration
+        configuration = os.getenv(SourceRepositoryTools.DE_REPO_CONFIGURATION_NAME)
+    
     tool_names = []
 
     index = -1
