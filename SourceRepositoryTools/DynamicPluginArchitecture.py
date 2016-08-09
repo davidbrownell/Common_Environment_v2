@@ -93,7 +93,7 @@ def CreateRegistrationStatements( environment_beacon_name,
             filenames.append(fullpath)
 
     if not filenames:
-        return
+        return []
 
     # We are writing names to a file rather than the environment, as the environment
     # only has a limited amount of space.
