@@ -58,6 +58,11 @@ class FundamentalTypeInfo(TypeInfo):
 
     @abstractproperty
     def PythonItemRegularExpressionInfo(self):
+        """\
+        regex string or tuple of (regex string, regex flags) for each
+        regular expression that can be used to extract the type from an
+        input string.
+        """
         raise Exception("Abstract Property")
     
     # ---------------------------------------------------------------------------

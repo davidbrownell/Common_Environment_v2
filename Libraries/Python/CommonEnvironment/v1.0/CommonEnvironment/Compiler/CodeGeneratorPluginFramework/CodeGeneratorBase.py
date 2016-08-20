@@ -205,7 +205,7 @@ def CodeGeneratorFactory( plugin_info_map,
 
             # Ensure that all plugin settings are present and that they
             # are the expected type.
-            custom_settings = { k : v for k. v in plugin.GenerateCustomSettingsAndDefaults() }
+            custom_settings = { k : v for k, v in plugin.GenerateCustomSettingsAndDefaults() }
 
             for k, v in context.plugin_settings.iteritems():
                 if k not in custom_settings:
@@ -262,41 +262,81 @@ def CodeGeneratorFactory( plugin_info_map,
 # ----------------------------------------------------------------------
 def GenerateFactory( plugin_info_map,
                      code_generator,
+                     additional_args=None,      # dict { k : name, v : TypeInfo }
+                     default_arg_values=None    # dict { k : name, v : value }
                    ):
-    # ----------------------------------------------------------------------
-    @CommandLine.EntryPoint()
-    @CommandLine.FunctionConstraint( plugin=CommandLine.EnumTypeInfo(plugin_info_map.keys()),
-                                     output_name=CommandLine.StringTypeInfo(),
-                                     output_dir=CommandLine.DirectoryTypeInfo(ensure_exists=False),
-                                     input=CommandLine.FilenameTypeInfo(CommandLine.FilenameTypeInfo.Type_Either, arity='+'),
-                                     plugin_arg=CommandLine.DictTypeInfo(require_exact_match=False),
-                                     output_stream=None,
-                                   )
-    def Generate( plugin,
-                  output_name,
-                  output_dir,
-                  input,
-                  plugin_arg={},
-                  force=False,
-                  output_stream=sys.stdout,
-                  verbose=False,
-                ):
-        return CodeGeneratorMod.CommandLineGenerate( code_generator,
-                                                     input,
-                                                     output_stream,
-                                                     verbose,
+    additional_args = additional_args or {}
+    default_arg_values = default_arg_values or {}
 
-                                                     plugin_name=plugin,
-                                                     output_name=output_name,
-                                                     output_dir=output_dir,
+    # Dynamicly generate the Generate method due to the presence of optional params
+    positional_args = []
+    keyword_args = []
 
-                                                     plugin_settings=plugin_arg,
+    for k in additional_args.iterkeys():
+        if k not in default_arg_values:
+            positional_args.append(k)
+        else:
+            keyword_args.append(k)
 
-                                                     force=force,
-                                                   )
+    dynamic_content = textwrap.dedent(
+        """\
+        @CommandLine.EntryPoint()
+        @CommandLine.FunctionConstraints( plugin=CommandLine.EnumTypeInfo(plugin_info_map.keys()),
+                                          output_name=CommandLine.StringTypeInfo(),
+                                          output_dir=CommandLine.DirectoryTypeInfo(ensure_exists=False),
+                                          input=CommandLine.FilenameTypeInfo(CommandLine.FilenameTypeInfo.Type_Either, arity='+'),
+                                          plugin_arg=CommandLine.DictTypeInfo(require_exact_match=False),
+                                          output_stream=None,
+                                          {constraints}
+                                        )
+        def Generate( plugin,
+                      output_name,
+                      output_dir,
+                      input,
+                      {positional_params}plugin_arg={{}},
+                      force=False,
+                      output_stream=sys.stdout,
+                      verbose=False,{keyword_params}
+                    ):
+            return CodeGeneratorMod.CommandLineGenerate( code_generator,
+                                                         input,
+                                                         output_stream,
+                                                         verbose,
+                                                       
+                                                         plugin_name=plugin,
+                                                         output_name=output_name,
+                                                         output_dir=output_dir,
+                                                       
+                                                         plugin_settings=plugin_arg,
+                                                       
+                                                         force=force,
 
-    # ----------------------------------------------------------------------
-    
+                                                         {args}
+                                                       )
+        """).format( constraints=StreamDecorator.LeftJustify( '\n'.join([ "{}={},".format(k, v.PythonDefinitionString) for k, v in additional_args.iteritems() ]),
+                                                              len("@CommandLine.FunctionConstraints( "),
+                                                            ),
+                     positional_params='' if not positional_args else StreamDecorator.LeftJustify( "{}\n".format('\n'.join([ "{},".format(arg) for arg in positional_args ])),
+                                                                                                   len("def Generate( "),
+                                                                                                   add_suffix=True,
+                                                                                                 ),
+                     keyword_params='' if not keyword_args else StreamDecorator.LeftJustify( "\n{}".format('\n'.join([ "{}={},".format(arg, default_arg_values[arg]) for arg in keyword_args ])),
+                                                                                             len("def Generate( "),
+                                                                                           ),
+                     args='' if not additional_args else StreamDecorator.LeftJustify( '\n'.join([ "{0}={0},".format(arg) for arg in additional_args.iterkeys() ]),
+                                                                                      4 + len("return CodeGeneratorMod.CommandLineGenerate( "),
+                                                                                    ),
+                                                                                                   
+                   )
+
+    exec( dynamic_content, 
+          { "CodeGeneratorMod" : CodeGeneratorMod, 
+            "plugin_info_map" : plugin_info_map,
+            "code_generator" : code_generator,
+          }, 
+          globals(),
+        )
+
     return Generate
 
 # ----------------------------------------------------------------------
