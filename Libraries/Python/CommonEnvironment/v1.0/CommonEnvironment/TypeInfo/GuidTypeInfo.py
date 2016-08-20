@@ -34,10 +34,15 @@ class GuidTypeInfo(FundamentalTypeInfo):
 
     _d = { "char" : "[0-9A-Fa-f]", }
 
-    PythonItemRegularExpressionInfo         = [ r"\{%(char)s{8}-%(char)s{4}-%(char)s{4}-%(char)s{4}-%(char)s{12}\}" % _d,
-                                                r"%(char)s{8}-%(char)s{4}-%(char)s{4}-%(char)s{4}-%(char)s{12}" % _d,
-                                                r"\{%(char)s{32}\}" % _d,
-                                                r"%(char)s{32}" % _d,
+    CONCISE_REGEX                           = r"%(char)s{32}" % _d
+    CONCISE_REGEX_WITH_BRACES               = r"\{%s\}" % CONCISE_REGEX
+    VERBOSE_REGEX                           = r"%(char)s{8}-%(char)s{4}-%(char)s{4}-%(char)s{4}-%(char)s{12}" % _d
+    VERBOSE_REGEX_WITH_BRACES               = r"\{%s\}" % VERBOSE_REGEX
+
+    PythonItemRegularExpressionInfo         = [ VERBOSE_REGEX_WITH_BRACES,
+                                                VERBOSE_REGEX,
+                                                CONCISE_REGEX_WITH_BRACES,
+                                                CONCISE_REGEX,
                                               ]
 
     del _d
