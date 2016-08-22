@@ -74,7 +74,7 @@ class RepositoryInformation(object):
     def Load(cls, repository_root):
         environment = Shell.GetEnvironment()
 
-        filename = os.path.join(repository_root, SourceRepositoryTools.GENERATED_DIRECTORY_NAME, SourceRepositoryTools.GENERATED_BOOTSTRAP_FILENAME)
+        filename = os.path.join(repository_root, SourceRepositoryTools.GENERATED_DIRECTORY_NAME, environment.CategoryName, SourceRepositoryTools.GENERATED_BOOTSTRAP_FILENAME)
         if not os.path.isfile(filename):
             raise Exception("The filename '{}' does not exist; please run '{}' and try again.".format(filename, os.path.join(repository_root, "{}{}".format(SourceRepositoryTools.SETUP_ENVIRONMENT_NAME, environment.ScriptExtension))))
 
@@ -212,14 +212,17 @@ class RepositoryInformation(object):
             for dependency in configuration.Dependencies:
                 dependency.RepositoryRoot = FileSystem.GetRelativePath(repository_root, dependency.RepositoryRoot)
 
-        filename = os.path.join(generated_dir, SourceRepositoryTools.GENERATED_BOOTSTRAP_FILENAME)
-
-        open(filename, 'w').write(self._BOOTSTRAP_CONTENT_TEMPLATE.format( python_binary=python_binary,
-                                                                           fundamental_development_root=fundamental_development_root,
-                                                                           is_tool_repository="1" if self.IsToolRepository else "0",
-                                                                           is_configurable_repository="1" if self.IsConfigurable else "0",
-                                                                           configurations=pickle.dumps(configurations),
-                                                                         ))
+        filename = os.path.join(generated_dir, Shell.GetEnvironment().CategoryName, SourceRepositoryTools.GENERATED_BOOTSTRAP_FILENAME)
+        if not os.path.isdir(os.path.dirname(filename)):
+            os.makedirs(os.path.dirname(filename))
+            
+        with open(filename, 'w') as f:
+            f.write(self._BOOTSTRAP_CONTENT_TEMPLATE.format( python_binary=python_binary,
+                                                             fundamental_development_root=fundamental_development_root,
+                                                             is_tool_repository="1" if self.IsToolRepository else "0",
+                                                             is_configurable_repository="1" if self.IsConfigurable else "0",
+                                                             configurations=pickle.dumps(configurations),
+                                                           ))
 
     # ---------------------------------------------------------------------------
     # Note that this format is designed to be easily parsed by batch/script files;

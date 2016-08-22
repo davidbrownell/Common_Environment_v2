@@ -65,4 +65,6 @@ class UbuntuEnvironment(LinuxEnvironmentImpl):
     # ---------------------------------------------------------------------------
     @staticmethod
     def IsActive(platform_name):
-        return "ubuntu" in platform_name
+        return ( "ubuntu" in platform_name or                                       # Standard Linux
+                 (os.uname()[0].lower() == "linux" and "preempt" in platform_name)  # Bash on Windows
+               )

@@ -141,7 +141,7 @@ def Activate( output_filename_or_stdout,
                                  status=StreamDecorator.LeftJustify('\n'.join(status_lines), 4),
                                )), ]
 
-            generated_dir = os.path.join(repository_root, SourceRepositoryTools.GENERATED_DIRECTORY_NAME, configuration or "Default")
+            generated_dir = os.path.join(repository_root, SourceRepositoryTools.GENERATED_DIRECTORY_NAME, environment.CategoryName, configuration or "Default")
             
         else:
             dependency_info = LoadRepoData()
