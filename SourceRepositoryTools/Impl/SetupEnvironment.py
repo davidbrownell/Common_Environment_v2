@@ -561,7 +561,7 @@ def _SetupShortcuts(environment, repository_root, customization_mod, debug, opti
 
 # ---------------------------------------------------------------------------
 def _SetupGenerated(environment, repository_root, customization_mod, debug, optional_configuration_names):
-    generated_dir = os.path.join(repository_root, SourceRepositoryTools.GENERATED_DIRECTORY_NAME)
+    generated_dir = os.path.join(repository_root, SourceRepositoryTools.GENERATED_DIRECTORY_NAME, environment.CategoryName)
     assert os.path.isdir(generated_dir), generated_dir
     
     os.chmod(generated_dir, 0x777)
