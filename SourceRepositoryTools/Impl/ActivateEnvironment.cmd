@@ -36,12 +36,12 @@ if %ERRORLEVEL% NEQ 0 (
 
 REM Get the python executable and the fullpath to the source repository tools.
 REM This information is required to bootstrap the environment activation process.
-if not exist "%~dp0Generated\EnvironmentBootstrap.data" (
+if not exist "%~dp0Generated\Windows\EnvironmentBootstrap.data" (
     @echo.
     @echo ERROR: It appears that SetupEnvironment.cmd has not been run for this environment.
     @echo        Please run SetupEnvironment.cmd and run this script again.
     @echo. 
-    @echo        [%~dp0Generated\EnvironmentBootstrap.data was not found]
+    @echo        [%~dp0Generated\Windows\EnvironmentBootstrap.data was not found]
     @echo.
 
     goto end
@@ -50,7 +50,7 @@ if not exist "%~dp0Generated\EnvironmentBootstrap.data" (
 set _ACTIVATE_ENVIRONMENT_PREVIOUS_FUNDAMENTAL=%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%
 
 REM Parse the bootstrap info, extracting the python binary and fundamental root
-for /f "tokens=1,2 delims==" %%a in (%~dp0Generated\EnvironmentBootstrap.data) do (
+for /f "tokens=1,2 delims==" %%a in (%~dp0Generated\Windows\EnvironmentBootstrap.data) do (
     if "%%a"=="python_binary" set PYTHON_BINARY=%%~fb
     if "%%a"=="fundamental_development_root" set DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=%%~fb
     if "%%a"=="is_tool_repository" set _ACTIVATE_ENVIRONMENT_IS_TOOL_REPOSITORY=%%b
