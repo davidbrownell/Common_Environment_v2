@@ -83,13 +83,13 @@ fi
 
 # Get the python executable and the fullpath to the source repository tools.
 # This information is required to bootstrap the environment activation process.
-if [ ! -e `pwd`/Generated/EnvironmentBootstrap.data ]
+if [ ! -e `pwd`/Generated/Linux/EnvironmentBootstrap.data ]
 then
     echo
     echo "ERROR: It appears that SetupEnvironment.sh has not been run for this environment."
     echo "       Please run SetupEnvironment.sh and run this script again."
     echo
-    echo "       [`pwd`/Generated/EnvironmentBootstrap.data was not found]"
+    echo "       [`pwd`/Generated/Linux/EnvironmentBootstrap.data was not found]"
     echo
     
     should_continue=0
@@ -113,7 +113,7 @@ then
         then
             is_configurable_repository=${line#is_configurable_repository=}
         fi
-    done < "`pwd`/Generated/EnvironmentBootstrap.data"
+    done < "`pwd`/Generated/Linux/EnvironmentBootstrap.data"
 fi
 
 # Only allow one activated environment at a time (unless we are activating a tool repository).

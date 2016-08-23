@@ -30,6 +30,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 
 class WindowsEnvironment(Environment):
     Name                                    = "Windows"
+    CategoryName                            = "Windows"
     ScriptExtension                         = ".cmd"
     ExecutableExtension                     = ".exe"
     AllArgumentsScriptVariable              = "%*"

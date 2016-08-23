@@ -195,6 +195,15 @@ class Environment(Interface):
         raise Exception("Abstract property")
     
     @abstractproperty
+    def CategoryName(self):
+        """\
+        While Name is the specific name of the OS, CategoryName is the broad category.
+        
+        For example, with Ubuntu, Name is Ubuntu and CategoryName is Linux.
+        """
+        raise Exception("Abstract property")
+        
+    @abstractproperty
     def ScriptExtension(self):
         """\
         File extension used for scripts (eg ".cmd" or ".sh")
