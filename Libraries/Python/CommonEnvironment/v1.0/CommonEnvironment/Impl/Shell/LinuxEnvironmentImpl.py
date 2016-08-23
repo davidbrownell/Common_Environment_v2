@@ -26,6 +26,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ---------------------------------------------------------------------------
 
 class LinuxEnvironmentImpl(Environment):
+    CategoryName                            = "Linux"
     ScriptExtension                         = ".sh"
     ExecutableExtension                     = ""
     AllArgumentsScriptVariable              = '"$@"'
