@@ -444,7 +444,7 @@ def _SetupBootstrap( environment,
 
                 remaining_repos -= 1
                 if not remaining_repos:
-                    pass # BugBug break
+                    break
 
     if remaining_repos:
         unknown_repos = []
