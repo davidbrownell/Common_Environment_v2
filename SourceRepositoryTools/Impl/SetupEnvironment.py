@@ -213,122 +213,146 @@ def _SetupBootstrap( environment,
                      optional_configuration_names,
                      search_depth=5,
                    ):
-    # ---------------------------------------------------------------------------
+    search_depth = [ search_depth, ] # Make modifiable in internal methods
+
+    repository_root_dirname = os.path.dirname(repository_root)
+
+    # ----------------------------------------------------------------------
+    def FirstNonmatchingChar(s):
+        for index, c in enumerate(s):
+            if ( index == len(repository_root_dirname) or
+                 c != repository_root_dirname[index]
+               ):
+                return index
+
+        return -1
+
+    # ----------------------------------------------------------------------
     def EnumerateDirectories():
-        
-        # ---------------------------------------------------------------------------
-        def Impl(dir, fullpath_to_skip=None):
-            """\
-            Assumes that the repositories are siblings of each other. Searches begin in
-            sibling dirs, then move up in the directory tree if the values are not found.
-            """
-        
-            if environment.Name == "Windows":
-                # If this is the first time through the loop, ensure that the drive letter
-                # in the generated results is uppercase.
-                if fullpath_to_skip == None:
-                    drive, remainder = os.path.splitdrive(dir)
-                        
-                    if drive[-1] == ':':
-                        drive = drive[:-1]
+        search_depth[0] += repository_root.count(os.path.sep)
 
-                    dir = "{}:{}".format(drive.upper(), remainder)
+        search_items = []
+        searched_items = set()
 
-                # Don't count the slash that follows the drive name
-                search_depth_offset = -1
-                dir_comparison_decorator = lambda dir: dir.lower()
-            else:
-                search_depth_offset = 0
-                dir_comparison_decorator = lambda dir: dir
+        # ----------------------------------------------------------------------
+        def PushSearchItem(item):
+            item = os.path.realpath(os.path.normpath(item))
 
-            search_depth_offset -= repository_root.count(os.path.sep)
-    
-            # Perform a breadth-first search on the directories
-            priority_search_items = [ dir, ]
-            standard_search_items = []
-            
-            while priority_search_items or standard_search_items:
-                if priority_search_items:
-                    search_item = priority_search_items.pop(0)
-                else:
-                    search_item = standard_search_items.pop(0)
+            parts = item.split(os.path.sep)
+            if len(parts) > search_depth[0]:
+                return
 
-                assert os.path.isdir(search_item), search_item
+            parts_lower = [ part.lower() for part in parts ]
 
+            priority = 1
+            for bump_name in [ "code",
+                               "coding",
+                               "source",
+                               "development",
+                             ]:
+                if bump_name in parts_lower:
+                    priority = 0
+                    break
+
+            search_items.append(( priority, 
+                                  # Favor parents over other locations
+                                  -FirstNonmatchingChar(item),
+                                  len(parts), 
+                                  item.lower(), 
+                                  item,
+                                ))
+            search_items.sort()
+
+        # ----------------------------------------------------------------------
+        def PopSearchItem():
+            return search_items.pop(0)[-1]
+
+        # ----------------------------------------------------------------------
+        def Impl( skip_root,
+                  preprocess_item_func=None,     # def Func(item) -> item
+                ):
+            preprocess_item_func = preprocess_item_func or (lambda item: item)
+
+            while search_items:
+                search_item = PopSearchItem()
+                
+                # Don't process if the dir has already been searched
+                if search_item in searched_items:
+                    continue
+
+                searched_items.add(search_item)
+
+                # Don't process if the dir doesn't exist anymore (these searches can take awhile)
+                if not os.path.isdir(search_item):
+                    continue
+
+                # Don't process if the dir has been explicitly ignored
                 if os.path.exists(os.path.join(search_item, SourceRepositoryTools.IGNORE_DIRECTORY_AS_BOOTSTRAP_DEPENDENCY_SENTINEL_FILENAME)):
                     continue
 
-                if search_item.count(os.path.sep) + search_depth_offset >= search_depth:
-                    continue
-
                 yield search_item
-
-                # Add children to the list of items to search
+                
                 try:
-                    # Favor items with code-related keywords to help in the overall search perf
-                    for item in os.listdir(search_item):
-                        if dir_comparison_decorator(os.path.join(search_item, item)) == dir_comparison_decorator(fullpath_to_skip):
-                            continue
+                    # Add the parent to the queue
+                    potential_parent = os.path.dirname(search_item)
+                    if potential_parent != search_item:
+                        if not skip_root or os.path.dirname(potential_parent) != potential_parent:
+                            PushSearchItem(preprocess_item_func(potential_parent))
 
+                    # Add the children to the queue
+                    for item in os.listdir(search_item):
                         fullpath = os.path.join(search_item, item)
                         if not os.path.isdir(fullpath):
                             continue
 
                         if item.lower() in [ "generated",
                                              ".hg",
+                                             ".git",
                                            ]:
                             continue
 
-                        is_code_related = False
-
-                        fullpath_lower = fullpath.lower()
-
-                        for name in [ "code",
-                                      "coding",
-                                      "source",
-                                      "development",
-                                    ]:
-                            if name in fullpath_lower:
-                                is_code_related = True
-                                break
-
-                        (priority_search_items if is_code_related else standard_search_items).append(fullpath)
+                        PushSearchItem(preprocess_item_func(fullpath))
 
                 except:
                     # Most likely a permissions error raised when we attempted to
                     # access the dir. Unfortunately, there isn't a consistent exception
                     # type to catch across different operating systems.
                     pass        
-            
-            # Move up a directory
-            parent, name = os.path.split(dir)
-            if parent == dir:
-                return
 
-            for item in Impl(parent, dir):
+        # ----------------------------------------------------------------------
+        
+        PushSearchItem(repository_root)
+
+        if environment.Name == "Windows":
+            # Account for the slash immediately following the drive letter
+            assert search_depth[0]
+            search_depth[0] -= 1
+
+            # ----------------------------------------------------------------------
+            def ItemPreprocessor(item):
+                drive, remainder = os.path.splitdrive(item)
+                if drive[-1] == ':':
+                    drive = drive[:-1]
+
+                return "{}:{}".format(drive.upper(), remainder)
+
+            # ----------------------------------------------------------------------
+            
+            for item in Impl(True, ItemPreprocessor):
                 yield item
 
-        # ---------------------------------------------------------------------------
-        
-        # Get a list of items to include in the search
-        search_items = [ repository_root, ]
-
-        # Search for additional drives on Windows
-        if environment.Name == "Windows":
+            # If here, look at other drive locations
             import win32api
             import win32file
 
-            this_drive = os.path.splitdrive(repository_root)[0].upper()
-            assert not this_drive.endswith(os.path.sep)
-            this_drive += os.path.sep
+            for drive in [ drive for drive in win32api.GetLogicalDriveStrings().split('\000') if drive and win32file.GetDriveType(drive) == win32file.DRIVE_FIXED ]:
+                PushSearchItem(drive)
 
-            drives = [ drive.upper() for drive in win32api.GetLogicalDriveStrings().split("\000") if drive and win32file.GetDriveType(drive) == win32file.DRIVE_FIXED ]
-            drives.remove(this_drive)
+            for item in Impl(False, ItemPreprocessor):
+                yield item
 
-            search_items += drives
-
-        for search_item in search_items:
-            for item in Impl(search_item):
+        else:
+            for item in Impl(False):
                 yield item
 
     # ---------------------------------------------------------------------------
@@ -420,7 +444,7 @@ def _SetupBootstrap( environment,
 
                 remaining_repos -= 1
                 if not remaining_repos:
-                    break
+                    pass # BugBug break
 
     if remaining_repos:
         unknown_repos = []
@@ -451,7 +475,7 @@ def _SetupBootstrap( environment,
                      were="were" if len(id_lookup) > 1 else "was",
                      these="these" if len(id_lookup) > 1 else "this",
                      locations="locations" if len(id_lookup) > 1 else "location",
-                     value='\n'.join([ "  - {0:<60}  : {1}".format("{} ({})".format(lookup_info.name, repo_guid), lookup_info.repository_root) for repo_guid, lookup_info in id_lookup.iteritems() ]),
+                     value='\n'.join([ "  - {0:<70}  : {1}".format("{} ({})".format(lookup_info.name, repo_guid), lookup_info.repository_root) for repo_guid, lookup_info in id_lookup.iteritems() ]),
                    ))
 
     # Create enhanced information based on the info we have available
