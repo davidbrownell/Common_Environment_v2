@@ -85,6 +85,10 @@ class Arity(object):
         return self.Max == None or self.Max > 1
 
     @property
+    def IsOptionalCollection(self):
+        return self.Min == 0 and self.IsCollection
+
+    @property
     def IsFixedCollection(self):
         return self.Min == self.Max and self.Min != 1
 

@@ -20,14 +20,16 @@ import os
 import sys
 
 from CommonEnvironment.Interface import staticderived
-from CommonEnvironment import Package
+from CommonEnvironment import Package, ModifiableValue
 
-__package__ = Package.CreateName(__package__, __name__, __file__)           # <Redefining builtin> pylint: disable = W0622
+with Package.NameInfo(__package__) as ni:
+    __package__ = ni.created
+    
+    import SourceRepositoryTools
+    from .IActivationActivity import IActivationActivity
 
-from .IActivationActivity import IActivationActivity
-
-import SourceRepositoryTools
-
+    __package__ = ni.original
+    
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)

@@ -18,64 +18,41 @@ import os
 import re
 import sys
 
+from contextlib import contextmanager
+
 from CommonEnvironment.Interface import *
 
 from .. import TypeInfo, ValidationException
-
+            
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ---------------------------------------------------------------------------
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
+# |  
+# |  Public Types
+# |  
+# ----------------------------------------------------------------------
 class FundamentalTypeInfo(TypeInfo):
 
     # ---------------------------------------------------------------------------
     # |  Public Properties
     @property
     def PythonItemRegularExpressionStrings(self):
-        result = self.PythonItemRegularExpressionInfo
-        
-        if isinstance(result, tuple):
-            result = result[0]
-
-        if isinstance(result, list):
-            return result
-
-        return [ result, ]
+        from ..StringModules.StandardStringModule import StandardStringModule
+        return self.ItemRegularExpressionStrings(StandardStringModule)
 
     @property
     def PythonItemRegularExpressionString(self):
-        result = self.PythonItemRegularExpressionInfo
-        
-        if isinstance(result, tuple):
-            result = result[0]
+        from ..StringModules.StandardStringModule import StandardStringModule
+        return self.ItemRegularExpressionString(StandardStringModule)
 
-        if isinstance(result, list):
-            return '|'.join([ "({})".format(r) for r in result ])
-
-        return result
-
-    @abstractproperty
-    def PythonItemRegularExpressionInfo(self):
-        """\
-        regex string or tuple of (regex string, regex flags) for each
-        regular expression that can be used to extract the type from an
-        input string.
-        """
-        raise Exception("Abstract Property")
-    
-    # ---------------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    # |  
     # |  Public Methods
-    @classmethod
-    def Init(cls, string_module=None):
-        if not string_module:
-            from ..StringModules.PythonStringModule import PythonStringModule
-            string_module = PythonStringModule
-
-        cls._string_module = string_module
-
-    # ---------------------------------------------------------------------------
+    # |  
+    # ----------------------------------------------------------------------
     @staticmethod
     def CreateTypeInfo(type, **kwargs):
         from .. import FundamentalTypes
@@ -83,23 +60,31 @@ class FundamentalTypeInfo(TypeInfo):
         if type in [ str, unicode, ]:
             return FundamentalTypes.StringTypeInfo(**kwargs)
         
-        for potential_type_info in [ FundamentalTypes.IntTypeInfo,
-                                     FundamentalTypes.FloatTypeInfo,
-                                     FundamentalTypes.BoolTypeInfo,
-                                     FundamentalTypes.GuidTypeInfo,
+        for potential_type_info in [ FundamentalTypes.BoolTypeInfo,
                                      FundamentalTypes.DateTimeTypeInfo,
                                      FundamentalTypes.DateTypeInfo,
-                                     FundamentalTypes.TimeTypeInfo,
                                      FundamentalTypes.DurationTypeInfo,
+                                     # FundamentalTypes.EnumTypeInfo,
+                                     # FundamentalTypes.FilenameTypeInfo,
+                                     # FundamentalTypes.DirectoryTypeInfo,
+                                     FundamentalTypes.FloatTypeInfo,
+                                     FundamentalTypes.GuidTypeInfo,
+                                     FundamentalTypes.IntTypeInfo,
+                                     FundamentalTypes.TimeTypeInfo,
                                    ]:
             if potential_type_info.ExpectedType == type:
                 return potential_type_info(**kwargs)
                 
         raise Exception("'{}' is not a recognized type".format(type))
         
+    # ----------------------------------------------------------------------
+    def ItemRegularExpressionInfo(self, string_module=None):
+        string_module = string_module or self._GetStringModule()
+        return string_module.ItemRegularExpressionInfo(self)
+
     # ---------------------------------------------------------------------------
     def FromString(self, value):
-        string_module = self._GetOrInit()
+        string_module = self._GetStringModule()
         
         if self.Arity.IsOptional and value == string_module.NoneString:
             value = None
@@ -117,7 +102,7 @@ class FundamentalTypeInfo(TypeInfo):
 
     # ---------------------------------------------------------------------------
     def ToString(self, value, delimiter=None):
-        string_module = self._GetOrInit()
+        string_module = self._GetStringModule()
 
         self.ValidateArity(value)
 
@@ -143,13 +128,15 @@ class FundamentalTypeInfo(TypeInfo):
                         item, 
                         string_module=None, 
                       ):
-        string_module = string_module or self._GetOrInit()
+        string_module = string_module or self._GetStringModule()
         
         if not hasattr(self, "_regexes"):
             self._regexes = {}
 
-        if self.__class__ not in self._regexes:
-            self._regexes[self.__class__] = string_module.GetItemRegularExpressions(self)
+        key = ( self.__class__, string_module )
+
+        if key not in self._regexes:
+            self._regexes[key] = [ re.compile(expression, regex_flags) for expression, regex_flags in self._GetRegexInfo(string_module) ]
             
         # ---------------------------------------------------------------------------
         class NoneType(object): pass
@@ -161,7 +148,7 @@ class FundamentalTypeInfo(TypeInfo):
                 return item
 
             try:
-                for index, regex in enumerate(self._regexes[self.__class__]):
+                for index, regex in enumerate(self._regexes[key]):
                     match = regex.match(item)
                     if match:
                         return string_module.FromString(self, item, match, index)
@@ -177,7 +164,7 @@ class FundamentalTypeInfo(TypeInfo):
             error = "'{}' is not a valid '{}': {}" \
                         .format( item,
                                  self._GetExpectedTypeString(),
-                                 self.ConstraintsDesc or ', '.join([ "'{}'".format(regex) for regex in string_module.GetItemRegularExpressionStrings(self) ]),
+                                 self.ConstraintsDesc or ', '.join([ "'{}'".format(regex) for regex in self.PythonItemRegularExpressionStrings ]),
                                )
             raise ValidationException(error)
 
@@ -191,18 +178,79 @@ class FundamentalTypeInfo(TypeInfo):
                       item, 
                       string_module=None, 
                     ):
-        string_module = string_module or self._GetOrInit()
+        string_module = string_module or self._GetStringModule()
 
         self.ValidateItem(item)
         return string_module.ToString(self, item)
 
-    # ---------------------------------------------------------------------------
-    # ---------------------------------------------------------------------------
-    # ---------------------------------------------------------------------------
-    def _GetOrInit(self):
-        if not hasattr(type(self), "_string_module"):
-            type(self).Init()
+    # ----------------------------------------------------------------------
+    def ItemRegularExpressionStrings( self, 
+                                      string_module=None,
+                                    ):
+        return [ expression for expression, _ in self._GetRegexInfo(string_module or self._GetStringModule()) ]
 
-        return self._string_module
+    # ----------------------------------------------------------------------
+    def ItemRegularExpressionString( self,
+                                     string_module=None,
+                                   ):
+        results = self._GetRegexInfo(string_module or self._GetStringModule())
+
+        if len(results) == 1:
+            return results[0][0]
+
+        return '|'.join([ "({})".format(expression) for expression, _ in results ])
+
+    # ---------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------
+    def _GetStringModule(self):
+        if hasattr(FundamentalTypeInfo, "_global_string_module"):
+            return FundamentalTypeInfo._global_string_module
+
+        from ..StringModules.StandardStringModule import StandardStringModule
+        return StandardStringModule
+
+    # ----------------------------------------------------------------------
+    def _GetRegexInfo(self, string_module):
+        results = string_module.RegexInfo(self)
+        if not isinstance(results, list):
+            results = [ results, ]
+
+        info = []
+
+        for result in results:
+            if isinstance(result, tuple):
+                expression, regex_flags = result
+            else:
+                expression = result
+                regex_flags = re.DOTALL | re.MULTILINE
+
+            info.append((expression, regex_flags))
+
+        return info
+
+# ----------------------------------------------------------------------
+# |  
+# |  Public Methods
+# |  
+# ----------------------------------------------------------------------
+@contextmanager
+def PushGlobalStringModule(string_module):
+    from CommonEnvironment.CallOnExit import CallOnExit
+
+    prev_string_module = getattr(FundamentalTypeInfo, "_global_string_module", None)
+
+    # ----------------------------------------------------------------------
+    def RestoreStringModuleOverride():
+        if prev_string_module == None:
+            del FundamentalTypeInfo._global_string_module
+        else:
+            FundamentalTypeInfo._global_string_module = prev_string_module
+
+    # ----------------------------------------------------------------------
+    
+    with CallOnExit(RestoreStringModuleOverride):
+        FundamentalTypeInfo._global_string_module = string_module
+        yield
 
     

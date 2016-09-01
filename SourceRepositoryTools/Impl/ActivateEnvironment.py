@@ -35,17 +35,21 @@ SourceRepositoryTools                       = Impl.SourceRepositoryTools
 
 CallOnExit                                  = Impl.CallOnExit
 CommandLine                                 = Impl.CommandLine
+ModifiableValue                             = Impl.ModifiableValue
 Package                                     = Impl.Package
 QuickObject                                 = Impl.QuickObject
 Shell                                       = Impl.Shell
 StreamDecorator                             = Impl.StreamDecorator
 
-__package__ = Package.CreateName(__package__, __name__, __file__)
-
-from ..ActivationActivity.IActivationActivity import IActivationActivity, Constants
-from ..ActivationActivity.PythonActivationActivity import PythonActivationActivity
-from ..ActivationActivity.ScriptsActivationActivity import ScriptsActivationActivity
-from ..ActivationActivity.ToolsActivationActivity import ToolsActivationActivity
+with Package.NameInfo(__package__) as ni:
+    __package__ = ni.created
+    
+    from ..ActivationActivity.IActivationActivity import IActivationActivity, Constants
+    from ..ActivationActivity.PythonActivationActivity import PythonActivationActivity
+    from ..ActivationActivity.ScriptsActivationActivity import ScriptsActivationActivity
+    from ..ActivationActivity.ToolsActivationActivity import ToolsActivationActivity
+    
+    __package__ = ni.original
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
