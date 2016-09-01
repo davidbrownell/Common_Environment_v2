@@ -290,7 +290,7 @@ def _ActivateOriginalEnvironment(generated_dir):
 # ---------------------------------------------------------------------------
 def _ActivateMasterRepoData(configuration, generated_dir):
     commands = [ Shell.Set( SourceRepositoryTools.DE_REPO_ROOT_NAME,
-                            os.path.realpath(os.path.join(generated_dir, "..", "..")),
+                            os.path.realpath(os.path.join(generated_dir, "..", "..", "..")),
                             preserve_original=False,
                           ),
                  Shell.Set( SourceRepositoryTools.DE_REPO_GENERATED_NAME,
