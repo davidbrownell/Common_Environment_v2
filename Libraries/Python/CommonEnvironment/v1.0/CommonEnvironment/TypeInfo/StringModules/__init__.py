@@ -45,6 +45,15 @@ class StringModule(Interface):
     def SplitString(value):
         raise Exception("Abstract Method")
 
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @abstractmethod
+    def RegexInfo(type_info):
+        """\
+        Returns a list of regex strings or regex string/flags tuples.
+        """
+        raise Exception("Abstract method")
+
     # ---------------------------------------------------------------------------
     @staticmethod
     @abstractmethod
@@ -54,30 +63,5 @@ class StringModule(Interface):
     # ---------------------------------------------------------------------------
     @staticmethod
     @abstractmethod
-    def GetItemRegularExpressions(type_info):
-        """\
-        Decorate any strings prior to their conversion to regular expressions.
-        """
-
-        results = type_info.PythonItemRegularExpressionInfo
-        if not isinstance(results, list):
-            results = [ results, ]
-        
-        expressions = []
-        
-        for result in results:
-            if isinstance(result, tuple):
-                expression, regex_flags = result
-            else:
-                expression = result
-                regex_flags = re.DOTALL | re.MULTILINE
-                
-            expressions.append(re.compile(expression, regex_flags))
-
-        return expressions
-
-    # ---------------------------------------------------------------------------
-    @staticmethod
-    @abstractmethod
-    def FromString(type_info, string, regex_match, regex_string_index):
+    def FromString(type_info, item, regex_match, regex_index):
         raise Exception("Abstract method")

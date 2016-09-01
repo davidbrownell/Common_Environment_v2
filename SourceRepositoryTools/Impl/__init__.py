@@ -38,6 +38,7 @@ CommonEnvironment                           = SourceRepositoryTools.CommonEnviro
 CallOnExit                                  = SourceRepositoryTools.CallOnExit
 CommandLine                                 = SourceRepositoryTools.CommandLine
 FileSystem                                  = SourceRepositoryTools.FileSystem
+ModifiableValue                             = SourceRepositoryTools.ModifiableValue
 Package                                     = SourceRepositoryTools.Package
 QuickObject                                 = SourceRepositoryTools.QuickObject
 RegularExpression                           = SourceRepositoryTools.RegularExpression
@@ -90,10 +91,18 @@ class RepositoryInformation(object):
         is_tool_repository = match.group("is_tool_repository") == '1'
         is_configurable_repository = match.group("is_configurable_repository") == '1'
 
-        # The SetupEnvironmnet model must be defined in sys.modules to import without
+        # The SetupEnvironmnet model must be defined in sys.modules to de-pickle without
         # error.
         if "SetupEnvironment" not in sys.modules:
-            import SetupEnvironment
+            global __package__
+            
+            with Package.NameInfo(__package__) as ni:
+                __package__ = ni.created
+            
+                from . import SetupEnvironment
+                
+                __package__ = ni.original
+            
             sys.modules["SetupEnvironment"] = SetupEnvironment
             
             # ---------------------------------------------------------------------------

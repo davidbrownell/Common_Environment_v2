@@ -24,14 +24,17 @@ import textwrap
 from collections import OrderedDict
 
 from CommonEnvironment.CallOnExit import CallOnExit
-from CommonEnvironment import Package
+from CommonEnvironment import Package, ModifiableValue
 from CommonEnvironment.QuickObject import QuickObject
 from CommonEnvironment.StreamDecorator import StreamDecorator
 
-__package__ = Package.CreateName(__package__, __name__, __file__)           # <Redefining builtin> pylint: disable = W0622
-
-import SourceRepositoryTools
-from .IActivationActivity import IActivationActivity
+with Package.NameInfo(__package__) as ni:
+    __package__ = ni.created
+    
+    import SourceRepositoryTools
+    from .IActivationActivity import IActivationActivity
+    
+    __package__ = ni.original
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable

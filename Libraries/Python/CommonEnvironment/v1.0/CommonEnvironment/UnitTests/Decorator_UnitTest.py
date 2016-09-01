@@ -17,7 +17,23 @@ with CallOnExit(lambda: sys.path.pop(0)):
 
 # ----------------------------------------------------------------------
 class Test(unittest.TestCase):
-    pass
+    
+    @AsFunc("Foo")
+    class MyClass(object):
+        @staticmethod
+        def Foo():
+            return "Bar"
+
+        def __init__(self, value):
+            self.value = value
+
+        def Another(self):
+            return "Another: {}".format(self.value)
+
+    # ----------------------------------------------------------------------
+    def test_Standard(self):
+        self.assertEquals(Test.MyClass(), "Bar")
+        self.assertEqual(Test.MyClass(Test.MyClass.StandardInit, 100).Another(), "Another: 100")
 
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":

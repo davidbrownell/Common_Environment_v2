@@ -77,6 +77,8 @@ from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment.QuickObject import QuickObject
 from CommonEnvironment.StreamDecorator import StreamDecorator
 
+ModifiableValue = CommonEnvironment.ModifiableValue
+
 del sys.path[0]
 
 from . import Impl

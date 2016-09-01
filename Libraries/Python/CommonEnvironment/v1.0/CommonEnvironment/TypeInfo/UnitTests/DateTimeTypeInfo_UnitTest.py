@@ -28,9 +28,12 @@ _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ---------------------------------------------------------------------------
 
-__package__ = Package.CreateName(__package__, __name__, __file__)
-from ..DateTimeTypeInfo import *
-__package__ = None
+with Package.NameInfo(__package__) as ni:
+    __package__ = ni.created
+
+    from ..DateTimeTypeInfo import *
+
+    __package__ = ni.original
 
 # ---------------------------------------------------------------------------
 class FundamentalDateTime(unittest.TestCase):

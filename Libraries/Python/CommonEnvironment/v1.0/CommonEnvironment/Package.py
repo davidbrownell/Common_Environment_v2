@@ -21,10 +21,14 @@ This code ensure that relative imports always work as expected through some pret
 extreme manipulation of the packaging internals.
 """
 
+import inspect
 import os
 import sys
 import traceback
 
+from contextlib import contextmanager
+
+from . import ModifiableValue
 from .CallOnExit import CallOnExit
 
 # ---------------------------------------------------------------------------
@@ -32,6 +36,26 @@ _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+@contextmanager
+def NameInfo(package_value):
+    # Note that this is created as a generator so local var won't have a global lifetime
+    # when invoked.
+    
+    # ---------------------------------------------------------------------------
+    class _NameInfo(object):
+        # ----------------------------------------------------------------------
+        def __init__(self):
+            frame = inspect.stack()[3]          # 1 for ctor, 1 for method, 1 for contextmanager
+            mod = inspect.getmodule(frame[0])
+            
+            self.original                       = package_value
+            self.created                        = CreateName(package_value, mod.__name__, mod.__file__)
+        
+    # ---------------------------------------------------------------------------
+    
+    yield _NameInfo()
+    
 # ---------------------------------------------------------------------------
 def CreateName(package, name, file):
     """
@@ -88,7 +112,7 @@ def CreateName(package, name, file):
     # If here, we are looking at a file in a package. Ensure that the
     # entire package is included with fully qualified names.
     name_parts.reverse()
-
+    
     for index, name_part in enumerate(name_parts):
         this_name = '.'.join(name_parts[:index + 1])
 
