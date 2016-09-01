@@ -52,9 +52,12 @@ sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
 with CallOnExit(lambda: sys.path.pop(0)):
     from SourceRepositoryTools import DynamicPluginArchitecture as DPA
 
-__package__ = Package.CreateName(__package__, __name__, __file__)
+with Package.NameInfo(__package__) as ni:
+    __package__ = ni.created
 
-from .Impl.CompleteResults import CompleteResults
+    from .Impl.CompleteResults import CompleteResults
+
+    __package__ = ni.original
 
 pluralize = inflect.engine()
 

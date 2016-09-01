@@ -24,8 +24,12 @@ import uuid
 from CommonEnvironment import CommandLine
 from CommonEnvironment import Package
 
-__package__ = Package.CreateName(__package__, __name__, __file__)
-from . import Impl
+with Package.NameInfo(__package__) as ni:
+    __package__ = ni.created
+
+    from . import Impl
+
+    __package__ = ni.original
 
 import __init__ as SourceRepositoryTools
 

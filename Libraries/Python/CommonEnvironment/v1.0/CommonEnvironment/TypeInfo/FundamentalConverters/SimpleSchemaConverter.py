@@ -18,9 +18,7 @@ import sys
 from collections import OrderedDict
 
 from CommonEnvironment.Interface import staticderived
-from CommonEnvironment.TypeInfo import FundamentalConverters
-
-from CommonEnvironment.TypeInfo.FundamentalTypes import *
+from CommonEnvironment.TypeInfo.FundamentalTypes import Visitor
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -29,40 +27,41 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 
 # ----------------------------------------------------------------------
 @staticderived
-class SimpleSchemaConverter(FundamentalConverters.Converter):
+class SimpleSchemaConverter(Visitor):
     # ----------------------------------------------------------------------
     @classmethod
-    def OnBool(cls, type_info):
-        return cls._Create("boolean", type_info)
+    def OnBool(cls, type_info, brackets=None):
+        return cls._Create("boolean", type_info, brackets=brackets)
 
     # ----------------------------------------------------------------------
     @classmethod
-    def OnDateTime(cls, type_info):
-        return cls._Create("datetime", type_info)
+    def OnDateTime(cls, type_info, brackets=None):
+        return cls._Create("datetime", type_info, brackets=brackets)
     
     # ----------------------------------------------------------------------
     @classmethod
-    def OnDate(cls, type_info):
-        return cls._Create("date", type_info)
+    def OnDate(cls, type_info, brackets=None):
+        return cls._Create("date", type_info, brackets=brackets)
     
     # ----------------------------------------------------------------------
     @classmethod
-    def OnDuration(cls, type_info):
-        return cls._Create("duration", type_info)
+    def OnDuration(cls, type_info, brackets=None):
+        return cls._Create("duration", type_info, brackets=brackets)
     
     # ----------------------------------------------------------------------
     @classmethod
-    def OnEnum(cls, type_info):
+    def OnEnum(cls, type_info, brackets=None):
         return cls._Create( "enum",
                             type_info,
                             { "Values" : "values",
                               "FriendlyValues" : "friendly_values",
                             },
+                            brackets=brackets,
                           )
     
     # ----------------------------------------------------------------------
     @classmethod
-    def OnFilename(cls, type_info):
+    def OnFilename(cls, type_info, brackets=None):
         if type_info.Type == FilenameTypeInfo.Type_File:
             type_ = "file"
         elif type_info.Type == FilenameTypeInfo.Type_Directory:
@@ -78,49 +77,53 @@ class SimpleSchemaConverter(FundamentalConverters.Converter):
                             },
                             { "type" : '"{}"'.format(type_),
                             },
+                            brackets=brackets,
                           )
     
     # ----------------------------------------------------------------------
     @classmethod
-    def OnFloat(cls, type_info):
+    def OnFloat(cls, type_info, brackets=None):
         return cls._Create( "number",
                             type_info,
                             { "Min" : "min",
                               "Max" : "max",
                             },
+                            brackets=brackets,
                           )
     
     # ----------------------------------------------------------------------
     @classmethod
-    def OnGuid(cls, type_info):
-        return cls._Create("guid", type_info)
+    def OnGuid(cls, type_info, brackets=None):
+        return cls._Create("guid", type_info, brackets=brackets)
     
     # ----------------------------------------------------------------------
     @classmethod
-    def OnInt(cls, type_info):
+    def OnInt(cls, type_info, brackets=None):
         return cls._Create( "integer",
                             type_info,
                             { "Min" : "min",
                               "Max" : "max",
                               "Bytes" : "bytes",
                             },
+                            brackets=brackets,
                           )
     
     # ----------------------------------------------------------------------
     @classmethod
-    def OnString(cls, type_info):
+    def OnString(cls, type_info, brackets=None):
         return cls._Create( "string",
                             type_info,
                             { "ValidationExpression" : "validation_expression",
                               "MinLength" : "min_length",
                               "MaxLength" : "max_length",
                             },
+                            brackets=brackets,
                           )
 
     # ----------------------------------------------------------------------
     @classmethod
-    def OnTime(cls, type_info):
-        return cls._Create("time", type_info)
+    def OnTime(cls, type_info, brackets=None):
+        return cls._Create("time", type_info, brackets=brackets)
 
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
@@ -130,10 +133,12 @@ class SimpleSchemaConverter(FundamentalConverters.Converter):
                  type_info,
                  attributes=None,
                  attribute_overrides=None,
+                 brackets=None,             # ( lbracket, rbracket )
                ):
         params = []
 
         attribute_overrides = attribute_overrides or {}
+        brackets = brackets or ( '<', '>' )
 
         for attribute_name, ss_name in (attributes or {}).iteritems():
             if ss_name in attribute_overrides:
@@ -153,7 +158,9 @@ class SimpleSchemaConverter(FundamentalConverters.Converter):
 
         arity = type_info.Arity.ToString()
 
-        return "<{{}} {}{}{}>".format( type_,
-                                       '' if not params else ' {}'.format(' '.join(params)),
-                                       '' if not arity else ' {}'.format(arity),
-                                     )
+        return "{}{{}} {}{}{}{}".format( brackets[0],
+                                         type_,
+                                         '' if not params else ' {}'.format(' '.join(params)),
+                                         '' if not arity else ' {}'.format(arity),
+                                         brackets[1],
+                                       )
