@@ -17,9 +17,7 @@ import sys
 
 from CommonEnvironment.Interface import staticderived
 from CommonEnvironment import RegularExpression
-from CommonEnvironment.TypeInfo import FundamentalConverters
-
-from ..FundamentalTypes import *
+from CommonEnvironment.TypeInfo.FundamentalTypes import Visitor
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -28,7 +26,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 
 # ----------------------------------------------------------------------
 @staticderived
-class JsonSchemaConverter(FundamentalConverters.Converter):
+class JsonSchemaConverter(Visitor):
     # ----------------------------------------------------------------------
     @staticmethod
     def OnBool(type_info):
@@ -67,6 +65,11 @@ class JsonSchemaConverter(FundamentalConverters.Converter):
                  "minLength" : 1,
                }
     
+    # ----------------------------------------------------------------------
+    @classmethod
+    def OnDirectory(cls, type_info):
+        return cls.OnFilename(type_info)
+
     # ----------------------------------------------------------------------
     @staticmethod
     def OnFloat(type_info):
