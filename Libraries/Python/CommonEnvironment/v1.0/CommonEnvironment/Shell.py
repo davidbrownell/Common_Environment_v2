@@ -19,7 +19,9 @@ import os
 import stat
 import sys
 import tempfile
+import textwrap
 
+from .CallOnExit import CallOnExit
 from .Interface import Interface, abstractmethod, abstractproperty
 
 # ---------------------------------------------------------------------------
@@ -391,6 +393,32 @@ class Environment(Interface):
     def DeleteSymLink(filename, command_only=False):
         os.remove(filename)
         
+    # ----------------------------------------------------------------------
+    def CreateSymbolicLink(self, link_filename, target, is_dir=None):
+        """\
+        Creating a symbolic link on some systems is cumbersome. This method handles
+        the complexity to ensure that it works on all systems, but may be overkill
+        for those systems where it is a straighforward process.
+        """
+
+        temp_filename = self.CreateTempFilename(self.ScriptExtension)
+        with open(temp_filename, 'w') as f:
+            f.write(self.GenerateCommands(self.SymbolicLink(link_filename, target, is_dir=is_dir)))
+
+        with CallOnExit(lambda: os.remove(temp_filename)):
+            from . import Process
+            from .StreamDecorator import StreamDecorator
+
+            self.MakeFileExecutable(temp_filename)
+
+            result, output = Process.Execute(temp_filename)
+            if result != 0:
+                raise Exception(textwrap.dedent(
+                    """\
+                    An error was encountered when generating a symbolic link:
+                        {}
+                    """).format(StreamDecorator.LeftJustify(output, 4)))
+
     # ---------------------------------------------------------------------------
     @staticmethod
     def MakeFileExecutable(filename):
