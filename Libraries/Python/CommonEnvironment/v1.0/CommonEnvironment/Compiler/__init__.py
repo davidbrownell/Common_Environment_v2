@@ -425,7 +425,7 @@ class Base( InputProcessingMixin,
 
             stream_info.result = cls._InvokeImpl( invoke_reason,
                                                   context,
-                                                  StreamDecorator([ this_status_stream, sink, ]),
+                                                  StreamDecorator([ stream_info.stream, sink, ]),
                                                   StreamDecorator( sink,
                                                                    prefix='\n',
                                                                    line_prefix="  ",
