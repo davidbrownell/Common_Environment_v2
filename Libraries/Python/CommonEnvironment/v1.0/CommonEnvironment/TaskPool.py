@@ -44,7 +44,7 @@ class Task(object):
     def __init__( self,
                   name,                     # "Foo"
                   action_description,       # "Building Foo"
-                  functor,                  # def Functor(task_index, output_stream)
+                  functor,                  # def Functor(task_index, output_stream) -> None or str or (result, str)
                 ):
         assert name
         assert action_description
