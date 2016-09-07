@@ -16,21 +16,26 @@ import os
 import sys
 
 from CommonEnvironment import Interface as _Interface
+from CommonEnvironment import Package
 
-from .BoolTypeInfo import BoolTypeInfo
-from .DateTimeTypeInfo import DateTimeTypeInfo
-from .DateTypeInfo import DateTypeInfo
-from .DirectoryTypeInfo import DirectoryTypeInfo
-from .DurationTypeInfo import DurationTypeInfo
-from .EnumTypeInfo import EnumTypeInfo
-from .FilenameTypeInfo import FilenameTypeInfo
-from .FloatTypeInfo import FloatTypeInfo
-from .GuidTypeInfo import GuidTypeInfo
-from .IntTypeInfo import IntTypeInfo
-from .StringTypeInfo import StringTypeInfo
-from .TimeTypeInfo import TimeTypeInfo
-
-from .. import Arity
+# IF we are importing as part of a unit test, we don't want to include
+# these files as it will lead to circular dependencies. A normal import
+# will include the base modules, meaning there were be '.'s in the name.
+if '.' in __name__:
+    from .BoolTypeInfo import BoolTypeInfo
+    from .DateTimeTypeInfo import DateTimeTypeInfo
+    from .DateTypeInfo import DateTypeInfo
+    from .DirectoryTypeInfo import DirectoryTypeInfo
+    from .DurationTypeInfo import DurationTypeInfo
+    from .EnumTypeInfo import EnumTypeInfo
+    from .FilenameTypeInfo import FilenameTypeInfo
+    from .FloatTypeInfo import FloatTypeInfo
+    from .GuidTypeInfo import GuidTypeInfo
+    from .IntTypeInfo import IntTypeInfo
+    from .StringTypeInfo import StringTypeInfo
+    from .TimeTypeInfo import TimeTypeInfo
+    
+    from .. import Arity
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable

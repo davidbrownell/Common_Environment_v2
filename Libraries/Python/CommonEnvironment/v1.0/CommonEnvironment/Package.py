@@ -107,6 +107,7 @@ def CreateName(package, name, file):
             name = "___{}Lib___".format(name)
 
         sys.modules[name] = None
+
         return name
 
     # If here, we are looking at a file in a package. Ensure that the
@@ -115,7 +116,7 @@ def CreateName(package, name, file):
     
     for index, name_part in enumerate(name_parts):
         this_name = '.'.join(name_parts[:index + 1])
-
+        
         if this_name not in sys.modules:
             # If here, we need to add the fully qualified name to the
             # list of modules.
