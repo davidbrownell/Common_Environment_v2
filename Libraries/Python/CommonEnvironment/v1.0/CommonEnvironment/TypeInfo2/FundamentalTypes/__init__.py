@@ -18,9 +18,15 @@ import sys
 from CommonEnvironment import Interface as _Interface
 from CommonEnvironment import Package
 
-# IF we are importing as part of a unit test, we don't want to include
+# If we are importing as part of a unit test, we don't want to include
 # these files as it will lead to circular dependencies. A normal import
-# will include the base modules, meaning there were be '.'s in the name.
+# will have already include the base modules, meaning there were be '.'s 
+# in the __name__.
+#
+# This is required because this is a __init__ file that is importing sibling
+# files into its own namespace. This practice is generally frowned upon, but 
+# useful is this particular scenario.
+
 if '.' in __name__:
     from .BoolTypeInfo import BoolTypeInfo
     from .DateTimeTypeInfo import DateTimeTypeInfo
