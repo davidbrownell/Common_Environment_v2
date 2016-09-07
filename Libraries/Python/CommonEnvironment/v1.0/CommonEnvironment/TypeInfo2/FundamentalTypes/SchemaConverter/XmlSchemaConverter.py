@@ -1,6 +1,6 @@
 # ----------------------------------------------------------------------
 # |  
-# |  XsdConverter.py
+# |  XmlSchemaConverter.py
 # |  
 # |  David Brownell <db@DavidBrownell.com>
 # |      2016-09-05 16:02:40
@@ -36,7 +36,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 
 # ----------------------------------------------------------------------
 @staticderived
-class XsdConverter(SchemaConverter):
+class XmlSchemaConverter(SchemaConverter):
 
     # ----------------------------------------------------------------------
     @staticmethod

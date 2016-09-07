@@ -80,7 +80,7 @@ class Arity(object):
 
     @property
     def IsCollection(self):
-        return self.Max == 0 or self.Max > 1
+        return self.Max == None or self.Max > 1
 
     @property
     def IsOptionalCollection(self):
@@ -88,7 +88,7 @@ class Arity(object):
 
     @property
     def IsFixedCollection(self):
-        return self.Min == self.Max and self.Min != 1
+        return self.IsCollection and self.Min == self.Max
 
     @property
     def IsZeroOrMore(self):
@@ -107,7 +107,11 @@ class Arity(object):
         return "Arity(min={}, max_or_none={})".format(self.Min, self.Max)
 
     # ----------------------------------------------------------------------
-    def ToString(self):
+    def ToString( self,
+                  brackets=None,            # ( lbraket, rbracket )
+                ):
+        brackets = brackets or ( '(', ')' )
+
         if self.IsOptional:
             return '?'
         elif self.IsZeroOrMore:
@@ -117,9 +121,40 @@ class Arity(object):
         elif self.IsSingle:
             return ''
         elif self.Min == self.Max:
-            return "{{{}}}".format(self.Min)
+            return "{}{}{}".format( brackets[0], 
+                                    self.Min, 
+                                    brackets[1],
+                                  )
         else:
-            return "{{{},{}}}".format(self.Min, self.Max)
+            return "{}{},{}{}".format( brackets[0],
+                                       self.Min, 
+                                       self.Max,
+                                       brackets[1],
+                                     )
+
+    # ----------------------------------------------------------------------
+    def __cmp__(self, other):
+        if self.Min < other.Min:
+            return -1
+        elif other.Min < self.Min:
+            return 1
+
+        if self.Max == None:
+            if other.Max != None:
+                return 1
+        else:
+            if other.Max == None:
+                return -1
+
+            if self.Max < other.Max:
+                return -1
+            elif self.Max > other.Max:
+                return 1
+
+        assert self.Min == other.Min, (self.Min, other.Min)
+        assert self.Max == other.Max, (self.Max, other.Max)
+
+        return 0
 
 # ----------------------------------------------------------------------
 class TypeInfo(Interface):
