@@ -69,10 +69,11 @@ class ObjectLikeTypeInfo(TypeInfo):
 
     @property
     def PythonDefinitionString(self):
-        return "{}({}, items={})" \
+        return "{}({}, items={}, require_exact_match={})" \
                     .format( self.__class__.__name__,
                              self._PythonDefinitionStringContents,
-                             Items="{{ {} }}".format(', '.join([ '"{}" : {}'.format(k, v.PythonDefinitionString) for k, v in self.Items.iteritems() ])),
+                             "{{ {} }}".format(', '.join([ '"{}" : {}'.format(k, v.PythonDefinitionString) for k, v in self.Items.iteritems() ])),
+                             self.RequireExactMatchDefault,
                            )
 
     # ----------------------------------------------------------------------

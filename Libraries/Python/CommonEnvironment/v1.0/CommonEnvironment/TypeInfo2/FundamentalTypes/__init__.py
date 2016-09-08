@@ -16,7 +16,6 @@ import os
 import sys
 
 from CommonEnvironment import Interface as _Interface
-from CommonEnvironment import Package
 
 # If we are importing as part of a unit test, we don't want to include
 # these files as it will lead to circular dependencies. A normal import
