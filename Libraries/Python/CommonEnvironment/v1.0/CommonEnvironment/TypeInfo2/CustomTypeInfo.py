@@ -25,7 +25,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 class CustomTypeInfo(TypeInfo):
 
-    ExpectedTypeIsCallable                  = True
+    Desc                                    = "Custom Type"
 
     # ----------------------------------------------------------------------
     def __init__( self,
@@ -42,10 +42,6 @@ class CustomTypeInfo(TypeInfo):
 
     # ----------------------------------------------------------------------
     @property
-    def ExpectedType(self, item):
-        return self._expected_type_func(item)
-
-    @property
     def ConstraintsDesc(self):
         return self._constraints_desc
 
@@ -54,7 +50,14 @@ class CustomTypeInfo(TypeInfo):
         raise Exception("Python definition strings can't be generated for CustomTypeInfo instances, as it isn't posibile to recreate the associated functions")
 
     # ----------------------------------------------------------------------
+    def ExpectedType(self, item):
+        return self._expected_type_func(item)
+
     # ----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    _ExpectedTypeIsCallable                 = True
+
     # ----------------------------------------------------------------------
     def _ValidateItemNoThrowImpl(self, item, **custom_args):
         return self._validate_item_func(item)

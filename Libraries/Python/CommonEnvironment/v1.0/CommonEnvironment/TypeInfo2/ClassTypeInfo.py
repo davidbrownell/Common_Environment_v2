@@ -29,7 +29,6 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 class _MethodTypeInfo(TypeInfo):
 
-    ExpectedTypeIsCallable                  = True
     ConstraintsDesc                         = ''
 
     # ----------------------------------------------------------------------
@@ -46,6 +45,9 @@ class _MethodTypeInfo(TypeInfo):
 
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    _ExpectedTypeIsCallable                 = True
+
     # ----------------------------------------------------------------------
     def _ValidateItemNoThrowImpl(self, item, **custom_args):
         return
@@ -71,8 +73,7 @@ class ClassTypeInfo(ObjectLikeTypeInfo):
 
     Desc                                    = "Class"
     ExpectedType                            = staticmethod(lambda item: True) # Everything is an object in Python
-    ExpectedTypeIsCallable                  = True
-
+    
     # ----------------------------------------------------------------------
     @staticmethod
     def _HasAttribute(item, attribute_name):
@@ -86,3 +87,7 @@ class ClassTypeInfo(ObjectLikeTypeInfo):
 
         return getattr(item, attribute_name)
 
+    # ----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    _ExpectedTypeIsCallable                 = True

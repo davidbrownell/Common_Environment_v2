@@ -80,7 +80,7 @@ class Arity(object):
 
     @property
     def IsCollection(self):
-        return self.Max == 0 or self.Max > 1
+        return self.Max == None or self.Max > 1
 
     @property
     def IsOptionalCollection(self):
@@ -88,7 +88,7 @@ class Arity(object):
 
     @property
     def IsFixedCollection(self):
-        return self.Min == self.Max and self.Min != 1
+        return self.IsCollection and self.Min == self.Max
 
     @property
     def IsZeroOrMore(self):
@@ -107,7 +107,11 @@ class Arity(object):
         return "Arity(min={}, max_or_none={})".format(self.Min, self.Max)
 
     # ----------------------------------------------------------------------
-    def ToString(self):
+    def ToString( self,
+                  brackets=None,            # ( lbraket, rbracket )
+                ):
+        brackets = brackets or ( '(', ')' )
+
         if self.IsOptional:
             return '?'
         elif self.IsZeroOrMore:
@@ -117,9 +121,40 @@ class Arity(object):
         elif self.IsSingle:
             return ''
         elif self.Min == self.Max:
-            return "{{{}}}".format(self.Min)
+            return "{}{}{}".format( brackets[0], 
+                                    self.Min, 
+                                    brackets[1],
+                                  )
         else:
-            return "{{{},{}}}".format(self.Min, self.Max)
+            return "{}{},{}{}".format( brackets[0],
+                                       self.Min, 
+                                       self.Max,
+                                       brackets[1],
+                                     )
+
+    # ----------------------------------------------------------------------
+    def __cmp__(self, other):
+        if self.Min < other.Min:
+            return -1
+        elif other.Min < self.Min:
+            return 1
+
+        if self.Max == None:
+            if other.Max != None:
+                return 1
+        else:
+            if other.Max == None:
+                return -1
+
+            if self.Max < other.Max:
+                return -1
+            elif self.Max > other.Max:
+                return 1
+
+        assert self.Min == other.Min, (self.Min, other.Min)
+        assert self.Max == other.Max, (self.Max, other.Max)
+
+        return 0
 
 # ----------------------------------------------------------------------
 class TypeInfo(Interface):
@@ -145,8 +180,6 @@ class TypeInfo(Interface):
     def PythonDefinitionString(self):
         raise Exception("Abstract property")
 
-    ExpectedTypeIsCallable                  = False
-
     # ----------------------------------------------------------------------
     # |  
     # |  Public Methods
@@ -169,6 +202,21 @@ class TypeInfo(Interface):
         self.ValidationFunc                 = validation_func
         self.CollectionValidationFunc       = collection_validation_func
         
+    # ----------------------------------------------------------------------
+    def IsExpectedType(self, item):
+        if self._ExpectedTypeIsCallable:
+            return self.ExpectedType(item)
+        
+        return isinstance(item, self.ExpectedType)
+
+    # ----------------------------------------------------------------------
+    def IsValid(self, item_or_items):
+        return self.ValidateNoThrow(item_or_items) == None
+
+    # ----------------------------------------------------------------------
+    def IsValidItem(self, item):
+        return self.ValidateItemNoThrow(item) == None
+
     # ----------------------------------------------------------------------
     def Validate(self, value, **custom_args):
         result = self.ValidateNoThrow(value, **custom_args)
@@ -232,7 +280,7 @@ class TypeInfo(Interface):
 
         if self.Arity.Min != None and count < self.Arity.Min:
             return "At least {} {} expected".format( Plural.no("item", self.Arity.Min),
-                                                     Plural.plural_verb("ws", self.Arity.Min),
+                                                     Plural.plural_verb("was", self.Arity.Min),
                                                    )
 
         if self.Arity.Max != None and count > self.Arity.Max:
@@ -245,15 +293,7 @@ class TypeInfo(Interface):
         if self.Arity.IsOptional and item == None:
             return
 
-        is_expected_type = None
-
-        if self.ExpectedTypeIsCallable:
-            is_expected_type = self.ExpectedType(item)
-        else:
-            is_expected_type = isinstance(item, self.ExpectedType)
-
-        assert is_expected_type != None
-        if not is_expected_type:
+        if not self.IsExpectedType(item):
             return "'{}' is not {}".format( item,
                                             Plural.a(self._GetExpectedTypeString()),
                                           )
@@ -272,6 +312,8 @@ class TypeInfo(Interface):
     # |  Protected Properties
     # |  
     # ----------------------------------------------------------------------
+    _ExpectedTypeIsCallable                 = False
+
     @property
     def _PythonDefinitionStringContents(self):
         # Arbitrary custom validation functions can't be saved as part of a
@@ -293,7 +335,7 @@ class TypeInfo(Interface):
 
         # ----------------------------------------------------------------------
         
-        if self.ExpectedTypeIsCallable:
+        if self._ExpectedTypeIsCallable:
             return self.__class__.__name__
 
         if isinstance(self.ExpectedType, tuple):

@@ -31,11 +31,13 @@ class FilenameTypeInfo(TypeInfo):
     # ----------------------------------------------------------------------
     def __init__( self,
                   ensure_exists=True,
+                  match_directory=False,
                   **type_info_args
                 ):
         super(FilenameTypeInfo, self).__init__(**type_info_args)
 
         self.EnsureExists                   = ensure_exists
+        self.MatchDirectory                 = match_directory
 
     # ----------------------------------------------------------------------
     @property
@@ -43,14 +45,19 @@ class FilenameTypeInfo(TypeInfo):
         if not self.EnsureExists:
             return ''
 
+        if self.MatchDirectory:
+            return "Value must be a valid filename or directory"
+
         return "Value must be a valid filename"
 
     # ----------------------------------------------------------------------
     @property
     def PythonDefinitionString(self):
-        return "FilenameTypeInfo({}, ensure_exists={})".format( self._PythonDefinitionStringContents,
-                                                                self.EnsureExists,
-                                                              )
+        return "FilenameTypeInfo({}, ensure_exists={}, match_directory={})" \
+                    .format( self._PythonDefinitionStringContents,
+                             self.EnsureExists,
+                             self.MatchDirectory,
+                           )
 
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
@@ -59,5 +66,9 @@ class FilenameTypeInfo(TypeInfo):
         if not self.EnsureExists:
             return
 
-        if not os.path.isfile(item):
-            return "'{}' is not a valid filename".format(item)
+        if self.MatchDirectory:
+            if not os.path.exists(item):
+                return "'{}' is not a valid filename or directory".format(item)
+        else:
+            if not os.path.isfile(item):
+                return "'{}' is not a valid filename".format(item)
