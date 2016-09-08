@@ -180,8 +180,6 @@ class TypeInfo(Interface):
     def PythonDefinitionString(self):
         raise Exception("Abstract property")
 
-    ExpectedTypeIsCallable                  = False
-
     # ----------------------------------------------------------------------
     # |  
     # |  Public Methods
@@ -204,6 +202,21 @@ class TypeInfo(Interface):
         self.ValidationFunc                 = validation_func
         self.CollectionValidationFunc       = collection_validation_func
         
+    # ----------------------------------------------------------------------
+    def IsExpectedType(self, item):
+        if self._ExpectedTypeIsCallable:
+            return self.ExpectedType(item)
+        
+        return isinstance(item, self.ExpectedType)
+
+    # ----------------------------------------------------------------------
+    def IsValid(self, item_or_items):
+        return self.ValidateNoThrow(item_or_items) == None
+
+    # ----------------------------------------------------------------------
+    def IsValidItem(self, item):
+        return self.ValidateItemNoThrow(item) == None
+
     # ----------------------------------------------------------------------
     def Validate(self, value, **custom_args):
         result = self.ValidateNoThrow(value, **custom_args)
@@ -267,7 +280,7 @@ class TypeInfo(Interface):
 
         if self.Arity.Min != None and count < self.Arity.Min:
             return "At least {} {} expected".format( Plural.no("item", self.Arity.Min),
-                                                     Plural.plural_verb("ws", self.Arity.Min),
+                                                     Plural.plural_verb("was", self.Arity.Min),
                                                    )
 
         if self.Arity.Max != None and count > self.Arity.Max:
@@ -280,15 +293,7 @@ class TypeInfo(Interface):
         if self.Arity.IsOptional and item == None:
             return
 
-        is_expected_type = None
-
-        if self.ExpectedTypeIsCallable:
-            is_expected_type = self.ExpectedType(item)
-        else:
-            is_expected_type = isinstance(item, self.ExpectedType)
-
-        assert is_expected_type != None
-        if not is_expected_type:
+        if not self.IsExpectedType(item):
             return "'{}' is not {}".format( item,
                                             Plural.a(self._GetExpectedTypeString()),
                                           )
@@ -307,6 +312,8 @@ class TypeInfo(Interface):
     # |  Protected Properties
     # |  
     # ----------------------------------------------------------------------
+    _ExpectedTypeIsCallable                 = False
+
     @property
     def _PythonDefinitionStringContents(self):
         # Arbitrary custom validation functions can't be saved as part of a
@@ -328,7 +335,7 @@ class TypeInfo(Interface):
 
         # ----------------------------------------------------------------------
         
-        if self.ExpectedTypeIsCallable:
+        if self._ExpectedTypeIsCallable:
             return self.__class__.__name__
 
         if isinstance(self.ExpectedType, tuple):
