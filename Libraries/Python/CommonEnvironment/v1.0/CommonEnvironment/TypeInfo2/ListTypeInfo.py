@@ -45,7 +45,7 @@ class ListTypeInfo(TypeInfo):
     # ----------------------------------------------------------------------
     @property
     def ConstraintsDesc(self):
-        return "List of items where: {}".format(self.ElementTypeInfo.ConstraintsDesc)
+        return "List of '{}' items where: {}".format(self.ElementTypeInfo.Desc, self.ElementTypeInfo.ConstraintsDesc)
 
     @property
     def PythonDefinitionString(self):

@@ -25,8 +25,6 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 class AnyOfTypeInfo(TypeInfo):
 
-    ExpectedTypeIsCallable                  = True
-
     # ----------------------------------------------------------------------
     def __init__( self,
                   type_info_list,
@@ -66,14 +64,13 @@ class AnyOfTypeInfo(TypeInfo):
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
+    _ExpectedTypeIsCallable                 = True
+
+    # ----------------------------------------------------------------------
     def _GetElementTypeInfo(self, item):
         for eti in self.ElementTypeInfos:
-            if eti.ExpectedTypeIsCallable:
-                if eti.ExpectedType(item):
-                    return eti
-            else:
-                if isinstance(item, eti.ExpectedType):
-                    return eti
+            if eti.IsExpectedType(item):
+                return eti
 
     # ----------------------------------------------------------------------
     def _ValidateItemNoThrowImpl(self, item, **custom_args):

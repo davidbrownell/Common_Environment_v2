@@ -32,7 +32,29 @@ with Package.NameInfo(__package__) as ni:
 
 # ----------------------------------------------------------------------
 class UnitTest(unittest.TestCase):
-    pass
+    
+    # ----------------------------------------------------------------------
+    @classmethod
+    def setUp(cls):
+        cls._ti = CustomTypeInfo( lambda item: isinstance(item, str),
+                                  lambda item: None if item == "test" else "invalid",
+                                  "Constraints Desc",
+                                )
+
+    # ----------------------------------------------------------------------
+    def test_ExpectedType(self):
+        self.assertTrue(self._ti.IsExpectedType("a string"))
+        self.assertTrue(self._ti.IsExpectedType(10) == False)
+
+    # ----------------------------------------------------------------------
+    def test_IsValidItem(self):
+        self.assertTrue(self._ti.IsValidItem("test"))
+        self.assertTrue(self._ti.IsValidItem("different test") == False)
+        self.assertTrue(self._ti.IsValidItem(10) == False)
+
+    # ----------------------------------------------------------------------
+    def test_Desc(self):
+        self.assertEqual(self._ti.ConstraintsDesc, "Constraints Desc")
 
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
