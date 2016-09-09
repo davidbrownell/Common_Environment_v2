@@ -41,6 +41,21 @@ if '.' in __name__:
     from .TimeTypeInfo import TimeTypeInfo
     
     from .. import Arity
+else:
+    from CommonEnvironment.TypeInfo2.FundamentalTypes.BoolTypeInfo import *
+    from CommonEnvironment.TypeInfo2.FundamentalTypes.DateTimeTypeInfo import DateTimeTypeInfo
+    from CommonEnvironment.TypeInfo2.FundamentalTypes.DateTypeInfo import DateTypeInfo
+    from CommonEnvironment.TypeInfo2.FundamentalTypes.DirectoryTypeInfo import DirectoryTypeInfo
+    from CommonEnvironment.TypeInfo2.FundamentalTypes.DurationTypeInfo import DurationTypeInfo
+    from CommonEnvironment.TypeInfo2.FundamentalTypes.EnumTypeInfo import EnumTypeInfo
+    from CommonEnvironment.TypeInfo2.FundamentalTypes.FilenameTypeInfo import FilenameTypeInfo
+    from CommonEnvironment.TypeInfo2.FundamentalTypes.FloatTypeInfo import FloatTypeInfo
+    from CommonEnvironment.TypeInfo2.FundamentalTypes.GuidTypeInfo import GuidTypeInfo
+    from CommonEnvironment.TypeInfo2.FundamentalTypes.IntTypeInfo import IntTypeInfo
+    from CommonEnvironment.TypeInfo2.FundamentalTypes.StringTypeInfo import StringTypeInfo
+    from CommonEnvironment.TypeInfo2.FundamentalTypes.TimeTypeInfo import TimeTypeInfo
+    
+    from CommonEnvironment.TypeInfo2 import Arity
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
