@@ -727,6 +727,7 @@ def ExecuteTree( input_dir,
                  release_only=False,
                  output_stream=sys.stdout,
                  verbose=False,
+                 quiet=False,
                  preserve_ansi_escape_sequences=False,
                ):
     """\
@@ -737,6 +738,9 @@ def ExecuteTree( input_dir,
     test_parser = _GetTestParser(test_parser)
     code_coverage_extractor = _GetCodeCoverageExtractor(code_coverage_extractor)
     code_coverage_validator = _GetCodeCoverageValidator(code_coverage_validator or "1")
+
+    if verbose and quiet:
+        quiet = False
 
     start_time = TimeDelta()
 
@@ -770,15 +774,18 @@ def ExecuteTree( input_dir,
     if not complete_results:
         return
 
-    PrettyPrint( complete_results,
-                 compiler,
-                 test_parser,
-                 code_coverage_extractor,
-                 code_coverage_validator,
-                 output_stream,
-                 preserve_ansi_escape_sequences,
-                 verbose,
-               )
+    if quiet:
+        sys.stdout.write("\n")
+    else:
+        PrettyPrint( complete_results,
+                     compiler,
+                     test_parser,
+                     code_coverage_extractor,
+                     code_coverage_validator,
+                     output_stream,
+                     preserve_ansi_escape_sequences,
+                     verbose,
+                   )
 
     tests = [ 0, ]
     failures = [ 0, ]
