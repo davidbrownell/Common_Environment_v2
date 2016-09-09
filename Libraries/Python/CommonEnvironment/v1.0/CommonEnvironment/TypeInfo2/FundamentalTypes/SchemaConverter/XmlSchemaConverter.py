@@ -62,6 +62,7 @@ class XmlSchemaConverter(SchemaConverter):
             # ----------------------------------------------------------------------
             @staticmethod
             def OnDirectory(type_info, *args, **kwargs):
+                # TODO: ensure_exists
                 return textwrap.dedent(
                     """\
                     <xs:restriction base="xs:string">
@@ -87,6 +88,8 @@ class XmlSchemaConverter(SchemaConverter):
             # ----------------------------------------------------------------------
             @staticmethod
             def OnFilename(type_info, *args, **kwargs):
+                # TODO: ensure_exists
+                # TODO: match_directory
                 return textwrap.dedent(
                     """\
                     <xs:restriction base="xs:string">
@@ -149,10 +152,11 @@ class XmlSchemaConverter(SchemaConverter):
                     if type_info.Min >= 0:
                         type_ = "nonNegative{}{}".format(type_[0].upper(), type_[1:])
                     
-                    restrictions["minInclusive"] = type_info.Min
+                    if type_info.Min != 0:
+                        restrictions["minInclusive"] = type_info.Min
 
                 if type_info.Max != None:
-                    if type_info.Max <= 0:
+                    if type_info.Max < 0:
                         type_ = "negative{}{}".format(type_[0].upper(), type_[1:])
                         
                     restrictions["maxInclusive"] = type_info.Max

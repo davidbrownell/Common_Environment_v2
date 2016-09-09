@@ -78,7 +78,7 @@ class StringSerialization(Serialization):
                 sep = r"[-/\.]"
 
                 return [ expr % { "sep" : sep,
-                                  "index" : index,
+                                  "suffix" : index,
                                 }
                          for index, expr in enumerate([ # YYYY-MM-DD
                                                         r"(?P<year%(suffix)s[0-9]{4})%(sep)s(?P<month%(suffix)s>(0?[1-9]|1[0-2])%(sep)s(?P<day%(suffix)s>[0-2][0-9]|3[0-1]))",
