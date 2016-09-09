@@ -77,7 +77,7 @@ class SimpleSchemaConveter(SchemaConverter):
             # ----------------------------------------------------------------------
             @staticmethod
             def OnFilename(type_info, *args, **kwargs):
-                return "filename", { "EnsureExists" : "must_exist", }, { "type" : '"file"', }
+                return "filename", { "EnsureExists" : "must_exist" }, { "type" : '"either"' if type_info.MatchDirectory else '"file"', }
         
             # ----------------------------------------------------------------------
             @staticmethod
@@ -120,7 +120,7 @@ class SimpleSchemaConveter(SchemaConverter):
             type_ = result[0]
             dynamic_attributes = result[1]
 
-            if len(tuple) > 2:
+            if len(result) > 2:
                 static_attributes = result[2]
             else:
                 static_attributes = {}
@@ -144,11 +144,16 @@ class SimpleSchemaConveter(SchemaConverter):
             type_ = result
             attributes = []
             
-        return "{lbracket}{name}{type_}{attributes} {arity}{rbracket}" \
+        if isinstance(arity_override, str):
+            arity_string = arity_override
+        else:
+            arity_string = (arity_override or type_info.Arity).ToString(brackets=('{', '}'))
+
+        return "{lbracket}{name}{type_}{attributes}{arity}{rbracket}" \
                     .format( lbracket=brackets[0],
                              rbracket=brackets[1],
                              name='' if not name else "{} ".format(name),
                              type_=type_,
                              attributes='' if not attributes else " {}".format(' '.join(attributes)),
-                             arity=(arity_override or type_info.Arity).ToString(),
+                             arity='' if not arity_string else " {}".format(arity_string),
                            )

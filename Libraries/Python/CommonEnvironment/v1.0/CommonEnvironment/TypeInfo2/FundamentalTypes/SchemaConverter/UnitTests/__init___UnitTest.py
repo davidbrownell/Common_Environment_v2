@@ -16,6 +16,7 @@ import os
 import sys
 import unittest
 
+from CommonEnvironment.Interface import staticderived
 from CommonEnvironment import Package
 
 # ----------------------------------------------------------------------
@@ -31,8 +32,20 @@ with Package.NameInfo(__package__) as ni:
     __package__ = ni.original
 
 # ----------------------------------------------------------------------
+@staticderived
+class MySchemaConverter(SchemaConverter):
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    def Convert(type_info):
+        pass
+
+# ----------------------------------------------------------------------
 class UnitTest(unittest.TestCase):
-    pass
+    
+    # ----------------------------------------------------------------------
+    def test_Standard(self):
+        MySchemaConverter()
 
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
