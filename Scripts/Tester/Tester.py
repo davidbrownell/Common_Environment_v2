@@ -143,6 +143,7 @@ def Test( configuration,
           debug_only=False,
           release_only=False,
           verbose=False,
+          quiet=False,
           xml_output=False,
         ):
     assert configuration
@@ -188,6 +189,7 @@ def Test( configuration,
     if debug_only:                          command_line.append("/debug_only")
     if release_only:                        command_line.append("/release_only")
     if verbose:                             command_line.append("/verbose")
+    if quiet:                               command_line.append("/quiet")
     if xml_output:                          command_line.append("/xml_output")
     if iterations > 1:                      command_line.append("/iterations={}".format(iterations))
     if debug_on_error:                      command_line.append("/debug_on_error")
@@ -212,6 +214,7 @@ def TestFile( input,
               debug_only=False,
               release_only=False,
               verbose=False,
+              quiet=False,
               xml_output=False,
             ):
     """Determines the configuration of the provided file and then runs its test."""
@@ -252,6 +255,7 @@ def TestFile( input,
                  debug_only=debug_only,
                  release_only=release_only,
                  verbose=verbose,
+                 quiet=quiet,
                  xml_output=xml_output,
                )
 
@@ -274,6 +278,7 @@ def TestType( configuration,
               debug_only=False,
               release_only=False,
               verbose=False,
+              quiet=False,
               xml_output=False,
             ):
     """Runs tests of the specific type based on the subdir name provided."""
@@ -291,6 +296,7 @@ def TestType( configuration,
                  debug_only=debug_only,
                  release_only=release_only,
                  verbose=verbose,
+                 quiet=quiet,
                  xml_output=xml_output,
                )
 
@@ -311,6 +317,7 @@ def TestAll( input_dir,
              debug_only=False,
              release_only=False,
              verbose=False,
+             quiet=False,
              xml_output=False,
            ):
     colorama.init(autoreset=False)
@@ -338,6 +345,7 @@ def TestAll( input_dir,
                                            debug_only=debug_only,
                                            release_only=release_only,
                                            verbose=verbose,
+                                           quiet=quiet,
                                            xml_output=xml_output,
                                          )
 
