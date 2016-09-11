@@ -223,9 +223,9 @@ def _SetupBootstrap( environment,
             if ( index == len(repository_root_dirname) or
                  c != repository_root_dirname[index]
                ):
-                return index
+                break
 
-        return -1
+        return index
 
     # ----------------------------------------------------------------------
     def EnumerateDirectories():
@@ -254,9 +254,9 @@ def _SetupBootstrap( environment,
                     priority = 0
                     break
 
-            search_items.append(( priority, 
-                                  # Favor parents over other locations
+            search_items.append(( # Favor parents over other locations
                                   -FirstNonmatchingChar(item),
+                                  priority, 
                                   len(parts), 
                                   item.lower(), 
                                   item,
