@@ -12,6 +12,7 @@
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 # |  
 # ----------------------------------------------------------------------
+import datetime
 import os
 import sys
 import unittest
@@ -27,12 +28,26 @@ with Package.NameInfo(__package__) as ni:
     __package__ = ni.created
     
     from ..JsonLikeSerialization import *
+    from ... import *
 
     __package__ = ni.original
 
 # ----------------------------------------------------------------------
 class UnitTest(unittest.TestCase):
-    pass
+    
+    # ----------------------------------------------------------------------
+    def test_SerializeItem(self):
+        self.assertEqual(JsonLikeSerialization.SerializeItem(BoolTypeInfo(), True), True)
+        self.assertEqual(JsonLikeSerialization.SerializeItem(FloatTypeInfo(), 1.0), 1.0)
+        self.assertEqual(JsonLikeSerialization.SerializeItem(IntTypeInfo(), 100), 100)
+        self.assertEqual(JsonLikeSerialization.SerializeItem(DurationTypeInfo(), datetime.timedelta(seconds=130)), "0:02:10.0")
+
+    # ----------------------------------------------------------------------
+    def test_DeserializeItem(self):
+        self.assertEqual(JsonLikeSerialization.DeserializeItem(BoolTypeInfo(), True), True)
+        self.assertEqual(JsonLikeSerialization.DeserializeItem(FloatTypeInfo(), 1.0), 1.0)
+        self.assertEqual(JsonLikeSerialization.DeserializeItem(IntTypeInfo(), 100), 100)
+        self.assertEqual(JsonLikeSerialization.DeserializeItem(DurationTypeInfo(), "0:02:10.0"), datetime.timedelta(seconds=130))
 
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":

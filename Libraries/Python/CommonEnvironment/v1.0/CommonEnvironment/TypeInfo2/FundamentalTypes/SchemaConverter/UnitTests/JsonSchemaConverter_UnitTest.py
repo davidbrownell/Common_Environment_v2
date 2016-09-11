@@ -43,7 +43,7 @@ class UnitTest(unittest.TestCase):
     # ----------------------------------------------------------------------
     def test_SimpleItems(self):
         self.assertEqual(JsonSchemaConverter.Convert(DateTimeTypeInfo()), { "type" : "string", "format" : "date-time", })
-        self.assertEqual(JsonSchemaConverter.Convert(DateTypeInfo()), { "type" : "string", 'pattern': '^(?((0?[1-9]|1[0-2])[-/\\.](?([0-2][0-9]|3[0-1]))$', })
+        self.assertEqual(JsonSchemaConverter.Convert(DateTypeInfo()), { "type" : "string", 'pattern': '^(?([0-9]{4})[-/\\.](?(0?[1-9]|1[0-2])[-/\\.](?([0-2][0-9]|3[0-1])$', })
         self.assertEqual(JsonSchemaConverter.Convert(DirectoryTypeInfo()), { "type" : "string", "minLength" : 1, })
         self.assertEqual(JsonSchemaConverter.Convert(DurationTypeInfo()), { "type" : "string", 'pattern': '^(?([1-9][0-0]*|0)?:(?([0-5][0-9])(?::(?([0-5][0-9])(?:\\.(?([0-9]+))?)?$', })
         self.assertEqual(JsonSchemaConverter.Convert(EnumTypeInfo([ "one", "two", "three", ])), { "enum" : [ "one", "two", "three", ], })

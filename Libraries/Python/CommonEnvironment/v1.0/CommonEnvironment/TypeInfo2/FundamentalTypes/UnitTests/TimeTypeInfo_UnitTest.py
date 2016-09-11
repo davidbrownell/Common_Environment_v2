@@ -32,7 +32,14 @@ with Package.NameInfo(__package__) as ni:
 
 # ----------------------------------------------------------------------
 class UnitTest(unittest.TestCase):
-    pass
+    
+    # ----------------------------------------------------------------------
+    def test_Standard(self):
+        ti = TimeTypeInfo()
+        
+        self.assertEqual(ti.PythonDefinitionString, "TimeTypeInfo(arity=Arity(min=1, max_or_none=1))")
+        
+        ti.ValidateItem(ti.Create())
 
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":

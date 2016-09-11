@@ -70,9 +70,7 @@ class StringTypeInfo(TypeInfo):
         if self.MaxLength:
             items.append("have less than {}".format(Plural.no("character", self.MaxLength)))
 
-        if not items:
-            return ''
-
+        assert items
         return "Value must {}".format(', '.join(items))
 
     # ----------------------------------------------------------------------
@@ -89,9 +87,10 @@ class StringTypeInfo(TypeInfo):
         if self.MaxLength != None:
             args["max_length"] = self.MaxLength
 
+        assert args
         return "StringTypeInfo({}{})" \
                     .format( self._PythonDefinitionStringContents,
-                             '' if not args else ", {}".format(', '.join([ "{}={}".format(k, v) for k, v in args.iteritems() ])),
+                             ", {}".format(', '.join([ "{}={}".format(k, v) for k, v in args.iteritems() ])),
                            )
 
     # ----------------------------------------------------------------------
