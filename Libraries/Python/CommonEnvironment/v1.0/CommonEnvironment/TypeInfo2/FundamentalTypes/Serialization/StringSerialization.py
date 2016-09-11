@@ -19,6 +19,7 @@ import sys
 import uuid
 
 from CommonEnvironment.Interface import staticderived
+from CommonEnvironment import RegularExpression
 
 from . import Serialization
 
@@ -81,16 +82,16 @@ class StringSerialization(Serialization):
                                   "suffix" : index,
                                 }
                          for index, expr in enumerate([ # YYYY-MM-DD
-                                                        r"(?P<year%(suffix)s[0-9]{4})%(sep)s(?P<month%(suffix)s>(0?[1-9]|1[0-2])%(sep)s(?P<day%(suffix)s>[0-2][0-9]|3[0-1]))",
+                                                        r"(?P<year%(suffix)s>[0-9]{4})%(sep)s(?P<month%(suffix)s>0?[1-9]|1[0-2])%(sep)s(?P<day%(suffix)s>[0-2][0-9]|3[0-1])",
 
                                                         # MM-DD-YYYY
-                                                        r"(?P<month%(suffix)s(0?[1-9]|1[0-2])%(sep)s(?P<day%(suffix)s>([0-2][0-9]|3[0-1]))%(sep)s(?P<year%(suffix)s>[0-9]{4})",
+                                                        r"(?P<month%(suffix)s>0?[1-9]|1[0-2])%(sep)s(?P<day%(suffix)s>[0-2][0-9]|3[0-1])%(sep)s(?P<year%(suffix)s>[0-9]{4})",
 
                                                         # YY-MM-DD
-                                                        r"(?P<year%(suffix)s>\d{2})%(sep)s(?P<month%(suffix)s>(0?[1-9]|1[0-2]))%(sep)s(?P<day%(suffix)s>([0-2][0-9]|3[0-1]))",
+                                                        r"(?P<year%(suffix)s>\d{2})%(sep)s(?P<month%(suffix)s>0?[1-9]|1[0-2])%(sep)s(?P<day%(suffix)s>[0-2][0-9]|3[0-1])",
 
                                                         # MM-DD-YY
-                                                        r"(?P<month%(suffix)s>(0?[1-9]|1[0-2]))%(sep)s(?P<day%(suffix)s>([0-2][0-9]|3[0-1]))%(sep)s(?P<year%(suffix)s>\d{2})",
+                                                        r"(?P<month%(suffix)s>0?[1-9]|1[0-2])%(sep)s(?P<day%(suffix)s>[0-2][0-9]|3[0-1])%(sep)s(?P<year%(suffix)s>\d{2})",
                                                       ])
                        ]
         
@@ -119,13 +120,7 @@ class StringSerialization(Serialization):
             # ----------------------------------------------------------------------
             @classmethod
             def OnFloat(this_cls, type_info):
-                prefix = this_cls.OnInt(type_info)[0]
-                assert isinstance(prefix, str)
-
-                if type_info.Min != None and type_info.Max != None and type_info.Min >= -1.0 and type_info.Max <= 1.0:
-                    prefix = "({})?".format(prefix)
-
-                return [ r"{}\.[0-9]+".format(prefix), ]
+                return [ r"{}\.[0-9]+".format(this_cls.OnInt(type_info)[0]), ]
         
             # ----------------------------------------------------------------------
             @staticmethod
@@ -177,7 +172,8 @@ class StringSerialization(Serialization):
             @staticmethod
             def OnString(type_info):
                 if type_info.ValidationExpression:
-                    return [ type_info.ValidationExpression, ]
+                    return [ RegularExpression.PythonToJavaScript(type_info.ValidationExpression), 
+                           ]
 
                 if type_info.MinLength in [ 0, None, ] and type_info.MaxLength == None:
                     return [ ".*", ]
@@ -318,8 +314,13 @@ class StringSerialization(Serialization):
             @staticmethod
             def OnDateTime(type_info):
                 match_dict = match.groupdict()
-                has_timezone = "tz_utc" in match_dict or "tz_hour" in match_dict
 
+                has_timezone = False
+                for attribute_name in [ "tz_utc", "tz_hour", ]:
+                    if match_dict.get(attribute_name, None) != None:
+                        has_timezone = True
+                        break
+                
                 return datetime.datetime.strptime(item, "%Y-%m-%d{sep}%H:%M{seconds}{fraction_seconds}{time_zone}" \
                                                             .format( sep='T' if 'T' in item else ' ',
                                                                      seconds=":%S" if item.count(':') > 1 else '',
@@ -406,8 +407,13 @@ class StringSerialization(Serialization):
             @staticmethod
             def OnTime(type_info):
                 match_dict = match.groupdict()
-                has_timezone = "tz_utc" in match_dict or "tz_hour" in match_dict
-
+                
+                has_timezone = False
+                for attribute_name in [ "tz_utc", "tz_hour", ]:
+                    if match_dict.get(attribute_name, None) != None:
+                        has_timezone = True
+                        break
+                
                 return datetime.datetime.strptime(item, "%H:%M:%S{fraction_seconds}{time_zone}" \
                                                             .format( fraction_seconds=".%f" if '.' in item else '',
                                                                      time_zone="%z" if has_timezone else '',

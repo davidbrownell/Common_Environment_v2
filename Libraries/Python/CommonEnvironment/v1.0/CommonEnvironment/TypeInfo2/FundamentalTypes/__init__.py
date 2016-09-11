@@ -172,86 +172,107 @@ class Visitor(_Interface.Interface):
             raise Exception("'{}' was not expected".format(type(type_info)))
 
 # ----------------------------------------------------------------------
-class SimpleVisitor(Visitor):
+# |  
+# |  Public Methods
+# |  
+# ----------------------------------------------------------------------
+# <Invalid argument name> pylint: disable = C0103
+# <Too many return statements> pylint: disable = R0911
+# <Too many braches> pylint: disable = R0912
+def CreateSimpleVisitor( onBoolFunc=None,               # def Func(type_info, *args, **kwargs)
+                         onDateTimeFunc=None,           # def Func(type_info, *args, **kwargs)
+                         onDateFunc=None,               # def Func(type_info, *args, **kwargs)
+                         onDirectoryFunc=None,          # def Func(type_info, *args, **kwargs)
+                         onDurationFunc=None,           # def Func(type_info, *args, **kwargs)
+                         onEnumFunc=None,               # def Func(type_info, *args, **kwargs)
+                         onFilenameFunc=None,           # def Func(type_info, *args, **kwargs)
+                         onFloatFunc=None,              # def Func(type_info, *args, **kwargs)
+                         onGuidFunc=None,               # def Func(type_info, *args, **kwargs)
+                         onIntFunc=None,                # def Func(type_info, *args, **kwargs)
+                         onStringFunc=None,             # def Func(type_info, *args, **kwargs)
+                         onTimeFunc=None,               # def Func(type_info, *args, **kwargs)
+                       ):
     # ----------------------------------------------------------------------
-    def __init__( self,
-                  onBoolFunc=None,          # def Func(type_info, *args, **kwargs)
-                  onDateTimeFunc=None,      # def Func(type_info, *args, **kwargs)
-                  onDateFunc=None,          # def Func(type_info, *args, **kwargs)
-                  onDirectoryFunc=None,     # def Func(type_info, *args, **kwargs)
-                  onDurationFunc=None,      # def Func(type_info, *args, **kwargs)
-                  onEnumFunc=None,          # def Func(type_info, *args, **kwargs)
-                  onFilenameFunc=None,      # def Func(type_info, *args, **kwargs)
-                  onFloatFunc=None,         # def Func(type_info, *args, **kwargs)
-                  onGuidFunc=None,          # def Func(type_info, *args, **kwargs)
-                  onIntFunc=None,           # def Func(type_info, *args, **kwargs)
-                  onStringFunc=None,        # def Func(type_info, *args, **kwargs)
-                  onTimeFunc=None,          # def Func(type_info, *args, **kwargs)
-                ):
-        self._onBoolFunc                    = onBoolFunc or self._Empty
-        self._onDateTimeFunc                = onDateTimeFunc or self._Empty
-        self._onDateFunc                    = onDateFunc or self._Empty
-        self._onDirectoryFunc               = onDirectoryFunc or self._Empty
-        self._onDurationFunc                = onDurationFunc or self._Empty
-        self._onEnumFunc                    = onEnumFunc or self._Empty
-        self._onFilenameFunc                = onFilenameFunc or self._Empty
-        self._onFloatFunc                   = onFloatFunc or self._Empty
-        self._onGuidFunc                    = onGuidFunc or self._Empty
-        self._onIntFunc                     = onIntFunc or self._Empty
-        self._onStringFunc                  = onStringFunc or self._Empty
-        self._onTimeFunc                    = onTimeFunc or self._Empty
-
-    # ----------------------------------------------------------------------
-    def OnBool(self, type_info, *args, **kwargs):
-        return self._onBoolFunc(type_info, *args, **kwargs)
-
-    # ----------------------------------------------------------------------
-    def OnDateTime(self, type_info, *args, **kwargs):
-        return self._onDateTimeFunc(type_info, *args, **kwargs)
-
-    # ----------------------------------------------------------------------
-    def OnDate(self, type_info, *args, **kwargs):
-        return self._onDateFunc(type_info, *args, **kwargs)
-
-    # ----------------------------------------------------------------------
-    def OnDirectory(self, type_info, *args, **kwargs):
-        return self._onDirectoryFunc(type_info, *args, **kwargs)
-
-    # ----------------------------------------------------------------------
-    def OnDuration(self, type_info, *args, **kwargs):
-        return self._onDurationFunc(type_info, *args, **kwargs)
-
-    # ----------------------------------------------------------------------
-    def OnEnum(self, type_info, *args, **kwargs):
-        return self._onEnumFunc(type_info, *args, **kwargs)
-
-    # ----------------------------------------------------------------------
-    def OnFilename(self, type_info, *args, **kwargs):
-        return self._onFilenameFunc(type_info, *args, **kwargs)
-
-    # ----------------------------------------------------------------------
-    def OnFloat(self, type_info, *args, **kwargs):
-        return self._onFloatFunc(type_info, *args, **kwargs)
-
-    # ----------------------------------------------------------------------
-    def OnGuid(self, type_info, *args, **kwargs):
-        return self._onGuidFunc(type_info, *args, **kwargs)
-
-    # ----------------------------------------------------------------------
-    def OnInt(self, type_info, *args, **kwargs):
-        return self._onIntFunc(type_info, *args, **kwargs)
-
-    # ----------------------------------------------------------------------
-    def OnString(self, type_info, *args, **kwargs):
-        return self._onStringFunc(type_info, *args, **kwargs)
-
-    # ----------------------------------------------------------------------
-    def OnTime(self, type_info, *args, **kwargs):
-        return self._onTimeFunc(type_info, *args, **kwargs)
-
-    # ----------------------------------------------------------------------
-    # ----------------------------------------------------------------------
-    # ----------------------------------------------------------------------
-    @staticmethod
-    def _Empty(*args, **kwargs):
+    def Empty(*args, **kwargs):
         pass
+
+    # ----------------------------------------------------------------------
+    
+    onBoolFunc = onBoolFunc or Empty
+    onDateTimeFunc = onDateTimeFunc or Empty
+    onDateFunc = onDateFunc or Empty
+    onDirectoryFunc = onDirectoryFunc or Empty
+    onDurationFunc = onDurationFunc or Empty
+    onEnumFunc = onEnumFunc or Empty
+    onFilenameFunc = onFilenameFunc or Empty
+    onFloatFunc = onFloatFunc or Empty
+    onGuidFunc = onGuidFunc or Empty
+    onIntFunc = onIntFunc or Empty
+    onStringFunc = onStringFunc or Empty
+    onTimeFunc = onTimeFunc or Empty
+
+    # ----------------------------------------------------------------------
+    class SimpleVisitor(Visitor):
+        # ----------------------------------------------------------------------
+        @staticmethod
+        def OnBool(type_info, *args, **kwargs):
+            return onBoolFunc(type_info, *args, **kwargs)
+
+        # ----------------------------------------------------------------------
+        @staticmethod
+        def OnDateTime(type_info, *args, **kwargs):
+            return onDateTimeFunc(type_info, *args, **kwargs)
+
+        # ----------------------------------------------------------------------
+        @staticmethod
+        def OnDate(type_info, *args, **kwargs):
+            return onDateFunc(type_info, *args, **kwargs)
+
+        # ----------------------------------------------------------------------
+        @staticmethod
+        def OnDirectory(type_info, *args, **kwargs):
+            return onDirectoryFunc(type_info, *args, **kwargs)
+
+        # ----------------------------------------------------------------------
+        @staticmethod
+        def OnDuration(type_info, *args, **kwargs):
+            return onDurationFunc(type_info, *args, **kwargs)
+
+        # ----------------------------------------------------------------------
+        @staticmethod
+        def OnEnum(type_info, *args, **kwargs):
+            return onEnumFunc(type_info, *args, **kwargs)
+
+        # ----------------------------------------------------------------------
+        @staticmethod
+        def OnFilename(type_info, *args, **kwargs):
+            return onFilenameFunc(type_info, *args, **kwargs)
+
+        # ----------------------------------------------------------------------
+        @staticmethod
+        def OnFloat(type_info, *args, **kwargs):
+            return onFloatFunc(type_info, *args, **kwargs)
+
+        # ----------------------------------------------------------------------
+        @staticmethod
+        def OnGuid(type_info, *args, **kwargs):
+            return onGuidFunc(type_info, *args, **kwargs)
+
+        # ----------------------------------------------------------------------
+        @staticmethod
+        def OnInt(type_info, *args, **kwargs):
+            return onIntFunc(type_info, *args, **kwargs)
+
+        # ----------------------------------------------------------------------
+        @staticmethod
+        def OnString(type_info, *args, **kwargs):
+            return onStringFunc(type_info, *args, **kwargs)
+
+        # ----------------------------------------------------------------------
+        @staticmethod
+        def OnTime(type_info, *args, **kwargs):
+            return onTimeFunc(type_info, *args, **kwargs)
+
+    # ----------------------------------------------------------------------
+    
+    return SimpleVisitor

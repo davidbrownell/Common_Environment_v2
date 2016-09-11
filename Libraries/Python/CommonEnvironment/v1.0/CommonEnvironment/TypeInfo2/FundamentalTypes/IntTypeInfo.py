@@ -42,13 +42,40 @@ class IntTypeInfo(TypeInfo):
         if min != None and max != None and max < min:
             raise Exception("Invalid argument - 'max'")
 
-        if bytes not in [ None, 1, 2, 4, 8, ]:
-            raise Exception("Invalid argument - 'bytes'")
+        is_byte_default = False
+        
+        if bytes:
+            if bytes not in [ 1, 2, 4, 8, ]:
+                raise Exception("Invalid argument - 'bytes'")
+            
+            range_min = 0
+            range_max = (1 << (bytes * 8)) - 1
 
+            if min == None or min < 0:
+                half = range_max / 2
+                
+                range_min = -(half + 1)
+                range_max = half
+
+            if min != None:
+                if min < range_min:
+                    raise Exception("Invalid argument - 'bytes' and 'min'")
+            else:
+                min = range_min
+            
+            if max != None:
+                if max > range_max:
+                    raise Exception("Invalid argument - 'bytes' and 'max'")
+            else:
+                max = range_max
+                
+            is_byte_default = min == range_min and max == range_max
+            
         self.Min                            = min
         self.Max                            = max
         self.Bytes                          = bytes
-
+        self.IsByteDefault                  = is_byte_default
+        
     # ----------------------------------------------------------------------
     @property
     def ConstraintsDesc(self):
@@ -70,10 +97,10 @@ class IntTypeInfo(TypeInfo):
     def PythonDefinitionString(self):
         args = OrderedDict()
 
-        if self.Min != None:
+        if self.Min != None and not self.IsByteDefault:
             args["min"] = self.Min
 
-        if self.Max != None:
+        if self.Max != None and not self.IsByteDefault:
             args["max"] = self.Max
 
         if self.Bytes != None:

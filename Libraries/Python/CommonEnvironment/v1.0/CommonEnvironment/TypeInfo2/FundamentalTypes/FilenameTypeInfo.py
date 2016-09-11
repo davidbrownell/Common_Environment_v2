@@ -31,13 +31,13 @@ class FilenameTypeInfo(TypeInfo):
     # ----------------------------------------------------------------------
     def __init__( self,
                   ensure_exists=True,
-                  match_directory=False,
+                  match_any=False,
                   **type_info_args
                 ):
         super(FilenameTypeInfo, self).__init__(**type_info_args)
 
         self.EnsureExists                   = ensure_exists
-        self.MatchDirectory                 = match_directory
+        self.MatchAny                       = match_any
 
     # ----------------------------------------------------------------------
     @property
@@ -45,7 +45,7 @@ class FilenameTypeInfo(TypeInfo):
         if not self.EnsureExists:
             return ''
 
-        if self.MatchDirectory:
+        if self.MatchAny:
             return "Value must be a valid filename or directory"
 
         return "Value must be a valid filename"
@@ -53,10 +53,10 @@ class FilenameTypeInfo(TypeInfo):
     # ----------------------------------------------------------------------
     @property
     def PythonDefinitionString(self):
-        return "FilenameTypeInfo({}, ensure_exists={}, match_directory={})" \
+        return "FilenameTypeInfo({}, ensure_exists={}, match_any={})" \
                     .format( self._PythonDefinitionStringContents,
                              self.EnsureExists,
-                             self.MatchDirectory,
+                             self.MatchAny,
                            )
 
     # ----------------------------------------------------------------------
@@ -66,7 +66,7 @@ class FilenameTypeInfo(TypeInfo):
         if not self.EnsureExists:
             return
 
-        if self.MatchDirectory:
+        if self.MatchAny:
             if not os.path.exists(item):
                 return "'{}' is not a valid filename or directory".format(item)
         else:

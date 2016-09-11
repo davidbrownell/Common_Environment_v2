@@ -12,6 +12,7 @@
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 # |  
 # ----------------------------------------------------------------------
+import datetime
 import os
 import sys
 import unittest
@@ -32,7 +33,21 @@ with Package.NameInfo(__package__) as ni:
 
 # ----------------------------------------------------------------------
 class UnitTest(unittest.TestCase):
-    pass
+    
+    # ----------------------------------------------------------------------
+    @classmethod
+    def setUp(cls):
+        cls._now = DateTimeTypeInfo.Create()
+        cls._now_no_ms = DateTimeTypeInfo.Create(microseconds=False)
+
+        cls._ti = DateTimeTypeInfo()
+
+    # ----------------------------------------------------------------------
+    def test_Standard(self):
+        self.assertEqual(self._ti.PythonDefinitionString, "DateTimeTypeInfo(arity=Arity(min=1, max_or_none=1))")
+
+        self._ti.ValidateItem(self._now)
+        self._ti.ValidateItem(self._now_no_ms)
 
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":

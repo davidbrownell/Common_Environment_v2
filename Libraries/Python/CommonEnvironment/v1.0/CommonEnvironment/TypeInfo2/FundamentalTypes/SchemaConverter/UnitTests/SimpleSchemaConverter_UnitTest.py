@@ -64,7 +64,7 @@ class UnitTest(unittest.TestCase):
     def test_FilenameDirectory(self):
         self.assertEqual(SimpleSchemaConveter.Convert(DirectoryTypeInfo()), '<filename must_exist="True" type="directory">')
         self.assertEqual(SimpleSchemaConveter.Convert(FilenameTypeInfo()), '<filename must_exist="True" type="file">')
-        self.assertEqual(SimpleSchemaConveter.Convert(FilenameTypeInfo(ensure_exists=False, match_directory=True)), '<filename must_exist="False" type="either">')
+        self.assertEqual(SimpleSchemaConveter.Convert(FilenameTypeInfo(ensure_exists=False, match_any=True)), '<filename must_exist="False" type="either">')
         
     # ----------------------------------------------------------------------
     def test_Enum(self):
@@ -84,7 +84,7 @@ class UnitTest(unittest.TestCase):
         self.assertEqual(SimpleSchemaConveter.Convert(IntTypeInfo(min=2)), '<integer min="2">')
         self.assertEqual(SimpleSchemaConveter.Convert(IntTypeInfo(max=10)), '<integer max="10">')
         self.assertEqual(SimpleSchemaConveter.Convert(IntTypeInfo(min=2, max=10)), '<integer max="10" min="2">')
-        self.assertEqual(SimpleSchemaConveter.Convert(IntTypeInfo(bytes=4)), '<integer bytes="4">')
+        self.assertEqual(SimpleSchemaConveter.Convert(IntTypeInfo(bytes=4)), '<integer max="2147483647" bytes="4" min="-2147483648">')
         
     # ----------------------------------------------------------------------
     def test_String(self):
