@@ -137,7 +137,7 @@ class Results(object):
                          code_coverage_validator="[Code Coverage Validator: {}]\n\n".format(optional_code_coverage_validator.Name) if optional_code_coverage_validator else '',
                          validation_result=self._ResultToString(self.coverage_validation_result),
                          validation_min="{}%".format(self.coverage_validation_min) if self.coverage_validation_min != None else "N/A",
-                         coverage_percentage="{}%".format(self.coverage_percentage) if self.coverage_percentage != None else "N/A",
+                         coverage_percentage="{0:0.2f}%".format(self.coverage_percentage) if self.coverage_percentage != None else "N/A",
                          coverage_percentages="N/A" if self.coverage_percentages == None else "\n{}".format('\n'.join([ "        - [{value:<7}] {name}".format(value="{0:0.2f}%".format(percentage), name=name) for name, percentage in self.coverage_percentages.iteritems() ])),
                        )
         
