@@ -23,9 +23,10 @@ from CommonEnvironment import RegularExpression
 
 from . import Serialization
 
-from .. import ( DateTypeInfo,
+from .. import ( Visitor as FundamentalTypesVisitor, 
+                 CreateSimpleVisitor,
+                 DateTypeInfo,
                  TimeTypeInfo,
-                 Visitor as FundamentalTypesVisitor,
                )
 
 from ... import ValidationException
@@ -300,7 +301,22 @@ class StringSerialization(Serialization):
                 break
 
         if not match:
-            raise ValidationException("'{}' is not a valid '{}' string".format(item, type_info.Desc))
+            # ----------------------------------------------------------------------
+            def OnTypeInfoWithStringAsBase(type_info):
+                return "'{}' is not valid - {}".format(item, type_info.ConstraintsDesc)
+
+            # ----------------------------------------------------------------------
+            def OnDefault(type_info):
+                return "'{}' is not a valid '{}' string".format(item, type_info.Desc)
+
+            # ----------------------------------------------------------------------
+            
+            error = CreateSimpleVisitor( onEnumFunc=OnTypeInfoWithStringAsBase,
+                                         onStringFunc=OnTypeInfoWithStringAsBase,
+                                         onDefaultFunc=OnDefault,
+                                       ).Accept(type_info)
+            
+            raise ValidationException(error)
 
         # ----------------------------------------------------------------------
         @staticderived

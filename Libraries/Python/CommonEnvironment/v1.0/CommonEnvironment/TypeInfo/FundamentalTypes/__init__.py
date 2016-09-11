@@ -205,25 +205,22 @@ def CreateSimpleVisitor( onBoolFunc=None,               # def Func(type_info, *a
                          onIntFunc=None,                # def Func(type_info, *args, **kwargs)
                          onStringFunc=None,             # def Func(type_info, *args, **kwargs)
                          onTimeFunc=None,               # def Func(type_info, *args, **kwargs)
+                         onDefaultFunc=None,            # def Func(type_info, *args, **kwargs)
                        ):
-    # ----------------------------------------------------------------------
-    def Empty(*args, **kwargs):
-        pass
-
-    # ----------------------------------------------------------------------
+    onDefaultFunc = onDefaultFunc or (lambda *args, **kwargs: None)
     
-    onBoolFunc = onBoolFunc or Empty
-    onDateTimeFunc = onDateTimeFunc or Empty
-    onDateFunc = onDateFunc or Empty
-    onDirectoryFunc = onDirectoryFunc or Empty
-    onDurationFunc = onDurationFunc or Empty
-    onEnumFunc = onEnumFunc or Empty
-    onFilenameFunc = onFilenameFunc or Empty
-    onFloatFunc = onFloatFunc or Empty
-    onGuidFunc = onGuidFunc or Empty
-    onIntFunc = onIntFunc or Empty
-    onStringFunc = onStringFunc or Empty
-    onTimeFunc = onTimeFunc or Empty
+    onBoolFunc = onBoolFunc or onDefaultFunc
+    onDateTimeFunc = onDateTimeFunc or onDefaultFunc
+    onDateFunc = onDateFunc or onDefaultFunc
+    onDirectoryFunc = onDirectoryFunc or onDefaultFunc
+    onDurationFunc = onDurationFunc or onDefaultFunc
+    onEnumFunc = onEnumFunc or onDefaultFunc
+    onFilenameFunc = onFilenameFunc or onDefaultFunc
+    onFloatFunc = onFloatFunc or onDefaultFunc
+    onGuidFunc = onGuidFunc or onDefaultFunc
+    onIntFunc = onIntFunc or onDefaultFunc
+    onStringFunc = onStringFunc or onDefaultFunc
+    onTimeFunc = onTimeFunc or onDefaultFunc
 
     # ----------------------------------------------------------------------
     class SimpleVisitor(Visitor):
