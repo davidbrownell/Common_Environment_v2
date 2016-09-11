@@ -49,7 +49,7 @@ class EnumTypeInfo(TypeInfo):
     @property
     def ConstraintsDesc(self):
         if len(self.Values) == 1:
-            return "Value must be '{}'".format(self.Values[0])
+            return 'Value must be "{}"'.format(self.Values[0])
 
         return "Value must be one of {}".format(', '.join([ '"{}"'.format(value) for value in self.Values ]))
 

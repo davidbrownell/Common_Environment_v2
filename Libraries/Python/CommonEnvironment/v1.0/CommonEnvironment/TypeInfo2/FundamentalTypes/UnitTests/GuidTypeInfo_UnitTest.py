@@ -32,7 +32,14 @@ with Package.NameInfo(__package__) as ni:
 
 # ----------------------------------------------------------------------
 class UnitTest(unittest.TestCase):
-    pass
+    
+    # ----------------------------------------------------------------------
+    def test_PythonDefinitionString(self):
+        self.assertEqual(GuidTypeInfo().PythonDefinitionString, "GuidTypeInfo(arity=Arity(min=1, max_or_none=1))")
+
+    # ----------------------------------------------------------------------
+    def test_ValidateItem(self):
+        GuidTypeInfo().ValidateItem(GuidTypeInfo.Create())
 
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":

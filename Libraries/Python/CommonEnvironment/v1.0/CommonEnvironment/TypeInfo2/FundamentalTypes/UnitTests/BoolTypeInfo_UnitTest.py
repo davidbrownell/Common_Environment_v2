@@ -32,7 +32,18 @@ with Package.NameInfo(__package__) as ni:
 
 # ----------------------------------------------------------------------
 class UnitTest(unittest.TestCase):
-    pass
+    
+    # ----------------------------------------------------------------------
+    @classmethod
+    def setUp(cls):
+        cls._ti = BoolTypeInfo()
+
+    # ----------------------------------------------------------------------
+    def test_Standard(self):
+        self.assertEqual(self._ti.PythonDefinitionString, "BoolTypeInfo(arity=Arity(min=1, max_or_none=1))")
+        
+        self._ti.ValidateItem(True)
+        self._ti.ValidateItem(False)
 
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":

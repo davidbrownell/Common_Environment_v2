@@ -27,29 +27,29 @@ class Serialization(_Interface.Interface):
 
     # ----------------------------------------------------------------------
     @classmethod
-    def SerializeItems(cls, type_info, items):
+    def SerializeItems(cls, type_info, items, **custom_args):
         type_info.ValidateArity(items)
 
         if type_info.Arity.IsOptional and items == None:
             return None
 
         elif type_info.Arity.IsCollection:
-            return [ cls.SerializeItem(type_info, item) for item in items ]
+            return [ cls.SerializeItem(type_info, item, **custom_args) for item in items ]
 
-        return cls.SerializeItem(type_info, items)
+        return cls.SerializeItem(type_info, items, **custom_args)
 
     # ----------------------------------------------------------------------
     @classmethod
-    def DeserializeItems(cls, type_info, items):
+    def DeserializeItems(cls, type_info, items, **custom_args):
         type_info.ValidateArity(items)
 
         if type_info.Arity.IsOptional and items == None:
             return None
 
         elif type_info.Arity.IsCollection:
-            return [ cls.DeserializeItems(type_info, item) for item in items ]
+            return [ cls.DeserializeItem(type_info, item, **custom_args) for item in items ]
 
-        return cls.DeserializeItems(type_info, items)
+        return cls.DeserializeItem(type_info, items, **custom_args)
 
     # ----------------------------------------------------------------------
     @classmethod
@@ -58,8 +58,8 @@ class Serialization(_Interface.Interface):
         return cls._SerializeItemImpl(type_info, item, **custom_args)
 
     # ----------------------------------------------------------------------
-    @staticmethod
-    def DeserialieItem(cls, type_info, item, **custom_args):
+    @classmethod
+    def DeserializeItem(cls, type_info, item, **custom_args):
         item = cls._DeserializeItemImpl(type_info, item, **custom_args)
 
         type_info.ValidateItem(item)

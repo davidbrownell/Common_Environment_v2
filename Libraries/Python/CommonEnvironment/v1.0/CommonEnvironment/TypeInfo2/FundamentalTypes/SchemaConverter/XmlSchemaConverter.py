@@ -132,7 +132,8 @@ class XmlSchemaConverter(SchemaConverter):
             @staticmethod
             def OnInt(type_info, *args, **kwargs):
                 type_ = None
-
+                restrictions = OrderedDict()
+                
                 if type_info.Bytes == None:
                     type_ = "integer"
                 elif type_info.Bytes == 1:
@@ -146,21 +147,20 @@ class XmlSchemaConverter(SchemaConverter):
                 else:
                     assert False, type_info.Bytes
 
-                restrictions = OrderedDict()
-
                 if type_info.Min != None:
                     if type_info.Min >= 0:
                         type_ = "nonNegative{}{}".format(type_[0].upper(), type_[1:])
-                    
-                    if type_info.Min != 0:
+                        
+                    if type_info.Min != 0 and not type_info.IsByteDefault:
                         restrictions["minInclusive"] = type_info.Min
-
+                    
                 if type_info.Max != None:
                     if type_info.Max < 0:
                         type_ = "negative{}{}".format(type_[0].upper(), type_[1:])
-                        
-                    restrictions["maxInclusive"] = type_info.Max
                     
+                    if not type_info.IsByteDefault:
+                        restrictions["maxInclusive"] = type_info.Max
+                        
                 if not restrictions:
                     return "xs:{}".format(type_)
                 
