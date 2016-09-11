@@ -23,8 +23,8 @@ from CommonEnvironment import CommandLine
 from CommonEnvironment import FileSystem
 from CommonEnvironment.Interface import *
 from CommonEnvironment.NamedTuple import NamedTuple
-from CommonEnvironment.TypeInfo2.FundamentalTypes import *
-from CommonEnvironment.TypeInfo2.FundamentalTypes.Serialization.StringSerialization import StringSerialization
+from CommonEnvironment.TypeInfo.FundamentalTypes import *
+from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import StringSerialization
 from CommonEnvironment.StreamDecorator import StreamDecorator
 
 from CommonEnvironment.Compiler import CodeGenerator as CodeGeneratorMod

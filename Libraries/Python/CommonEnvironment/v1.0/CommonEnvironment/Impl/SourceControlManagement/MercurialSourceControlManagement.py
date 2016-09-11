@@ -32,8 +32,8 @@ from ...SourceControlManagement import DistributedSourceControlManagementBase, \
 from CommonEnvironment.Interface import staticderived
 from CommonEnvironment.QuickObject import QuickObject
 
-from CommonEnvironment.TypeInfo2.FundamentalTypes.DateTimeTypeInfo import DateTimeTypeInfo
-from CommonEnvironment.TypeInfo2.FundamentalTypes.Serialization.StringSerialization import StringSerialization
+from CommonEnvironment.TypeInfo.FundamentalTypes.DateTimeTypeInfo import DateTimeTypeInfo
+from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import StringSerialization
 
 # Note that functionality in this file require the following Mercurial extensions:
 #       Mercurial Extension Name            Functionality

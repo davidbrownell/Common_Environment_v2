@@ -33,7 +33,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 sys.path.insert(0, os.path.join(_script_dir, ".."))
 with CallOnExit(lambda: sys.path.pop(0)):
     from Constraints import *
-    from TypeInfo2.FundamentalTypes import *
+    from TypeInfo.FundamentalTypes import *
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------

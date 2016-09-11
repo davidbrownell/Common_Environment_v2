@@ -25,8 +25,8 @@ from CommonEnvironment import FileSystem
 from CommonEnvironment.QuickObject import QuickObject
 from CommonEnvironment.StreamDecorator import StreamDecorator
 
-from CommonEnvironment.TypeInfo2.FundamentalTypes.DateTypeInfo import DateTypeInfo
-from CommonEnvironment.TypeInfo2.FundamentalTypes.Serialization.StringSerialization import StringSerialization
+from CommonEnvironment.TypeInfo.FundamentalTypes.DateTypeInfo import DateTypeInfo
+from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import StringSerialization
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable

@@ -22,8 +22,8 @@ import sys
 
 import wrapt
 
-import TypeInfo2
-from TypeInfo2.FundamentalTypes import *     # <Unused import> pylint: disable = W0611, W0614
+import TypeInfo
+from TypeInfo.FundamentalTypes import *     # <Unused import> pylint: disable = W0611, W0614
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -143,7 +143,7 @@ class FunctionConstraint(object):
 
                 result = type_info.ValidateNoThrow(v)
                 if result:
-                    raise TypeInfo2.ValidationException("Validation for the arg '{}' failed - {}".format(k, result))
+                    raise TypeInfo.ValidationException("Validation for the arg '{}' failed - {}".format(k, result))
 
                 kwargs[k] = v
                 

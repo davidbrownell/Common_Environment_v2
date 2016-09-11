@@ -32,11 +32,11 @@ from CommonEnvironment.StreamDecorator import StreamDecorator
 # <Unused import> pylint: disable = W0611
 from CommonEnvironment.Constraints import *
 
-from CommonEnvironment import TypeInfo2
-from CommonEnvironment.TypeInfo2.AnyOfTypeInfo import AnyOfTypeInfo
-from CommonEnvironment.TypeInfo2.DictTypeInfo import DictTypeInfo
-from CommonEnvironment.TypeInfo2.FundamentalTypes import *
-from CommonEnvironment.TypeInfo2.FundamentalTypes.Serialization.StringSerialization import StringSerialization
+from CommonEnvironment import TypeInfo
+from CommonEnvironment.TypeInfo.AnyOfTypeInfo import AnyOfTypeInfo
+from CommonEnvironment.TypeInfo.DictTypeInfo import DictTypeInfo
+from CommonEnvironment.TypeInfo.FundamentalTypes import *
+from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import StringSerialization
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -393,7 +393,7 @@ class Executor(object):
 
         except UsageException, ex:
             result = self.Usage(error=str(ex))
-        except TypeInfo2.ValidationException, ex:
+        except TypeInfo.ValidationException, ex:
             result = self.Usage(error=str(ex))
         except:
             import traceback
@@ -563,7 +563,7 @@ class Executor(object):
                 if param.postprocess_func:
                     value = param.postprocess_func(value)
 
-            except TypeInfo2.ValidationException, ex:
+            except TypeInfo.ValidationException, ex:
                 return str(ex)
 
             if param.display_arity in [ '?', '1' ,]:
