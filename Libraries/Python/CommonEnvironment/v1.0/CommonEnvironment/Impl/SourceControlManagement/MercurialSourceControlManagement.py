@@ -31,7 +31,9 @@ from ...SourceControlManagement import DistributedSourceControlManagementBase, \
 
 from CommonEnvironment.Interface import staticderived
 from CommonEnvironment.QuickObject import QuickObject
-from CommonEnvironment.TypeInfo.DateTimeTypeInfo import DateTimeTypeInfo
+
+from CommonEnvironment.TypeInfo2.FundamentalTypes.DateTimeTypeInfo import DateTimeTypeInfo
+from CommonEnvironment.TypeInfo2.FundamentalTypes.Serialization.StringSerialization import StringSerialization
 
 # Note that functionality in this file require the following Mercurial extensions:
 #       Mercurial Extension Name            Functionality
@@ -582,7 +584,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
 
             for branch in BranchGenerator():
                 command_line = '''hg log -b "{branch}" -r "sort(date('<{date}'), -date)" -l 1 --template "{rev}"'''.format( branch=branch,
-                                                                                                                            date=DateTimeTypeInfo().ItemToString(date),
+                                                                                                                            date=StringSerialization.SerializeItem(DateTimeTypeInfo(), date),
                                                                                                                             rev="{rev}",
                                                                                                                           )
 

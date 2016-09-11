@@ -62,6 +62,20 @@ _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
+FUNDAMENTAL_TYPES                           = ( BoolTypeInfo,
+                                                DateTimeTypeInfo,
+                                                DateTypeInfo,
+                                                DirectoryTypeInfo,
+                                                DurationTypeInfo,
+                                                EnumTypeInfo,
+                                                FilenameTypeInfo,
+                                                FloatTypeInfo,
+                                                GuidTypeInfo,
+                                                IntTypeInfo,
+                                                StringTypeInfo,
+                                                TimeTypeInfo,
+                                              )
+
 # ----------------------------------------------------------------------
 # |  
 # |  Public Types
@@ -276,3 +290,26 @@ def CreateSimpleVisitor( onBoolFunc=None,               # def Func(type_info, *a
     # ----------------------------------------------------------------------
     
     return SimpleVisitor
+
+# ----------------------------------------------------------------------
+def CreateTypeInfo(type, **kwargs):
+    if type in [ str, unicode, ]:
+        return StringTypeInfo(**kwargs)
+
+    for potential_type_info in [ BoolTypeInfo,
+                                 DateTimeTypeInfo,
+                                 DateTypeInfo,
+                                 # DirectoryTypeInfo,
+                                 DurationTypeInfo,
+                                 # EnumTypeInfo,
+                                 # FilenameTypeInfo,
+                                 FloatTypeInfo,
+                                 GuidTypeInfo,
+                                 IntTypeInfo,
+                                 # StringTypeInfo,
+                                 TimeTypeInfo,
+                                ]:
+        if potential_type_info.ExpectedType == type:
+            return potential_type_info(**kwargs)
+
+    raise BaseException("'{}' is not a recognized type".format(type))

@@ -134,10 +134,20 @@ class Arity(object):
 
     # ----------------------------------------------------------------------
     def __cmp__(self, other):
-        if self.Min < other.Min:
+        if not isinstance(other, self.__class__):
             return -1
-        elif other.Min < self.Min:
-            return 1
+
+        if self.Min == None:
+            if other.Min != None:
+                return -1
+        else:
+            if other.Min == None:
+                return 1
+
+            if self.Min < other.Min:
+                return -1
+            elif other.Min < self.Min:
+                return 1
 
         if self.Max == None:
             if other.Max != None:
