@@ -36,7 +36,7 @@ class DateTimeTypeInfo(TypeInfo):
         result = datetime.datetime.now()
 
         if not microseconds:
-            result = result.replace(microseconds=0)
+            result = result.replace(microsecond=0)
 
         return result
 

@@ -32,7 +32,18 @@ with Package.NameInfo(__package__) as ni:
 
 # ----------------------------------------------------------------------
 class UnitTest(unittest.TestCase):
-    pass
+    
+    # ----------------------------------------------------------------------
+    @classmethod
+    def setUp(cls):
+        cls._ti = DateTypeInfo()
+        cls._now = cls._ti.Create()
+
+    # ----------------------------------------------------------------------
+    def test_Standard(self):
+        self.assertEqual(self._ti.PythonDefinitionString, "DateTypeInfo(arity=Arity(min=1, max_or_none=1))")
+
+        self._ti.ValidateItem(self._now)
 
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":

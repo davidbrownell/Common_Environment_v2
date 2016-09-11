@@ -77,7 +77,7 @@ class SimpleSchemaConveter(SchemaConverter):
             # ----------------------------------------------------------------------
             @staticmethod
             def OnFilename(type_info, *args, **kwargs):
-                return "filename", { "EnsureExists" : "must_exist" }, { "type" : '"either"' if type_info.MatchDirectory else '"file"', }
+                return "filename", { "EnsureExists" : "must_exist" }, { "type" : '"either"' if type_info.MatchAny else '"file"', }
         
             # ----------------------------------------------------------------------
             @staticmethod

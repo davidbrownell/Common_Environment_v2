@@ -135,6 +135,7 @@ class UnitTest(unittest.TestCase):
                                                                             """\
                                                                             <xs:restrictions base="xs:nonNegativeByte">
                                                                               <xs:minInclusive value="2" />
+                                                                              <xs:maxInclusive value="255" />
                                                                             </xs:restrictions>
                                                                             """))
 
@@ -142,6 +143,7 @@ class UnitTest(unittest.TestCase):
                                                                             """\
                                                                             <xs:restrictions base="xs:nonNegativeShort">
                                                                               <xs:minInclusive value="2" />
+                                                                              <xs:maxInclusive value="65535" />
                                                                             </xs:restrictions>
                                                                             """))
 
@@ -149,6 +151,7 @@ class UnitTest(unittest.TestCase):
                                                                             """\
                                                                             <xs:restrictions base="xs:nonNegativeInt">
                                                                               <xs:minInclusive value="2" />
+                                                                              <xs:maxInclusive value="4294967295" />
                                                                             </xs:restrictions>
                                                                             """))
 
@@ -156,6 +159,7 @@ class UnitTest(unittest.TestCase):
                                                                             """\
                                                                             <xs:restrictions base="xs:nonNegativeLong">
                                                                               <xs:minInclusive value="2" />
+                                                                              <xs:maxInclusive value="18446744073709551615" />
                                                                             </xs:restrictions>
                                                                             """))
 
