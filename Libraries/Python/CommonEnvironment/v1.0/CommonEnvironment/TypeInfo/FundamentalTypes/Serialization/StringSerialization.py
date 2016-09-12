@@ -281,7 +281,12 @@ class StringSerialization(Serialization):
 
     # ----------------------------------------------------------------------
     @classmethod
-    def _DeserializeItemImpl(cls, type_info, item):
+    def _DeserializeItemImpl(cls, type_info, item, **custom_kwargs):
+        # custom_kwargs:
+        #   type_info type      Key         Value       Default             Desc
+        #   ------------------  ----------  ----------  ------------------  ----------------
+        #   DirectoryTypeInfo   normalize   Boolean     True                Applies os.path.realpath and os.path.normpath to the string
+        #   FilenameTypeInfo    normalize   Boolean     True                Applies os.path.realpath and os.path.normpath to the string
 
         match = None
         match_index = None
@@ -362,9 +367,9 @@ class StringSerialization(Serialization):
                                     )
         
             # ----------------------------------------------------------------------
-            @staticmethod
-            def OnDirectory(type_info):
-                return item.replace('/', os.path.sep)
+            @classmethod
+            def OnDirectory(this_cls, type_info):
+                return this_cls.OnFilename(type_info)
         
             # ----------------------------------------------------------------------
             @staticmethod
@@ -397,7 +402,12 @@ class StringSerialization(Serialization):
             # ----------------------------------------------------------------------
             @staticmethod
             def OnFilename(type_info):
-                return item.replace('/', os.path.sep)
+                value = item.replace('/', os.path.sep)
+
+                if custom_kwargs.get("normalize", True):
+                    value = os.path.realpath(os.path.normpath(value))
+
+                return value
         
             # ----------------------------------------------------------------------
             @staticmethod
