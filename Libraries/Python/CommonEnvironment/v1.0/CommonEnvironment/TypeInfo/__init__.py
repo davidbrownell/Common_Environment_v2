@@ -1,48 +1,49 @@
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # |  
 # |  __init__.py
 # |  
-# |  David Brownell (db@DavidBrownell.com)
+# |  David Brownell <db@DavidBrownell.com>
+# |      2016-09-04 17:12:58
 # |  
-# |  12/26/2015 04:44:18 PM
+# ----------------------------------------------------------------------
 # |  
-# ---------------------------------------------------------------------------
-# |  
-# |  Copyright David Brownell 2015-16.
-# |          
+# |  Copyright David Brownell 2016.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 # |  
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 import inflect
 import os
 import sys
 
 from CommonEnvironment.Interface import *
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 Plural = inflect.engine()
 
-# ---------------------------------------------------------------------------
-# |
+# ----------------------------------------------------------------------
+# |  
 # |  Public Types
-# |
-# ---------------------------------------------------------------------------
+# |  
+# ----------------------------------------------------------------------
 class ValidationException(Exception):
     pass
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 class Arity(object):
 
-    # ---------------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     @classmethod
     def FromString(cls, value):
         if value == '?':
             return cls(0, 1)
+
+        if value == '1':
+            return cls(1, 1)
 
         if value == '*':
             return cls(0, None)
@@ -50,10 +51,7 @@ class Arity(object):
         if value == '+':
             return cls(1, None)
 
-        if value == '1':
-            return cls(1, 1)
-
-        if value.startswith('{') and value.endswith('}'):
+        if value.startswith('(') and value.endswith(')'):
             values = [ int(v.strip()) for v in value[1:-1].split(',') ]
 
             if len(values) == 1:
@@ -61,17 +59,17 @@ class Arity(object):
             elif len(values) == 2:
                 return cls(values[0], values[1])
 
-        raise Exception("'{}' is not a valid arity".format(Arity))
+        raise Exception("'{}' is not a valid arity".format(value))
 
-    # ---------------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     def __init__(self, min, max_or_none):
         if max_or_none != None and min > max_or_none:
-            raise Exception("Invalid argument - max_or_none")
+            raise Exception("Invalid argument - 'max_or_none'")
 
         self.Min                            = min
         self.Max                            = max_or_none
 
-    # ---------------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     @property
     def IsSingle(self):
         return self.Min == 1 and self.Max == 1
@@ -86,11 +84,11 @@ class Arity(object):
 
     @property
     def IsOptionalCollection(self):
-        return self.Min == 0 and self.IsCollection
+        return self.IsCollection and self.Min == 0
 
     @property
     def IsFixedCollection(self):
-        return self.Min == self.Max and self.Min != 1
+        return self.IsCollection and self.Min == self.Max
 
     @property
     def IsZeroOrMore(self):
@@ -109,25 +107,73 @@ class Arity(object):
         return "Arity(min={}, max_or_none={})".format(self.Min, self.Max)
 
     # ----------------------------------------------------------------------
-    def ToString(self):
+    def ToString( self,
+                  brackets=None,            # ( lbraket, rbracket )
+                ):
+        brackets = brackets or ( '(', ')' )
+
         if self.IsOptional:
             return '?'
         elif self.IsZeroOrMore:
             return '*'
         elif self.IsOneOrMore:
             return '+'
-        elif self.Min == 1 and self.Max == 1:
+        elif self.IsSingle:
             return ''
         elif self.Min == self.Max:
-            return "{{{}}}}".format(self.Min)
+            return "{}{}{}".format( brackets[0], 
+                                    self.Min, 
+                                    brackets[1],
+                                  )
         else:
-            return "{{{},{}}}".format(self.Min, self.Max)
+            return "{}{},{}{}".format( brackets[0],
+                                       self.Min, 
+                                       self.Max,
+                                       brackets[1],
+                                     )
 
-# ---------------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    def __cmp__(self, other):
+        if not isinstance(other, self.__class__):
+            return -1
+
+        if self.Min == None:
+            if other.Min != None:
+                return -1
+        else:
+            if other.Min == None:
+                return 1
+
+            if self.Min < other.Min:
+                return -1
+            elif other.Min < self.Min:
+                return 1
+
+        if self.Max == None:
+            if other.Max != None:
+                return 1
+        else:
+            if other.Max == None:
+                return -1
+
+            if self.Max < other.Max:
+                return -1
+            elif self.Max > other.Max:
+                return 1
+
+        assert self.Min == other.Min, (self.Min, other.Min)
+        assert self.Max == other.Max, (self.Max, other.Max)
+
+        return 0
+
+# ----------------------------------------------------------------------
 class TypeInfo(Interface):
-
-    # ---------------------------------------------------------------------------
+    
+    # ----------------------------------------------------------------------
+    # |  
     # |  Public Properties
+    # |  
+    # ----------------------------------------------------------------------
     @abstractproperty
     def Desc(self):
         raise Exception("Abstract property")
@@ -144,51 +190,69 @@ class TypeInfo(Interface):
     def PythonDefinitionString(self):
         raise Exception("Abstract property")
 
-    ExpectedTypeIsCallable                  = False
-    
-    # ---------------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    # |  
     # |  Public Methods
-    def __init__( self, 
+    # |  
+    # ----------------------------------------------------------------------
+    def __init__( self,
                   arity=None,                           # default is Arity(1, 1)
                   validation_func=None,                 # def Func(value) -> string on error
                   collection_validation_func=None,      # def Func(values) -> string on error
                 ):
         if isinstance(arity, (str, unicode)):
             arity = Arity.FromString(arity)
+        else:
+            arity = arity or Arity(1, 1)
 
+        if collection_validation_func and not arity.IsCollection:
+            raise Exception("'collection_validation_func' should only be used for types that are collections")
+        
         self.Arity                          = arity or Arity(1, 1)
         self.ValidationFunc                 = validation_func
-
-        if collection_validation_func and not self.Arity.IsCollection:
-            raise Exception("'collection_validation_func' should only be used for types that are collections")
-
         self.CollectionValidationFunc       = collection_validation_func
+        
+    # ----------------------------------------------------------------------
+    def IsExpectedType(self, item):
+        if self._ExpectedTypeIsCallable:
+            return self.ExpectedType(item)
+        
+        return isinstance(item, self.ExpectedType)
 
-    # ---------------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    def IsValid(self, item_or_items):
+        return self.ValidateNoThrow(item_or_items) == None
+
+    # ----------------------------------------------------------------------
+    def IsValidItem(self, item):
+        return self.ValidateItemNoThrow(item) == None
+
+    # ----------------------------------------------------------------------
     def Validate(self, value, **custom_args):
         result = self.ValidateNoThrow(value, **custom_args)
         if result != None:
             raise ValidationException(result)
 
-    # ---------------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     def ValidateArity(self, value):
         result = self.ValidateArityNoThrow(value)
         if result != None:
             raise ValidationException(result)
 
-    # ---------------------------------------------------------------------------
-    def ValidateArityCount(self, value):
-        result = self.ValidateArityCountNoThrow(value)
+    # ----------------------------------------------------------------------
+    def ValidateArityCount(self, count):
+        result = self.ValidateArityCountNoThrow(count)
         if result != None:
             raise ValidationException(result)
 
-    # ---------------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     def ValidateItem(self, value, **custom_args):
         result = self.ValidateItemNoThrow(value, **custom_args)
         if result != None:
             raise ValidationException(result)
 
-    # ---------------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     def ValidateNoThrow(self, value, **custom_args):
         result = self.ValidateArityNoThrow(value)
         if result != None:
@@ -200,7 +264,6 @@ class TypeInfo(Interface):
             value = []
 
         if self.CollectionValidationFunc:
-            assert isinstance(value, list), type(value)
             result = self.CollectionValidationFunc(value)
             if result != None:
                 return result
@@ -210,20 +273,20 @@ class TypeInfo(Interface):
             if result != None:
                 return result
 
-    # ---------------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     def ValidateArityNoThrow(self, value):
         if not self.Arity.IsCollection and isinstance(value, list):
             return "Only 1 item was expected"
 
         return self.ValidateArityCountNoThrow(len(value) if isinstance(value, list) else 1 if value != None else 0)
 
-    # ---------------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     def ValidateArityCountNoThrow(self, count):
         if not self.Arity.IsCollection:
-            if (count == 0 and not self.Arity.IsOptional) or count > 1:
+            if(count == 0 and not self.Arity.IsOptional) or count > 1:
                 return "1 item was expected"
 
-            return
+            return 
 
         if self.Arity.Min != None and count < self.Arity.Min:
             return "At least {} {} expected".format( Plural.no("item", self.Arity.Min),
@@ -235,21 +298,12 @@ class TypeInfo(Interface):
                                                     Plural.plural_verb("was", self.Arity.Max),
                                                   )
 
-    # ---------------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     def ValidateItemNoThrow(self, item, **custom_args):
         if self.Arity.IsOptional and item == None:
             return
 
-        is_expected_type = None
-
-        if self.ExpectedTypeIsCallable:
-            is_expected_type = self.ExpectedType(item)
-        else:
-            is_expected_type = isinstance(item, self.ExpectedType)
-
-        assert is_expected_type != None
-
-        if not is_expected_type:
+        if not self.IsExpectedType(item):
             return "'{}' is not {}".format( item,
                                             Plural.a(self._GetExpectedTypeString()),
                                           )
@@ -263,51 +317,50 @@ class TypeInfo(Interface):
             if result != None:
                 return result
 
-    # ---------------------------------------------------------------------------
-    def Postprocess(self, value):
-        if self.Arity.IsOptional and value == None:
-            return None
-
-        if self.Arity.IsCollection:
-            return [ self.PostprocessItem(item) for item in value ]
-
-        return self.PostprocessItem(value)
-
-    # ---------------------------------------------------------------------------
-    @staticmethod
-    @abstractmethod
-    def PostprocessItem(item):
-        raise Exception("Abstract method")
-        
-    # ---------------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    # |  
     # |  Protected Properties
+    # |  
+    # ----------------------------------------------------------------------
+    _ExpectedTypeIsCallable                 = False
+
     @property
     def _PythonDefinitionStringContents(self):
+        # Arbitrary custom validation functions can't be saved as part of a
+        # generic python definitions
         assert not self.ValidationFunc
         assert not self.CollectionValidationFunc
 
         return "arity={}".format(self.Arity.PythonDefinitionString)
-    
-    # ---------------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------
+    # |  
     # |  Protected Methods
+    # |  
+    # ----------------------------------------------------------------------
     def _GetExpectedTypeString(self):
-        # ---------------------------------------------------------------------------
+        # ----------------------------------------------------------------------
         def GetTypeName(t):
             return getattr(t, "__name__", str(t))
 
-        # ---------------------------------------------------------------------------
+        # ----------------------------------------------------------------------
         
-        if self.ExpectedTypeIsCallable:
+        if self._ExpectedTypeIsCallable:
             return self.__class__.__name__
 
         if isinstance(self.ExpectedType, tuple):
             return ', '.join([ GetTypeName(t) for t in self.ExpectedType ])
 
         return GetTypeName(self.ExpectedType)
-
-    # ---------------------------------------------------------------------------
+        
+    # ----------------------------------------------------------------------
+    # |  
     # |  Private Methods
+    # |  
+    # ----------------------------------------------------------------------
     @staticmethod
     @abstractmethod
     def _ValidateItemNoThrowImpl(item, **custom_args):
+        """Return string on error"""
         raise Exception("Abstract method")
+    

@@ -233,7 +233,7 @@ class Verifier( CustomInvocationMixin,
 # |
 # ---------------------------------------------------------------------------
 @CommandLine.EntryPoint
-@CommandLine.FunctionConstraints( input=CommandLine.FilenameTypeInfo(type=CommandLine.FilenameTypeInfo.Type_Either, arity='+'),
+@CommandLine.FunctionConstraints( input=CommandLine.FilenameTypeInfo(match_any=True, arity='+'),
                                   passing_score=CommandLine.FloatTypeInfo(min=0.0, max=10.0, arity='?'),
                                   output_stream=None,
                                 )

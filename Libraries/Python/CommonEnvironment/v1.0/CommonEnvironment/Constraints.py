@@ -23,7 +23,6 @@ import sys
 import wrapt
 
 import TypeInfo
-
 from TypeInfo.FundamentalTypes import *     # <Unused import> pylint: disable = W0611, W0614
 
 # ---------------------------------------------------------------------------
@@ -84,7 +83,7 @@ class FunctionConstraint(object):
                         if isinstance(default_value, str) and default_value == '':
                             these_kwargs["min_length"] = 0
 
-                        self.Preconditions[arg] = FundamentalTypeInfo.CreateTypeInfo(type(default_value), **these_kwargs)
+                        self.Preconditions[arg] = CreateTypeInfo(type(default_value), **these_kwargs)
                 
                 if missing:
                     raise Exception("Preconditions for {} were not provided in {}".format( ', '.join([ "'{}'".format(arg) for arg in missing ]),
@@ -146,7 +145,7 @@ class FunctionConstraint(object):
                 if result:
                     raise TypeInfo.ValidationException("Validation for the arg '{}' failed - {}".format(k, result))
 
-                kwargs[k] = type_info.Postprocess(v)
+                kwargs[k] = v
                 
         # Invoke the function
         result = wrapped(**kwargs)

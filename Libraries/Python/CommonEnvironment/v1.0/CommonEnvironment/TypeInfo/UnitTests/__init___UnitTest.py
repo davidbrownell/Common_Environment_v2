@@ -1,107 +1,179 @@
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # |  
 # |  __init___UnitTest.py
 # |  
-# |  David Brownell (db@DavidBrownell.com)
+# |  David Brownell <db@DavidBrownell.com>
+# |      2016-09-06 07:38:21
 # |  
-# |  12/29/2015 05:12:37 PM
+# ----------------------------------------------------------------------
 # |  
-# ---------------------------------------------------------------------------
-# |  
-# |  Copyright David Brownell 2015-16.
-# |          
+# |  Copyright David Brownell 2016.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 # |  
-# ---------------------------------------------------------------------------
-"""Unit test for __init__.py
-"""
-
+# ----------------------------------------------------------------------
 import os
 import sys
 import unittest
 
 from CommonEnvironment import Package
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 with Package.NameInfo(__package__) as ni:
     __package__ = ni.created
-
+    
     from .. import *
-    from ..FundamentalTypes import *
 
     __package__ = ni.original
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 class ArityTest(unittest.TestCase):
+    # ----------------------------------------------------------------------
+    def test_Construct(self):
+        Arity(0, 1)
+        Arity(1, 1)
+        Arity(1, None)
+        Arity(0, None)
+        Arity(3, 3)
+        self.assertRaises(Exception, lambda: Arity(10, 1))
 
-    # ---------------------------------------------------------------------------
-    @classmethod
-    def setUpClass(cls):
-        cls._zero_or_more = IntTypeInfo(arity='*')
-        cls._one_or_more = IntTypeInfo(arity='+')
-        cls._fixed = IntTypeInfo(arity="{3}")
-        cls._range = IntTypeInfo(arity="{2, 4}")
+    # ----------------------------------------------------------------------
+    def test_Compare(self):
+        self.assertTrue(Arity(1, 1) == Arity(1, 1))
+        self.assertTrue(Arity(0, None) < Arity(1, None))
+        self.assertTrue(Arity(1, None) > Arity(0, None))
+        self.assertTrue(Arity(5, None) > Arity(5, 10))
+        self.assertTrue(Arity(5, 10) < Arity(5, None))
+        self.assertTrue(Arity(5, 200) > Arity(5, 10))
+        self.assertTrue(Arity(5, 10) < Arity(5, 200))
 
-    # ---------------------------------------------------------------------------
-    def test_ZeroOrMore(self):
-        self._zero_or_more.Validate([])
-        self._zero_or_more.Validate([ 1, 2, 3, ])
-        self.assertRaises(Exception, lambda: self._zero_or_more.Validate(1))
+    # ----------------------------------------------------------------------
+    def test_FromString(self):
+        self.assertEqual(Arity.FromString('?'), Arity(0, 1))
+        self.assertEqual(Arity.FromString('1'), Arity(1, 1))
+        self.assertEqual(Arity.FromString('*'), Arity(0, None))
+        self.assertEqual(Arity.FromString('+'), Arity(1, None))
+        self.assertEqual(Arity.FromString("(3)"), Arity(3, 3))
+        self.assertEqual(Arity.FromString("(4,7)"), Arity(4, 7))
+        self.assertEqual(Arity.FromString("(  4   ,  7   )"), Arity(4, 7))
+        self.assertRaises(Exception, lambda: Arity.FromString("invalid"))
+           
+    # ----------------------------------------------------------------------
+    def test_Properties(self):
+        self.assertTrue(Arity.FromString('1').IsSingle)
+        self.assertTrue(Arity.FromString('(2)').IsSingle == False)
+        self.assertTrue(Arity.FromString('+').IsSingle == False)
 
-    # ---------------------------------------------------------------------------
-    def test_OneOrMore(self):
-        self._one_or_more.Validate([ 1, ])
-        self._one_or_more.ValidateItem(1)
-        self._one_or_more.Validate([ 1, 2, 3, ])
-        self.assertRaises(Exception, lambda: self._one_or_more.Valudate(1))
-        self.assertRaises(Exception, lambda: self._one_or_more.Valudate([]))
+        self.assertTrue(Arity.FromString('?').IsOptional)
+        self.assertTrue(Arity.FromString('1').IsOptional == False)
+        self.assertTrue(Arity.FromString('*').IsOptional == False)
 
-    # ---------------------------------------------------------------------------
-    def test_Fixed(self):
-        self._fixed.Validate([ 1, 2, 3, ])
-        self.assertRaises(Exception, lambda: self._fixed.Validate(1))
-        self.assertRaises(Exception, lambda: self._fixed.Validate([]))
-        self.assertRaises(Exception, lambda: self._fixed.Validate([ 1, 2, ]))
-        self.assertRaises(Exception, lambda: self._fixed.Validate([ 1, 2, 3, 4, ]))
+        self.assertTrue(Arity.FromString('*').IsCollection)
+        self.assertTrue(Arity.FromString('+').IsCollection)
+        self.assertTrue(Arity.FromString('(3, 5)').IsCollection)
+        self.assertTrue(Arity.FromString('1').IsCollection == False)
 
-    # ---------------------------------------------------------------------------
-    def test_Range(self):
-        self._range.Validate([ 1, 2, ])
-        self._range.Validate([ 1, 2, 3, ])
-        self._range.Validate([ 1, 2, 3, 4, ])
-        self.assertRaises(Exception, lambda: self._range.Validate(1))
-        self.assertRaises(Exception, lambda: self._range.Validate([]))
-        self.assertRaises(Exception, lambda: self._range.Validate([ 1, ]))
-        self.assertRaises(Exception, lambda: self._range.Validate([ 1, 2, 3, 4, 5, ]))
+        self.assertTrue(Arity.FromString('*').IsOptionalCollection)
+        self.assertTrue(Arity.FromString('+').IsOptionalCollection == False)
 
-    # ---------------------------------------------------------------------------
-    def test_Postprocess(self):
-        self.assertEqual(self._fixed.Postprocess([ 1, 2, 3, ]), [ 1, 2, 3, ])
+        self.assertTrue(Arity.FromString("(3)").IsFixedCollection)
+        self.assertTrue(Arity.FromString("+").IsFixedCollection == False)
+        self.assertTrue(Arity.FromString("*").IsFixedCollection == False)
+        self.assertTrue(Arity.FromString("(4,7)").IsFixedCollection == False)
+
+        self.assertTrue(Arity.FromString('*').IsZeroOrMore)
+        self.assertTrue(Arity.FromString('(0,10)').IsZeroOrMore == False)
+
+        self.assertTrue(Arity.FromString('+').IsOneOrMore)
+        self.assertTrue(Arity.FromString('*').IsOneOrMore == False)
+        self.assertTrue(Arity.FromString('1').IsOneOrMore == False)
+        self.assertTrue(Arity.FromString('(1,5)').IsOneOrMore == False)
+
+        self.assertTrue(Arity.FromString("(1,5)").IsRange)
+        self.assertTrue(Arity.FromString("*").IsRange == False)
+        self.assertTrue(Arity.FromString("+").IsRange == False)
+        self.assertTrue(Arity.FromString("(5)").IsRange == False)
+
+    # ----------------------------------------------------------------------
+    def test_PythonDefinitionString(self):
+        self.assertEqual(Arity.FromString('?').PythonDefinitionString, "Arity(min=0, max_or_none=1)")
+        self.assertEqual(Arity.FromString('1').PythonDefinitionString, "Arity(min=1, max_or_none=1)")
+        self.assertEqual(Arity.FromString('*').PythonDefinitionString, "Arity(min=0, max_or_none=None)")
+        self.assertEqual(Arity.FromString('+').PythonDefinitionString, "Arity(min=1, max_or_none=None)")
+        self.assertEqual(Arity.FromString('(12,47)').PythonDefinitionString, "Arity(min=12, max_or_none=47)")
+        self.assertEqual(Arity.FromString('(12)').PythonDefinitionString, "Arity(min=12, max_or_none=12)")
+
+    # ----------------------------------------------------------------------
+    def test_ToString(self):
+        self.assertEqual(Arity(0, 1).ToString(), '?')
+        self.assertEqual(Arity(1, 1).ToString(), '')
+        self.assertEqual(Arity(0, None).ToString(), '*')
+        self.assertEqual(Arity(1, None).ToString(), '+')
+        self.assertEqual(Arity(3, 3).ToString(), '(3)')
+        self.assertEqual(Arity(3, 10).ToString(), '(3,10)')
+        self.assertEqual(Arity(3, 3).ToString(brackets=( '{', '}' )), '{3}')
+        self.assertEqual(Arity(3, 10).ToString(brackets=( '{', '}' )), '{3,10}')
+
+# ----------------------------------------------------------------------
+class MyTypeInfo(TypeInfo):
+    Desc                                    = "MyTypeInfo"
+    ExpectedType                            = str
+    ConstraintsDesc                         = ''
         
-# ---------------------------------------------------------------------------
-class FundamentalOptionalArity(unittest.TestCase):
+    # ----------------------------------------------------------------------
+    def __init__( self, 
+                  error_index=None,
+                  **type_info_args
+                ):
+        super(MyTypeInfo, self).__init__(**type_info_args)
 
-    # ---------------------------------------------------------------------------
+        self.ErrorIndex                     = error_index
+        self._ctr                           = 0
+
+    # ----------------------------------------------------------------------
+    @property
+    def PythonDefinitionString(self):
+        return "MyTypeInfo({})".format(self._PythonDefinitionStringContents)
+
+    # ----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    def _ValidateItemNoThrowImpl(self, item, **custom_args):
+        if self.ErrorIndex != None and self._ctr == self.ErrorIndex:
+            return "Error"
+    
+        self._ctr += 1
+
+# ----------------------------------------------------------------------
+class TypeInfoTest(unittest.TestCase):
+    
+    # ----------------------------------------------------------------------
     @classmethod
     def setUpClass(cls):
-        cls._optional_type_info = StringTypeInfo(arity='?')
-        cls._type_info = StringTypeInfo()
+        cls._myTypeInfo                     = MyTypeInfo()
+        cls._myTypeInfoError                = MyTypeInfo(0, arity='+')
+        cls._myTypeInfoError2               = MyTypeInfo(2, arity='+')
 
-    # ---------------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    def test_Construct(self):
+        MyTypeInfo()
+        MyTypeInfo(arity='?')
+        self.assertRaises(Exception, lambda: MyTypeInfo(collection_validation_func=lambda *args, **kwags: None))
+
+    # ----------------------------------------------------------------------
     def test_Validate(self):
-        self._optional_type_info.Validate("value")
-        self._optional_type_info.Validate(None)
-        self._type_info.Validate("value")
-        self.assertRaises(Exception, lambda: self._type_info.Validate(None))
-
-    # ---------------------------------------------------------------------------
-    def test_StringConversion(self):
-        self.assertEqual(None, self._optional_type_info.FromString(self._optional_type_info.ToString(None)))
+        self._myTypeInfo.Validate("Foo")
+        self.assertRaises(ValidationException, lambda: self._myTypeInfoError.Validate("foo"))
+        
+        self._myTypeInfoError.ValidateArity([ "a", "b", "c", ])
+        self.assertRaises(ValidationException, lambda: self._myTypeInfo.ValidateArity(["a", "b", "c", ]))
+        
+        self._myTypeInfoError.ValidateArityCount(100)
+        self.assertRaises(ValidationException, lambda: self._myTypeInfo.ValidateArityCount(100))
 
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":

@@ -39,8 +39,8 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 class JsonSchemaConverter(SchemaConverter):
 
     # ----------------------------------------------------------------------
-    @staticmethod
-    def Convert(type_info):
+    @classmethod
+    def Convert(cls, type_info):
         # ----------------------------------------------------------------------
         @staticderived
         class Visitor(VisitorBase):
@@ -158,14 +158,22 @@ class JsonSchemaConverter(SchemaConverter):
         result = Visitor.Accept(type_info)
 
         if type_info.Arity.IsCollection:
-            result = { "type" : "array",
-                       "items" : result,
-                     }
-
-            if type_info.Arity.Min != 0:
-                result["minItems"] = type_info.Arity.Min
-
-            if type_info.Arity.Max != None:
-                result["maxItems"] = type_info.Arity.Max
+            result = cls.Collectionize(type_info.Arity, result)
 
         return result
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    def Collectionize(arity, schema):
+        schema = { "type" : "array",
+                   "items" : schema,
+                 }
+                 
+        if arity.Min != 0:
+            schema["minItems"] = arity.Min
+            
+        if arity.Max != None:
+            schema["maxItems"] = arity.Max
+            
+        return schema
+        

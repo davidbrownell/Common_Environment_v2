@@ -76,7 +76,8 @@ class PythonActivationActivity(SourceActivationActivityImpl):
                     raise Exception(textwrap.dedent(
                         """\
                         The generated Python location binary name is exceedingly long, which will cause problems on Windows.
-                        Ensure that this name is less than {} characters.
+                        Ensure that this name is less than {} characters by creating a symbolic link to this directory and 
+                        then Setup/Activate from that location.
 
                             {} ({} chars)
 
