@@ -157,16 +157,16 @@ class UnitTest(unittest.TestCase):
 
         self.assertEqual(StringSerialization.DeserializeItem(DateTypeInfo(), "2016-09-10"), datetime.date(year=2016, month=9, day=10))
 
-        self.assertEqual(StringSerialization.DeserializeItem(DirectoryTypeInfo(ensure_exists=False), "Foo/Bar/Baz"), os.path.sep.join([ _script_dir, "Foo", "Bar", "Baz", ]))
-        self.assertEqual(StringSerialization.DeserializeItem(DirectoryTypeInfo(ensure_exists=False), "Foo/Bar/Baz", normalize=False), os.path.sep.join([ "Foo", "Bar", "Baz", ]))
+        self.assertEqual(StringSerialization.DeserializeItem(DirectoryTypeInfo(ensure_exists=False), "Foo/Bar/Baz"), os.path.join(os.getcwd(), "Foo", "Bar", "Baz"))
+        self.assertEqual(StringSerialization.DeserializeItem(DirectoryTypeInfo(ensure_exists=False), "Foo/Bar/Baz", normalize=False), os.path.join("Foo", "Bar", "Baz"))
         
         self.assertEqual(StringSerialization.DeserializeItem(DurationTypeInfo(), "0:06:40.0"), datetime.timedelta(seconds=400))
         self.assertEqual(StringSerialization.DeserializeItem(DurationTypeInfo(), "0:06"), datetime.timedelta(seconds=6))
     
         self.assertEqual(StringSerialization.DeserializeItem(EnumTypeInfo([ "one", "two", "three", ]), "two"), "two")
 
-        self.assertEqual(StringSerialization.DeserializeItem(FilenameTypeInfo(ensure_exists=False), "Foo/Bar/Baz"), os.path.sep.join([ _script_dir, "Foo", "Bar", "Baz", ]))
-        self.assertEqual(StringSerialization.DeserializeItem(FilenameTypeInfo(ensure_exists=False), "Foo/Bar/Baz", normalize=False), os.path.sep.join([ "Foo", "Bar", "Baz", ]))
+        self.assertEqual(StringSerialization.DeserializeItem(FilenameTypeInfo(ensure_exists=False), "Foo/Bar/Baz"), os.path.join(os.getcwd(), "Foo", "Bar", "Baz"))
+        self.assertEqual(StringSerialization.DeserializeItem(FilenameTypeInfo(ensure_exists=False), "Foo/Bar/Baz", normalize=False), os.path.join("Foo", "Bar", "Baz"))
 
         self.assertEqual(StringSerialization.DeserializeItem(FloatTypeInfo(), "1.0"), 1.0)
         self.assertEqual(StringSerialization.DeserializeItem(FloatTypeInfo(), "-21.1234567"), -21.1234567)
