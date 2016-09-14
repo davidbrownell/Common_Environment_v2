@@ -1,79 +1,87 @@
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # |  
 # |  DictTypeInfo_UnitTest.py
 # |  
-# |  David Brownell (db@DavidBrownell.com)
+# |  David Brownell <db@DavidBrownell.com>
+# |      2016-09-06 17:31:15
 # |  
-# |  12/29/2015 04:33:12 PM
+# ----------------------------------------------------------------------
 # |  
-# ---------------------------------------------------------------------------
-# |  
-# |  Copyright David Brownell 2015-16.
-# |          
+# |  Copyright David Brownell 2016.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 # |  
-# ---------------------------------------------------------------------------
-"""Unit test for DictTypeInfo.py
-"""
-
+# ----------------------------------------------------------------------
 import os
 import sys
 import unittest
 
 from CommonEnvironment import Package
 
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 with Package.NameInfo(__package__) as ni:
     __package__ = ni.created
-
+    
+    from .. import ValidationException
     from ..DictTypeInfo import *
     from ..FundamentalTypes import *
-
+    
     __package__ = ni.original
 
-# ---------------------------------------------------------------------------
-class DictTest(unittest.TestCase):
-
-    # ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
+class UnitTest(unittest.TestCase):
+    
+    # ----------------------------------------------------------------------
     @classmethod
-    def setUpClass(cls):
-        cls._type_info = DictTypeInfo( foo=StringTypeInfo(),
-                                       bar=IntTypeInfo(min=10, max=20),
-                                       baz=BoolTypeInfo(),
-                                     )
+    def setUp(cls):
+        cls._ti = DictTypeInfo( { "foo" : StringTypeInfo(min_length=3),
+                                  "bar" : IntTypeInfo(min=10),
+                                },
+                                require_exact_match=False,
+                              )
 
-    # ---------------------------------------------------------------------------
-    def test_Valid(self):
-        d = { "foo" : "hello",
-              "bar" : 15,
-              "baz" : True,
+        cls._ti_exact = DictTypeInfo( { "foo" : StringTypeInfo(min_length=3),
+                                        "bar" : IntTypeInfo(min=10),
+                                      },
+                                      require_exact_match=True,
+                                    )
+
+    # ----------------------------------------------------------------------
+    def test_ConstraintsDesc(self):
+        self.assertEqual(self._ti.ConstraintsDesc, "Value must contain the attributes 'foo', 'bar'")
+
+    # ----------------------------------------------------------------------
+    def test_PythonDefinitionString(self):
+        self.assertEqual(self._ti.PythonDefinitionString, 'DictTypeInfo(arity=Arity(min=1, max_or_none=1), items={ "foo" : StringTypeInfo(arity=Arity(min=1, max_or_none=1), min_length=3), "bar" : IntTypeInfo(arity=Arity(min=1, max_or_none=1), min=10) }, require_exact_match=False)')
+
+    # ----------------------------------------------------------------------
+    def test_IsValidItem(self):
+        d = { "foo" : "foo",
+              "bar" : 100,
             }
 
-        self._type_info.Validate(d)
+        self.assertTrue(self._ti.IsValidItem(d))
+        self.assertTrue(self._ti_exact.IsValidItem(d))
 
-    # ---------------------------------------------------------------------------
-    def test_Invalid(self):
-        self.assertRaises(Exception, lambda: self._type_info.Validate({}))
-        self.assertRaises(Exception, lambda: self._type_info.Validate({ "foo" : "valid", "bar" : 15, }))
-        self.assertRaises(Exception, lambda: self._type_info.Validate({ "foo" : "valid", "baz" : True, }))
-        self.assertRaises(Exception, lambda: self._type_info.Validate({ "bar" : 15, "baz" : True, }))
-        self.assertRaises(Exception, lambda: self._type_info.Validate({ "foo" : "", "bar" : 15, "baz" : True, }))
-        self.assertRaises(Exception, lambda: self._type_info.Validate({ "foo" : "valid", "bar" : 5, "baz" : True, }))
-        self.assertRaises(Exception, lambda: self._type_info.Validate({ "foo" : "valid", "bar" : 15, "baz" : "Trueish", }))
+        d["baz"] = 1000
 
-    # ---------------------------------------------------------------------------
-    def test_PythonDefinitionString(self):
-        self.assertEqual(self._type_info.PythonDefinitionString, 'DictTypeInfo(arity=Arity(min=1, max_or_none=1), items={ "baz" : BoolTypeInfo(arity=Arity(min=1, max_or_none=1)), "foo" : StringTypeInfo(arity=Arity(min=1, max_or_none=1), min_length=1), "bar" : IntTypeInfo(arity=Arity(min=1, max_or_none=1), min=10, max=20) })')
-        
-    # ---------------------------------------------------------------------------
-    def test_ConstraintsDesc(self):
-        self.assertEqual(self._type_info.ConstraintsDesc, "Value must contain the attributes 'baz', 'foo', 'bar'")
-        
+        self.assertTrue(self._ti.IsValidItem(d))
+        self.assertTrue(self._ti_exact.IsValidItem(d) == False)
+
+        del d["bar"]
+
+        d["foo"] = "f"
+        self.assertRaises(ValidationException, lambda: self._ti.ValidateItem(d))
+        d["foo"] = "foo"
+
+        d["bar"] = 1
+        self.assertRaises(ValidationException, lambda: self._ti.ValidateItem(d))
+        d["bar"] = 10
+
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
     try: sys.exit(unittest.main(verbosity=2))

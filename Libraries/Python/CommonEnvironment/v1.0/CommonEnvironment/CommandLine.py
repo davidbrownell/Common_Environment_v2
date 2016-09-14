@@ -36,6 +36,7 @@ from CommonEnvironment import TypeInfo
 from CommonEnvironment.TypeInfo.AnyOfTypeInfo import AnyOfTypeInfo
 from CommonEnvironment.TypeInfo.DictTypeInfo import DictTypeInfo
 from CommonEnvironment.TypeInfo.FundamentalTypes import *
+from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import StringSerialization
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -198,14 +199,14 @@ class EntryPointData(object):
         
         for index, name in enumerate(args):
             if not self.ConstraintsDecorator or (name not in self.ConstraintsDecorator.Preconditions and index >= first_optional_arg_index):
-                type_info = FundamentalTypeInfo.CreateTypeInfo(type(defaults[index - first_optional_arg_index]), arity='?')
+                type_info = CreateTypeInfo(type(defaults[index - first_optional_arg_index]), arity='?')
             else:
                 assert name in self.ConstraintsDecorator.Preconditions, (self.Name, name)
                 type_info = self.ConstraintsDecorator.Preconditions[name]
 
             assert type_info, name
             
-            if not isinstance(type_info, (FundamentalTypeInfo, DictTypeInfo, AnyOfTypeInfo)):
+            if not isinstance(type_info, FUNDAMENTAL_TYPES + (DictTypeInfo, AnyOfTypeInfo)):
                 raise Exception("Only fundamental types are supported ({})".format(name))
 
             if name in self.EntryPointDecorator.Args:
@@ -551,11 +552,11 @@ class Executor(object):
                 return
 
             if param.is_switch:
-                arg = param.type_info.ItemToString(not param.default_value)
+                arg = StringSerialization.SerializeItem(param.type_info, not param.default_value)
 
             try:
-                if hasattr(param.type_info, "ItemFromString"):
-                    value = param.type_info.ItemFromString(arg)
+                if isinstance(param.type_info, FUNDAMENTAL_TYPES):
+                    value = StringSerialization.DeserializeItem(param.type_info, arg)
                 else:
                     value = arg
 

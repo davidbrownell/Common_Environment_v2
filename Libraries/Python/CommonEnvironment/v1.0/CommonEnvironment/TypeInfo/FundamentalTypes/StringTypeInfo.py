@@ -70,7 +70,9 @@ class StringTypeInfo(TypeInfo):
         if self.MaxLength:
             items.append("have less than {}".format(Plural.no("character", self.MaxLength)))
 
-        assert items
+        if not items:
+            return ''
+
         return "Value must {}".format(', '.join(items))
 
     # ----------------------------------------------------------------------

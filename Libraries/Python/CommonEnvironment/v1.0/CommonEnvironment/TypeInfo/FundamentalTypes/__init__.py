@@ -42,25 +42,39 @@ if '.' in __name__:
     
     from .. import Arity
 else:
-    from CommonEnvironment.TypeInfo2.FundamentalTypes.BoolTypeInfo import *
-    from CommonEnvironment.TypeInfo2.FundamentalTypes.DateTimeTypeInfo import DateTimeTypeInfo
-    from CommonEnvironment.TypeInfo2.FundamentalTypes.DateTypeInfo import DateTypeInfo
-    from CommonEnvironment.TypeInfo2.FundamentalTypes.DirectoryTypeInfo import DirectoryTypeInfo
-    from CommonEnvironment.TypeInfo2.FundamentalTypes.DurationTypeInfo import DurationTypeInfo
-    from CommonEnvironment.TypeInfo2.FundamentalTypes.EnumTypeInfo import EnumTypeInfo
-    from CommonEnvironment.TypeInfo2.FundamentalTypes.FilenameTypeInfo import FilenameTypeInfo
-    from CommonEnvironment.TypeInfo2.FundamentalTypes.FloatTypeInfo import FloatTypeInfo
-    from CommonEnvironment.TypeInfo2.FundamentalTypes.GuidTypeInfo import GuidTypeInfo
-    from CommonEnvironment.TypeInfo2.FundamentalTypes.IntTypeInfo import IntTypeInfo
-    from CommonEnvironment.TypeInfo2.FundamentalTypes.StringTypeInfo import StringTypeInfo
-    from CommonEnvironment.TypeInfo2.FundamentalTypes.TimeTypeInfo import TimeTypeInfo
+    from CommonEnvironment.TypeInfo.FundamentalTypes.BoolTypeInfo import *
+    from CommonEnvironment.TypeInfo.FundamentalTypes.DateTimeTypeInfo import DateTimeTypeInfo
+    from CommonEnvironment.TypeInfo.FundamentalTypes.DateTypeInfo import DateTypeInfo
+    from CommonEnvironment.TypeInfo.FundamentalTypes.DirectoryTypeInfo import DirectoryTypeInfo
+    from CommonEnvironment.TypeInfo.FundamentalTypes.DurationTypeInfo import DurationTypeInfo
+    from CommonEnvironment.TypeInfo.FundamentalTypes.EnumTypeInfo import EnumTypeInfo
+    from CommonEnvironment.TypeInfo.FundamentalTypes.FilenameTypeInfo import FilenameTypeInfo
+    from CommonEnvironment.TypeInfo.FundamentalTypes.FloatTypeInfo import FloatTypeInfo
+    from CommonEnvironment.TypeInfo.FundamentalTypes.GuidTypeInfo import GuidTypeInfo
+    from CommonEnvironment.TypeInfo.FundamentalTypes.IntTypeInfo import IntTypeInfo
+    from CommonEnvironment.TypeInfo.FundamentalTypes.StringTypeInfo import StringTypeInfo
+    from CommonEnvironment.TypeInfo.FundamentalTypes.TimeTypeInfo import TimeTypeInfo
     
-    from CommonEnvironment.TypeInfo2 import Arity
+    from CommonEnvironment.TypeInfo import Arity
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
+
+FUNDAMENTAL_TYPES                           = ( BoolTypeInfo,
+                                                DateTimeTypeInfo,
+                                                DateTypeInfo,
+                                                DirectoryTypeInfo,
+                                                DurationTypeInfo,
+                                                EnumTypeInfo,
+                                                FilenameTypeInfo,
+                                                FloatTypeInfo,
+                                                GuidTypeInfo,
+                                                IntTypeInfo,
+                                                StringTypeInfo,
+                                                TimeTypeInfo,
+                                              )
 
 # ----------------------------------------------------------------------
 # |  
@@ -191,25 +205,22 @@ def CreateSimpleVisitor( onBoolFunc=None,               # def Func(type_info, *a
                          onIntFunc=None,                # def Func(type_info, *args, **kwargs)
                          onStringFunc=None,             # def Func(type_info, *args, **kwargs)
                          onTimeFunc=None,               # def Func(type_info, *args, **kwargs)
+                         onDefaultFunc=None,            # def Func(type_info, *args, **kwargs)
                        ):
-    # ----------------------------------------------------------------------
-    def Empty(*args, **kwargs):
-        pass
-
-    # ----------------------------------------------------------------------
+    onDefaultFunc = onDefaultFunc or (lambda *args, **kwargs: None)
     
-    onBoolFunc = onBoolFunc or Empty
-    onDateTimeFunc = onDateTimeFunc or Empty
-    onDateFunc = onDateFunc or Empty
-    onDirectoryFunc = onDirectoryFunc or Empty
-    onDurationFunc = onDurationFunc or Empty
-    onEnumFunc = onEnumFunc or Empty
-    onFilenameFunc = onFilenameFunc or Empty
-    onFloatFunc = onFloatFunc or Empty
-    onGuidFunc = onGuidFunc or Empty
-    onIntFunc = onIntFunc or Empty
-    onStringFunc = onStringFunc or Empty
-    onTimeFunc = onTimeFunc or Empty
+    onBoolFunc = onBoolFunc or onDefaultFunc
+    onDateTimeFunc = onDateTimeFunc or onDefaultFunc
+    onDateFunc = onDateFunc or onDefaultFunc
+    onDirectoryFunc = onDirectoryFunc or onDefaultFunc
+    onDurationFunc = onDurationFunc or onDefaultFunc
+    onEnumFunc = onEnumFunc or onDefaultFunc
+    onFilenameFunc = onFilenameFunc or onDefaultFunc
+    onFloatFunc = onFloatFunc or onDefaultFunc
+    onGuidFunc = onGuidFunc or onDefaultFunc
+    onIntFunc = onIntFunc or onDefaultFunc
+    onStringFunc = onStringFunc or onDefaultFunc
+    onTimeFunc = onTimeFunc or onDefaultFunc
 
     # ----------------------------------------------------------------------
     class SimpleVisitor(Visitor):
@@ -276,3 +287,26 @@ def CreateSimpleVisitor( onBoolFunc=None,               # def Func(type_info, *a
     # ----------------------------------------------------------------------
     
     return SimpleVisitor
+
+# ----------------------------------------------------------------------
+def CreateTypeInfo(type, **kwargs):
+    if type in [ str, unicode, ]:
+        return StringTypeInfo(**kwargs)
+
+    for potential_type_info in [ BoolTypeInfo,
+                                 DateTimeTypeInfo,
+                                 DateTypeInfo,
+                                 # DirectoryTypeInfo,
+                                 DurationTypeInfo,
+                                 # EnumTypeInfo,
+                                 # FilenameTypeInfo,
+                                 FloatTypeInfo,
+                                 GuidTypeInfo,
+                                 IntTypeInfo,
+                                 # StringTypeInfo,
+                                 TimeTypeInfo,
+                                ]:
+        if potential_type_info.ExpectedType == type:
+            return potential_type_info(**kwargs)
+
+    raise BaseException("'{}' is not a recognized type".format(type))

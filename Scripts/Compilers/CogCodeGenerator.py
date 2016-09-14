@@ -138,7 +138,7 @@ class CodeGenerator( IndividualInputProcessingMixin,
 # |
 # ---------------------------------------------------------------------------
 @CommandLine.EntryPoint
-@CommandLine.FunctionConstraints( input=CommandLine.FilenameTypeInfo(type=CommandLine.FilenameTypeInfo.Type_Either, arity='+'),
+@CommandLine.FunctionConstraints( input=CommandLine.FilenameTypeInfo(match_any=True, arity='+'),
                                   define=CommandLine.DictTypeInfo(arity='?'),
                                   output_stream=None,
                                 )
@@ -157,7 +157,7 @@ def Generate( input,                          # <Redefining build-in type> pylin
 
 # ---------------------------------------------------------------------------
 @CommandLine.EntryPoint
-@CommandLine.FunctionConstraints( input=CommandLine.FilenameTypeInfo(type=CommandLine.FilenameTypeInfo.Type_Either, arity='+'),
+@CommandLine.FunctionConstraints( input=CommandLine.FilenameTypeInfo(match_any=True, arity='+'),
                                   output_stream=None,
                                 )
 def Clean( input,
