@@ -24,7 +24,9 @@ from CommonEnvironment import CommandLine
 from CommonEnvironment import FileSystem
 from CommonEnvironment.QuickObject import QuickObject
 from CommonEnvironment.StreamDecorator import StreamDecorator
-from CommonEnvironment.TypeInfo.DateTypeInfo import DateTypeInfo
+
+from CommonEnvironment.TypeInfo.FundamentalTypes.DateTypeInfo import DateTypeInfo
+from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import StringSerialization
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -60,7 +62,7 @@ def EntryPoint( code_dir,
             [Optional] Left Brace   )(?:[\(\[])?\s*(?#
             Date                    )(?P<date>%s)(?#
             [Optional] Right Brace  )(?:[\)\]])?(?#
-            )""") % DateTypeInfo().PythonItemRegularExpressionString)
+            )""") % StringSerialization.GetRegularExpressionString(DateTypeInfo()))
 
         filenames = list(FileSystem.WalkFiles( code_dir,
                                                traverse_exclude_dir_names=FileSystem.CODE_EXCLUDE_DIR_NAMES,

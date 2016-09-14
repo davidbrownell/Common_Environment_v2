@@ -72,7 +72,7 @@ class Verifier( CustomInvocationMixin,
 # |
 # ---------------------------------------------------------------------------
 @CommandLine.EntryPoint
-@CommandLine.FunctionConstraints( input=CommandLine.FilenameTypeInfo(type=CommandLine.FilenameTypeInfo.Type_Either, arity='+'),
+@CommandLine.FunctionConstraints( input=CommandLine.FilenameTypeInfo(match_any=True, arity='+'),
                                   output_stream=None,
                                 )
 def Verify( input,                          # <Redefining build-in type> pylint: disable = W0622

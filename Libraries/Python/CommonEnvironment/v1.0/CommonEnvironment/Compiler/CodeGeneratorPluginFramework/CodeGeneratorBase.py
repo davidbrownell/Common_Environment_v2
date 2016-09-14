@@ -24,6 +24,7 @@ from CommonEnvironment import FileSystem
 from CommonEnvironment.Interface import *
 from CommonEnvironment.NamedTuple import NamedTuple
 from CommonEnvironment.TypeInfo.FundamentalTypes import *
+from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import StringSerialization
 from CommonEnvironment.StreamDecorator import StreamDecorator
 
 from CommonEnvironment.Compiler import CodeGenerator as CodeGeneratorMod
@@ -215,7 +216,7 @@ def CodeGeneratorFactory( plugin_info_map,
 
                 if type(v) != desired_type:
                     assert isinstance(v, (str, unicode))
-                    context.plugin_settings[k] = FundamentalTypeInfo.CreateTypeInfo(desired_type).ItemFromString(v)
+                    context.plugin_settings[k] = StringSerialization.DeserializeItem(CreateTypeInfo(desired_type), v)
 
             for k, v in custom_settings.iteritems():
                 if k not in context.plugin_settings:
@@ -284,7 +285,7 @@ def GenerateFactory( plugin_info_map,
         @CommandLine.FunctionConstraints( plugin=CommandLine.EnumTypeInfo(plugin_info_map.keys()),
                                           output_name=CommandLine.StringTypeInfo(),
                                           output_dir=CommandLine.DirectoryTypeInfo(ensure_exists=False),
-                                          input=CommandLine.FilenameTypeInfo(CommandLine.FilenameTypeInfo.Type_Either, arity='+'),
+                                          input=CommandLine.FilenameTypeInfo(match_any=True, arity='+'),
                                           plugin_arg=CommandLine.DictTypeInfo(require_exact_match=False),
                                           output_stream=None,
                                           {constraints}

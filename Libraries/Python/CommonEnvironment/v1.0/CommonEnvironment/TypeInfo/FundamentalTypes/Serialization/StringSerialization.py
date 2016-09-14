@@ -23,9 +23,10 @@ from CommonEnvironment import RegularExpression
 
 from . import Serialization
 
-from .. import ( DateTypeInfo,
+from .. import ( Visitor as FundamentalTypesVisitor, 
+                 CreateSimpleVisitor,
+                 DateTypeInfo,
                  TimeTypeInfo,
-                 Visitor as FundamentalTypesVisitor,
                )
 
 from ... import ValidationException
@@ -280,7 +281,12 @@ class StringSerialization(Serialization):
 
     # ----------------------------------------------------------------------
     @classmethod
-    def _DeserializeItemImpl(cls, type_info, item):
+    def _DeserializeItemImpl(cls, type_info, item, **custom_kwargs):
+        # custom_kwargs:
+        #   type_info type      Key         Value       Default             Desc
+        #   ------------------  ----------  ----------  ------------------  ----------------
+        #   DirectoryTypeInfo   normalize   Boolean     True                Applies os.path.realpath and os.path.normpath to the string
+        #   FilenameTypeInfo    normalize   Boolean     True                Applies os.path.realpath and os.path.normpath to the string
 
         match = None
         match_index = None
@@ -300,7 +306,22 @@ class StringSerialization(Serialization):
                 break
 
         if not match:
-            raise ValidationException("'{}' is not a valid '{}' string".format(item, type_info.Desc))
+            # ----------------------------------------------------------------------
+            def OnTypeInfoWithStringAsBase(type_info):
+                return "'{}' is not valid - {}".format(item, type_info.ConstraintsDesc)
+
+            # ----------------------------------------------------------------------
+            def OnDefault(type_info):
+                return "'{}' is not a valid '{}' string".format(item, type_info.Desc)
+
+            # ----------------------------------------------------------------------
+            
+            error = CreateSimpleVisitor( onEnumFunc=OnTypeInfoWithStringAsBase,
+                                         onStringFunc=OnTypeInfoWithStringAsBase,
+                                         onDefaultFunc=OnDefault,
+                                       ).Accept(type_info)
+            
+            raise ValidationException(error)
 
         # ----------------------------------------------------------------------
         @staticderived
@@ -346,9 +367,9 @@ class StringSerialization(Serialization):
                                     )
         
             # ----------------------------------------------------------------------
-            @staticmethod
-            def OnDirectory(type_info):
-                return item.replace('/', os.path.sep)
+            @classmethod
+            def OnDirectory(this_cls, type_info):
+                return this_cls.OnFilename(type_info)
         
             # ----------------------------------------------------------------------
             @staticmethod
@@ -381,7 +402,12 @@ class StringSerialization(Serialization):
             # ----------------------------------------------------------------------
             @staticmethod
             def OnFilename(type_info):
-                return item.replace('/', os.path.sep)
+                value = item.replace('/', os.path.sep)
+
+                if custom_kwargs.get("normalize", True):
+                    value = os.path.realpath(os.path.normpath(value))
+
+                return value
         
             # ----------------------------------------------------------------------
             @staticmethod

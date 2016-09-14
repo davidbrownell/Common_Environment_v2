@@ -226,7 +226,7 @@ class CodeGenerator( AtomicInputProcessingMixin,
 # |
 # ---------------------------------------------------------------------------
 @CommandLine.EntryPoint
-@CommandLine.FunctionConstraints( input=CommandLine.FilenameTypeInfo(type=CommandLine.FilenameTypeInfo.Type_Either, arity='+'),
+@CommandLine.FunctionConstraints( input=CommandLine.FilenameTypeInfo(match_any=True, arity='+'),
                                   output_dir=CommandLine.DirectoryTypeInfo(ensure_exists=False),
                                   context=CommandLine.DictTypeInfo(require_exact_match=False, arity='?'),
                                   context_code=CommandLine.StringTypeInfo(validation_expression="^.+:.+$", arity='*'),
