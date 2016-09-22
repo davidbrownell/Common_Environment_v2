@@ -20,14 +20,19 @@ from CommonEnvironment import RegularExpression
 
 from . import SchemaConverter
 
-from .. import ( DateTypeInfo,
-                 DurationTypeInfo,
-                 GuidTypeInfo,
-                 TimeTypeInfo,
-                 Visitor as VisitorBase,
-               )
+from ..FundamentalTypes import ( DateTypeInfo,
+                                 DurationTypeInfo,
+                                 GuidTypeInfo,
+                                 TimeTypeInfo,
+                                 Visitor as VisitorBase,
+                                 FUNDAMENTAL_TYPES
+                               )
 
-from ..Serialization.StringSerialization import StringSerialization
+from ..AnyOfTypeInfo import AnyOfTypeInfo
+from ..ClassTypeInfo import ClassTypeInfo
+from ..DictTypeInfo import DictTypeInfo
+
+from ..FundamentalTypes.Serialization.StringSerialization import StringSerialization
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -43,7 +48,7 @@ class JsonSchemaConverter(SchemaConverter):
     def Convert(cls, type_info):
         # ----------------------------------------------------------------------
         @staticderived
-        class Visitor(VisitorBase):
+        class FundamentalVisitor(VisitorBase):
             # ----------------------------------------------------------------------
             @staticmethod
             def OnBool(type_info, *args, **kwargs):
@@ -155,16 +160,48 @@ class JsonSchemaConverter(SchemaConverter):
 
         # ----------------------------------------------------------------------
         
-        result = Visitor.Accept(type_info)
+        if isinstance(type_info, FUNDAMENTAL_TYPES):
+            schema = FundamentalVisitor.Accept(type_info)
 
-        if type_info.Arity.IsCollection:
-            result = cls.Collectionize(type_info.Arity, result)
+        elif isinstance(type_info, AnyOfTypeInfo):
+            # Only suport AnyOfTypeInfo in the scenarios where the potential elements
+            # are Dict- and Class-TypeInfos.
+            class_type_info = None
+            dict_type_info = None
+            other_type_infos = []
 
-        return result
+            for ti in type_info.ElementTypeInfos:
+                if isinstance(ti, ClassTypeInfo):
+                    assert class_type_info == None, class_type_info
+                    class_type_info = ti
+                elif isinstance(ti, DictTypeInfo):
+                    assert dict_type_info == None, dict_type_info
+                    dict_type_info = ti
+                else:
+                    other_type_infos.append(ti)
+
+            if ( not class_type_info or
+                 not dict_type_info or
+                 other_type_infos
+               ):
+                raise Exception("AnyOfTypeInfo is not in a supported state")
+
+            schema = cls.Classify(class_type_info.Items)
+                 
+        elif isinstance(type_info, ClassTypeInfo):
+            schema = cls.Classify(type_info.Items)
+
+        else:
+            raise Exception("'{}' is not a supported type".format(type_info))
+
+        return cls.Collectionize(type_info.Arity, schema)
 
     # ----------------------------------------------------------------------
     @staticmethod
     def Collectionize(arity, schema):
+        if not arity.IsCollection:
+            return schema
+
         schema = { "type" : "array",
                    "items" : schema,
                  }
@@ -176,4 +213,13 @@ class JsonSchemaConverter(SchemaConverter):
             schema["maxItems"] = arity.Max
             
         return schema
-        
+
+    # ----------------------------------------------------------------------
+    @classmethod
+    def Classify( cls, 
+                  items,                    # { name : type_info, }
+                ):
+        return { "type" : "object",
+                 "properties" : { k : cls.Convert(v) for k, v in items.iteritems() },
+                 "required" : [ k for k, v in items.iteritems() if v.Arity.Min != 0 ],
+               }

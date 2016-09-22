@@ -18,7 +18,7 @@ import sys
 from CommonEnvironment.Interface import staticderived
 
 from . import SchemaConverter
-from .. import Visitor as VisitorBase
+from ..FundamentalTypes import Visitor as FundamentalVisitor
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -41,7 +41,7 @@ class SimpleSchemaConveter(SchemaConverter):
 
         # ----------------------------------------------------------------------
         @staticderived
-        class Visitor(VisitorBase):
+        class Visitor(FundamentalVisitor):
             # ----------------------------------------------------------------------
             @staticmethod
             def OnBool(type_info, *args, **kwargs):

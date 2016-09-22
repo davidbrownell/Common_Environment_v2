@@ -28,7 +28,7 @@ with Package.NameInfo(__package__) as ni:
     __package__ = ni.created
     
     from ..XmlSchemaConverter import *
-    from ... import *
+    from ...FundamentalTypes import *
 
     __package__ = ni.original
 
