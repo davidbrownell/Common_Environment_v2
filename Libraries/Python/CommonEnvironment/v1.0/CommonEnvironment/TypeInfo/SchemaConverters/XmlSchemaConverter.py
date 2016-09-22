@@ -23,11 +23,11 @@ from CommonEnvironment import RegularExpression
 
 from . import SchemaConverter
 
-from .. import ( GuidTypeInfo,
-                 Visitor as VisitorBase,
-               )
+from ..FundamentalTypes import ( GuidTypeInfo,
+                                 Visitor as FundamentalVisitor,
+                               )
 
-from ..Serialization.StringSerialization import StringSerialization
+from ..FundamentalTypes.Serialization.StringSerialization import StringSerialization
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -43,7 +43,7 @@ class XmlSchemaConverter(SchemaConverter):
     def Convert(type_info):
         # ----------------------------------------------------------------------
         @staticderived
-        class Visitor(VisitorBase):
+        class Visitor(FundamentalVisitor):
             # ----------------------------------------------------------------------
             @staticmethod
             def OnBool(type_info, *args, **kwargs):

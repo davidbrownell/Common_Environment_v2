@@ -27,8 +27,10 @@ with Package.NameInfo(__package__) as ni:
     __package__ = ni.created
     
     from ..JsonSchemaConverter import *
-    from ... import *
-      
+    
+    from ...ClassTypeInfo import ClassTypeInfo
+    from ...FundamentalTypes import *
+
     __package__ = ni.original
 
 # ----------------------------------------------------------------------
@@ -73,6 +75,36 @@ class UnitTest(unittest.TestCase):
         self.assertEqual(JsonSchemaConverter.Convert(StringTypeInfo(max_length=20)), { "type" : "string", "minLength" : 1, "maxLength" : 20, })
         self.assertEqual(JsonSchemaConverter.Convert(StringTypeInfo(min_length=10, max_length=20)), { "type" : "string", "minLength" : 10, "maxLength" : 20, })
         self.assertEqual(JsonSchemaConverter.Convert(StringTypeInfo(validation_expression="Foo")), { "type" : "string", "pattern" : "^Foo$", })
+
+    # ----------------------------------------------------------------------
+    def test_Class(self):
+        self.assertEqual(JsonSchemaConverter.Convert(ClassTypeInfo(foo=StringTypeInfo(), bar=IntTypeInfo())), { "type" : "object",
+                                                                                                                "properties" : { "foo" : { "type" : "string", "minLength" : 1, },
+                                                                                                                                 "bar" : { "type" : "integer", },
+                                                                                                                               },
+                                                                                                                "required" : [ "foo", "bar", ],
+                                                                                                              })
+
+        self.assertEqual(JsonSchemaConverter.Convert(ClassTypeInfo(foo=StringTypeInfo(), bar=IntTypeInfo(arity='?'))), { "type" : "object",
+                                                                                                                         "properties" : { "foo" : { "type" : "string", "minLength" : 1, },
+                                                                                                                                          "bar" : { "type" : "integer", },
+                                                                                                                                        },
+                                                                                                                         "required" : [ "foo", ],
+                                                                                                                       })
+
+        self.assertEqual(JsonSchemaConverter.Convert(ClassTypeInfo(foo=StringTypeInfo(), bar=IntTypeInfo(arity='?'), baz=ClassTypeInfo(a=IntTypeInfo(), b=DateTimeTypeInfo()), )), 
+                         { "type" : "object",
+                           "properties" : { "foo" : { "type" : "string", "minLength" : 1, },
+                                            "bar" : { "type" : "integer", },
+                                            "baz" : { "type" : "object",
+                                                      "properties" : { "a" : { "type" : "integer", },
+                                                                       "b" : { "type" : "string", "format" : "date-time", },
+                                                                     },
+                                                      "required" : [ "a", "b", ],
+                                                    },                         
+                                          },
+                           "required" : [ "baz", "foo", ],
+                         })
 
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":

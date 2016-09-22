@@ -42,7 +42,7 @@ if '.' in __name__:
     
     from .. import Arity
 else:
-    from CommonEnvironment.TypeInfo.FundamentalTypes.BoolTypeInfo import *
+    from CommonEnvironment.TypeInfo.FundamentalTypes.BoolTypeInfo import BoolTypeInfo
     from CommonEnvironment.TypeInfo.FundamentalTypes.DateTimeTypeInfo import DateTimeTypeInfo
     from CommonEnvironment.TypeInfo.FundamentalTypes.DateTypeInfo import DateTypeInfo
     from CommonEnvironment.TypeInfo.FundamentalTypes.DirectoryTypeInfo import DirectoryTypeInfo
