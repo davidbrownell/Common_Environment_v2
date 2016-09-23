@@ -121,8 +121,8 @@ def CodeGeneratorFactory( plugin_info_map,
                           description,
                           is_supported_func,            # def Func(item) -> bool
                           get_optional_metadata_func,   # def Func() -> [ (k, v), ...]
-                          preprocess_context_func,      # def Func(context) -> context
-                          postprocess_context_func,     # def Func(context) -> context
+                          preprocess_context_func,      # def Func(context, plugin) -> context
+                          postprocess_context_func,     # def Func(context, plugin) -> context
                           invoke_func,                  # def Func(cls, invoke_reason, context, status_stream, output_stream, plugin)
                         ):
     assert is_supported_func
@@ -225,7 +225,7 @@ def CodeGeneratorFactory( plugin_info_map,
             context.plugin_settings = plugin.PreprocessCustomSettings(**context.plugin_settings)
 
             # Invoke custom functionality
-            context = preprocess_context_func(context)
+            context = preprocess_context_func(context, plugin)
 
             # Postprocess and validate the context with the plugin
             context = plugin.PostprocessContextItem(context, pre_validate=True)
@@ -236,7 +236,7 @@ def CodeGeneratorFactory( plugin_info_map,
 
             context = plugin.PostprocessContextItem(context, pre_validate=False)
 
-            context = postprocess_context_func(context)
+            context = postprocess_context_func(context, plugin)
 
             return super(CodeGenerator, cls)._PostprocessContextItem(context)
 
