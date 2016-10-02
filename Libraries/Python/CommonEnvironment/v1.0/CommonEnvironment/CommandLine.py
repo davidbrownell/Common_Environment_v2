@@ -308,6 +308,7 @@ class Executor(object):
                 output_stream=sys.stdout,
                 verbose=False,
                 print_results=False,
+                allow_exceptions=False,
               ):
         arg_strings = list(self.Args)
 
@@ -396,6 +397,9 @@ class Executor(object):
         except TypeInfo.ValidationException, ex:
             result = self.Usage(error=str(ex))
         except:
+            if allow_exceptions:
+                raise
+                
             import traceback
 
             output_stream.write("ERROR: {}".format(StreamDecorator.LeftJustify(traceback.format_exc(), len("ERROR: "))))
@@ -767,8 +771,10 @@ class UsageException(Exception):
 # |  Public Methods
 # |
 # ---------------------------------------------------------------------------
-def Main():
-    return Executor().Invoke()
+def Main( allow_exceptions=False,
+        ):
+    return Executor().Invoke( allow_exceptions=allow_exceptions,
+                            )
 
 # ---------------------------------------------------------------------------
 def DisplayOutput( result_code,
