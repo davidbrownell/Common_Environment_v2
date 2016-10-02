@@ -13,6 +13,7 @@
 # |  
 # ----------------------------------------------------------------------
 import imp
+import inspect
 import os
 import sys
 
@@ -130,6 +131,9 @@ def CodeGeneratorFactory( plugin_info_map,
     assert preprocess_context_func
     assert postprocess_context_func
 
+    calling_frame = inspect.stack()[1]
+    calling_mod_filename = os.path.realpath(inspect.getmodule(calling_frame[0]).__file__)
+            
     # ----------------------------------------------------------------------
     @staticderived
     class CodeGenerator( AtomicInputProcessingMixin,
@@ -146,6 +150,7 @@ def CodeGeneratorFactory( plugin_info_map,
         Name                                = name
         Description                         = description
         Type                                = CodeGeneratorMod.CodeGenerator.TypeValue.File
+        OriginalModuleFilename              = calling_mod_filename
 
         # ----------------------------------------------------------------------
         # |  
@@ -175,7 +180,10 @@ def CodeGeneratorFactory( plugin_info_map,
             
             plugin = plugin_info_map[context.plugin_name].plugin
 
-            return [ cls, plugin, ] + \
+            return [ cls, 
+                     cls.OriginalModuleFilename,
+                     plugin, 
+                   ] + \
                    [ ProcessGeneratorItem(item) for item in plugin.GetAdditionalGeneratorItems(context) ] + \
                    super(CodeGenerator, cls)._GetAdditionalGeneratorItems(context)
 
@@ -194,7 +202,10 @@ def CodeGeneratorFactory( plugin_info_map,
         # ----------------------------------------------------------------------
         @classmethod
         def _GetOptionalMetadata(cls):
-            return get_optional_metadata_func() + super(CodeGenerator, cls)._GetOptionalMetadata()
+            return get_optional_metadata_func() + \
+                   [ ( "plugin_settings", {} ), 
+                   ] + \
+                   super(CodeGenerator, cls)._GetOptionalMetadata()
 
         # ----------------------------------------------------------------------
         @classmethod
@@ -261,23 +272,28 @@ def CodeGeneratorFactory( plugin_info_map,
     return CodeGenerator
 
 # ----------------------------------------------------------------------
+class DoesNotExist(object): pass
+
+GenerateArg                                 = NamedTuple( "GenerateArg",
+                                                          "Name", 
+                                                          "TypeInfo",
+                                                          DefaultValue=DoesNotExist(),  # If == DoesNotExist, the command line argument becomes a required one
+                                                          ContextAttributeName=None,    # If == None, the context attribute name is the same as "Name"
+                                                        )
+                                                            
 def GenerateFactory( plugin_info_map,
                      code_generator,
-                     additional_args=None,      # dict { k : name, v : TypeInfo }
-                     default_arg_values=None    # dict { k : name, v : value }
+                     command_line_args,     # [ <GenerateArg>, ... ]
                    ):
-    additional_args = additional_args or {}
-    default_arg_values = default_arg_values or {}
-
     # Dynamicly generate the Generate method due to the presence of optional params
     positional_args = []
     keyword_args = []
 
-    for k in additional_args.iterkeys():
-        if k not in default_arg_values:
-            positional_args.append(k)
+    for arg in command_line_args:
+        if isinstance(arg.DefaultValue, DoesNotExist):
+            positional_args.append(arg)
         else:
-            keyword_args.append(k)
+            keyword_args.append(arg)
 
     dynamic_content = textwrap.dedent(
         """\
@@ -314,19 +330,19 @@ def GenerateFactory( plugin_info_map,
 
                                                          {args}
                                                        )
-        """).format( constraints=StreamDecorator.LeftJustify( '\n'.join([ "{}={},".format(k, v.PythonDefinitionString) for k, v in additional_args.iteritems() ]),
+        """).format( constraints=StreamDecorator.LeftJustify( '\n'.join([ "{}={},".format(arg.Name, arg.TypeInfo.PythonDefinitionString) for arg in command_line_args ]),
                                                               len("@CommandLine.FunctionConstraints( "),
                                                             ),
-                     positional_params='' if not positional_args else StreamDecorator.LeftJustify( "{}\n".format('\n'.join([ "{},".format(arg) for arg in positional_args ])),
+                     positional_params='' if not positional_args else StreamDecorator.LeftJustify( "{}\n".format('\n'.join([ "{},".format(arg.Name) for arg in positional_args ])),
                                                                                                    len("def Generate( "),
                                                                                                    add_suffix=True,
                                                                                                  ),
-                     keyword_params='' if not keyword_args else StreamDecorator.LeftJustify( "\n{}".format('\n'.join([ "{}={},".format(arg, default_arg_values[arg]) for arg in keyword_args ])),
+                     keyword_params='' if not keyword_args else StreamDecorator.LeftJustify( "\n{}".format('\n'.join([ "{}={},".format(arg.Name, arg.DefaultValue) for arg in keyword_args ])),
                                                                                              len("def Generate( "),
                                                                                            ),
-                     args='' if not additional_args else StreamDecorator.LeftJustify( '\n'.join([ "{0}={0},".format(arg) for arg in additional_args.iterkeys() ]),
-                                                                                      4 + len("return CodeGeneratorMod.CommandLineGenerate( "),
-                                                                                    ),
+                     args='' if not command_line_args else StreamDecorator.LeftJustify( '\n'.join([ "{}={},".format(arg.ContextAttributeName or arg.Name, arg.Name) for arg in command_line_args ]),
+                                                                                        4 + len("return CodeGeneratorMod.CommandLineGenerate( "),
+                                                                                      ),
                                                                                                    
                    )
 

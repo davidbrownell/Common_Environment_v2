@@ -14,6 +14,7 @@
 # ----------------------------------------------------------------------
 import os
 import sys
+import textwrap
 
 from CommonEnvironment.Interface import *
 
@@ -113,3 +114,27 @@ class Plugin(Interface):
     @abstractmethod
     def GenerateOutputFilenames(context):
         raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    # |  
+    # |  Protected Methods
+    # |  
+    # ----------------------------------------------------------------------
+    @staticmethod
+    def _GenerateFileHeader( prefix='',
+                             line_break="---------------------------------------------------------------------------",
+                           ):
+        return textwrap.dedent(
+            """\
+            {prefix}{line_break}
+            {prefix}|
+            {prefix}|  WARNING:
+            {prefix}|  This file was generated; any local changes will be overwritten during 
+            {prefix}|  future invocations of the generator!
+            {prefix}|
+            {prefix}{line_break}
+            """).format( prefix=prefix,
+                         line_break=line_break,
+                       )
+
+    
