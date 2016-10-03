@@ -125,6 +125,7 @@ def CodeGeneratorFactory( plugin_info_map,
                           preprocess_context_func,      # def Func(context, plugin) -> context
                           postprocess_context_func,     # def Func(context, plugin) -> context
                           invoke_func,                  # def Func(cls, invoke_reason, context, status_stream, output_stream, plugin)
+                          requires_output_name=True,
                         ):
     assert is_supported_func
     assert get_optional_metadata_func
@@ -151,6 +152,7 @@ def CodeGeneratorFactory( plugin_info_map,
         Description                         = description
         Type                                = CodeGeneratorMod.CodeGenerator.TypeValue.File
         OriginalModuleFilename              = calling_mod_filename
+        RequiresOutputName                  = requires_output_name
 
         # ----------------------------------------------------------------------
         # |  
@@ -194,10 +196,15 @@ def CodeGeneratorFactory( plugin_info_map,
         # ----------------------------------------------------------------------
         @classmethod
         def _GetRequiredMetadataNames(cls):
-            return [ "plugin_name",
-                     "output_name",
-                   ] + \
-                   super(CodeGenerator, cls)._GetRequiredMetadataNames()
+            names = [ "plugin_name",
+                    ]
+
+            if requires_output_name:
+                names += [ "output_name", ]
+
+            names += super(CodeGenerator, cls)._GetRequiredMetadataNames()
+
+            return names
 
         # ----------------------------------------------------------------------
         @classmethod
@@ -295,11 +302,20 @@ def GenerateFactory( plugin_info_map,
         else:
             keyword_args.append(arg)
 
+    if code_generator.RequiresOutputName:
+        output_name_constraint = "output_name=CommandLine.StringTypeInfo()," 
+        output_name_param = "output_name,"
+        output_name_arg = "output_name=output_name," 
+    else:
+        output_name_constraint = ""
+        output_name_param = ""
+        output_name_arg = ""
+
     dynamic_content = textwrap.dedent(
         """\
         @CommandLine.EntryPoint()
         @CommandLine.FunctionConstraints( plugin=CommandLine.EnumTypeInfo(plugin_info_map.keys()),
-                                          output_name=CommandLine.StringTypeInfo(),
+                                          {output_name_constraint}
                                           output_dir=CommandLine.DirectoryTypeInfo(ensure_exists=False),
                                           input=CommandLine.FilenameTypeInfo(match_any=True, arity='+'),
                                           plugin_arg=CommandLine.DictTypeInfo(require_exact_match=False),
@@ -307,7 +323,7 @@ def GenerateFactory( plugin_info_map,
                                           {constraints}
                                         )
         def Generate( plugin,
-                      output_name,
+                      {output_name_param}
                       output_dir,
                       input,
                       {positional_params}plugin_arg={{}},
@@ -321,7 +337,7 @@ def GenerateFactory( plugin_info_map,
                                                          verbose,
                                                        
                                                          plugin_name=plugin,
-                                                         output_name=output_name,
+                                                         {output_name_arg}
                                                          output_dir=output_dir,
                                                        
                                                          plugin_settings=plugin_arg,
@@ -330,7 +346,10 @@ def GenerateFactory( plugin_info_map,
 
                                                          {args}
                                                        )
-        """).format( constraints=StreamDecorator.LeftJustify( '\n'.join([ "{}={},".format(arg.Name, arg.TypeInfo.PythonDefinitionString) for arg in command_line_args ]),
+        """).format( output_name_constraint=output_name_constraint,
+                     output_name_param=output_name_param,
+                     output_name_arg=output_name_arg,
+                     constraints=StreamDecorator.LeftJustify( '\n'.join([ "{}={},".format(arg.Name, arg.TypeInfo.PythonDefinitionString) for arg in command_line_args ]),
                                                               len("@CommandLine.FunctionConstraints( "),
                                                             ),
                      positional_params='' if not positional_args else StreamDecorator.LeftJustify( "{}\n".format('\n'.join([ "{},".format(arg.Name) for arg in positional_args ])),
@@ -416,7 +435,7 @@ def ListFactory(plugin_info_map):
             
         with CallOnExit(OnComplete):
             for k, v in plugin_info_map.iteritems():
-                ProcessEntry(k, v.plugin)
+                ProcessEntry(k, v)
 
     # ----------------------------------------------------------------------
     
