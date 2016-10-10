@@ -138,7 +138,7 @@ class Verifier( CustomInvocationMixin,
                      invoke_reason,
                      context,
                      status_stream,
-                     output_stream,
+                     verbose_stream,
                    ):                       # <Too many local variables> pylint: disable = R0914
         environment = Shell.GetEnvironment()
 
@@ -202,12 +202,12 @@ class Verifier( CustomInvocationMixin,
                 if not content:
                     break
 
-                output_stream.write(content)
+                verbose_stream.write(content)
                 sink.write(content)
 
             result = result.wait() or 0
             
-            output_stream.write("\n\n")
+            verbose_stream.write("\n\n")
             sink = sink.getvalue()
 
             # Extract the results

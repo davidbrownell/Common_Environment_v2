@@ -411,7 +411,7 @@ class Base( InputProcessingMixin,
         # The following lines ensure that we don't have to deal with the None-ness of provided streams
         status_stream = StreamDecorator(status_stream)
         verbose_stream = StreamDecorator(verbose_stream)
-
+        
         invoke_reason = cls._GetInvokeReason(context, verbose_stream)
         if invoke_reason == None:
             status_stream.write("No changes were detected.\n")
@@ -429,6 +429,7 @@ class Base( InputProcessingMixin,
                                                   StreamDecorator( sink,
                                                                    prefix='\n',
                                                                    line_prefix="  ",
+                                                                   stream_type=StreamDecorator.Type_Verbose if verbose_stream.IsSet else None,
                                                                  ),
                                                 ) or 0
 
@@ -765,7 +766,7 @@ def _CommandLineImpl( compiler,
                                                      display_exceptions=False,
                                                    ) as stream_info:
         verbose_stream = StreamDecorator(stream_info.stream if verbose else None, line_prefix="INFO: ")
-
+        
         stream_info.stream.write("Generating context...")
         with stream_info.stream.DoneManager():
             contexts = list(compiler.GenerateContextItems(inputs, verbose_stream, **compiler_kwargs))
