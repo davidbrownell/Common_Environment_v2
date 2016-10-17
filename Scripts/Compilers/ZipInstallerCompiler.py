@@ -129,7 +129,7 @@ class Compiler( AtomicInputProcessingMixin,
 
     # ---------------------------------------------------------------------------
     @classmethod
-    def _InvokeImpl(cls, invoke_reason, context, status_stream, output_stream):
+    def _InvokeImpl(cls, invoke_reason, context, status_stream, verbose_stream):
         if not os.path.isdir(os.path.dirname(context.output_filename)):
             os.makedirs(os.path.dirname(context.output_filename))
 

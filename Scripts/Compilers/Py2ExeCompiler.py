@@ -137,7 +137,7 @@ class Compiler( AtomicInputProcessingMixin,
 
     # ---------------------------------------------------------------------------
     @classmethod
-    def _InvokeImpl(cls, invoke_reason, context, status_stream, output_stream):
+    def _InvokeImpl(cls, invoke_reason, context, status_stream, verbose_stream):
         # ---------------------------------------------------------------------------
         def BuildTypeToString(build_type):
             if build_type == cls.BuildType_Console:
@@ -251,7 +251,7 @@ class Compiler( AtomicInputProcessingMixin,
                         if not c:
                             break
                             
-                        output_stream.write(c)
+                        verbose_stream.write(c)
                         
                     this_dm.result = result.wait() or 0
                     if this_dm.result != 0:

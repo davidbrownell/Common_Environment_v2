@@ -62,7 +62,7 @@ class Verifier( CustomInvocationMixin,
                      invoke_reason,
                      context,
                      status_stream,
-                     output_stream,
+                     verbose_stream,
                    ):
         return 0
     

@@ -44,7 +44,7 @@ class JsonLikeSerialization(StringSerialization):
     # ----------------------------------------------------------------------
     @classmethod
     def _DeserializeItemImpl(cls, type_info, item, **custom_args):
-        if isinstance(type_info, (BoolTypeInfo, FloatTypeInfo, IntTypeInfo)):
+        if isinstance(type_info, (BoolTypeInfo, FloatTypeInfo, IntTypeInfo)) and not isinstance(item, (str, unicode)):
             return item
 
         return super(JsonLikeSerialization, cls)._DeserializeItemImpl(type_info, item, **custom_args)
