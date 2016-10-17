@@ -124,7 +124,7 @@ def CodeGeneratorFactory( plugin_info_map,
                           get_optional_metadata_func,   # def Func() -> [ (k, v), ...]
                           preprocess_context_func,      # def Func(context, plugin) -> context
                           postprocess_context_func,     # def Func(context, plugin) -> context
-                          invoke_func,                  # def Func(cls, invoke_reason, context, status_stream, output_stream, plugin)
+                          invoke_func,                  # def Func(cls, invoke_reason, context, status_stream, verbose_stream, plugin)
                           requires_output_name=True,
                         ):
     assert is_supported_func
@@ -172,8 +172,7 @@ def CodeGeneratorFactory( plugin_info_map,
         def _GetAdditionalGeneratorItems(cls, context):
             # ----------------------------------------------------------------------
             def ProcessGeneratorItem(item):
-                if isinstance(item, (str, unicode)):
-                    assert item in plugin_info_map, item
+                if isinstance(item, (str, unicode)) and item in plugin_info_map:
                     return plugin_info_map[item].plugin
 
                 return item
@@ -264,13 +263,13 @@ def CodeGeneratorFactory( plugin_info_map,
                          invoke_reason,
                          context,
                          status_stream,
-                         output_stream,
+                         verbose_stream,
                        ):
             return invoke_func( cls,
                                 invoke_reason,
                                 context, 
                                 status_stream,
-                                output_stream,
+                                verbose_stream,
                                 plugin_info_map[context.plugin_name].plugin,
                               )
 
