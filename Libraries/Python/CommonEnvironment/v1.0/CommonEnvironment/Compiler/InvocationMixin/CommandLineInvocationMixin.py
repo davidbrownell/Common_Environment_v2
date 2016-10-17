@@ -46,9 +46,9 @@ class CommandLineInvocationMixin(InvocationMixin):
                      invoke_reason,
                      context,
                      status_stream,
-                     output_stream,
+                     verbose_stream,
                    ):
-        command_line = cls.CreateInvokeCommandLine(context, output_stream)
+        command_line = cls.CreateInvokeCommandLine(context, verbose_stream)
         
         result = subprocess.Popen( command_line,
                                    shell=True,
@@ -61,7 +61,7 @@ class CommandLineInvocationMixin(InvocationMixin):
             if not line:
                 break
 
-            output_stream.write(line)
+            verbose_stream.write(line)
 
         return result.wait() or 0
 

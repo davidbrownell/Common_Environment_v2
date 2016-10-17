@@ -181,6 +181,12 @@ class UnitTest(unittest.TestCase):
 
         self.assertEqual(StringSerialization.DeserializeItem(TimeTypeInfo(), "18:05:32"), datetime.time(hour=18, minute=5, second=32))
 
+    # ----------------------------------------------------------------------
+    def test_Deserialize_Errors(self):
+        self.assertRaises(ValidationException, lambda: StringSerialization.DeserializeItem(IntTypeInfo(), "a1000"))
+        self.assertRaises(ValidationException, lambda: StringSerialization.DeserializeItem(IntTypeInfo(), "1000a"))
+        self.assertRaises(ValidationException, lambda: StringSerialization.DeserializeItem(IntTypeInfo(), "10 00"))
+
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
     try: sys.exit(unittest.main(verbosity=2))

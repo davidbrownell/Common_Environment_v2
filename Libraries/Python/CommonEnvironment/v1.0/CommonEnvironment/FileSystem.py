@@ -287,6 +287,21 @@ def RemoveTree(path):
     if not os.path.isdir(path):
         return
         
+    # Rename the dir to a temporary one and remove this dir. This
+    # works around timing issues associated with quickly creating
+    # a dir after it has just been deleted.
+    iteration = 1
+
+    while True:
+        potential_renamed_path = "{}{}".format(path, '_' * iteration)
+        if not os.path.isdir(potential_renamed_path):
+            renamed_path = potential_renamed_path
+            break
+
+        iteration += 1
+
+    os.rename(path, renamed_path)
+
     # ----------------------------------------------------------------------
     def OnError(action, name, exc):
         # Remove read-only flags and attempt to delete again
@@ -295,7 +310,7 @@ def RemoveTree(path):
         
     # ----------------------------------------------------------------------
     
-    shutil.rmtree(path, onerror=OnError)
+    shutil.rmtree(renamed_path, onerror=OnError)
     
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
