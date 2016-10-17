@@ -29,14 +29,27 @@ _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ---------------------------------------------------------------------------
 
+# ----------------------------------------------------------------------
+# |  
+# |  Public Types
+# |  
+# ----------------------------------------------------------------------
 class StreamDecorator(object):
     """\
     Decorates the provided stream.
     """
 
-    _eol_regex = re.compile(r"(?P<eol>\r?\n)")
+    # ----------------------------------------------------------------------
+    # |  Public Types
+    ( Type_Error,
+      Type_Warning,
+      Type_Info,
+      Type_Verbose,
+    ) = range(4)
 
-    # ---------------------------------------------------------------------------
+    
+    # ----------------------------------------------------------------------
+    # |  Public Methods
     def __init__( self,
                   stream_or_streams,
                   line_prefix='',
@@ -47,6 +60,7 @@ class StreamDecorator(object):
                   one_time_suffix='',
                   tab_length=4,
                   skip_first_line_prefix=False,
+                  stream_type=None,
                 ):
         self._streams                       = stream_or_streams if isinstance(stream_or_streams, list) else [ stream_or_streams, ] if stream_or_streams != None else []
         self._line_prefix                   = line_prefix
@@ -64,10 +78,24 @@ class StreamDecorator(object):
 
         self._column                        = 0
 
-    # ---------------------------------------------------------------------------
-    @property
-    def IsSet(self):
-        return bool(self._streams)
+        # IsSet
+        is_set = False
+        for stream in self._streams:
+            if stream and getattr(stream, "IsSet", True):
+                is_set = True
+                break
+
+        self.IsSet                          = is_set
+
+        # StreamType
+        if stream_type == None:
+            for stream in self._streams:
+                if ( hasattr(stream, "StreamType") and 
+                     (stream_type == None or stream.StreamType < stream_type)
+                   ):
+                    stream_type = stream.StreamType
+
+        self.StreamType                     = stream_type
 
     # ---------------------------------------------------------------------------
     def write(self, content, custom_line_prefix=''):
@@ -302,3 +330,7 @@ class StreamDecorator(object):
 
         return '\n\n'.join(paragraphs)
         
+    # ----------------------------------------------------------------------
+    # |  Private Data
+    _eol_regex = re.compile(r"(?P<eol>\r?\n)")
+    

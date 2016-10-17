@@ -296,7 +296,12 @@ class StringSerialization(Serialization):
                 regex_string, regex_flags = regex_info
             else:
                 regex_string = regex_info
-                regex_flags = 0
+                regex_flags = re.DOTALL | re.MULTILINE
+
+            if not regex_string.startswith("^"):
+                regex_string = "^{}".format(regex_string)
+            if not regex_string.endswith("$"):
+                regex_string = "{}$".format(regex_string)
 
             potential_match = re.match(regex_string, item, regex_flags)
             if potential_match:
