@@ -165,7 +165,7 @@ class StringSerialization(Serialization):
                         value *= 10
                         count += 1
 
-                    patterns.append("{%d}" % count)
+                    patterns.append("{1,%d}" % count)
 
                 return [ ''.join(patterns), ]
         

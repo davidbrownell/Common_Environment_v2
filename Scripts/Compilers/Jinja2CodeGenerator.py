@@ -175,10 +175,9 @@ class CodeGenerator( AtomicInputProcessingMixin,
                      context,
                      status_stream,
                      verbose_stream,
+                     verbose,
                    ):
         total_rval = 0
-
-        status_stream = StreamDecorator(status_stream)
 
         for index, (input_filename, output_filename) in enumerate(itertools.izip( context.input_filenames,
                                                                                   context.output_filenames,
@@ -268,7 +267,6 @@ def Generate( input,                          # <Redefining build-in type> pylin
                                 )
 def Clean( output_dir,
            output_stream=sys.stdout,
-           verbose=False,
          ):
     return CodeGeneratorMod.CommandLineCleanOutputDir(output_dir, output_stream)
 
