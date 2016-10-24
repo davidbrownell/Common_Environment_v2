@@ -86,6 +86,16 @@ class LinuxEnvironmentImpl(Environment):
     # |
     # ---------------------------------------------------------------------------
     @staticmethod
+    def _GeneratePrefixCommand():
+        return "#!/bin/sh"
+
+    # ---------------------------------------------------------------------------
+    @staticmethod
+    def _GenerateSuffixCommand():
+        pass
+
+    # ---------------------------------------------------------------------------
+    @staticmethod
     def _GenerateCommentCommand(value):
         return "# {}".format(value)
         
