@@ -309,6 +309,10 @@ class Environment(Interface):
                        
         results = []
         
+        prefix = self._GeneratePrefixCommand()
+        if prefix:
+            results.append(prefix)
+
         for command in commands:
             found = False
             for CommandType in CommandTypes:
@@ -322,6 +326,10 @@ class Environment(Interface):
 
             if not found:
                 assert False, (command, type(command))
+            
+        suffix = self._GenerateSuffixCommand()
+        if suffix:
+            results.append(suffix)
                 
         return '\n'.join(results)
         
@@ -436,6 +444,18 @@ class Environment(Interface):
         
     # ---------------------------------------------------------------------------
     # ---------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------
+    @staticmethod
+    @abstractmethod
+    def _GeneratePrefixCommand():
+        raise Exception("Abstract method")
+
+    # ---------------------------------------------------------------------------
+    @staticmethod
+    @abstractmethod
+    def _GenerateSuffixCommand():
+        raise Exception("Abstract method")
+
     # ---------------------------------------------------------------------------
     @staticmethod
     @abstractmethod
