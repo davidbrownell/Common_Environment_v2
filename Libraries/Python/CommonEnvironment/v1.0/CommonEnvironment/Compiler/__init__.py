@@ -367,23 +367,24 @@ class Base( InputProcessingMixin,
     # |
     # ---------------------------------------------------------------------------
     @classmethod
-    def _Invoke(cls, context, output_stream, verbose):
+    def _Invoke(cls, context, status_stream, verbose):
         """\
         Handles the complexities of invocation, ultimate calling _InvokeImpl.
         """
 
         assert context
-        # output_stream can be None
-        
-        invoke_reason = cls._GetInvokeReason(context, StreamDecorator(output_stream if verbose else None))
+        # status_stream can be None
+        status_stream = StreamDecorator(status_stream)
+
+        invoke_reason = cls._GetInvokeReason(context, StreamDecorator(status_stream if verbose else None))
         if invoke_reason == None:
-            output_stream.write("No changes were detected.\n")
+            status_stream.write("No changes were detected.\n")
             return 0
 
         input_items = cls._GetInputItems(context)
 
-        output_stream.write(cls._GetStatusText(cls.InvokeVerb, context, input_items))
-        with output_stream.DoneManager() as dm:
+        status_stream.write(cls._GetStatusText(cls.InvokeVerb, context, input_items))
+        with status_stream.DoneManager() as dm:
             if verbose:
                 output_items = cls._GetOutputFilenames(context)
 

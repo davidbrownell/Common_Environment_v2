@@ -29,6 +29,8 @@ import textwrap
 import threading
 import traceback
 
+from StringIO import StringIO
+
 from xml.etree import ElementTree as ET
 
 from CommonEnvironment.CallOnExit import CallOnExit
@@ -228,15 +230,19 @@ def Test( test_items,
             start_time = TimeDelta()
 
             try:
+                sink = StringIO()
+
                 if compiler.IsCompiler:
-                    compile_result, compile_output = compiler.Compile(flavor_results.context, status_stream=None)
+                    compile_result = compiler.Compile(flavor_results.context, sink)
                     compiler.RemoveTemporaryArtifacts(flavor_results.context)
                 elif compiler.IsCodeGenerator:
-                    compile_result, compile_output = compiler.Generate(flavor_results.context, status_stream=None)
+                    compile_result = compiler.Generate(flavor_results.context, sink)
                 elif compiler.IsVerifier:
-                    compile_result, compile_output = compiler.Verify(flavor_results.context, status_stream=None)
+                    compile_result = compiler.Verify(flavor_results.context, sink)
                 else:
                     assert False, compiler.Name
+
+                compile_output = sink.getvalue()
 
                 if compile_result != 0:
                     out.write(compile_output)

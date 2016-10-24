@@ -54,8 +54,8 @@ class Verifier( IndividualInputProcessingMixin,
     # |
     # ---------------------------------------------------------------------------
     @classmethod
-    def Verify(cls, context, output_stream, verbose):
-        return cls._Invoke(context, output_stream, verbose)
+    def Verify(cls, context, status_stream, verbose=False):
+        return cls._Invoke(context, status_stream, verbose)
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
