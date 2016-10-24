@@ -44,16 +44,9 @@ class CodeGenerator(Compiler.Base):
     # |
     # ---------------------------------------------------------------------------
     @classmethod
-    def Generate( cls,
-                  context,
-                  status_stream=sys.stdout,
-                  verbose_stream=None,
-                ):
+    def Generate(cls, context, output_stream, verbose):
         # <Instance of '<obj>' has no '<name>' member> pylint: disable = E1101, E1103
-        return cls._Invoke( context,
-                            status_stream=status_stream,
-                            verbose_stream=verbose_stream,
-                          )
+        return cls._Invoke(context, output_stream, verbose)
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------

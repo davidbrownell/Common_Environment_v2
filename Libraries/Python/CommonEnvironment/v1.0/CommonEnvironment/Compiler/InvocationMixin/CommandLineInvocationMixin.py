@@ -20,8 +20,11 @@ import subprocess
 import sys
 import textwrap
 
+from StringIO import StringIO
+
 from CommonEnvironment.Interface import abstractmethod
 from CommonEnvironment import Shell
+from CommonEnvironment.StreamDecorator import StreamDecorator
 
 from CommonEnvironment.Compiler.InvocationMixin import InvocationMixin
 
@@ -37,7 +40,7 @@ class CommandLineInvocationMixin(InvocationMixin):
     # ---------------------------------------------------------------------------
     @staticmethod
     @abstractmethod
-    def CreateInvokeCommandLine(context, output_stream):
+    def CreateInvokeCommandLine(context, verbose_stream):
         raise Exception("Abstract method")
 
     # ---------------------------------------------------------------------------
@@ -47,6 +50,7 @@ class CommandLineInvocationMixin(InvocationMixin):
                      context,
                      status_stream,
                      verbose_stream,
+                     verbose,
                    ):
         command_line = cls.CreateInvokeCommandLine(context, verbose_stream)
         
@@ -56,14 +60,21 @@ class CommandLineInvocationMixin(InvocationMixin):
                                    stderr=subprocess.STDOUT,
                                  )
 
+        sink = StringIO()
+        output_stream = StreamDecorator([ sink, verbose_stream, ])
+
         while True:
             line = result.stdout.readline()
             if not line:
                 break
 
-            verbose_stream.write(line)
+            output_stream.write(line)
 
-        return result.wait() or 0
+        result = result.wait() or 0
+        if result != 0 and not verbose:
+            status_stream.write(sink.getvalue())
+
+        return result
 
     # ---------------------------------------------------------------------------
     # |

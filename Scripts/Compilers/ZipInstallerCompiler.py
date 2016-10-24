@@ -23,6 +23,8 @@ import sys
 import textwrap
 import zipfile
 
+from StringIO import StringIO
+
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CommandLine
 from CommonEnvironment import FileSystem
@@ -129,7 +131,7 @@ class Compiler( AtomicInputProcessingMixin,
 
     # ---------------------------------------------------------------------------
     @classmethod
-    def _InvokeImpl(cls, invoke_reason, context, status_stream, verbose_stream):
+    def _InvokeImpl(cls, invoke_reason, context, status_stream, verbose_stream, verbose):
         if not os.path.isdir(os.path.dirname(context.output_filename)):
             os.makedirs(os.path.dirname(context.output_filename))
 
@@ -173,7 +175,7 @@ class Compiler( AtomicInputProcessingMixin,
 
         with CallOnExit(lambda: os.remove(config_filename)):
             status_stream.write("Creating zip file...")
-            with status_stream.DoneManager() as dm:
+            with status_stream.DoneManager(associated_stream=verbose_stream) as (dm, this_verbose_stream):
                 common_prefix = os.path.commonprefix(context.input_dirs)
                 if not common_prefix:
                     common_prefix = FileSystem.GetCommonPath(*context.input_dirs)
@@ -185,8 +187,8 @@ class Compiler( AtomicInputProcessingMixin,
                 with CallOnExit(lambda: os.chdir(current_dir)):
                     with zipfile.ZipFile(zip_filename, mode='w') as zf:
                         for index, input_dir in enumerate(context.input_dirs):
-                            dm.stream.write("Adding '{}' ({} of {})...".format(input_dir, index + 1, len(context.input_dirs)))
-                            with dm.stream.DoneManager() as dir_dm:
+                            this_verbose_stream.write("Adding '{}' ({} of {})...".format(input_dir, index + 1, len(context.input_dirs)))
+                            with this_verbose_stream.DoneManager() as dir_dm:
                                 for filename in FileSystem.WalkFiles(input_dir):
                                     item_name = filename
                                     if common_prefix:
@@ -198,7 +200,7 @@ class Compiler( AtomicInputProcessingMixin,
         # Create the installation file
         with CallOnExit(lambda: os.remove(zip_filename)):
             status_stream.write("Creating installer...")
-            with status_stream.DoneManager() as dm:
+            with status_stream.DoneManager(associated_stream=verbose_stream) as (dm, this_verbose_stream):
                 command_line = 'zipinst /selfexe "{zip_filename}" "{output_filename}"'   \
                                     .format( zip_filename=zip_filename,
                                              output_filename=context.output_filename,
@@ -209,16 +211,22 @@ class Compiler( AtomicInputProcessingMixin,
                                            stdout=subprocess.PIPE,
                                            stderr=subprocess.STDOUT,
                                          )
+
+                sink = StringIO()
+                immediate_output_stream = StreamDecorator([ sink, this_verbose_stream, ])
+
                 while True:
-                    c = result.stdout.read(1)
-                    if not c:
+                    line = result.stdout.readline()
+                    if not line:
                         break
 
-                    dm.stream.write(c)
+                    immediate_output_stream.write(line)
 
                 dm.result = result.wait() or 0
-                if dm.result != 0:
-                    return dm.result
+                if dm.result != 0 and not verbose:
+                    status_stream.write(sink.getvalue())
+
+                return dm.result
 
 # ---------------------------------------------------------------------------
 # |

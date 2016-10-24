@@ -124,7 +124,7 @@ def CodeGeneratorFactory( plugin_info_map,
                           get_optional_metadata_func,   # def Func() -> [ (k, v), ...]
                           preprocess_context_func,      # def Func(context, plugin) -> context
                           postprocess_context_func,     # def Func(context, plugin) -> context
-                          invoke_func,                  # def Func(cls, invoke_reason, context, status_stream, verbose_stream, plugin)
+                          invoke_func,                  # def Func(cls, invoke_reason, context, status_stream, verbose_stream, verbose, plugin)
                           requires_output_name=True,
                         ):
     assert is_supported_func
@@ -264,12 +264,14 @@ def CodeGeneratorFactory( plugin_info_map,
                          context,
                          status_stream,
                          verbose_stream,
+                         verbose,
                        ):
             return invoke_func( cls,
                                 invoke_reason,
                                 context, 
                                 status_stream,
                                 verbose_stream,
+                                verbose,
                                 plugin_info_map[context.plugin_name].plugin,
                               )
 

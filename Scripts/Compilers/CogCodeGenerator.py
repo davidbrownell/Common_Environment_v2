@@ -99,7 +99,7 @@ class CodeGenerator( IndividualInputProcessingMixin,
 
     # ---------------------------------------------------------------------------
     @classmethod
-    def CreateInvokeCommandLine(cls, context, output_stream):
+    def CreateInvokeCommandLine(cls, context, verbose_stream):
         return cls._CreateCommandLine(context, is_clean=False)
 
     # ---------------------------------------------------------------------------
