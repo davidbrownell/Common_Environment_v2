@@ -23,8 +23,11 @@ import shutil
 import sys
 import textwrap
 
+from StringIO import StringIO
+
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CommandLine
+from CommonEnvironment import FileSystem
 from CommonEnvironment import Interface
 from CommonEnvironment import Shell
 from CommonEnvironment.StreamDecorator import StreamDecorator
@@ -137,7 +140,13 @@ class Compiler( AtomicInputProcessingMixin,
 
     # ---------------------------------------------------------------------------
     @classmethod
-    def _InvokeImpl(cls, invoke_reason, context, status_stream, verbose_stream):
+    def _InvokeImpl( cls, 
+                     invoke_reason, 
+                     context, 
+                     status_stream, 
+                     verbose_stream,
+                     verbose,
+                   ):
         # ---------------------------------------------------------------------------
         def BuildTypeToString(build_type):
             if build_type == cls.BuildType_Console:
@@ -154,7 +163,7 @@ class Compiler( AtomicInputProcessingMixin,
                                                                         index + 1,
                                                                         len(context.input_filenames),
                                                                       ))
-            with status_stream.DoneManager() as this_dm:
+            with status_stream.DoneManager(associated_stream=verbose_stream) as (this_dm, this_verbose_stream):
                 output_filename = context.output_filenames[index]
                 
                 generated_python_content = textwrap.dedent(
@@ -245,28 +254,32 @@ class Compiler( AtomicInputProcessingMixin,
                                                stdout=subprocess.PIPE,
                                                stderr=subprocess.STDOUT,
                                              )
-                                             
+                                        
+                    sink = StringIO()
+                    output_stream = StreamDecorator([ sink, this_verbose_stream, ])
+                         
                     while True:
-                        c = result.stdout.read(1)
-                        if not c:
+                        line = result.stdout.readline()
+                        if not line:
                             break
                             
-                        verbose_stream.write(c)
+                        output_stream.write(line)
                         
                     this_dm.result = result.wait() or 0
                     if this_dm.result != 0:
+                        if not verbose:
+                            this_dm.stream.write(sink.getvalue())
+
                         return this_dm.result
 
                     # Cleanup the output
-                    if os.path.isdir("build"):
-                        shutil.rmtree("build")
-
+                    FileSystem.RemoveTree("build")
+                    
                     if os.path.isdir("dist"):
                         output_dir = os.path.dirname(output_filename)
 
-                        if os.path.isdir(output_dir):
-                            shutil.rmtree(output_dir)
-
+                        FileSystem.RemoveTree(output_dir)
+                        
                         shutil.move("dist", output_dir)
 
 # ---------------------------------------------------------------------------
