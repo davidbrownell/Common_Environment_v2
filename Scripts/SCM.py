@@ -1016,7 +1016,12 @@ def _AllImpl( directory,
                                                 lambda task_index, output_stream, action_item=action_item: action_func(action_item.scm, action_item.directory),
                                               ))
                 
-                task_pool_result = TaskPool.Execute(tasks, 1, output_stream=output_stream)
+                task_pool_result = TaskPool.Execute( tasks, 
+                                                     1, 
+                                                     output_stream=output_stream,
+                                                     verbose=True,
+                                                   )
+
                 si.result = si.result or task_pool_result
 
         return si.result
