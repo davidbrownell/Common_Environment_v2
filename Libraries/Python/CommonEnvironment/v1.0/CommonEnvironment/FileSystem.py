@@ -18,6 +18,7 @@ import os
 import shutil
 import stat
 import sys
+import time
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -283,35 +284,43 @@ def GetSizeDisplay(num_bytes, suffix='B'):
     return "%.1f %s%s" % (num_bytes, 'Yi', suffix)
 
 # ----------------------------------------------------------------------
-def RemoveTree(path):
+def RemoveTree( path, 
+                optional_retry_iterations=5,            # Can be None
+              ):
     if not os.path.isdir(path):
         return
         
-    # Rename the dir to a temporary one and remove this dir. This
-    # works around timing issues associated with quickly creating
-    # a dir after it has just been deleted.
-    iteration = 1
+    # ---------------------------------------------------------------------------
+    def Impl(renamed_path):
+        # ---------------------------------------------------------------------------
+        def OnError(action, name, exc):
+            if not os.path.isfile(name):
+                return
 
-    while True:
-        potential_renamed_path = "{}{}".format(path, '_' * iteration)
-        if not os.path.isdir(potential_renamed_path):
-            renamed_path = potential_renamed_path
-            break
+            elif not os.stat(name)[0] & stat.S_IWRITE:
+                os.chmod(name, stat.S_IWRITE)
+                os.remove(name)
 
-        iteration += 1
+            else:
+                raise Exception("Unable to remove '{}'".format(name))
 
-    os.rename(path, renamed_path)
+        # ---------------------------------------------------------------------------
 
-    # ----------------------------------------------------------------------
-    def OnError(action, name, exc):
-        # Remove read-only flags and attempt to delete again
-        os.chmod(name, stat.S_IWRITE)
-        os.remove(name)
-        
-    # ----------------------------------------------------------------------
+        shutil.rmtree(renamed_path, onerror=OnError)
+
+    # ---------------------------------------------------------------------------
+
+    _RemoveImpl(Impl, path, optional_retry_iterations)
     
-    shutil.rmtree(renamed_path, onerror=OnError)
-    
+# ----------------------------------------------------------------------
+def RemoveItem( path,
+                optional_retry_iterations=5,            # Can be None
+              ):
+    if not os.path.isfile(path):
+        return 
+
+    _RemoveImpl(os.remove, path, optional_retry_iterations)
+
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
@@ -357,3 +366,43 @@ def _ProcessArgs(include_items, exclude_items):
     # ---------------------------------------------------------------------------
     
     return Impl
+
+# ---------------------------------------------------------------------------
+def _RemoveImpl( func,                          # def Func(renamed_path)
+                 path, 
+                 optional_retry_iterations,
+               ):
+    assert os.path.exists(path)
+
+    # Rename the dir or item to a temporary one and then remove
+    # the renamed item. This works around timing issues associated
+    # with quickly creating an item after it has just been deleted.
+    iteration = 0
+
+    while True:
+        potential_renamed_path = "{}{}".format(path, iteration)
+        if not os.path.exists(potential_renamed_path):
+            renamed_path = potential_renamed_path
+            break
+
+        iteration += 1
+
+    # Invoke
+    iteration = 0
+    while True:
+        try:
+            os.rename(path, renamed_path)
+            break
+        except:
+            if optional_retry_iterations != None:
+                # Handle temporary permission denied errors by retrying after a 
+                # period of time.
+                time.sleep(1) # seconds
+
+                iteration += 1
+                if iteration < optional_retry_iterations:
+                    continue
+
+            raise
+
+    func(renamed_path)

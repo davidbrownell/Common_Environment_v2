@@ -29,8 +29,10 @@ from StringIO import StringIO
 
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CommandLine
+from CommonEnvironment import FileSystem
 from CommonEnvironment import Interface
 from CommonEnvironment import Shell
+from CommonEnvironment.StreamDecorator import StreamDecorator
 
 from CommonEnvironment.Compiler import Verifier as VerifierMod
 from CommonEnvironment.Compiler.InvocationMixin.CustomInvocationMixin import CustomInvocationMixin
@@ -139,6 +141,7 @@ class Verifier( CustomInvocationMixin,
                      context,
                      status_stream,
                      verbose_stream,
+                     verbose,
                    ):                       # <Too many local variables> pylint: disable = R0914
         environment = Shell.GetEnvironment()
 
@@ -167,26 +170,7 @@ class Verifier( CustomInvocationMixin,
                              filename=filename,
                            ))
 
-        # ---------------------------------------------------------------------------
-        def SafeDelete():
-            # There have been periodic errors when attempting to delete this file
-            # (file in use). If that happens, wait and then try again.
-            retries = 0
-
-            while True:
-                try:
-                    os.remove(temp_filename)
-                    break
-                except:
-                    if retries == 5:
-                        raise
-
-                    time.sleep(1) # seconds
-                    retries += 1
-
-        # ---------------------------------------------------------------------------
-        
-        with CallOnExit(SafeDelete):
+        with CallOnExit(lambda: FileSystem.RemoveItem(temp_filename)):
             # Run the generated file
             command_line = 'python "{}"'.format(temp_filename)
 
@@ -196,36 +180,53 @@ class Verifier( CustomInvocationMixin,
                                        stderr=subprocess.STDOUT,
                                      )
             sink = StringIO()
+            output_stream = StreamDecorator([ sink, verbose_stream, ])
 
             while True:
                 content = result.stdout.readline()
                 if not content:
                     break
 
-                verbose_stream.write(content)
-                sink.write(content)
-
-            result = result.wait() or 0
+                output_stream.write(content)
             
-            verbose_stream.write("\n\n")
-            sink = sink.getvalue()
-
+            result.wait()
+            result = 0
+            
             # Extract the results
-            match = re.search(r"Your code has been rated at (?P<score>[-\d\.]+)/(?P<max>[\d\.]+)", sink, re.MULTILINE)
+            match = re.search(r"Your code has been rated at (?P<score>[-\d\.]+)/(?P<max>[\d\.]+)", sink.getvalue(), re.MULTILINE)
             if not match:
-                return -1
+                result = -1
+            else:
+                score = float(match.group("score"))
+                max_score = float(match.group("max"))
+                assert max_score != 0.0
 
-            score = float(match.group("score"))
-            max_score = float(match.group("max"))
-            assert max_score != 0.0
+                # Don't meausre scores for files in Impl directories
+                is_impl_file = os.path.split(os.path.dirname(filename))[1].endswith("Impl")
+                
+                if is_impl_file and not context.explicit_passing_score:
+                    passing_score = None
+                else:
+                    passing_score = context.passing_score
 
-            # Don't meausre scores for files in Impl directories
-            is_impl_file = os.path.split(os.path.dirname(filename))[1].endswith("Impl")
+                output_stream.write(textwrap.dedent(
+                    """\
+                    Score:          {score} (out of {max_score})
+                    Passing Score:  {passing_score}{explicit}
 
-            if (not is_impl_file or context.explicit_passing_score) and score < context.passing_score:
-                return -1
+                    """).format( score=score,
+                                 max_score=max_score,
+                                 passing_score=passing_score,
+                                 explicit=" (explicitly provided)" if context.explicit_passing_score else '',
+                               ))
 
-            return 0
+                if passing_score != None and score < passing_score:
+                    result = -1
+
+            if result != 0 and not verbose:
+                status_stream.write(sink.getvalue())
+
+            return result
 
 # ---------------------------------------------------------------------------
 # |

@@ -22,6 +22,7 @@ import textwrap
 from contextlib import contextmanager
 from StringIO import StringIO
 
+from . import ModifiableValue
 from .TimeDelta import TimeDelta
 
 # ---------------------------------------------------------------------------
@@ -40,35 +41,25 @@ class StreamDecorator(object):
     """
 
     # ----------------------------------------------------------------------
-    # |  Public Types
-    ( Type_Error,
-      Type_Warning,
-      Type_Info,
-      Type_Verbose,
-    ) = range(4)
-
-    
-    # ----------------------------------------------------------------------
     # |  Public Methods
     def __init__( self,
                   stream_or_streams,
-                  line_prefix='',
+                  line_prefix='',           # string or def Func(column) -> string
                   line_suffix='',           # string or def Func(column) -> string
-                  prefix='',
-                  suffix='',
-                  one_time_prefix='',
-                  one_time_suffix='',
+                  prefix='',                # string or def Func(column) -> string
+                  suffix='',                # string or def Func(column) -> string
+                  one_time_prefix='',       # string or def Func(column) -> string
+                  one_time_suffix='',       # string or def Func(column) -> string
                   tab_length=4,
                   skip_first_line_prefix=False,
-                  stream_type=None,
                 ):
         self._streams                       = stream_or_streams if isinstance(stream_or_streams, list) else [ stream_or_streams, ] if stream_or_streams != None else []
-        self._line_prefix                   = line_prefix
-        self._line_suffix                   = line_suffix
-        self._prefix                        = prefix
-        self._suffix                        = suffix
-        self._one_time_prefix               = one_time_prefix
-        self._one_time_suffix               = one_time_suffix
+        self._line_prefix                   = line_prefix if callable(line_prefix) else lambda column: line_prefix
+        self._line_suffix                   = line_suffix if callable(line_suffix) else lambda column: line_suffix
+        self._prefix                        = prefix if callable(prefix) else lambda column: prefix
+        self._suffix                        = suffix if callable(suffix) else lambda column: suffix
+        self._one_time_prefix               = one_time_prefix if callable(one_time_prefix) else lambda column: one_time_prefix
+        self._one_time_suffix               = one_time_suffix if callable(one_time_suffix) else lambda column: one_time_suffix
         self._tab_length                    = tab_length
 
         self._displayed_one_time_prefix     = False
@@ -77,6 +68,7 @@ class StreamDecorator(object):
         self._skip_first_line_prefix        = skip_first_line_prefix
 
         self._column                        = 0
+        self._indent_stack                  = []
 
         # IsSet
         is_set = False
@@ -86,16 +78,6 @@ class StreamDecorator(object):
                 break
 
         self.IsSet                          = is_set
-
-        # StreamType
-        if stream_type == None:
-            for stream in self._streams:
-                if ( hasattr(stream, "StreamType") and 
-                     (stream_type == None or stream.StreamType < stream_type)
-                   ):
-                    stream_type = stream.StreamType
-
-        self.StreamType                     = stream_type
 
     # ---------------------------------------------------------------------------
     def write(self, content, custom_line_prefix=''):
@@ -113,7 +95,7 @@ class StreamDecorator(object):
                 if self._skip_first_line_prefix:
                     self._skip_first_line_prefix = False
                 else:
-                    WriteRaw(self._line_prefix)
+                    WriteRaw(self._line_prefix(self._column))
 
                     if custom_line_prefix:
                         WriteRaw(custom_line_prefix)
@@ -122,7 +104,7 @@ class StreamDecorator(object):
             self._column += len(content) + (content.count('\t') * (self._tab_length - 1))
 
             if eol:
-                WriteRaw(self._line_suffix)
+                WriteRaw(self._line_suffix(self._column))
                 WriteRaw(eol)
 
                 self._column = 0
@@ -130,11 +112,11 @@ class StreamDecorator(object):
         # ---------------------------------------------------------------------------
         
         if not self._displayed_one_time_prefix:
-            WriteRaw(self._one_time_prefix)
+            WriteRaw(self._one_time_prefix(self._column))
             self._displayed_one_time_prefix = True
 
         if not self._displayed_prefix:
-            WriteRaw(self._prefix)
+            WriteRaw(self._prefix(self._column))
             self._displayed_prefix = True
 
         while True:
@@ -163,21 +145,22 @@ class StreamDecorator(object):
             return self
 
         if force_suffix or self._column != 0:
-            suffix = self._line_suffix(self._column) if callable(self._line_suffix) else self._line_suffix
+            suffix = self._line_suffix(self._column)
 
             for stream in self._streams:
                 stream.write(suffix)
-                stream.write(self._suffix)
+                stream.write(self._suffix(self._column))
 
-            self._column = 0
             self._displayed_prefix = False
         
         if not self._displayed_one_time_suffix:
             for stream in self._streams:
-                stream.write(self._one_time_suffix)
+                stream.write(self._one_time_suffix(self._column))
 
             self._displayed_one_time_suffix = True
 
+        self._column = 0
+            
         return self
 
     # ----------------------------------------------------------------------
@@ -188,13 +171,48 @@ class StreamDecorator(object):
 
                      done_prefix='',
                      done_suffix='',
-                     done_suffix_functor=None,        # Can be functor or list, def Func() -> string
+                     done_suffix_functor=None,          # Can be functor or list, def Func() -> string
                      done_result=True,
                      done_time=True,
 
                      display_exceptions=True,
                      display_exception_callstack=True,
                      suppress_exceptions=False,
+
+                     associated_stream=None,
+                     associated_streams=None,           # Streams that should be adjusted in conjunction with this stream. Most of the time, this is used
+                                                        # to manage verbose streams that are aligned with status streams, where the status stream is self
+                                                        # and the verbose stream content is interleaved with it.
+                                                        #
+                                                        # Example:
+                                                        #     import sys
+                                                        #
+                                                        #     from StringIO import StringIO 
+                                                        #     from CommonEnvironment.StreamDecorator import StreamDecorator
+                                                        #
+                                                        #     sink = StringIO()
+                                                        #     
+                                                        #     verbose_stream = StreamDecorator(sink)
+                                                        #     status_stream = StreamDecorator([ sys.stdout, verbose_stream, ])
+                                                        #     
+                                                        #     status_stream.write("0...")
+                                                        #     with status_stream.DoneManager(associated_stream=verbose_stream) as ( dm1, verbose_stream1 ):
+                                                        #         verbose_stream1.write("Verbose 0\n----")
+                                                        #     
+                                                        #         dm1.stream.write("1...")
+                                                        #         with dm1.stream.DoneManager(associated_stream=verbose_stream1) as ( dm2, verbose_stream2 ):
+                                                        #             verbose_stream2.write("Verbose 1\n----")
+                                                        #     
+                                                        #             dm2.stream.write("2...")
+                                                        #             with dm2.stream.DoneManager(associated_stream=verbose_stream2) as ( dm3, verbose_stream3 ):
+                                                        #                 verbose_stream3.write("Verbose 2\n----")
+                                                        #     
+                                                        #                 dm3.stream.write("3...")
+                                                        #                 with dm3.stream.DoneManager(associated_stream=verbose_stream3) as ( dm4, verbose_stream4 ):
+                                                        #                     verbose_stream4.write("Verbose 3\n----")
+                                                        #                     verbose_stream4.flush() 
+                                                        #     
+                                                        #     sys.stdout.write("\n**\n{}\n**\n".format(sink.getvalue()))
                    ):
         done_suffix_functors = done_suffix_functor if isinstance(done_suffix_functor, list) else [ done_suffix_functor, ]
 
@@ -274,7 +292,23 @@ class StreamDecorator(object):
 
         with CallOnExit(Cleanup):
             try:
-                yield info
+                if associated_stream:
+                    if not associated_streams:
+                        associated_streams = []
+
+                    associated_streams.append(associated_stream)
+
+                if not associated_streams:
+                    yield info
+                else:
+                    yield tuple([ info, ] + [ StreamDecorator( stream,
+                                                               line_prefix=' ' * len(line_prefix),
+                                                               one_time_prefix='\n',
+                                                               one_time_suffix="\n<flush>",
+                                                               
+                                                             )
+                                              for stream in associated_streams
+                                            ])
 
                 if info.result == None:
                     info.result = 0

@@ -29,5 +29,5 @@ class InvocationMixin(Interface):
     # ---------------------------------------------------------------------------
     @staticmethod
     @abstractmethod
-    def _InvokeImpl(invoke_reason, context, status_stream, verbose_stream):
+    def _InvokeImpl(invoke_reason, context, status_stream, verbose_stream, verbose):
         raise Exception("Abstract method")

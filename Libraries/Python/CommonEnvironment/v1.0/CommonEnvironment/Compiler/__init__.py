@@ -177,7 +177,6 @@ class Base( InputProcessingMixin,
     @classmethod
     def GenerateContextItems( cls,
                               inputs,
-                              verbose_stream=None,
                               **kwargs
                             ):
         """\
@@ -242,8 +241,6 @@ class Base( InputProcessingMixin,
         EnsureValid()
 
         # Continue with normal processing
-        verbose_stream = verbose_stream or StreamDecorator(verbose_stream)
-
         if not isinstance(inputs, list):
             inputs = [ inputs, ]
 
@@ -275,11 +272,6 @@ class Base( InputProcessingMixin,
                 if cls.IsSupported(potential_input):
                     invocation_group_inputs.append(potential_input)
                     added_input = True
-                else:
-                    verbose_stream.write("Skipping '{}' as it is not supported by this compiler.\n".format(potential_input))
-
-            if not added_input and os.path.isdir(input):
-                verbose_stream.write("**** '{}' did not yield any inputs to process. ****\n".format(input))
 
         optional_metadata = cls._GetOptionalMetadata()
         
@@ -339,14 +331,13 @@ class Base( InputProcessingMixin,
     @classmethod
     def GenerateContextItem( cls,
                              inputs,
-                             verbose_stream=None,
                              **kwargs
                            ):
         """\
         Convenience method when one and only one context item is expected.
         """
 
-        contexts = list(cls.GenerateContextItems(inputs, verbose_stream, **kwargs))
+        contexts = list(cls.GenerateContextItems(inputs, **kwargs))
         if not contexts:
             return
 
@@ -357,88 +348,87 @@ class Base( InputProcessingMixin,
 
     # ---------------------------------------------------------------------------
     @classmethod
-    def Clean( cls,
-               context,
-               status_stream=sys.stdout,
-               verbose_stream=None,
-             ):
+    def Clean(cls, context, output_stream):
         """\
         Handles the complexities of cleaning, ultimately calling _CleanImpl.
         """
 
         assert context
-        # status_stream can be None
-        # verbose_stream can be None
-
-        # The following lines ensure that we don't have to deal with the None-ness of provided streams
-        status_stream = StreamDecorator(status_stream)
-        verbose_stream = StreamDecorator(verbose_stream)
-
-        this_status_stream = cls._InitializeStatusStream("Cleaning", status_stream, context)
-        with status_stream.DoneManager() as stream_info:
-            sink = StringIO()
-            stream_info.result = cls._CleanImpl( context,
-                                                 StreamDecorator([ this_status_stream, sink, ]),
-                                                 StreamDecorator( sink,
-                                                                  prefix='\n',
-                                                                  line_prefix="  ",
-                                                                ),
-                                               ) or 0
-
-            sink = "{}\n".format(sink.getvalue().rstrip())
-
-            return stream_info.result, sink
-            
+        # output_stream can be None
+        
+        output_stream.write(cls._GetStatusText("Cleaning", context, cls._GetInputItems(context)))
+        with output_stream.DoneManager() as dm:
+            dm.result = cls._CleanImpl(context, dm.stream) or 0
+            return dm.result
+           
     # ---------------------------------------------------------------------------
     # |
     # |  Protected Methods
     # |
     # ---------------------------------------------------------------------------
     @classmethod
-    def _Invoke( cls,
-                 context,
-                 status_stream=sys.stdout,
-                 verbose_stream=None,
-               ):
+    def _Invoke(cls, context, status_stream, verbose):
         """\
         Handles the complexities of invocation, ultimate calling _InvokeImpl.
         """
 
         assert context
         # status_stream can be None
-        # verbose_stream can be None
-
-        # The following lines ensure that we don't have to deal with the None-ness of provided streams
         status_stream = StreamDecorator(status_stream)
-        verbose_stream = StreamDecorator(verbose_stream)
-        
-        invoke_reason = cls._GetInvokeReason(context, verbose_stream)
+
+        invoke_reason = cls._GetInvokeReason(context, StreamDecorator(status_stream if verbose else None))
         if invoke_reason == None:
             status_stream.write("No changes were detected.\n")
-            return 0, "No changes were detected.\n"
+            return 0
 
-        verbose_stream.flush()
+        input_items = cls._GetInputItems(context)
 
-        this_status_stream = cls._InitializeStatusStream(cls.InvokeVerb, status_stream, context)
-        with status_stream.DoneManager() as stream_info:
-            sink = StringIO()
+        status_stream.write(cls._GetStatusText(cls.InvokeVerb, context, input_items))
+        with status_stream.DoneManager() as dm:
+            if verbose:
+                output_items = cls._GetOutputFilenames(context)
 
-            stream_info.result = cls._InvokeImpl( invoke_reason,
-                                                  context,
-                                                  StreamDecorator([ stream_info.stream, sink, ]),
-                                                  StreamDecorator( sink,
-                                                                   prefix='\n',
-                                                                   line_prefix="  ",
-                                                                   stream_type=StreamDecorator.Type_Verbose if verbose_stream.IsSet else None,
-                                                                 ),
-                                                ) or 0
+                if hasattr(context, "display_name") or len(input_items) == 1:
+                    indentation = 4
+                else:
+                    indentation = 8
 
-            sink = "{}\n".format(sink.getvalue().rstrip())
+                verbose_stream = StreamDecorator( StreamDecorator(dm.stream),
+                                                  prefix=StreamDecorator.LeftJustify( textwrap.dedent(
+                                                                                        """\
+                                                                                        
+                                                                                        ========================================
+                                                                                        VERBOSE Output
 
-            if stream_info.result == 0:
+                                                                                        {}
+                                                                                                ->
+                                                                                            {}
+                                                                                        ========================================
+                                                                                        """).format( '\n'.join(input_items),
+                                                                                                     StreamDecorator.LeftJustify('\n'.join(output_items) if output_items else "[None]", 4),
+                                                                                                   ),
+                                                                                      2,
+                                                                                      skip_first_line=False,
+                                                                                    ),
+                                                  suffix='\n',
+                                                  line_prefix=' ' * indentation,
+                                                )
+                status_stream = verbose_stream
+            else:
+                status_stream = dm.stream
+                verbose_stream = StreamDecorator(None)
+
+            dm.result = cls._InvokeImpl( invoke_reason, 
+                                         context, 
+                                         status_stream, 
+                                         verbose_stream, 
+                                         verbose,
+                                       )
+
+            if dm.result == 0:
                 cls._PersistContext(context)
 
-            return stream_info.result, sink
+            return dm.result
 
     # ----------------------------------------------------------------------
     @staticmethod
@@ -542,11 +532,7 @@ class Base( InputProcessingMixin,
     # |  Private Methods
     # |
     # ---------------------------------------------------------------------------
-    @staticmethod
-    @abstractmethod
-    def _InvokeImpl(invoke_reason, context, status_stream, output_stream):
-        raise Exception("Abstract method")
-
+    
     # ---------------------------------------------------------------------------
     # |  The following methods MAY be overridden to customize behavior
     @extensionmethod
@@ -564,7 +550,7 @@ class Base( InputProcessingMixin,
     @staticmethod
     def _GetDisplayName(context):
         """\
-        Name used to uniquely identify the compilation in status messages.
+        Name used to uniquely identify the compilation in output messages.
         """
         return None
     
@@ -609,27 +595,20 @@ class Base( InputProcessingMixin,
     # ---------------------------------------------------------------------------
     # ---------------------------------------------------------------------------
     @classmethod
-    def _InitializeStatusStream(cls, prefix, status_stream, context):
+    def _GetStatusText(cls, prefix, context, input_items):
         if hasattr(context, "display_name"):
             status_suffix = '"{}"...'.format(context.display_name)
-            indentation = 4
+        elif len(input_items) == 1:
+            status_suffix = '"{}"...'.format(input_items[0])
         else:
-            input_items = cls._GetInputItems(context)
+            status_suffix = textwrap.dedent(
+                """\
 
-            if len(input_items) == 1:
-                status_suffix = '"{}"...'.format(input_items[0])
-                indentation = 4
-            else:
-                status_suffix = "\n{}\n".format('\n'.join([ "    - {}".format(input_item) for input_item in input_items ]))
-                indentation = 8
+                {}
+                """).format('\n'.join([ "    - {}".format(input_item) for input_item in input_items ]))
 
-        status_stream.write("{} {}".format(prefix, status_suffix))
-
-        return StreamDecorator( status_stream,
-                                prefix='\n',
-                                line_prefix=' ' * indentation,
-                              )
-
+        return "{} {}".format(prefix, status_suffix)
+    
 # ---------------------------------------------------------------------------
 # |
 # |  Public Methods
@@ -645,7 +624,7 @@ def CommandLineInvoke( compiler,
                        **compiler_kwargs
                      ):
     # ---------------------------------------------------------------------------
-    def Invoke(context, output_stream, verbose_stream):
+    def Invoke(context, output_stream):
         if compiler.IsCompiler:
             method_name = "Compile"
         elif compiler.IsCodeGenerator:
@@ -655,7 +634,7 @@ def CommandLineInvoke( compiler,
         else:
             assert False, compiler
 
-        return getattr(compiler, method_name)(context, output_stream, verbose_stream)
+        return getattr(compiler, method_name)(context, output_stream, verbose)
 
     # ---------------------------------------------------------------------------
     
@@ -663,7 +642,6 @@ def CommandLineInvoke( compiler,
                              inputs,
                              Invoke,
                              output_stream,
-                             verbose,
                              compiler_kwargs,
                              output_via_stderr=output_via_stderr,
                              output_start_line=output_start_line,
@@ -674,14 +652,12 @@ def CommandLineInvoke( compiler,
 def CommandLineClean( compiler,
                       inputs,
                       output_stream,
-                      verbose,
                       **compiler_kwargs
                     ):
     return _CommandLineImpl( compiler,
                              inputs,
-                             lambda context, output_stream, verbose_stream: compiler.Clean(context, output_stream),
+                             compiler.Clean,
                              output_stream,
-                             verbose,
                              compiler_kwargs,
                            )
 
@@ -726,9 +702,8 @@ def LoadFromModule(mod):
 # ---------------------------------------------------------------------------
 def _CommandLineImpl( compiler,
                       inputs,
-                      functor,              # def Func(context, output_stream, verbose_stream) -> rval
+                      functor,              # def Func(context, output_stream) -> rval
                       output_stream,
-                      verbose,
                       compiler_kwargs,
                       output_via_stderr=False,
                       output_start_line=None,
@@ -765,58 +740,15 @@ def _CommandLineImpl( compiler,
                                                      done_suffix='\n',
                                                      display_exceptions=False,
                                                    ) as stream_info:
-        verbose_stream = StreamDecorator(stream_info.stream if verbose else None, line_prefix="INFO: ")
-        
         stream_info.stream.write("Generating context...")
         with stream_info.stream.DoneManager():
-            contexts = list(compiler.GenerateContextItems(inputs, verbose_stream, **compiler_kwargs))
+            contexts = list(compiler.GenerateContextItems(inputs, **compiler_kwargs))
             
         for index, context in enumerate(contexts):
-            output_stream.flush()
+            stream_info.stream.flush()
 
-            result, output = functor(context, output_stream, verbose_stream)
+            result = functor(context, output_stream)
             
             stream_info.result = stream_info.result or result
-
-            # Print the output
-            heading = "Results ({result}) [{index} of {total}]".format( result=result,
-                                                                        index=index + 1,
-                                                                        total=len(contexts),
-                                                                      )
-
-            output = textwrap.dedent(
-                """\
-                
-                    {heading}
-                    {underline1}
-               {input_items}
-                        ->
-               {output_items}
-                    {underline2}
-               {output}
-
-                """).format( heading=heading,
-                             underline1='-' * len(heading),
-                             input_items='\n'.join([ "      {}".format(input_item) for input_item in compiler._GetInputItems(context) ]),               # <Access to protected method> pylint: disable = W0212
-                             output_items='\n'.join([ "          {}".format(output_item) for output_item in compiler._GetOutputFilenames(context) ]),   # <Access to protected method> pylint: disable = W0212
-                             underline2='=' * len(heading),
-                             output=StreamDecorator.LeftJustify(output, 10, skip_first_line=False),
-                           )
-
-            if result != 0:
-                if output_start_line or output_end_line:
-                    output = '\n'.join(output.split('\n')[output_start_line:output_end_line])
-
-                output_stream.write(output)
-                output_stream.flush()
-            elif output_via_stderr:
-                if output_start_line or output_end_line:
-                    output = '\n'.join(output.split('\n')[output_start_line:output_end_line])
-
-                sys.stderr.write(output)
-                sys.stderr.flush()
-            else:
-                verbose_stream.write(output)
-                verbose_stream.flush()
             
     return stream_info.result

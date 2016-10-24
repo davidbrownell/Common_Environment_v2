@@ -67,13 +67,13 @@ class Task(object):
 def Execute( tasks,
              num_concurrent_tasks=multiprocessing.cpu_count(),
              output_stream=sys.stdout,
-             verbose=True,
+             verbose=False,
+             silent=False,
            ):
     assert tasks
     assert num_concurrent_tasks
 
-    output_stream = StreamDecorator(output_stream)
-    verbose_stream = StreamDecorator(output_stream if verbose else None)
+    output_stream = StreamDecorator(None if silent else output_stream)
     
     # ---------------------------------------------------------------------------
     class Executor(object):
@@ -227,9 +227,9 @@ def Execute( tasks,
     num_concurrent_tasks = min(num_concurrent_tasks, len(tasks))
     executor = Executor(len(tasks), num_concurrent_tasks != 1)
 
-    with verbose_stream.DoneManager( line_prefix='',
-                                     done_prefix="\nTask pool ",
-                                   ) as si:
+    with output_stream.DoneManager( line_prefix='',
+                                    done_prefix="\nTask pool ",
+                                  ) as si:
         if num_concurrent_tasks == 1:
             for index, task in enumerate(tasks):
                 executor.Execute(task, index, si.stream)
@@ -262,26 +262,34 @@ def Execute( tasks,
                 thread.join()
 
         # Calculate the final result
-        contains_output = any(task.output for task in tasks)
+
+        # ----------------------------------------------------------------------
+        def Output(stream, task):
+            stream.write(textwrap.dedent(
+                """\
+
+                # ----------------------------------------------------------------------
+                # |  
+                # |  {name} ({result}, {time})
+                # |  
+                # ----------------------------------------------------------------------
+                {output}
+
+                """).format( name=task.Name,
+                             result=task.result,
+                             time=task.time_delta_string,
+                             output=task.output,
+                           ))
+
+        # ----------------------------------------------------------------------
         
         for task in tasks:
-            if contains_output:
-                verbose_stream.write(textwrap.dedent(
-                    """\
+            if task.result != 0:
+                Output(output_stream, task)
+                si.result = si.result or task.result
 
-                    # ---------------------------------------------------------------------------
-                    # |
-                    # |  {name} ({result}, {time})
-                    # |
-                    # ---------------------------------------------------------------------------
-                    {output}
+        if verbose and si.result == 0 and any(task.output for task in tasks):
+            for task in tasks:
+                Output(output_stream, task)
 
-                    """).format( name=task.Name,
-                                 result=task.result,
-                                 time=task.time_delta_string,
-                                 output=task.output,
-                               ))
-
-            si.result = si.result or task.result
-
-    return si.result
+        return si.result
