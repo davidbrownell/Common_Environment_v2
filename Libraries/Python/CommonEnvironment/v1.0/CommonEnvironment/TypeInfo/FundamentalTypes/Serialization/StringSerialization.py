@@ -165,9 +165,7 @@ class StringSerialization(Serialization):
                         value *= 10
                         count += 1
 
-                    patterns.append("{%d,%d}" % ( 1 if type_info.Min != 0 else 0,
-                                                  count,
-                                                ))
+                    patterns.append("{1,%d}" % count)
 
                 return [ ''.join(patterns), ]
         

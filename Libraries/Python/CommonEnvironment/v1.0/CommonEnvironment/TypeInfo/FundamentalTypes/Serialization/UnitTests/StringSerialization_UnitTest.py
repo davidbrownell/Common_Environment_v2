@@ -57,9 +57,9 @@ class UnitTest(unittest.TestCase):
         self.assertEqual(StringSerialization.GetRegularExpressionString(IntTypeInfo(min=10)), r"[0-9]+")
         self.assertEqual(StringSerialization.GetRegularExpressionString(IntTypeInfo(max=0)), r"-[0-9]+")
         self.assertEqual(StringSerialization.GetRegularExpressionString(IntTypeInfo(max=10)), r"-?[0-9]+")
-        self.assertEqual(StringSerialization.GetRegularExpressionString(IntTypeInfo(min=0, max=1000)), r"[0-9]{4}")
-        self.assertEqual(StringSerialization.GetRegularExpressionString(IntTypeInfo(min=0, max=100000)), r"[0-9]{6}")
-        self.assertEqual(StringSerialization.GetRegularExpressionString(IntTypeInfo(min=-100000, max=1000)), r"-?[0-9]{6}")
+        self.assertEqual(StringSerialization.GetRegularExpressionString(IntTypeInfo(min=0, max=1000)), r"[0-9]{1,4}")
+        self.assertEqual(StringSerialization.GetRegularExpressionString(IntTypeInfo(min=0, max=100000)), r"[0-9]{1,6}")
+        self.assertEqual(StringSerialization.GetRegularExpressionString(IntTypeInfo(min=-100000, max=1000)), r"-?[0-9]{1,6}")
 
     # ----------------------------------------------------------------------
     def test_RegularExpressionString_String(self):
@@ -97,9 +97,9 @@ class UnitTest(unittest.TestCase):
         self.assertEqual(StringSerialization.GetRegularExpressionStringInfo(IntTypeInfo(min=10)), [ r"[0-9]+", ])
         self.assertEqual(StringSerialization.GetRegularExpressionStringInfo(IntTypeInfo(max=0)), [ r"-[0-9]+", ])
         self.assertEqual(StringSerialization.GetRegularExpressionStringInfo(IntTypeInfo(max=10)), [ r"-?[0-9]+", ])
-        self.assertEqual(StringSerialization.GetRegularExpressionStringInfo(IntTypeInfo(min=0, max=1000)), [ r"[0-9]{4}", ])
-        self.assertEqual(StringSerialization.GetRegularExpressionStringInfo(IntTypeInfo(min=0, max=100000)), [ r"[0-9]{6}", ])
-        self.assertEqual(StringSerialization.GetRegularExpressionStringInfo(IntTypeInfo(min=-100000, max=1000)), [ r"-?[0-9]{6}", ])
+        self.assertEqual(StringSerialization.GetRegularExpressionStringInfo(IntTypeInfo(min=0, max=1000)), [ r"[0-9]{1,4}", ])
+        self.assertEqual(StringSerialization.GetRegularExpressionStringInfo(IntTypeInfo(min=0, max=100000)), [ r"[0-9]{1,6}", ])
+        self.assertEqual(StringSerialization.GetRegularExpressionStringInfo(IntTypeInfo(min=-100000, max=1000)), [ r"-?[0-9]{1,6}", ])
 
     # ----------------------------------------------------------------------
     def test_RegularExpressionStringInfo_String(self):
