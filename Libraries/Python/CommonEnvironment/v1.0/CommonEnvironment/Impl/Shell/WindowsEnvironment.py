@@ -194,6 +194,16 @@ class WindowsEnvironment(Environment):
     # |
     # ---------------------------------------------------------------------------
     @staticmethod
+    def _GeneratePrefixCommand():
+        pass
+
+    # ---------------------------------------------------------------------------
+    @staticmethod
+    def _GenerateSuffixCommand():
+        pass
+
+    # ---------------------------------------------------------------------------
+    @staticmethod
     def _GenerateCommentCommand(value):
         return "REM {}".format(value)
         
