@@ -258,7 +258,7 @@ class WindowsEnvironment(Environment):
             
         return template_string.format( link=link_filename,
                                        dest=link_source,
-                                       dir_flag=" /D" if is_dir else '',
+                                       dir_flag=" /D /J" if is_dir else '',
                                        remove="rmdir" if is_dir else "del"
                                      )
             
