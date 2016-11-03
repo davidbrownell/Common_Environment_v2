@@ -25,6 +25,8 @@ import traceback
 
 from StringIO import StringIO
 
+from tqdm import tqdm
+
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import Package
 from CommonEnvironment.QuickObject import QuickObject
@@ -69,6 +71,7 @@ def Execute( tasks,
              output_stream=sys.stdout,
              verbose=False,
              silent=False,
+             progress_bar=False,
            ):
     assert tasks
     assert num_concurrent_tasks
@@ -206,21 +209,22 @@ def Execute( tasks,
     # ---------------------------------------------------------------------------
     def InternalThreadProc(thread_info, core_index):
         while True:
-            with thread_info.index_lock:
-                if thread_info.current_index == thread_info.executor.NumTasks:
-                    return
-
-                task_index = thread_info.current_index
-                thread_info.current_index += 1
-
-            thread_info.executor.Execute( thread_info.tasks[task_index],
-                                          task_index,
-                                          ThreadSafeStreamDecorator( thread_info, 
-                                                                     core_index, 
-                                                                     num_concurrent_tasks,
-                                                                     task_index,
-                                                                   ),
-                                        )
+            with CallOnExit(thread_info.progress_bar_update_func):
+                with thread_info.index_lock:
+                    if thread_info.current_index == thread_info.executor.NumTasks:
+                        return
+                
+                    task_index = thread_info.current_index
+                    thread_info.current_index += 1
+                
+                thread_info.executor.Execute( thread_info.tasks[task_index],
+                                              task_index,
+                                              StreamDecorator(None) if progress_bar else ThreadSafeStreamDecorator( thread_info, 
+                                                                                                                    core_index, 
+                                                                                                                    num_concurrent_tasks,
+                                                                                                                    task_index,
+                                                                                                                  ),
+                                            )
 
     # ---------------------------------------------------------------------------
     
@@ -230,36 +234,63 @@ def Execute( tasks,
     with output_stream.DoneManager( line_prefix='',
                                     done_prefix="\nTask pool ",
                                   ) as si:
-        if num_concurrent_tasks == 1:
-            for index, task in enumerate(tasks):
-                executor.Execute(task, index, si.stream)
+        if progress_bar:
+            progress_bar = tqdm( total=len(tasks),
+                                 file=si.stream,
+                                 ncols=None,
+                                 dynamic_ncols=True,
+                               )
+                       
+            progress_bar_lock = threading.Lock()
+            
+            # ---------------------------------------------------------------------------
+            def ProgressBarUpdate():
+                with progress_bar_lock:
+                    progress_bar.update()
+                    
+            # ---------------------------------------------------------------------------
+            
+            ProgressBarCleanup = progress_bar.close
         else:
-            thread_info = QuickObject( executor=executor,
-
-                                       current_index=0,
-
-                                       index_lock=threading.Lock(),
-                                       output_lock=threading.Lock(),
-
-                                       tasks=tasks,
-                                       output_stream=si.stream,
-                                     )
-
-            # Create the threads
-            threads = []
-
-            while True:
-                if len(threads) == num_concurrent_tasks:
-                    break
-
-                def ThreadProc(index=len(threads)): InternalThreadProc(thread_info, index)
-
-                threads.append(threading.Thread(target=ThreadProc))
-                threads[-1].start()
-
-            # Wait for all threads to complete
-            for thread in threads:
-                thread.join()
+            ProgressBarUpdate = lambda: None
+            ProgressBarCleanup = lambda: None
+            
+        with CallOnExit(ProgressBarCleanup):
+            if num_concurrent_tasks == 1:
+                for index, task in enumerate(tasks):
+                    executor.Execute(task, index, si.stream)
+            else:
+                thread_info = QuickObject( executor=executor,
+            
+                                           current_index=0,
+            
+                                           index_lock=threading.Lock(),
+                                           output_lock=threading.Lock(),
+                                           progress_bar_update_func=ProgressBarUpdate,
+                                           
+                                           tasks=tasks,
+                                           output_stream=si.stream,
+                                         )
+            
+                # Create the threads
+                threads = []
+            
+                while True:
+                    if len(threads) == num_concurrent_tasks:
+                        break
+            
+                    # ---------------------------------------------------------------------------
+                    def ThreadProc(index=len(threads)): 
+                        InternalThreadProc(thread_info, index)
+            
+                    # ---------------------------------------------------------------------------
+                    
+                    threads.append(threading.Thread(target=ThreadProc))
+                    threads[-1].start()
+            
+                # Wait for all threads to complete
+                for thread in threads:
+                    thread.join()
 
         # Calculate the final result
 
@@ -288,8 +319,9 @@ def Execute( tasks,
                 Output(output_stream, task)
                 si.result = si.result or task.result
 
-        if verbose and si.result == 0 and any(task.output for task in tasks):
+        if verbose and si.result == 0:
             for task in tasks:
-                Output(output_stream, task)
+                if task.output:
+                    Output(output_stream, task)
 
         return si.result
