@@ -395,7 +395,7 @@ class SourceControlManagementBase(Interface):
     # ---------------------------------------------------------------------------
     @staticmethod
     @abstractmethod
-    def GetChangedFiles(repo_root, revision_or_revisions):
+    def GetChangedFiles(repo_root, revision_or_revisions_or_none):
         """\
         Get a list of all files that have changed as part of the specified revision(s).
         """
