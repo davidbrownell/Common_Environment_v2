@@ -403,7 +403,8 @@ def PerforceSourceControlManagementFactory( raise_on_username_failure,
     
         # ---------------------------------------------------------------------------
         @classmethod
-        def GetChangedFiles(cls, repo_root, revision_or_revisions):
+        def GetChangedFiles(cls, repo_root, revision_or_revisions_or_none):
+            assert revision_or_revisions_or_none, "Getting local changes isn't supported yet"
             revisions = revision_or_revisions if isinstance(revision_or_revisions, list) else [ revision_or_revisions, ]
     
             client = cls._GetClient(repo_root)
