@@ -116,6 +116,20 @@ then
     done < "`pwd`/Generated/Linux/EnvironmentBootstrap.data"
 fi
 
+# List configurations if requested
+if [ "$1" == "ListConfigurations" ];
+then
+    $PYTHON_BINARY "$DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL/SourceRepositoryTools/Impl/ActivateEnvironment.py" ListConfigurations "`pwd`" standard
+    should_continue=0
+fi
+
+# Indicate if this is a tool repository if requested
+if [ "$1" == "IsToolRepository" ];
+then
+    $PYTHON_BINARY "$DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL/SourceRepositoryTools/Impl/ActivateEnvironment.py" IsToolRepository "`pwd`"
+    should_continue=0
+fi
+
 # Only allow one activated environment at a time (unless we are activating a tool repository).
 if [ $should_continue = 1 ]
 then
@@ -131,20 +145,6 @@ then
         
         should_continue=0
     fi
-fi
-
-# List configurations if requested
-if [ "$1" == "ListConfigurations" ];
-then
-    $PYTHON_BINARY "$DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL/SourceRepositoryTools/Impl/ActivateEnvironment.py" ListConfigurations "`pwd`" standard
-    should_continue=0
-fi
-
-# Indicate if this is a tool repository if requested
-if [ "$1" == "IsToolRepository" ];
-then
-    $PYTHON_BINARY "$DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL/SourceRepositoryTools/Impl/ActivateEnvironment.py" IsToolRepository "`pwd`"
-    should_continue=0
 fi
 
 # If we are working with a repository that requires a configuration name, extract the value. If
