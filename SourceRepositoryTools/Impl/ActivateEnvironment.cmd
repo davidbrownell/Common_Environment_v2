@@ -60,13 +60,13 @@ for /f "tokens=1,2 delims==" %%a in (%~dp0Generated\Windows\EnvironmentBootstrap
 REM List configurations if requested
 if "%1" == "ListConfigurations" (
     %PYTHON_BINARY% "%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\SourceRepositoryTools\Impl\ActivateEnvironment.py" ListConfigurations %~dp0 standard
-    goto reset_and_end
+    goto end
 )
 
 REM Indicate if this is a tool repository if requested
 if "%1" == "IsToolRepository" (
     %PYTHON_BINARY% "%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\SourceRepositoryTools\Impl\ActivateEnvironment.py" IsToolRepository %~dp0
-    goto reset_and_end
+    goto end
 )
 
 REM Only allow one activated environment at a time (unless we are activating a tool repository).
