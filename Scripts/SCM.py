@@ -485,12 +485,12 @@ def GetRevisionsSinceLastMerge( dest_branch,
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
 @CommandLine.EntryPoint
-@CommandLine.FunctionConstraints( revision=CommandLine.StringTypeInfo(),
+@CommandLine.FunctionConstraints( revision=CommandLine.StringTypeInfo(arity='?'),
                                   scm=_SCMOptionalTypeInfo,
                                   directory=CommandLine.DirectoryTypeInfo(arity='?'),
                                   output_stream=None,
                                 )
-def GetChangedFiles( revision,
+def GetChangedFiles( revision=None,
                      scm=None,
                      directory=None,
                      output_stream=sys.stdout,
