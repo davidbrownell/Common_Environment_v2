@@ -57,6 +57,18 @@ for /f "tokens=1,2 delims==" %%a in (%~dp0Generated\Windows\EnvironmentBootstrap
     if "%%a"=="is_configurable_repository" set _ACTIVATE_ENVIRONMENT_IS_CONFIGURABLE_REPOSITORY=%%b
 )
 
+REM List configurations if requested
+if "%1" == "ListConfigurations" (
+    %PYTHON_BINARY% "%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\SourceRepositoryTools\Impl\ActivateEnvironment.py" ListConfigurations %~dp0 standard
+    goto reset_and_end
+)
+
+REM Indicate if this is a tool repository if requested
+if "%1" == "IsToolRepository" (
+    %PYTHON_BINARY% "%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\SourceRepositoryTools\Impl\ActivateEnvironment.py" IsToolRepository %~dp0
+    goto reset_and_end
+)
+
 REM Only allow one activated environment at a time (unless we are activating a tool repository).
 if "%_ACTIVATE_ENVIRONMENT_IS_TOOL_REPOSITORY%" NEQ "1" if "%DEVELOPMENT_ENVIRONMENT_REPOSITORY%" NEQ "" if "%DEVELOPMENT_ENVIRONMENT_REPOSITORY%\" NEQ "%~dp0" (
     @echo.
@@ -68,18 +80,6 @@ if "%_ACTIVATE_ENVIRONMENT_IS_TOOL_REPOSITORY%" NEQ "1" if "%DEVELOPMENT_ENVIRON
     @echo.
 
     goto end
-)
-
-REM List configurations if requested
-if "%1" == "ListConfigurations" (
-    %PYTHON_BINARY% "%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\SourceRepositoryTools\Impl\ActivateEnvironment.py" ListConfigurations %~dp0 standard
-    goto reset_and_end
-)
-
-REM Indicate if this is a tool repository if requested
-if "%1" == "IsToolRepository" (
-    %PYTHON_BINARY% "%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\SourceRepositoryTools\Impl\ActivateEnvironment.py" IsToolRepository %~dp0
-    goto reset_and_end
 )
 
 REM If we are working with a repository that requires a configuration name, extract the value. If
