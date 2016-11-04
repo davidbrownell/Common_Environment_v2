@@ -379,10 +379,14 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
 
     # ---------------------------------------------------------------------------
     @classmethod
-    def GetChangedFiles(cls, repo_root, revision_or_revisions):
-        revisions = revision_or_revisions if isinstance(revision_or_revisions, list) else [ revision_or_revisions, ]
-
-        command_line_template = 'hg status --change "{rev}"'
+    def GetChangedFiles(cls, repo_root, revision_or_revisions_or_none):
+        command_line_template = 'hg status'
+       
+        if revision_or_revisions_or_none:
+            revisions = revision_or_revisions_or_none if isinstance(revision_or_revisions_or_none, list) else [ revision_or_revisions_or_none, ]
+            command_line_template += ' --change "{rev}"'
+        else:
+            revisions = [ None, ]
 
         filenames = []
 
