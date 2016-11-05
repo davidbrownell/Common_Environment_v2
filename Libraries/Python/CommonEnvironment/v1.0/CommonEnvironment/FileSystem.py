@@ -288,7 +288,7 @@ def RemoveTree( path,
                 optional_retry_iterations=5,            # Can be None
               ):
     if not os.path.isdir(path):
-        return
+        return False
         
     # ---------------------------------------------------------------------------
     def Impl(renamed_path):
@@ -311,15 +311,17 @@ def RemoveTree( path,
     # ---------------------------------------------------------------------------
 
     _RemoveImpl(Impl, path, optional_retry_iterations)
-    
+    return True
+
 # ----------------------------------------------------------------------
 def RemoveItem( path,
                 optional_retry_iterations=5,            # Can be None
               ):
     if not os.path.isfile(path):
-        return 
+        return False
 
     _RemoveImpl(os.remove, path, optional_retry_iterations)
+    return True
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
