@@ -252,9 +252,17 @@ class WindowsEnvironment(Environment):
     def _GenerateSymbolicLinkCommand(self, link_filename, link_source, is_dir):
         # mklink isn't supported on 2003Server, so we have to use an alternative
         if self.OSVersion == "2003Server":
-            template_string = 'if exist "{link}" ({remove} "{link}")\nfsutil hardlink create "{link}" "{dest}"'
+            template_string = textwrap.dedent(
+                """\
+                if exist "{link}" ({remove} "{link}")
+                fsutil hardlink create "{link}" "{dest}"
+                """)
         else:
-            template_string = 'if exist "{link}" ({remove} "{link}")\nmklink{dir_flag} "{link}" "{dest}"'
+            template_string = textwrap.dedent(
+                """\
+                if exist "{link}" ({remove} "{link}")
+                mklink{dir_flag} "{link}" "{dest}"
+                """)
             
         return template_string.format( link=link_filename,
                                        dest=link_source,

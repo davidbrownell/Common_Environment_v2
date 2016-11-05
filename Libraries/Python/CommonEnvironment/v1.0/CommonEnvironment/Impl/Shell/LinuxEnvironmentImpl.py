@@ -131,10 +131,15 @@ class LinuxEnvironmentImpl(Environment):
         
     # ---------------------------------------------------------------------------
     def _GenerateSymbolicLinkCommand(self, link_filename, link_source, is_dir):
-        return 'ln -fs{dir_flag} "{source}" "{link}"\nchmod a+x "{link}"'.format( link=link_filename,
-                                                                                  source=link_source,
-                                                                                  dir_flag='d' if is_dir else '',
-                                                                                )
+        return textwrap.dedent(
+            """\
+            rm -f "{link}"
+            ln -fs{dir_flag} "{source}" "{link}"
+            chmod a+x "{link}"
+            """).format( link=link_filename,
+                         source=link_source,
+                         dir_flag='d' if is_dir else '',
+                       )
                                                                                 
     # ---------------------------------------------------------------------------
     @classmethod
