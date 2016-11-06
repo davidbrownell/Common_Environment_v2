@@ -22,6 +22,7 @@ import os
 import re
 import sys
 
+from CommonEnvironment import Interface
 from CommonEnvironment.TestParser import TestParser as TestParserBase
 
 # ---------------------------------------------------------------------------
@@ -29,6 +30,7 @@ _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ---------------------------------------------------------------------------
 
+@Interface.staticderived
 class TestParser(TestParserBase):
 
     # ---------------------------------------------------------------------------
