@@ -115,13 +115,14 @@ def _DelayInit(environment_beacon_name, filenames):
     
     elif os.path.isfile(source_filename):
         for line in [ line.strip() for line in open(source_filename).readlines() if line.strip() ]:
-            new_filenames.append(line)
+            if os.path.isfile(line):
+                new_filenames.append(line)
 
     for filename in filenames:
         if filename not in new_filenames:
             new_filenames.append(filename)
     
     with open(source_filename, 'w') as f:
-        f.write("{}\n".format('\n'.join(new_filenames)))
+        f.write("{}\n".format('\n'.join(sorted(new_filenames))))
 
     return commands
