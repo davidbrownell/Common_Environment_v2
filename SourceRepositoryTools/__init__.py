@@ -81,15 +81,20 @@ ModifiableValue = CommonEnvironment.ModifiableValue
 
 del sys.path[0]
 
-from . import Impl
+with Package.NameInfo(__package__) as ni:
+    __package__ = ni.created
 
-# The following items are logically part of this global interface, but defined
-# within Impl to support better encapsulation.
-from .Impl.ActivateEnvironment import IsToolRepository
-from .Impl.ActivateEnvironment import LoadOriginalEnvironment
-from .Impl.ActivateEnvironment import LoadRepoData
+    from . import Impl
+    
+    # The following items are logically part of this global interface, but defined
+    # within Impl to support better encapsulation.
+    from .Impl.ActivateEnvironment import IsToolRepository
+    from .Impl.ActivateEnvironment import LoadOriginalEnvironment
+    from .Impl.ActivateEnvironment import LoadRepoData
+    
+    from .Impl import GetRepositoryUniqueId
 
-from .Impl import GetRepositoryUniqueId
+    __package__ = ni.original
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
