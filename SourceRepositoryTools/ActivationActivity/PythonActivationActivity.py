@@ -24,22 +24,29 @@ from CommonEnvironment.Interface import staticderived, clsinit
 from CommonEnvironment import Package, ModifiableValue
 from CommonEnvironment import Shell
 
-with Package.NameInfo(__package__) as ni:
-    __package__ = ni.created
-    
-    import SourceRepositoryTools
-    from .SourceActivationActivityImpl import SourceActivationActivityImpl
-    
-    __package__ = ni.original
+import SourceRepositoryTools
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ---------------------------------------------------------------------------
 
+with Package.NameInfo(__package__) as ni:
+    __package__ = ni.created
+    
+    from .Impl import ActivateLibraries, \
+                      ActivateLibraryScripts, \
+                      CreateCleanSymLinkStatements
+
+    from .IActivationActivity import IActivationActivity
+
+    
+    __package__ = ni.original
+
+# ----------------------------------------------------------------------
 @staticderived
 @clsinit
-class PythonActivationActivity(SourceActivationActivityImpl):
+class PythonActivationActivity(IActivationActivity):
     
     # ---------------------------------------------------------------------------
     Name                                    = "Python"
@@ -167,100 +174,115 @@ class PythonActivationActivity(SourceActivationActivityImpl):
                              version_specs,
                              generated_dir,
                            ):
-        # Get the python version
-        source_dir = os.path.realpath(os.path.join(_script_dir, "..", "..", constants.ToolsDir, cls.Name))
-        assert os.path.isdir(source_dir), source_dir
-
-        source_dir, version = SourceRepositoryTools.GetVersionedDirectoryEx(version_specs.Tools, source_dir)
-        assert os.path.isdir(source_dir), source_dir
-        assert version
-
         dest_dir = os.path.join(generated_dir, cls.Name)
 
-        # Create a substitution dict that can be used to populate subdirs based on the
-        # python version being used.
-        if version[0] == 'v':
-            version = version[1:]
+        global_actions = [ environment.AugmentPath(dest_dir),
+                         ]
 
-        sub_dict = { "python_version" : version,
-                     "python_version_short" : '.'.join(version.split('.')[0:2]),
-                   }
-
-        mappings = {}
-        
-        for k, v in [ ( cls.LibrarySubdirs, _MapLibrary ),
-                      ( cls.ScriptSubdirs, _MapScripts ),
-                    ]:
-            if k == None:
-                continue
-                
-            mappings[tuple( part.format(**sub_dict) for part in k )] = v
-            
-        commands = super(PythonActivationActivity, cls)._CreateCommandsImpl( source_dir,
-                                                                             dest_dir,
-                                                                             mappings,
-                                                                             constants,
-                                                                             environment,
-                                                                             configuration,
-                                                                             repositories,
-                                                                             version_specs,
-                                                                             generated_dir,
-                                                                           )
-                                                                           
-        if cls.ScriptSubdirs != None:
-            commands.append(environment.AugmentPath([ dest_dir, 
-                                                      os.path.join(dest_dir, *cls.ScriptSubdirs),
-                                                    ]))
-
-        # Add the location to the path
         bin_dir = dest_dir
+
         if cls.BinSubdirs:
             bin_dir = os.path.join(bin_dir, *cls.BinSubdirs)
-            
-        commands.append(environment.AugmentPath(bin_dir))
-        
-        # Get the binary file
+            global_actions.append(environment.AugmentPath(bin_dir))
+
         bin_file = os.path.join(bin_dir, "python{}".format(cls.BinExtension))
         cls.ValidatePythonBinary(bin_file)
 
-        commands.append(environment.Set( "PYTHON_BINARY",
-                                         bin_file,
-                                         preserve_original=False,
-                                       ))
+        global_actions.append(environment.Set( "PYTHON_BINARY",
+                                               bin_file,
+                                               preserve_original=False,
+                                             ))
 
-        return commands
+        # ----------------------------------------------------------------------
+        def PythonCallback(libraries):
+            # Get the python version
+            source_dir = os.path.realpath(os.path.join(_script_dir, "..", "..", constants.ToolsDir, cls.Name))
+            assert os.path.isdir(source_dir), source_dir
 
-# ---------------------------------------------------------------------------
-def _MapLibrary(source, dest, name):
-    commands = []
+            source_dir, version = SourceRepositoryTools.GetVersionedDirectoryEx(version_specs.Tools, source_dir)
+            assert os.path.isdir(source_dir), source_dir
+            assert version
 
-    for item in os.listdir(source):
-        fullpath = os.path.join(source, item)
+            # Create a substitution dict that can be used to populate subdirs based on the
+            # python version being used.
+            if version[0] == 'v':
+                version = version[1:]
 
-        if os.path.isdir(fullpath) and item == "__scripts__":
-            continue
+            # Create the dirs that will contain dynamic content
+            sub_dict = { "python_version" : version,
+                         "python_version_short" : '.'.join(version.split('.')[0:2]),
+                       }
 
-        commands.append(Shell.SymbolicLink(os.path.join(dest, item), fullpath))
-    
-    return commands
+            # Create the actions
+            local_actions = [ environment.Raw(statement) for statement in CreateCleanSymLinkStatements(environment, dest_dir) ]
 
-# ---------------------------------------------------------------------------
-def _MapScripts(source, dest, _name):
-    potential_source_dir = os.path.join(source, "__scripts__")
-    if not os.path.isdir(potential_source_dir):
-        return
+            # Prepopulate with the dynamic content
+            dynamic_subdirs = {}
+            
+            for subdirs in [ cls.LibrarySubdirs,
+                             cls.ScriptSubdirs,
+                           ]:
+                this_dynamic_subdirs = dynamic_subdirs
 
-    if not os.path.isdir(dest):
-        os.makedirs(dest)
+                for subdir in subdirs:
+                    subdir = subdir.format(**sub_dict)
+                    this_dynamic_subdirs = this_dynamic_subdirs.setdefault(subdir, {})
+
+            # Add a symbolc link for everything found in the source that doesn't
+            # already exist in the dest
+
+            # ----------------------------------------------------------------------
+            def TraverseTree(source, dest, dynamic_subdirs):
+                if not os.path.isdir(source):
+                    return
+
+                if not os.path.isdir(dest):
+                    os.makedirs(dest)
+
+                for item in os.listdir(source):
+                    if item not in dynamic_subdirs:
+                        local_actions.append(environment.SymbolicLink(os.path.join(dest, item), os.path.join(source, item)))
+
+                # We have already created links for everything that isn't dynamic,
+                # so we only need to walk what is dynamic.
+                for k, v in dynamic_subdirs.iteritems():
+                    TraverseTree(os.path.join(source, k), os.path.join(dest, k), v)
+
+            # ----------------------------------------------------------------------
+            
+            TraverseTree(source_dir, dest_dir, dynamic_subdirs)
+
+            library_dest_dir = os.path.join(dest_dir, *cls.LibrarySubdirs)
+
+            for name, info in libraries.iteritems():
+                for item in os.listdir(info.fullpath):
+                    fullpath = os.path.join(info.fullpath, item)
+                    if os.path.isdir(fullpath) and item == "__scripts__":
+                        continue
+
+                    local_actions.append(environment.SymbolicLink(os.path.join(library_dest_dir, item), fullpath))
+                
+            script_dest_dir = os.path.join(dest_dir, *cls.ScriptSubdirs)
+            
+            script_actions = ActivateLibraryScripts( script_dest_dir,
+                                                     libraries, 
+                                                     "__scripts__",
+                                                     environment,
+                                                   )
+            if script_actions:
+                local_actions += script_actions
+                global_actions.append(environment.AugmentPath(script_dest_dir))
+
+            return local_actions
+
+        # ----------------------------------------------------------------------
         
-    potential_source_dir = SourceRepositoryTools.GetCustomizedPath(potential_source_dir)
-    
-    commands = []
+        ActivateLibraries( "Python",
+                           PythonCallback,
+                           environment,
+                           repositories,
+                           version_specs,
+                           generated_dir,
+                         )
 
-    for item in os.listdir(potential_source_dir):
-        fullpath = os.path.join(potential_source_dir, item)
-        assert os.path.isfile(fullpath), fullpath
-
-        commands.append(Shell.SymbolicLink(os.path.join(dest, item), fullpath))
-
-    return commands
+        return global_actions

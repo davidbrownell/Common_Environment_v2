@@ -441,7 +441,7 @@ class SourceControlManagementBase(Interface):
     # ---------------------------------------------------------------------------
     @staticmethod
     def AreYouSurePrompt(prompt):
-        result = raw_input("{}\nEnter 'y' to continue or anything else to exit: ".format(prompt)) == 'y'
+        result = raw_input("{}\nEnter 'y' to continue or anything else to exit: ".format(prompt)).strip() == 'y'
         sys.stdout.write("\n")
 
         return result

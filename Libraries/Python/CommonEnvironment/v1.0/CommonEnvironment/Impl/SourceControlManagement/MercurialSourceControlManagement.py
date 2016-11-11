@@ -409,7 +409,14 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
     @classmethod
     def EnumBlameInfo(cls, repo_root, filename):
         result, output = cls.Execute(repo_root, 'hg blame "{}"'.format(filename))
-        assert result == 0, (result, output)
+        
+        if result != 0:
+            # Don't produce an error if we are looking at a file that has
+            # been renamed/removed.
+            if "no such file in" in output:
+                return
+
+            assert result == 0, (result, output)
 
         regex = re.compile(r'^\s*(?P<revision>\d+):\s*(?P<line>.*)$')
 
@@ -418,7 +425,12 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
                 continue
 
             match = regex.match(line)
-            assert match, line
+            if not match:
+                # Don't produce an error on a failure to enumerate binary files
+                if line.endswith("binary file"):
+                    return
+
+                assert False, line
 
             yield index + 1, match.group("revision"), match.group("line")
 
@@ -437,7 +449,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
                - Any files that have been added
                - Any committed local changes that have not been pushed to the remote repository
             """)):
-            return
+            return 0, ''
 
         commands = [ 'hg update -C',
                      'hg purge',
