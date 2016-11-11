@@ -437,7 +437,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
                - Any files that have been added
                - Any committed local changes that have not been pushed to the remote repository
             """)):
-            return
+            return 0, ''
 
         commands = [ 'hg update -C',
                      'hg purge',
