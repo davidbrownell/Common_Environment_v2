@@ -156,6 +156,8 @@ def ActivateLibraryScripts( dest_dir,
                             library_script_dir_name,
                             environment,
                           ):
+    actions = []
+
     all_scripts = OrderedDict()
 
     for name, info in libraries.iteritems():
@@ -167,7 +169,34 @@ def ActivateLibraryScripts( dest_dir,
         
         for item in os.listdir(potential_dir):
             if item in all_scripts:
-                assert False, "BugBug"
+                # ----------------------------------------------------------------------
+                def GenerateNewName(repository):
+                    filename, ext = os.path.splitext(item)
+                    
+                    new_name = "{}.{}{}".format( filename,
+                                                 repository.name,
+                                                 ext,
+                                               )
+
+                    actions.append(environment.Message("To avoid conflicts, the script '{}' has been renamed '{}' ({} <{}> [{}]).\n" \
+                                                            .format( item,
+                                                                     new_name,
+                                                                     repository.name,
+                                                                     repository.id,
+                                                                     repository.root,
+                                                                   )))
+
+                # ----------------------------------------------------------------------
+                
+                if all_scripts[item] != None:
+                    new_name = GenerateNewName(all_scripts[item].repository)
+                    
+                    all_scripts[new_name] = all_scripts[item]
+                    all_scripts[item] = None
+
+                new_name = GenerateNewName(info.repository)
+
+                item = new_name
 
             all_scripts[item] = QuickObject( fullpath=os.path.join(potential_dir, item),
                                              repository=info.repository,
@@ -178,12 +207,13 @@ def ActivateLibraryScripts( dest_dir,
     if all_scripts:
         os.makedirs(dest_dir)
 
-        actions = []
-
         for script_name, script_info in all_scripts.iteritems():
+            if script_info == None:
+                continue
+
             actions.append(environment.SymbolicLink(os.path.join(dest_dir, script_name), script_info.fullpath))
 
-        return actions
+    return actions
 
 # ----------------------------------------------------------------------
 def CreateCleanSymLinkStatements(environment, path):
