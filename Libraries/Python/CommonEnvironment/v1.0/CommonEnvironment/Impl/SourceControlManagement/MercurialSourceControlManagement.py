@@ -409,7 +409,14 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
     @classmethod
     def EnumBlameInfo(cls, repo_root, filename):
         result, output = cls.Execute(repo_root, 'hg blame "{}"'.format(filename))
-        assert result == 0, (result, output)
+        
+        if result != 0:
+            # Don't produce an error if we are looking at a file that has
+            # been renamed/removed.
+            if "no such file in" in output:
+                return
+
+            assert result == 0, (result, output)
 
         regex = re.compile(r'^\s*(?P<revision>\d+):\s*(?P<line>.*)$')
 
