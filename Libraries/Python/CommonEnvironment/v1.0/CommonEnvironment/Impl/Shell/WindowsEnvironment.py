@@ -180,7 +180,7 @@ class WindowsEnvironment(Environment):
     def DeleteSymLink(self, filename, command_only=True):
         assert self.IsSymLink(filename), filename
         
-        command_line = '{delete} "{filename}"'.format( delete="rmdir" if os.path.isdir(filename) else "del",
+        command_line = '{delete} "{filename}"'.format( delete="rmdir" if os.path.isdir(filename) else "del /Q",
                                                        filename=filename,
                                                      )
         if command_only:
@@ -267,7 +267,7 @@ class WindowsEnvironment(Environment):
         return template_string.format( link=link_filename,
                                        dest=link_source,
                                        dir_flag=" /D /J" if is_dir else '',
-                                       remove="rmdir" if is_dir else "del"
+                                       remove="rmdir" if is_dir else "del /Q"
                                      )
             
     # ---------------------------------------------------------------------------
