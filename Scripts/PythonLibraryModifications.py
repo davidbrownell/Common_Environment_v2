@@ -38,8 +38,11 @@ with CallOnExit(lambda: sys.path.pop(0)):
 @CommandLine.FunctionConstraints(output_stream=None)
 def EntryPoint( output_stream=sys.stdout,
               ):
-    assert os.getenv("DEVELOPMENT_ENVIRONMENT_REPOSITORY_GENERATED")
-    PythonActivationActivity.OutputModifications(os.getenv("DEVELOPMENT_ENVIRONMENT_REPOSITORY_GENERATED"), output_stream)
+    generated_dir = os.getenv("DEVELOPMENT_ENVIRONMENT_REPOSITORY_GENERATED")
+    assert os.path.isdir(generated_dir), generated_dir
+
+    PythonActivationActivity.OutputModifications(generated_dir, output_stream)
+
     return 0
 
 # ---------------------------------------------------------------------------
