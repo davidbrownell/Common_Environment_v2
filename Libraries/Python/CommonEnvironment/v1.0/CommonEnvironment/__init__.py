@@ -107,7 +107,8 @@ import platform
 #       The functionality hasn't been explicitly disabled, and...
 #       This isn't IronPython (which doesn't have this problem)...
 #
-if ( platform.uname()[0] == "Windows" and \
+if ( False and # TODO
+     platform.uname()[0] == "Windows" and \
      not os.getenv("DEVELOPMENT_ENVIRONMENT_NO_LONG_FILENAME_PATCH") and \
      platform.python_implementation().lower().find("ironpython") == -1
    ):
@@ -148,7 +149,9 @@ if ( platform.uname()[0] == "Windows" and \
                                          "remove",
                                          "stat",
                                          "walk",
-                                         { "path" : [ "exists",
+                                         { "path" : [ "basename",
+                                                      "dirname",
+                                                      "exists",
                                                       "getsize",
                                                       "getmtime",
                                                       "isdir",
