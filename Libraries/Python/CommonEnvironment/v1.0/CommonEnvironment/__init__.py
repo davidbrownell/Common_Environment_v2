@@ -107,7 +107,7 @@ import platform
 #       The functionality hasn't been explicitly disabled, and...
 #       This isn't IronPython (which doesn't have this problem)...
 #
-if ( False and # TODO
+if ( False and # TOD_O_
      platform.uname()[0] == "Windows" and \
      not os.getenv("DEVELOPMENT_ENVIRONMENT_NO_LONG_FILENAME_PATCH") and \
      platform.python_implementation().lower().find("ironpython") == -1
@@ -131,8 +131,8 @@ if ( False and # TODO
         return NewFunction
 
     # ----------------------------------------------------------------------
-    def WalkItems(module, items):
-        for item in items:
+    def WalkItems(module, these_items):
+        for item in these_items:
             if isinstance(item, basestring):
                 setattr(module, item, Patch(getattr(module, item)))
             elif isinstance(item, dict):
@@ -143,24 +143,24 @@ if ( False and # TODO
 
     # ----------------------------------------------------------------------
     
-    for module_name, items in { "__builtin__" : [ "open",
-                                                ],
-                                "os" : [ "makedirs",
-                                         "remove",
-                                         "stat",
-                                         "walk",
-                                         { "path" : [ "basename",
-                                                      "dirname",
-                                                      "exists",
-                                                      "getsize",
-                                                      "getmtime",
-                                                      "isdir",
-                                                      "isfile",
-                                                    ],
-                                         }             
-                                       ],
-                              }.iteritems():
+    for module_name, these_items in { "__builtin__" : [ "open",
+                                                      ],
+                                      "os" : [ "makedirs",
+                                               "remove",
+                                               "stat",
+                                               "walk",
+                                               { "path" : [ "basename",
+                                                            "dirname",
+                                                            "exists",
+                                                            "getsize",
+                                                            "getmtime",
+                                                            "isdir",
+                                                            "isfile",
+                                                          ],
+                                               }             
+                                             ],
+                                    }.iteritems():
         assert module_name in sys.modules
         module = sys.modules[module_name]
 
-        WalkItems(module, items)
+        WalkItems(module, these_items)
