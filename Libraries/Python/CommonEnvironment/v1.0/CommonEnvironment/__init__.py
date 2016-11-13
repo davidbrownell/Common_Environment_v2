@@ -94,4 +94,70 @@ def ToSnakeCase(s):
     """Returns a_snake_case string"""
     return _ToSnakeCase_regex.sub(r'_\1', s).lower().replace('__', '_')
 
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+
+# On Windows, python2.7 has problem with long filenames. Mokeypatch some
+# of those methods to work around the most common problems.
+import platform
+
+# if...
+#       We are on Windows, and...
+#       The functionality hasn't been explicitly disabled, and...
+#       This isn't IronPython (which doesn't have this problem)...
+#
+if ( platform.uname()[0] == "Windows" and \
+     not os.getenv("DEVELOPMENT_ENVIRONMENT_NO_LONG_FILENAME_PATCH") and \
+     platform.python_implementation().lower().find("ironpython") == -1
+   ):
+    import __builtin__
+
+    # ----------------------------------------------------------------------
+    def Patch(original_method):
+        # ----------------------------------------------------------------------
+        def NewFunction(filename, *args, **kwargs):
+            if filename and not filename.startswith("\\\\?\\"):
+                try:
+                    filename = ur"\\?\{}".format(os.path.realpath(filename))
+                except:
+                    pass
+
+            return original_method(filename, *args, **kwargs)
+
+        # ----------------------------------------------------------------------
+        
+        return NewFunction
+
+    # ----------------------------------------------------------------------
+    def WalkItems(module, items):
+        for item in items:
+            if isinstance(item, basestring):
+                setattr(module, item, Patch(getattr(module, item)))
+            elif isinstance(item, dict):
+                for k, v in item.iteritems():
+                    WalkItems(getattr(module, k), v)
+            else:
+                assert False, type(item)
+
+    # ----------------------------------------------------------------------
     
+    for module_name, items in { "__builtin__" : [ "open",
+                                                ],
+                                "os" : [ "makedirs",
+                                         "remove",
+                                         "stat",
+                                         "walk",
+                                         { "path" : [ "exists",
+                                                      "getsize",
+                                                      "getmtime",
+                                                      "isdir",
+                                                      "isfile",
+                                                    ],
+                                         }             
+                                       ],
+                              }.iteritems():
+        assert module_name in sys.modules
+        module = sys.modules[module_name]
+
+        WalkItems(module, items)
