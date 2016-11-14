@@ -99,7 +99,9 @@ def ToSnakeCase(s):
 # ----------------------------------------------------------------------
 
 # On Windows, python2.7 has problem with long filenames. Mokeypatch some
-# of those methods to work around the most common problems.
+# of those methods to work around the most common problems. In all cases,
+# the decoration '\\?\' is considered an implementation detail and should
+# not be exposed to the caller.
 import platform
 
 # if...
@@ -107,24 +109,27 @@ import platform
 #       The functionality hasn't been explicitly disabled, and...
 #       This isn't IronPython (which doesn't have this problem)...
 #
-if ( False and # TOD_O_
-     platform.uname()[0] == "Windows" and \
+if ( platform.uname()[0] == "Windows" and \
      not os.getenv("DEVELOPMENT_ENVIRONMENT_NO_LONG_FILENAME_PATCH") and \
      platform.python_implementation().lower().find("ironpython") == -1
    ):
     import __builtin__
 
     # ----------------------------------------------------------------------
+    def DecorateFilename(filename):
+        if filename:
+            filename = os.path.realpath(os.path.normpath(filename))
+
+            if not filename.startswith("\\\\?\\"):
+                filename = ur"\\?\{}".format(filename)
+
+        return filename
+
+    # ----------------------------------------------------------------------
     def Patch(original_method):
         # ----------------------------------------------------------------------
         def NewFunction(filename, *args, **kwargs):
-            if filename and not filename.startswith("\\\\?\\"):
-                try:
-                    filename = ur"\\?\{}".format(os.path.realpath(filename))
-                except:
-                    pass
-
-            return original_method(filename, *args, **kwargs)
+            return original_method(DecorateFilename(filename), *args, **kwargs)
 
         # ----------------------------------------------------------------------
         
@@ -148,10 +153,7 @@ if ( False and # TOD_O_
                                       "os" : [ "makedirs",
                                                "remove",
                                                "stat",
-                                               "walk",
-                                               { "path" : [ "basename",
-                                                            "dirname",
-                                                            "exists",
+                                               { "path" : [ "exists",
                                                             "getsize",
                                                             "getmtime",
                                                             "isdir",
@@ -164,3 +166,20 @@ if ( False and # TOD_O_
         module = sys.modules[module_name]
 
         WalkItems(module, these_items)
+
+    # os.walk needs to be handled in a special way
+    _os_walk = os.walk
+
+    # ----------------------------------------------------------------------
+    def NewWalk(top, *args, **kwargs):
+        top = DecorateFilename(top)
+
+        for root, dirs, files in _os_walk(top, *args, **kwargs):
+            if root.startswith("\\\\?\\"):
+                root = root[len("\\\\?\\"):]
+
+            yield root, dirs, files
+
+    # ----------------------------------------------------------------------
+    
+    os.walk = NewWalk
