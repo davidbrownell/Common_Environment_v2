@@ -138,7 +138,7 @@ def Create(*values):
                 def CheckByString(i): return i.string == item
                 def CheckByItem(i): return i == item
 
-                if isinstance(item, str):
+                if isinstance(item, (str, unicode)):
                     Checker = CheckByString
                 elif isinstance(item, int):
                     Checker = CheckByValue
