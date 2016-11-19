@@ -292,6 +292,25 @@ def RemoveTree( path,
         
     # ---------------------------------------------------------------------------
     def Impl(renamed_path):
+        # Take care of any sym links/junctions, as removing them will remove the source
+        # as well.
+        import Shell
+
+        environment = Shell.GetEnvironment()
+
+        for root, dirs, filenames in os.walk(renamed_path):
+            new_dirs = []
+            
+            for dir in dirs:
+                fullpath = os.path.join(root, dir)
+                
+                if environment.IsSymLink(fullpath):
+                    environment.DeleteSymLink(fullpath, command_only=False)
+                else:
+                    new_dirs.append(dir)
+
+            dirs[:] = new_dirs
+
         # ---------------------------------------------------------------------------
         def OnError(action, name, exc):
             if not os.path.isfile(name):

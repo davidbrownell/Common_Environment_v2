@@ -67,6 +67,13 @@ class Base( InputProcessingMixin,
                              "Directory",   # The compiler operates on files within a directory
                            )
 
+    # ----------------------------------------------------------------------
+    class DiagnosticException(Exception):
+        """\
+        Exception that should be displayed without stack trace information.
+        """
+        IsDiagnosticException               = True
+
     # ---------------------------------------------------------------------------
     # |
     # |  Public Properties
@@ -741,8 +748,17 @@ def _CommandLineImpl( compiler,
                                                      display_exceptions=False,
                                                    ) as stream_info:
         stream_info.stream.write("Generating context...")
-        with stream_info.stream.DoneManager():
-            contexts = list(compiler.GenerateContextItems(inputs, **compiler_kwargs))
+        with stream_info.stream.DoneManager() as dm:
+            try:
+                contexts = list(compiler.GenerateContextItems(inputs, **compiler_kwargs))
+            except Exception, ex:
+                if getattr(ex, "IsDiagnosticException", False):
+                    dm.stream.write("{}\n".format(str(ex)))
+                    dm.result = -1
+
+                    contexts = []
+                else:
+                    raise
             
         for index, context in enumerate(contexts):
             stream_info.stream.flush()
