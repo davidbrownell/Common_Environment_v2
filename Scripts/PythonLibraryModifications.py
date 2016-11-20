@@ -32,12 +32,13 @@ assert os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL")
 sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
 with CallOnExit(lambda: sys.path.pop(0)):
     from SourceRepositoryTools.ActivationActivity.PythonActivationActivity import PythonActivationActivity
+    from SourceRepositoryTools.ActivationActivity.Impl import ResetLibraryContent
 
 # ---------------------------------------------------------------------------
 @CommandLine.EntryPoint
 @CommandLine.FunctionConstraints(output_stream=None)
-def EntryPoint( output_stream=sys.stdout,
-              ):
+def Display( output_stream=sys.stdout,
+           ):
     generated_dir = os.getenv("DEVELOPMENT_ENVIRONMENT_REPOSITORY_GENERATED")
     assert os.path.isdir(generated_dir), generated_dir
 

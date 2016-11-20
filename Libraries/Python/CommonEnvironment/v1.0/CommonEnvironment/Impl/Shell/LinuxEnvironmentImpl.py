@@ -87,7 +87,7 @@ class LinuxEnvironmentImpl(Environment):
     # ---------------------------------------------------------------------------
     @staticmethod
     def _GeneratePrefixCommand():
-        return "#!/bin/sh"
+        return "#!/bin/bash"
 
     # ---------------------------------------------------------------------------
     @staticmethod
