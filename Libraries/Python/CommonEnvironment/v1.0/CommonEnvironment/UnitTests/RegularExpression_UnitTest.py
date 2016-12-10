@@ -16,8 +16,44 @@ with CallOnExit(lambda: sys.path.pop(0)):
     from RegularExpression import *
 
 # ----------------------------------------------------------------------
-class Test(unittest.TestCase):
-    pass
+class GenerateTest(unittest.TestCase):
+    
+    # ----------------------------------------------------------------------
+    def test_NoMatches(self):
+        results = list(Generate(r"\s", "OneTwoThree"))
+        self.assertEqual(len(results), 0)
+
+    # ----------------------------------------------------------------------
+    def test_Matches(self):
+        results = list(Generate(re.compile(r"[A-Z]"), "One Two Three"))
+        self.assertEqual(len(results), 3)
+
+        self.assertEqual(results[0], { "__data__" : "ne ", })
+        self.assertEqual(results[1], { "__data__" : "wo ", })
+        self.assertEqual(results[2], { "__data__" : "hree", })
+
+    # ----------------------------------------------------------------------
+    def test_MatchesWithPrefix(self):
+        results = list(Generate(r"\s", "One Two Three", yield_prefix=True))
+        self.assertEqual(len(results), 3)
+
+        self.assertEqual(results[0], { "__data__" : "One", })
+        self.assertEqual(results[1], { "__data__" : "Two", })
+        self.assertEqual(results[2], { "__data__" : "Three", })
+
+    # ----------------------------------------------------------------------
+    def test_NoMatchesWithCapture(self):
+        results = list(Generate(r"\s(?P<c>\S)", "OneTwoThree"))
+        self.assertEqual(len(results), 0)
+
+    # ----------------------------------------------------------------------
+    def test_MatchesWithCapture(self):
+        results = list(Generate(r"(?P<c>[A-Z][a-z])", "One Two Three"))
+        self.assertEqual(len(results), 3)
+
+        self.assertEqual(results[0], { "__data__" : "e ", "c" : "On", })
+        self.assertEqual(results[1], { "__data__" : "o ", "c" : "Tw", })
+        self.assertEqual(results[2], { "__data__" : "ree", "c" : "Th", })
 
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
