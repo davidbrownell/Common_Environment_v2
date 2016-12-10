@@ -15,10 +15,8 @@
 # |  
 # ---------------------------------------------------------------------------
 import copy
-import inspect
 import itertools
 import os
-import shutil
 import sys
 import textwrap
 
