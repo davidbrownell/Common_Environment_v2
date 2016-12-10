@@ -28,6 +28,7 @@ from StringIO import StringIO
 from tqdm import tqdm
 
 from CommonEnvironment.CallOnExit import CallOnExit
+from CommonEnvironment import Interface
 from CommonEnvironment import Package
 from CommonEnvironment.QuickObject import QuickObject
 from CommonEnvironment.StreamDecorator import StreamDecorator
@@ -46,7 +47,12 @@ class Task(object):
     def __init__( self,
                   name,                     # "Foo"
                   action_description,       # "Building Foo"
-                  functor,                  # def Functor(task_index, output_stream) -> None or str or (result, str)
+                  functor,                  # def Functor(<args>) -> None or str or (result, str)
+                                            #
+                                            #       Where <args> can be zero or more of the following:
+                                            #           task_index
+                                            #           core_index          # Technically speaking, this isn't the core index but can be used to simulate thread local storage
+                                            #           output_stream
                 ):
         assert name
         assert action_description
@@ -54,7 +60,7 @@ class Task(object):
 
         self.Name                           = name
         self.ActionDescription              = action_description
-        self.Functor                        = functor
+        self.Functor                        = Interface.CreateCulledCallable(functor)
 
         # Working data
         self.output                         = ''
@@ -76,6 +82,7 @@ def Execute( tasks,
     assert tasks
     assert num_concurrent_tasks
 
+    num_concurrent_tasks = min(num_concurrent_tasks, len(tasks))
     output_stream = StreamDecorator(None if silent else output_stream)
     
     # ---------------------------------------------------------------------------
@@ -102,6 +109,7 @@ def Execute( tasks,
         # ---------------------------------------------------------------------------
         def Execute( self,
                      task,
+                     core_index,
                      task_index,
                      output_stream,
                    ):
@@ -153,7 +161,10 @@ def Execute( tasks,
                 sink = StringIO()
 
                 try:
-                    result = task.Functor(task_index, sink)
+                    result = task.Functor( core_index=core_index,
+                                           task_index=task_index, 
+                                           output_stream=sink,
+                                         )
 
                     if result == None:
                         task.result = 0
@@ -218,6 +229,7 @@ def Execute( tasks,
                     thread_info.current_index += 1
                 
                 thread_info.executor.Execute( thread_info.tasks[task_index],
+                                              core_index,
                                               task_index,
                                               StreamDecorator(None) if progress_bar else ThreadSafeStreamDecorator( thread_info, 
                                                                                                                     core_index, 
@@ -227,70 +239,45 @@ def Execute( tasks,
                                             )
 
     # ---------------------------------------------------------------------------
-    
-    num_concurrent_tasks = min(num_concurrent_tasks, len(tasks))
-    executor = Executor(len(tasks), num_concurrent_tasks != 1)
+    def Invoke(update_functor, output_stream):
+        executor = Executor(len(tasks), num_concurrent_tasks != 1)
 
-    with output_stream.DoneManager( line_prefix='',
-                                    done_prefix="\nTask pool ",
-                                  ) as si:
-        if progress_bar:
-            progress_bar = tqdm( total=len(tasks),
-                                 file=si.stream,
-                                 ncols=None,
-                                 dynamic_ncols=True,
-                               )
-                       
-            progress_bar_lock = threading.Lock()
-            
-            # ---------------------------------------------------------------------------
-            def ProgressBarUpdate():
-                with progress_bar_lock:
-                    progress_bar.update()
-                    
-            # ---------------------------------------------------------------------------
-            
-            ProgressBarCleanup = progress_bar.close
+        if num_concurrent_tasks == 1:
+            for index, task in enumerate(tasks):
+                executor.Execute(task, 0, index, output_stream)
+                update_functor()
         else:
-            ProgressBarUpdate = lambda: None
-            ProgressBarCleanup = lambda: None
-            
-        with CallOnExit(ProgressBarCleanup):
-            if num_concurrent_tasks == 1:
-                for index, task in enumerate(tasks):
-                    executor.Execute(task, index, si.stream)
-            else:
-                thread_info = QuickObject( executor=executor,
-            
-                                           current_index=0,
-            
-                                           index_lock=threading.Lock(),
-                                           output_lock=threading.Lock(),
-                                           progress_bar_update_func=ProgressBarUpdate,
-                                           
-                                           tasks=tasks,
-                                           output_stream=si.stream,
-                                         )
-            
-                # Create the threads
-                threads = []
-            
-                while True:
-                    if len(threads) == num_concurrent_tasks:
-                        break
-            
-                    # ---------------------------------------------------------------------------
-                    def ThreadProc(index=len(threads)): 
-                        InternalThreadProc(thread_info, index)
-            
-                    # ---------------------------------------------------------------------------
-                    
-                    threads.append(threading.Thread(target=ThreadProc))
-                    threads[-1].start()
-            
-                # Wait for all threads to complete
-                for thread in threads:
-                    thread.join()
+            thread_info = QuickObject( executor=executor,
+        
+                                       current_index=0,
+        
+                                       index_lock=threading.Lock(),
+                                       output_lock=threading.Lock(),
+                                       progress_bar_update_func=update_functor,
+                                       
+                                       tasks=tasks,
+                                       output_stream=output_stream,
+                                     )
+        
+            # Create the threads
+            threads = []
+        
+            while True:
+                if len(threads) == num_concurrent_tasks:
+                    break
+        
+                # ---------------------------------------------------------------------------
+                def ThreadProc(index=len(threads)): 
+                    InternalThreadProc(thread_info, index)
+        
+                # ---------------------------------------------------------------------------
+                
+                threads.append(threading.Thread(target=ThreadProc))
+                threads[-1].start()
+        
+            # Wait for all threads to complete
+            for thread in threads:
+                thread.join()
 
         # Calculate the final result
 
@@ -314,14 +301,42 @@ def Execute( tasks,
 
         # ----------------------------------------------------------------------
         
+        result = 0
+
         for task in tasks:
             if task.result != 0:
                 Output(output_stream, task)
-                si.result = si.result or task.result
+                result = result or task.result
 
-        if verbose and si.result == 0:
+        if verbose and result == 0:
             for task in tasks:
                 if task.output:
                     Output(output_stream, task)
 
-        return si.result
+        return result
+
+    # ----------------------------------------------------------------------
+    
+    if progress_bar:
+        progress_bar = tqdm( total=len(tasks),
+                             file=output_stream,
+                             ncols=None,
+                             dynamic_ncols=True,
+                           )
+        with CallOnExit(progress_bar.close):
+            progress_bar_lock = threading.Lock()
+
+            # ---------------------------------------------------------------------------
+            def ProgressBarUpdate():
+                with progress_bar_lock:
+                    progress_bar.update()
+                    
+            # ---------------------------------------------------------------------------
+
+            return Invoke(ProgressBarUpdate, output_stream)
+    else:
+        with output_stream.DoneManager( line_prefix='',
+                                        done_prefix="\nTask pool ",
+                                      ) as si:
+            return Invoke(lambda: None, si.stream)
+        

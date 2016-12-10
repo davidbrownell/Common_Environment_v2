@@ -544,3 +544,36 @@ def immutable(class_obj):
 def clsinit(class_obj):
     class_obj.__clsinit__()
     return class_obj
+
+# ----------------------------------------------------------------------
+# |  
+# |  Public Methods
+# |  
+# ----------------------------------------------------------------------
+def CreateCulledCallable(callable):
+    """\
+    Returns a method that will be called with a subset of the potential parameters based on its implementation.
+
+    Example:
+        def MyMethod(a): ....
+
+        culled_method = CreateCulledCallable(MyMethod, "a", "b", "c")
+
+        culled_method(a=1, b=2, c=3) -> MyMethod(a=1)
+    """
+
+    arg_names = { arg for arg in inspect.getargspec(callable).args }
+
+    # ----------------------------------------------------------------------
+    def Method(*args, **kwargs):
+        assert not args, "Culled Methods should not be invoked with positional args"
+
+        for k in kwargs.keys():
+            if k not in arg_names:
+                del kwargs[k]
+
+        return callable(**kwargs)
+
+    # ----------------------------------------------------------------------
+    
+    return Method

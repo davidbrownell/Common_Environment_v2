@@ -218,11 +218,11 @@ def Test( test_items,
             PopulateResults(result.complete_results.release, "Release", False)
     
     # ---------------------------------------------------------------------------
-    def BuildThreadProc(index, out):
-        result = results[index % len(results)]
+    def BuildThreadProc(task_index, output_stream):
+        result = results[task_index % len(results)]
 
         with result.execution_lock:
-            flavor_results = result.complete_results.release if index >= len(results) else result.complete_results.debug
+            flavor_results = result.complete_results.release if task_index >= len(results) else result.complete_results.debug
 
             if flavor_results.context == None:
                 return
@@ -245,7 +245,7 @@ def Test( test_items,
                 compile_output = sink.getvalue()
 
                 if compile_result != 0:
-                    out.write(compile_output)
+                    output_stream.write(compile_output)
 
             except:
                 compile_result = -1
@@ -296,8 +296,8 @@ def Test( test_items,
     test_tasks = []
 
     # ---------------------------------------------------------------------------
-    def TestThreadProc(index, out):
-        test_info = test_info_list[index / iterations]
+    def TestThreadProc(task_index, output_stream):
+        test_info = test_info_list[task_index / iterations]
 
         # Don't continue on error unless explicitly requested
         if ( not continue_iterations_on_error and 
@@ -306,7 +306,7 @@ def Test( test_items,
            ):
             return
 
-        iteration = (index % iterations) + 1
+        iteration = (task_index % iterations) + 1
 
         # ---------------------------------------------------------------------------
         def WriteLog(log_name, content):
@@ -348,7 +348,7 @@ def Test( test_items,
             test_info.result.test_result = -1
             test_info.result.test_log = WriteLog("test", output)
 
-            out.write(output)
+            output_stream.write(output)
 
             return -1
 
@@ -382,7 +382,7 @@ def Test( test_items,
         test_parse_time = start_time.CalculateDelta(as_string=True)
 
         if test_parse_result != 0:
-            out.write(execute_result.test_output)
+            output_stream.write(execute_result.test_output)
 
         if test_info.result.test_parse_result == None or test_info.result.test_parse_result == 0:
             test_info.result.test_parse_result = test_parse_result
