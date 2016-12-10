@@ -17,6 +17,7 @@
 """Tools and utilities that help when working with regular expressions.
 """
 
+import itertools
 import os
 import re
 import sys
@@ -144,3 +145,45 @@ def WildcardSearchToRegularExpression( value,
         return value
 
     return re.compile(value)
+
+# ----------------------------------------------------------------------
+def Generate( regex_or_regex_string, 
+              content, 
+              yield_prefix=False,
+            ):
+    # Handles some of the wonkiness associated with re.split.
+
+    if isinstance(regex_or_regex_string, (str, unicode)):
+        regex = re.compile(regex_or_regex_string)
+    else:
+        regex = regex_or_regex_string
+
+    items = regex.split(content)
+    if len(items) > 1:
+        # Ignore the initial item, as that will be everything that comes before
+        # the first match (or None if the match is at the beginning of the content).
+        if yield_prefix:
+            yield { "__data__" : items[0] or '', }
+
+        items = items[1:]
+
+        if regex.groups:
+            if regex.groups == 1:
+                MatchDecorator = lambda match: (match, )
+            else:
+                MatchDecorator = lambda match: match
+
+            # We have capture values.
+            for index in xrange(0, len(items), 2):
+                match = MatchDecorator(items[index])
+                data = items[index + 1]
+
+                result = { k : v for k, v in itertools.izip(regex.groupindex.iterkeys(), match) }
+                result["__data__"] = data
+
+                yield result
+
+        else:
+            for item in items:
+                yield { "__data__" : item,
+                      }
