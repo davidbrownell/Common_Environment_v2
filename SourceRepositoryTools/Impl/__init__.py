@@ -384,7 +384,7 @@ def TraverseDependencies(repository_root, configuration):
             repo_info = RepositoryInformation.Load(context.root)
             
             repo_info.context = context
-            repo_info.referencing_context = context
+            repo_info.referencing_context = referencing_context
             repo_info.priority_modifier = 0
 
             repositories[context.id] = repo_info
