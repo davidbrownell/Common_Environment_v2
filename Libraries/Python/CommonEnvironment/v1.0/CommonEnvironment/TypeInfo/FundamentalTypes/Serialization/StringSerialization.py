@@ -104,7 +104,7 @@ class StringSerialization(Serialization):
             # ----------------------------------------------------------------------
             @staticmethod
             def OnDuration(type_info):
-                return [ r"(?P<hours>[1-9][0-0]*|0)?:(?P<minutes>[0-5][0-9])(?::(?P<seconds>[0-5][0-9])(?:\.(?P<fractional>[0-9]+))?)?",
+                return [ r"(?P<hours>[1-9][0-9]*|0):(?P<minutes>[0-5][0-9]):(?P<seconds>[0-5][0-9])(?:\.(?P<milliseconds>[0-9]+))?",
                        ]
         
             # ----------------------------------------------------------------------
@@ -193,7 +193,7 @@ class StringSerialization(Serialization):
             # ----------------------------------------------------------------------
             @staticmethod
             def OnTime(type_info):
-                return [ r"(?P<hour>[0-1][0-9]|2[0-3]):(?P<minute>[0-5][0-9]):(?P<second>[0-5][0-9])(?:\.(?P<fractional>\d+))?(?:(?P<tz_utc>Z)|(?P<tz_sign>[\+\-])(?P<tz_hour>\d{2}):(?P<tz_minute>[0-5][0-9]))?",
+                return [ r"(?P<hour>[0-1][0-9]|2[0-3]):(?P<minute>[0-5][0-9]):(?P<second>[0-5][0-9])(?:\.(?P<milliseconds>\d+))?(?:(?P<tz_utc>Z)|(?P<tz_sign>[\+\-])(?P<tz_hour>\d{2}):(?P<tz_minute>[0-5][0-9]))?",
                        ]
 
         # ----------------------------------------------------------------------
@@ -384,19 +384,32 @@ class StringSerialization(Serialization):
                 if len(parts) == 3:
                     hours = int(parts[0])
                     minutes = int(parts[1])
-                    seconds = int(float(parts[2]))
+                    seconds_string = parts[2]
 
                 elif len(parts) == 2:
                     hours = 0
                     minutes = int(parts[0])
-                    seconds = int(parts[1])
+                    seconds_string = parts[1]
 
                 else:
                     assert False, item
 
+                seconds_parts = seconds_string.split('.')
+                if len(seconds_parts) == 2:
+                    seconds = int(seconds_parts[0])
+                    milliseconds = int(seconds_parts[1])
+
+                elif len(seconds_parts) == 1:
+                    seconds = int(seconds_parts[0])
+                    milliseconds = 0
+
+                else:
+                    assert False, seconds_string
+
                 return datetime.timedelta( hours=hours,
                                            minutes=minutes,
                                            seconds=seconds,
+                                           milliseconds=milliseconds,
                                          )
         
             # ----------------------------------------------------------------------
