@@ -85,8 +85,6 @@ def Execute( tasks,
     num_concurrent_tasks = min(num_concurrent_tasks, len(tasks))
     output_stream = StreamDecorator(None if silent else output_stream)
     
-    assert not progress_bar or num_concurrent_tasks != 1, "A progress_bar can not be used when the num_concurrent_tasks is equal to 1"
-    
     # ---------------------------------------------------------------------------
     class Executor(object):
         # ---------------------------------------------------------------------------
@@ -245,8 +243,10 @@ def Execute( tasks,
         executor = Executor(len(tasks), num_concurrent_tasks != 1)
 
         if num_concurrent_tasks == 1:
+            status_output_stream = StreamDecorator(None) if progress_bar else output_stream
+
             for index, task in enumerate(tasks):
-                executor.Execute(task, 0, index, output_stream)
+                executor.Execute(task, 0, index, status_output_stream)
                 update_functor()
         else:
             thread_info = QuickObject( executor=executor,
@@ -320,12 +320,11 @@ def Execute( tasks,
     # ----------------------------------------------------------------------
     
     if progress_bar:
-        progress_bar = tqdm( total=len(tasks),
-                             file=output_stream,
-                             ncols=None,
-                             dynamic_ncols=True,
-                           )
-        with CallOnExit(progress_bar.close):
+        with tqdm( total=len(tasks),
+                   file=output_stream,
+                   ncols=None,
+                   dynamic_ncols=True,
+                 ) as progress_bar:
             progress_bar_lock = threading.Lock()
 
             # ---------------------------------------------------------------------------
