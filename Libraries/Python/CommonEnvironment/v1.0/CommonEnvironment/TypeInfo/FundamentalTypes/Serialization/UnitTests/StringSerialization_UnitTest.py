@@ -40,16 +40,16 @@ class UnitTest(unittest.TestCase):
     # ----------------------------------------------------------------------
     def test_RegularExpressionString_Standard(self):
         self.assertEqual(StringSerialization.GetRegularExpressionString(BoolTypeInfo()), r"(true|t|yes|y|1|false|f|no|n|0)")
-        self.assertEqual(StringSerialization.GetRegularExpressionString(DateTimeTypeInfo()), r"(?P<year0>[0-9]{4})[-/\.](?P<month0>0?[1-9]|1[0-2])[-/\.](?P<day0>[0-2][0-9]|3[0-1])[ T](?P<hour>[0-1][0-9]|2[0-3]):(?P<minute>[0-5][0-9]):(?P<second>[0-5][0-9])(?:\.(?P<fractional>\d+))?(?:(?P<tz_utc>Z)|(?P<tz_sign>[\+\-])(?P<tz_hour>\d{2}):(?P<tz_minute>[0-5][0-9]))?")
+        self.assertEqual(StringSerialization.GetRegularExpressionString(DateTimeTypeInfo()), r"(?P<year0>[0-9]{4})[-/\.](?P<month0>0?[1-9]|1[0-2])[-/\.](?P<day0>[0-2][0-9]|3[0-1])[ T](?P<hour>[0-1][0-9]|2[0-3]):(?P<minute>[0-5][0-9]):(?P<second>[0-5][0-9])(?:\.(?P<milliseconds>\d+))?(?:(?P<tz_utc>Z)|(?P<tz_sign>[\+\-])(?P<tz_hour>\d{2}):(?P<tz_minute>[0-5][0-9]))?")
         self.assertEqual(StringSerialization.GetRegularExpressionString(DateTypeInfo()), r"(?P<year0>[0-9]{4})[-/\.](?P<month0>0?[1-9]|1[0-2])[-/\.](?P<day0>[0-2][0-9]|3[0-1])")
         self.assertEqual(StringSerialization.GetRegularExpressionString(DirectoryTypeInfo()), r".+")
-        self.assertEqual(StringSerialization.GetRegularExpressionString(DurationTypeInfo()), r"(?P<hours>[1-9][0-0]*|0)?:(?P<minutes>[0-5][0-9])(?::(?P<seconds>[0-5][0-9])(?:\.(?P<fractional>[0-9]+))?)?")
+        self.assertEqual(StringSerialization.GetRegularExpressionString(DurationTypeInfo()), r"(?P<hours>[1-9][0-9]*|0):(?P<minutes>[0-5][0-9]):(?P<seconds>[0-5][0-9])(?:\.(?P<milliseconds>[0-9]+))?")
         self.assertEqual(StringSerialization.GetRegularExpressionString(EnumTypeInfo([ "one", "two", "three", ])), r"(one|two|three)")
         self.assertEqual(StringSerialization.GetRegularExpressionString(FilenameTypeInfo()), r".+")
         self.assertEqual(StringSerialization.GetRegularExpressionString(FloatTypeInfo()), r"-?[0-9]+\.[0-9]+")
         self.assertEqual(StringSerialization.GetRegularExpressionString(GuidTypeInfo()), r"\{[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\}")
-        self.assertEqual(StringSerialization.GetRegularExpressionString(TimeTypeInfo()), r"(?P<hour>[0-1][0-9]|2[0-3]):(?P<minute>[0-5][0-9]):(?P<second>[0-5][0-9])(?:\.(?P<fractional>\d+))?(?:(?P<tz_utc>Z)|(?P<tz_sign>[\+\-])(?P<tz_hour>\d{2}):(?P<tz_minute>[0-5][0-9]))?")
-
+        self.assertEqual(StringSerialization.GetRegularExpressionString(TimeTypeInfo()), r"(?P<hour>[0-1][0-9]|2[0-3]):(?P<minute>[0-5][0-9]):(?P<second>[0-5][0-9])(?:\.(?P<milliseconds>\d+))?(?:(?P<tz_utc>Z)|(?P<tz_sign>[\+\-])(?P<tz_hour>\d{2}):(?P<tz_minute>[0-5][0-9]))?")
+    
     # ----------------------------------------------------------------------
     def test_RegularExpressionString_Int(self):
         self.assertEqual(StringSerialization.GetRegularExpressionString(IntTypeInfo()), r"-?[0-9]+")
@@ -60,7 +60,7 @@ class UnitTest(unittest.TestCase):
         self.assertEqual(StringSerialization.GetRegularExpressionString(IntTypeInfo(min=0, max=1000)), r"[0-9]{1,4}")
         self.assertEqual(StringSerialization.GetRegularExpressionString(IntTypeInfo(min=0, max=100000)), r"[0-9]{1,6}")
         self.assertEqual(StringSerialization.GetRegularExpressionString(IntTypeInfo(min=-100000, max=1000)), r"-?[0-9]{1,6}")
-
+    
     # ----------------------------------------------------------------------
     def test_RegularExpressionString_String(self):
         self.assertEqual(StringSerialization.GetRegularExpressionString(StringTypeInfo()), r".+")
@@ -68,18 +68,18 @@ class UnitTest(unittest.TestCase):
         self.assertEqual(StringSerialization.GetRegularExpressionString(StringTypeInfo(min_length=3, max_length=3)), r".{3}")
         self.assertEqual(StringSerialization.GetRegularExpressionString(StringTypeInfo(min_length=3, max_length=10)), r".{3,10}")
         self.assertEqual(StringSerialization.GetRegularExpressionString(StringTypeInfo(validation_expression="foo")), r"foo")
-
+    
     # ----------------------------------------------------------------------
     def test_GetRegularExpressionStringInfo_Standard(self):
         self.assertEqual(StringSerialization.GetRegularExpressionStringInfo(BoolTypeInfo()), [ ( r"(true|t|yes|y|1|false|f|no|n|0)", re.IGNORECASE ), ])
-        self.assertEqual(StringSerialization.GetRegularExpressionStringInfo(DateTimeTypeInfo()), [ r"(?P<year0>[0-9]{4})[-/\.](?P<month0>0?[1-9]|1[0-2])[-/\.](?P<day0>[0-2][0-9]|3[0-1])[ T](?P<hour>[0-1][0-9]|2[0-3]):(?P<minute>[0-5][0-9]):(?P<second>[0-5][0-9])(?:\.(?P<fractional>\d+))?(?:(?P<tz_utc>Z)|(?P<tz_sign>[\+\-])(?P<tz_hour>\d{2}):(?P<tz_minute>[0-5][0-9]))?", ])
+        self.assertEqual(StringSerialization.GetRegularExpressionStringInfo(DateTimeTypeInfo()), [ r"(?P<year0>[0-9]{4})[-/\.](?P<month0>0?[1-9]|1[0-2])[-/\.](?P<day0>[0-2][0-9]|3[0-1])[ T](?P<hour>[0-1][0-9]|2[0-3]):(?P<minute>[0-5][0-9]):(?P<second>[0-5][0-9])(?:\.(?P<milliseconds>\d+))?(?:(?P<tz_utc>Z)|(?P<tz_sign>[\+\-])(?P<tz_hour>\d{2}):(?P<tz_minute>[0-5][0-9]))?", ])
         self.assertEqual(StringSerialization.GetRegularExpressionStringInfo(DateTypeInfo()), [ r'(?P<year0>[0-9]{4})[-/\.](?P<month0>0?[1-9]|1[0-2])[-/\.](?P<day0>[0-2][0-9]|3[0-1])',
                                                                                                r'(?P<month1>0?[1-9]|1[0-2])[-/\.](?P<day1>[0-2][0-9]|3[0-1])[-/\.](?P<year1>[0-9]{4})',
                                                                                                r'(?P<year2>\d{2})[-/\.](?P<month2>0?[1-9]|1[0-2])[-/\.](?P<day2>[0-2][0-9]|3[0-1])',
                                                                                                r'(?P<month3>0?[1-9]|1[0-2])[-/\.](?P<day3>[0-2][0-9]|3[0-1])[-/\.](?P<year3>\d{2})',
                                                                                              ])
         self.assertEqual(StringSerialization.GetRegularExpressionStringInfo(DirectoryTypeInfo()), [ r".+", ])
-        self.assertEqual(StringSerialization.GetRegularExpressionStringInfo(DurationTypeInfo()), [ r"(?P<hours>[1-9][0-0]*|0)?:(?P<minutes>[0-5][0-9])(?::(?P<seconds>[0-5][0-9])(?:\.(?P<fractional>[0-9]+))?)?", ])
+        self.assertEqual(StringSerialization.GetRegularExpressionStringInfo(DurationTypeInfo()), [ r"(?P<hours>[1-9][0-9]*|0):(?P<minutes>[0-5][0-9]):(?P<seconds>[0-5][0-9])(?:\.(?P<milliseconds>[0-9]+))?", ])
         self.assertEqual(StringSerialization.GetRegularExpressionStringInfo(EnumTypeInfo([ "one", "two", "three", ])), [ r"(one|two|three)", ])
         self.assertEqual(StringSerialization.GetRegularExpressionStringInfo(FilenameTypeInfo()), [ r".+", ])
         self.assertEqual(StringSerialization.GetRegularExpressionStringInfo(FloatTypeInfo()), [ r"-?[0-9]+\.[0-9]+", ])
@@ -88,8 +88,8 @@ class UnitTest(unittest.TestCase):
                                                                                                r'\{[0-9A-Fa-f]{32}\}',
                                                                                                r'[0-9A-Fa-f]{32}',
                                                                                              ])
-        self.assertEqual(StringSerialization.GetRegularExpressionStringInfo(TimeTypeInfo()), [ r"(?P<hour>[0-1][0-9]|2[0-3]):(?P<minute>[0-5][0-9]):(?P<second>[0-5][0-9])(?:\.(?P<fractional>\d+))?(?:(?P<tz_utc>Z)|(?P<tz_sign>[\+\-])(?P<tz_hour>\d{2}):(?P<tz_minute>[0-5][0-9]))?", ])
-
+        self.assertEqual(StringSerialization.GetRegularExpressionStringInfo(TimeTypeInfo()), [ r"(?P<hour>[0-1][0-9]|2[0-3]):(?P<minute>[0-5][0-9]):(?P<second>[0-5][0-9])(?:\.(?P<milliseconds>\d+))?(?:(?P<tz_utc>Z)|(?P<tz_sign>[\+\-])(?P<tz_hour>\d{2}):(?P<tz_minute>[0-5][0-9]))?", ])
+    
     # ----------------------------------------------------------------------
     def test_RegularExpressionStringInfo_Int(self):
         self.assertEqual(StringSerialization.GetRegularExpressionStringInfo(IntTypeInfo()), [ r"-?[0-9]+", ])
@@ -100,7 +100,7 @@ class UnitTest(unittest.TestCase):
         self.assertEqual(StringSerialization.GetRegularExpressionStringInfo(IntTypeInfo(min=0, max=1000)), [ r"[0-9]{1,4}", ])
         self.assertEqual(StringSerialization.GetRegularExpressionStringInfo(IntTypeInfo(min=0, max=100000)), [ r"[0-9]{1,6}", ])
         self.assertEqual(StringSerialization.GetRegularExpressionStringInfo(IntTypeInfo(min=-100000, max=1000)), [ r"-?[0-9]{1,6}", ])
-
+    
     # ----------------------------------------------------------------------
     def test_RegularExpressionStringInfo_String(self):
         self.assertEqual(StringSerialization.GetRegularExpressionStringInfo(StringTypeInfo()), [ r".+", ])
@@ -121,8 +121,9 @@ class UnitTest(unittest.TestCase):
 
         self.assertEqual(StringSerialization.SerializeItem(DirectoryTypeInfo(ensure_exists=False), os.path.sep.join([ "Foo", "Bar", "Baz", ])), "Foo/Bar/Baz")
 
+        self.assertEqual(StringSerialization.SerializeItem(DurationTypeInfo(), datetime.timedelta(seconds=400, milliseconds=13)), "0:06:40.013")
         self.assertEqual(StringSerialization.SerializeItem(DurationTypeInfo(), datetime.timedelta(seconds=400)), "0:06:40.0")
-    
+        
         self.assertEqual(StringSerialization.SerializeItem(EnumTypeInfo([ "one", "two", "three", ]), "two"), "two")
 
         self.assertEqual(StringSerialization.SerializeItem(FilenameTypeInfo(ensure_exists=False), os.path.sep.join([ "Foo", "Bar", "Baz", ])), "Foo/Bar/Baz")
@@ -161,8 +162,8 @@ class UnitTest(unittest.TestCase):
         self.assertEqual(StringSerialization.DeserializeItem(DirectoryTypeInfo(ensure_exists=False), "Foo/Bar/Baz", normalize=False), os.path.join("Foo", "Bar", "Baz"))
         
         self.assertEqual(StringSerialization.DeserializeItem(DurationTypeInfo(), "0:06:40.0"), datetime.timedelta(seconds=400))
-        self.assertEqual(StringSerialization.DeserializeItem(DurationTypeInfo(), "0:06"), datetime.timedelta(seconds=6))
-    
+        self.assertEqual(StringSerialization.DeserializeItem(DurationTypeInfo(), "0:06:40.13"), datetime.timedelta(seconds=400, milliseconds=13))
+        
         self.assertEqual(StringSerialization.DeserializeItem(EnumTypeInfo([ "one", "two", "three", ]), "two"), "two")
 
         self.assertEqual(StringSerialization.DeserializeItem(FilenameTypeInfo(ensure_exists=False), "Foo/Bar/Baz"), os.path.join(os.getcwd(), "Foo", "Bar", "Baz"))
