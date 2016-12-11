@@ -406,7 +406,6 @@ class StringSerialization(Serialization):
                 else:
                     assert False, seconds_string
 
-                # BugBug: Preserve fractional
                 return datetime.timedelta( hours=hours,
                                            minutes=minutes,
                                            seconds=seconds,
