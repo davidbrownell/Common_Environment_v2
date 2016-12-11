@@ -85,6 +85,8 @@ def Execute( tasks,
     num_concurrent_tasks = min(num_concurrent_tasks, len(tasks))
     output_stream = StreamDecorator(None if silent else output_stream)
     
+    assert not progress_bar or num_concurrent_tasks != 1, "A progress_bar can not be used when the num_concurrent_tasks is equal to 1"
+    
     # ---------------------------------------------------------------------------
     class Executor(object):
         # ---------------------------------------------------------------------------

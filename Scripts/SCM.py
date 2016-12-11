@@ -966,7 +966,8 @@ def _AllImpl( directory,
                                                      done_prefix="Composite Results: ",
                                                    ) as si:
         si.stream.write("Searching for repositories in '{}'...".format(directory))
-        with si.stream.DoneManager(done_suffix='\n'):
+        with si.stream.DoneManager( done_suffix='\n',
+                                  ):
             items = list(_GetSCMAndDirs(directory))
 
         output = []
@@ -991,12 +992,15 @@ def _AllImpl( directory,
                                       ))
 
         if not tasks:
-            return si.result
+            return 0
 
-        task_pool_result = TaskPool.Execute(tasks, 1, output_stream=output_stream)
-        si.result = si.result or task_pool_result
-
-        si.stream.write("\n")
+        si.stream.write("Processing {}...".format(inflect_engine.no("repository", len(tasks))))
+        with si.stream.DoneManager( done_suffix='\n',
+                                  ) as this_dm:
+            this_dm.result = TaskPool.Execute( tasks, 
+                                               1,
+                                               output_stream=this_dm.stream, 
+                                             )
 
         action_items = [ data for data in output if data != None and data.result ]
         
