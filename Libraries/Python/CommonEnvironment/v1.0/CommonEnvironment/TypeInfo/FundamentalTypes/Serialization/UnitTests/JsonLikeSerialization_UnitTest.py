@@ -40,7 +40,7 @@ class UnitTest(unittest.TestCase):
         self.assertEqual(JsonLikeSerialization.SerializeItem(BoolTypeInfo(), True), True)
         self.assertEqual(JsonLikeSerialization.SerializeItem(FloatTypeInfo(), 1.0), 1.0)
         self.assertEqual(JsonLikeSerialization.SerializeItem(IntTypeInfo(), 100), 100)
-        self.assertEqual(JsonLikeSerialization.SerializeItem(DurationTypeInfo(), datetime.timedelta(seconds=130)), "0:02:10.0")
+        self.assertEqual(JsonLikeSerialization.SerializeItem(DurationTypeInfo(), datetime.timedelta(seconds=130)), "0:02:10.000000")
 
     # ----------------------------------------------------------------------
     def test_DeserializeItem(self):
