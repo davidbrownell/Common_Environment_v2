@@ -25,6 +25,7 @@ import cPickle as pickle
 from CommonEnvironment import ModifiableValue
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import FileSystem
+from CommonEnvironment.Interface import CreateCulledCallable
 from CommonEnvironment.QuickObject import QuickObject
 from CommonEnvironment import Shell
 from CommonEnvironment.StreamDecorator import StreamDecorator
@@ -38,14 +39,18 @@ import SourceRepositoryTools
 
 # ----------------------------------------------------------------------
 def ActivateLibraries( name,
-                       create_commands_func,            # def Func(libraries) -> environment commands
-
+                       create_commands_func,            # def Func(<args>) -> environment commands
+                                                        #
+                                                        #   where <args> can be any of the following:
+                                                        #       libraries
+                                                        #       create_message_statement_func   # def Func(message) -> message command that will not be suppressed during output
                        environment,
                        repositories,
                        version_specs,
                        generated_dir,
                      ):
     version_info = version_specs.Libraries.get(name, [])
+    create_commands_func = CreateCulledCallable(create_commands_func)
 
     # Create the libraries
     libraries = OrderedDict()
@@ -95,7 +100,12 @@ def ActivateLibraries( name,
     # On some systems, the symbolc link commands will generate output that we will like to 
     # be supressed in most cases. Instead of executing the content directly, execute it
     # ourselves.
-    commands = create_commands_func(libraries)
+    display_sentinel = "__DISPLAY__??!! "
+
+    commands = create_commands_func(OrderedDict([ ( "libraries", libraries ),
+                                                  ( "create_message_statement_func", lambda message: environment.Message("{}{}".format(display_sentinel, message)) ),
+                                                ]))
+
     if commands:
         temp_filename = environment.CreateTempFilename(environment.ScriptExtension)
 
@@ -110,7 +120,15 @@ def ActivateLibraries( name,
                                        stdout=subprocess.PIPE,
                                        stderr=subprocess.STDOUT,
                                      )
-            content = result.stdout.read()
+
+            while True:
+                line = result.stdout.readline()
+                if not line:
+                    break
+
+                if line.startswith(display_sentinel):
+                    sys.stdout.write("{}".format(line[len(display_sentinel):]))
+
             result = result.wait() or 0
 
             if result != 0:

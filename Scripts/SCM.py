@@ -973,7 +973,7 @@ def _AllImpl( directory,
         output = []
 
         # ---------------------------------------------------------------------------
-        def QueryProcess(scm, directory, task_index, _output_stream):
+        def QueryProcess(scm, directory, task_index, task_output_stream):
             if not require_distributed or scm.IsDistributed:
                 output[task_index] = QuickObject( scm=scm,
                                                   directory=directory,
@@ -988,7 +988,7 @@ def _AllImpl( directory,
             output.append(None)
             tasks.append(TaskPool.Task( "{} [{}] <Query>".format(directory, scm.Name),
                                         "Querying '{}'".format(directory),
-                                        lambda task_index, output_stream, scm=scm, directory=directory: QueryProcess(scm, directory, task_index, output_stream),
+                                        lambda task_index, task_output_stream, scm=scm, directory=directory: QueryProcess(scm, directory, task_index, task_output_stream),
                                       ))
 
         if not tasks:
