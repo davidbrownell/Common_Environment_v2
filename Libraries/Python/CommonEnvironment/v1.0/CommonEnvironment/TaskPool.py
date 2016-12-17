@@ -23,6 +23,7 @@ import textwrap
 import time
 import traceback
 
+from collections import OrderedDict
 from StringIO import StringIO
 
 from tqdm import tqdm
@@ -161,10 +162,10 @@ def Execute( tasks,
                 sink = StringIO()
 
                 try:
-                    result = task.Functor( core_index=core_index,
-                                           task_index=task_index, 
-                                           output_stream=sink,
-                                         )
+                    result = task.Functor(OrderedDict([ ( "task_index", task_index ), 
+                                                        ( "output_stream", sink ),
+                                                        ( "core_index", core_index ),
+                                                      ]))
 
                     if result == None:
                         task.result = 0
