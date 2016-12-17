@@ -49,6 +49,8 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # |
 # ---------------------------------------------------------------------------
 DEBUG_COMMAND_LINE_ARG                      = "_debug_command_line"
+PROFILE_COMMAND_LINE_ARG                    = "__profile__"
+
 MAX_COLUMN_WIDTH                            = 100
 
 # The following are optional methods that can be defined in modules to
@@ -281,7 +283,7 @@ class Executor(object):
                   entry_points=None,
                 ):
         mod = sys.modules["__main__"]
-
+        
         self.Args                                       = args
         self.CommandLineArgPrefix                       = command_line_arg_prefix
         self.CommandLineKeywordSeparator                = command_line_keyword_separator
@@ -293,7 +295,7 @@ class Executor(object):
         self.ScriptDescriptionSuffix                    = script_description_suffix or (mod.CommandLineSuffix() if hasattr(mod, "CommandLineSuffix") else '')
 
         self.EntryPoints                                = entry_points or EntryPointData.FromModule(mod)
-
+        
         self._keyword_regex                             = re.compile(r"^{prefix}(?P<tag>\S+?)(?:\s*{separator}\s*(?P<value>.+)\s*)?$".format( prefix=re.escape(self.CommandLineArgPrefix),
                                                                                                                                               separator=re.escape(self.CommandLineKeywordSeparator),
                                                                                                                                             ))
@@ -315,6 +317,11 @@ class Executor(object):
         debug_mode = False
         if len(arg_strings) > 1 and arg_strings[1].lower() == DEBUG_COMMAND_LINE_ARG:
             debug_mode = True
+            del arg_strings[1]
+
+        profile_mode = False
+        if len(arg_strings) > 1 and arg_strings[1].lower() == PROFILE_COMMAND_LINE_ARG:
+            profile_mode = True
             del arg_strings[1]
 
         # Are we looking for a request for verbose help
@@ -374,38 +381,64 @@ class Executor(object):
                              args='\n'.join([ "    {k:<20} {v}".format(k="{}:".format(k), v=v) for k, v in kwargs.iteritems() ]),
                            ))
 
+        # ----------------------------------------------------------------------
+        def Impl():
+            try:
+                result = entry_point(*[], **kwargs)
+
+                if print_results:
+                    if isinstance(result, types.GeneratorType):
+                        result = '\n'.join([ "{}) {}".format(index, str(item)) for index, item in enumerate(result) ])
+
+                    output_stream.write(textwrap.dedent(
+                        """\
+                        ** Result **
+                        {}
+                        """).format(result))
+
+                    result = 0
+
+                if result == None:
+                    result = 0
+
+            except UsageException, ex:
+                result = self.Usage(error=str(ex))
+            except TypeInfo.ValidationException, ex:
+                result = self.Usage(error=str(ex))
+            except KeyboardInterrupt:
+                result = -1
+            except:
+                if allow_exceptions:
+                    raise
+                    
+                import traceback
+
+                output_stream.write("ERROR: {}".format(StreamDecorator.LeftJustify(traceback.format_exc(), len("ERROR: "))))
+                result = -1
+
+            return result
+
+        # ----------------------------------------------------------------------
+        
+        # Standard mode
+        if not profile_mode:
+            return Impl()
+
+        # Profile mode
+        from cProfile import Profile
+        from pstats import Stats
+
+        profile = Profile()
+
+        profile.enable()
         try:
-            result = entry_point(*[], **kwargs)
+            result = Impl()
+        finally:
+            profile.disable()
 
-            if print_results:
-                if isinstance(result, types.GeneratorType):
-                    result = '\n'.join([ "{}) {}".format(index, str(item)) for index, item in enumerate(result) ])
-
-                output_stream.write(textwrap.dedent(
-                    """\
-                    ** Result **
-                    {}
-                    """).format(result))
-
-                result = 0
-
-            if result == None:
-                result = 0
-
-        except UsageException, ex:
-            result = self.Usage(error=str(ex))
-        except TypeInfo.ValidationException, ex:
-            result = self.Usage(error=str(ex))
-        except:
-            if allow_exceptions:
-                raise
-                
-            import traceback
-
-            output_stream.write("ERROR: {}".format(StreamDecorator.LeftJustify(traceback.format_exc(), len("ERROR: "))))
-            result = -1
-
+        Stats(profile, stream=output_stream).sort_stats("tottime").print_stats()
         return result
+
 
     # ---------------------------------------------------------------------------
     def Usage( self,
