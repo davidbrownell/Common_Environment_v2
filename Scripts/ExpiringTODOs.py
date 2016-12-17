@@ -81,9 +81,7 @@ def EntryPoint( code_dir,
         date_type_info = DateTypeInfo()
 
         # ---------------------------------------------------------------------------
-        def Execute(task_index, output_stream):
-            task_output_stream = output_stream
-
+        def Execute(task_index, task_output_stream):
             try:
                 comments = CommonEnvironment.ModifiableValue(0)
                 has_error = CommonEnvironment.ModifiableValue(False)
