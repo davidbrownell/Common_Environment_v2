@@ -23,7 +23,8 @@ import sys
 import wrapt
 
 import TypeInfo
-from TypeInfo.FundamentalTypes import *     # <Unused import> pylint: disable = W0611, W0614
+from TypeInfo.FundamentalTypes import *                 # <Unused import> pylint: disable = W0611, W0614
+from TypeInfo.DictTypeInfo import DictTypeInfo          # <Unused import> pylint: disable = W0611, W0614
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
