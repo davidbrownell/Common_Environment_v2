@@ -124,7 +124,7 @@ class EntryPointData(object):
             arg_spec = inspect.getargspec(function)
 
             if (not constraint_decorator or not constraint_decorator.Preconditions) and len(arg_spec.args) != len(arg_spec.defaults or []):
-                raise Exception("'{}' must be associated with a FunctionConstraint decorator with preconditions ({})".format(function.__name__, item))
+                raise Exception("'{}' must be associated with a FunctionConstraint decorator with preconditions".format(function.__name__))
 
             return cls(function, entry_point_decorator, constraint_decorator)
 
