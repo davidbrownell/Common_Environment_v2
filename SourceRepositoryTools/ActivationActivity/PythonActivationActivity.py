@@ -181,8 +181,8 @@ class PythonActivationActivity(IActivationActivity):
         global_actions = [ environment.AugmentPath(dest_dir),
                          ]
         
+        # Add the binary environment variable
         bin_dir = dest_dir
-        
         if cls.BinSubdirs:
             bin_dir = os.path.join(bin_dir, *cls.BinSubdirs)
             global_actions.append(environment.AugmentPath(bin_dir))
@@ -194,7 +194,21 @@ class PythonActivationActivity(IActivationActivity):
                                                bin_file,
                                                preserve_original=False,
                                              ))
+
+        # Add the script dir environment variable
+        script_dir = dest_dir
+        if cls.ScriptSubdirs:
+            script_dir = os.path.join(script_dir, *cls.ScriptSubdirs)
+
+        assert os.path.isdir(script_dir), script_dir
+
+        global_actions.append(environment.Set( "PYTHON_SCRIPT_DIR",
+                                               script_dir,
+                                               preserve_original=False,
+                                             ))
         
+        # Symbolicly link the reference python files
+
         # ----------------------------------------------------------------------
         def PythonCallback(libraries):
             local_actions = []
