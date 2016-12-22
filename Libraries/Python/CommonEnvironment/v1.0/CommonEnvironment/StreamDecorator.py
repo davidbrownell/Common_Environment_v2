@@ -313,19 +313,24 @@ class StreamDecorator(object):
                 if info.result == None:
                     info.result = 0
 
-            except Exception, ex:
-                if info.result == None or info.result == 0:
+            except Exception:
+                if info.result in [ None, 0, ]:
                     info.result = -1
 
                 if display_exceptions:
-                    if display_exception_callstack:
-                        import traceback
-                        info.stream.write("ERROR: {}\n".format(StreamDecorator.LeftJustify(traceback.format_exc(), len("ERROR: ")).rstrip()))
-                    else:
-                        info.stream.write("ERROR: {}\n".format(str(ex).rstrip()))
+                    ex = sys.exc_info()[1]
+
+                    if not getattr(ex, "_DisplayedException", False):
+                        ex._DisplayedException = True
+
+                        if display_exception_callstack:
+                            import traceback
+                            info.stream.write("ERROR: {}\n".format(StreamDecorator.LeftJustify(traceback.format_exc(), len("ERROR: ")).rstrip()))
+                        else:
+                            info.stream.write("ERROR: {}\n".format(str(ex).rstrip()))
 
                 if not suppress_exceptions:
-                    raise ex
+                    raise
 
     # ---------------------------------------------------------------------------
     @classmethod

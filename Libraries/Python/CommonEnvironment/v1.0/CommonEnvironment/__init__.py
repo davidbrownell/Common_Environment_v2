@@ -95,6 +95,23 @@ def ToSnakeCase(s):
     return _ToSnakeCase_regex.sub(r'_\1', s).lower().replace('__', '_')
 
 # ----------------------------------------------------------------------
+_ToPlural_engine = ModifiableValue(None)
+
+def ToPlural(s):
+    if _ToPlural_engine.value == None:
+        import inflect
+
+        _ToPlural_engine.value = inflect.engine()
+
+    engine = _ToPlural_engine.value
+
+    result = engine.singular_noun(s)
+    if result == False:
+        return engine.plural_noun(s)
+
+    return s
+
+# ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 
