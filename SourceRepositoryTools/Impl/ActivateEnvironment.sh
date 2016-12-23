@@ -30,12 +30,15 @@ fi
 
 # Ensure that this script is being invoked via source (as it modifies the current 
 # environment)
-if [ $is_rhel5 = 0 ] && [[ $0 != *bash ]];
+if [ ${0##*/} = ActivateEnvironment.sh ];
 then
-    should_continue=0
-elif [ $is_rhel5 = 1 ] && [[ $BASH_SOURCE != "" ]];
-then
-    should_continue=0
+    if [ $is_rhel5 = 0 ] && [[ $0 != *bash ]];
+    then
+        should_continue=0
+    elif [ $is_rhel5 = 1 ] && [[ $BASH_SOURCE != "" ]];
+    then
+        should_continue=0
+    fi
 fi
 
 if [ $should_continue = 0 ];
