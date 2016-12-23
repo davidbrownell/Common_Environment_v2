@@ -200,8 +200,6 @@ class PythonActivationActivity(IActivationActivity):
         if cls.ScriptSubdirs:
             script_dir = os.path.join(script_dir, *cls.ScriptSubdirs)
 
-        assert os.path.isdir(script_dir), script_dir
-
         global_actions.append(environment.Set( "PYTHON_SCRIPT_DIR",
                                                script_dir,
                                                preserve_original=False,
