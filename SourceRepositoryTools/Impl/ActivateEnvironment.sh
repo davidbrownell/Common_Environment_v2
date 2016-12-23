@@ -32,13 +32,7 @@ fi
 # environment)
 if [ ${0##*/} = ActivateEnvironment.sh ];
 then
-    if [ $is_rhel5 = 0 ] && [[ $0 != *bash ]];
-    then
-        should_continue=0
-    elif [ $is_rhel5 = 1 ] && [[ $BASH_SOURCE != "" ]];
-    then
-        should_continue=0
-    fi
+    should_continue=0
 fi
 
 if [ $should_continue = 0 ];
