@@ -79,6 +79,8 @@ def Execute( tasks,
              verbose=False,
              silent=False,
              progress_bar=False,
+             raise_on_error=False,
+             display_exception_callstack=True,
            ):
     assert tasks
     assert num_concurrent_tasks
@@ -182,7 +184,12 @@ def Execute( tasks,
                         task.result = result
 
                 except:
-                    sink.write(traceback.format_exc())
+                    if display_exception_callstack:
+                        sink.write(traceback.format_exc())
+                    else:
+                        ex = sys.exc_info()[1]
+                        sink.write("{}\n".format(str(ex).rstrip()))
+
                     task.result = -1
 
                 task.output = sink.getvalue()
@@ -284,6 +291,8 @@ def Execute( tasks,
 
         # Calculate the final result
 
+        sink = StringIO()
+
         # ----------------------------------------------------------------------
         def Output(stream, task):
             stream.write(textwrap.dedent(
@@ -308,8 +317,15 @@ def Execute( tasks,
 
         for task in tasks:
             if task.result != 0:
-                Output(output_stream, task)
+                Output(sink, task)
                 result = result or task.result
+
+        sink = sink.getvalue()
+        if result != 0:
+            if raise_on_error:
+                raise Exception(sink or result)
+            else:
+                output_stream.write(sink)
 
         if verbose and result == 0:
             for task in tasks:
@@ -342,3 +358,38 @@ def Execute( tasks,
                                       ) as si:
             return Invoke(lambda: None, si.stream)
         
+# ----------------------------------------------------------------------
+def Transform( items, 
+               functor,                     # def Func(item) -> transformed item
+               optional_output_stream,      # Will display a progress bar if not None
+               display_exception_callstack=False,
+             ):
+    """\
+    Applies the functor to each item in the item lists, returning a list of 
+    the transformed items. The operation is considered to be atomic, and will
+    raise an exception if one or more of the functor invocations fail.
+    """
+    assert items
+    assert functor
+
+    transformed_items = [ None, ] * len(items)
+
+    # ----------------------------------------------------------------------
+    def Impl(task_index):
+        transformed_items[task_index] = functor(items[task_index])
+
+    # ----------------------------------------------------------------------
+    
+    Execute( [ Task( "Results from Index {}".format(index),
+                     str(index),
+                     Impl,
+                   )
+               for index in xrange(len(items))
+             ],
+             output_stream=optional_output_stream if bool(optional_output_stream) else StreamDecorator(None),
+             progress_bar=bool(optional_output_stream),
+             raise_on_error=True,
+             display_exception_callstack=display_exception_callstack,
+           )
+
+    return transformed_items

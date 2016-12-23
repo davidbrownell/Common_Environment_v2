@@ -410,10 +410,12 @@ class Executor(object):
             except:
                 if allow_exceptions:
                     raise
-                    
-                import traceback
+                 
+                if not getattr(sys.exc_info()[1], "_DisplayedException", False):   
+                    import traceback
 
-                output_stream.write("ERROR: {}".format(StreamDecorator.LeftJustify(traceback.format_exc(), len("ERROR: "))))
+                    output_stream.write("ERROR: {}".format(StreamDecorator.LeftJustify(traceback.format_exc(), len("ERROR: "))))
+                
                 result = -1
 
             return result
