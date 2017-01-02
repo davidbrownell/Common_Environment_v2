@@ -8,7 +8,7 @@
 # |  
 # ---------------------------------------------------------------------------
 # |  
-# |  Copyright David Brownell 2016.
+# |  Copyright David Brownell 2016-17.
 # |          
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -36,7 +36,7 @@ _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ---------------------------------------------------------------------------
 
-COPYRIGHT_EXPRESSIONS = [ re.compile(r".*?Copyright \(c\) (?P<copyright>\S*).*"),   # Matches 'Copyright (c) 2011-16 David Brownell. Permission to use, copy, '
+COPYRIGHT_EXPRESSIONS = [ re.compile(r".*?Copyright \(c\) (?P<copyright>\S*).*"),   # Matches 'Copyright (c) 2011-17 David Brownell. Permission to use, copy, '
                           re.compile(r".*?Copyright (?P<copyright>[^\.]+)\..*"),    # Matches 'Copyright David Brownell 2011.'
                         ]
       
