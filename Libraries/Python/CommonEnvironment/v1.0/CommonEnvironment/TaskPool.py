@@ -380,11 +380,11 @@ def Transform( items,
 
     # ----------------------------------------------------------------------
     
-    Execute( [ Task( "Results from Index {}".format(index),
+    Execute( [ Task( "Results from Index {} ({})".format(index, str(item)),
                      str(index),
                      Impl,
                    )
-               for index in xrange(len(items))
+               for index, item in enumerate(items)
              ],
              output_stream=optional_output_stream if bool(optional_output_stream) else StreamDecorator(None),
              progress_bar=bool(optional_output_stream),
