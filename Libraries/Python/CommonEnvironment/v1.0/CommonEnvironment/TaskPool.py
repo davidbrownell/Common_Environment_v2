@@ -341,6 +341,7 @@ def Execute( tasks,
                    file=output_stream,
                    ncols=None,
                    dynamic_ncols=True,
+                   unit=" items",
                  ) as progress_bar:
             progress_bar_lock = threading.Lock()
 
@@ -363,6 +364,7 @@ def Transform( items,
                functor,                     # def Func(item) -> transformed item
                optional_output_stream,      # Will display a progress bar if not None
                display_exception_callstack=False,
+               num_concurrent_tasks=multiprocessing.cpu_count(),
              ):
     """\
     Applies the functor to each item in the item lists, returning a list of 
@@ -390,6 +392,7 @@ def Transform( items,
              progress_bar=bool(optional_output_stream),
              raise_on_error=True,
              display_exception_callstack=display_exception_callstack,
+             num_concurrent_tasks=num_concurrent_tasks,
            )
 
     return transformed_items
