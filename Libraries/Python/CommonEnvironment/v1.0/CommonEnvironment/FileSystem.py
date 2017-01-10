@@ -15,10 +15,13 @@
 # |  
 # ---------------------------------------------------------------------------
 import os
+import platform
 import shutil
 import stat
 import sys
 import time
+
+from . import ModifiableValue
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -37,6 +40,14 @@ CODE_EXCLUDE_FILE_EXTENSIONS                = [ # Python
                                                 ".pyo",
                                               ]
 
+# ----------------------------------------------------------------------
+if platform.uname()[0] == "Windows":
+    import win32api
+
+    _is_case_sensitive_file_system = False
+else:
+    _is_case_sensitive_file_system = True
+
 # ---------------------------------------------------------------------------
 def WalkDirs( root,
               
@@ -54,15 +65,22 @@ def WalkDirs( root,
 
               recurse=True,
             ):
-    process_dir_name = _ProcessArgs(include_dir_names, exclude_dir_names)
-    process_dir_path = _ProcessArgs(include_dir_paths, exclude_dir_paths)
+    process_dir_name = _ProcessWalkArgs(include_dir_names, exclude_dir_names)
+    process_dir_path = _ProcessWalkArgs(include_dir_paths, exclude_dir_paths)
 
-    process_traverse_dir_name = _ProcessArgs(traverse_include_dir_names, traverse_exclude_dir_names)
-    process_traverse_dir_path = _ProcessArgs(traverse_include_dir_paths, traverse_exclude_dir_paths)
+    process_traverse_dir_name = _ProcessWalkArgs(traverse_include_dir_names, traverse_exclude_dir_names)
+    process_traverse_dir_path = _ProcessWalkArgs(traverse_include_dir_paths, traverse_exclude_dir_paths)
+
+    root = Normalize(root)
 
     for root, dirs, filenames in os.walk(root):
+        try:
+            root = str(root)
+        except UnicodeEncodeError:
+            continue
+        
         root = os.path.realpath(root)
-
+        
         # Ensure that the drive letter is uppercase
         drive, path = os.path.splitdrive(root)
         drive = drive.upper()
@@ -113,10 +131,10 @@ def WalkFiles( root,
 
                recurse=True,
              ):
-    process_file_name = _ProcessArgs(include_file_names, exclude_file_names)
-    process_file_base_name = _ProcessArgs(include_file_base_names, exclude_file_base_names)
-    process_file_extension = _ProcessArgs(include_file_extensions, exclude_file_extensions)
-    process_full_path = _ProcessArgs(include_full_paths, exclude_full_paths)
+    process_file_name = _ProcessWalkArgs(include_file_names, exclude_file_names)
+    process_file_base_name = _ProcessWalkArgs(include_file_base_names, exclude_file_base_names)
+    process_file_extension = _ProcessWalkArgs(include_file_extensions, exclude_file_extensions)
+    process_full_path = _ProcessWalkArgs(include_full_paths, exclude_full_paths)
 
     for root, filenames in WalkDirs( root,
                                      include_dir_names=include_dir_names,
@@ -170,34 +188,27 @@ def EnumSubdirs( root,
         yield Decorator(name, fullpath)
 
 # ---------------------------------------------------------------------------
-_GetCommonPath_Compare = None
-
 def GetCommonPath(*items):
     if not items:
         return ''
 
-    # Determine if we are on a case insensitive file systme. If so, comparisons can
-    # be more forgiving.
-    if _GetCommonPath_Compare == None:
-        assert os.path.exists(items[0]), items[0]
-        is_case_insensitive = os.path.isfile(items[0].upper())
+    if _is_case_sensitive_file_system:
+        # ----------------------------------------------------------------------
+        def Equal(a, b):
+            return a.lower() == b.lower()
 
-        if is_case_insensitive:
-            # ---------------------------------------------------------------------------
-            def Compare(a, b):
-                return a.lower() == b.lower()
+        # ----------------------------------------------------------------------
+        
+    else:
+        # ----------------------------------------------------------------------
+        def Equal(a, b):
+            return a == b
 
-            # ---------------------------------------------------------------------------
-        else:
-            # ---------------------------------------------------------------------------
-            def Compare(a, b):
-                return a == b
-            
-            # ---------------------------------------------------------------------------
-
+        # ----------------------------------------------------------------------
+        
     # Break the items into parts, as comparing by string leads to strange corner cases
     # with similarly named paths.
-    items = [ os.path.realpath(item).split(os.path.sep) for item in items]
+    items = [ os.path.realpath(item).split(os.path.sep) for item in items ]
 
     path_index = 0
     while True:
@@ -208,7 +219,7 @@ def GetCommonPath(*items):
                 should_continue = False
                 break
 
-            if item_index != 0 and not Compare(items[item_index][path_index], items[item_index - 1][path_index]):
+            if item_index != 0 and not Equal(items[item_index][path_index], items[item_index - 1][path_index]):
                 should_continue = False
                 break
 
@@ -220,7 +231,7 @@ def GetCommonPath(*items):
     if path_index == 0:
         return ''
 
-    return "{}{}".format(os.path.sep.join(items[0][:path_index]), os.path.sep)
+    return AddTrailingSep(os.path.sep.join(items[0][:path_index]))
 
 # ---------------------------------------------------------------------------
 def GetRelativePath(source, dest):
@@ -230,14 +241,8 @@ def GetRelativePath(source, dest):
     if os.path.isfile(source):
         source = os.path.dirname(source)
 
-    # ---------------------------------------------------------------------------
-    def StripTrailingSep(item):
-        return item if not item.endswith(os.path.sep) else item[:-len(os.path.sep)]
-
-    # ---------------------------------------------------------------------------
-    
-    source = StripTrailingSep(source)
-    dest = StripTrailingSep(dest)
+    source = RemoveTrailingSep(source)
+    dest = RemoveTrailingSep(dest)
 
     common_prefix = GetCommonPath(source, dest)
 
@@ -269,10 +274,25 @@ def RemoveTrailingSep(path):
 
     return path
 
+# ----------------------------------------------------------------------
+def AddTrailingSep(path):
+    if not path.endswith(os.path.sep):
+        path += os.path.sep
+
+    return path
+
 # ---------------------------------------------------------------------------
 def Normalize(path):
-    drive, suffix = os.path.splitdrive(os.path.normpath(path))
-    return "{}{}".format(drive.upper(), suffix)
+    if not _is_case_sensitive_file_system:
+        path = os.path.normpath(path)
+
+        if os.path.exists(path):
+            path = win32api.GetLongPathName(win32api.GetShortPathName(path))
+
+        drive, suffix = os.path.splitdrive(path)
+        path = "{}{}".format(drive.upper(), suffix)
+
+    return path
 
 # ----------------------------------------------------------------------
 def GetSizeDisplay(num_bytes, suffix='B'):
@@ -326,7 +346,7 @@ def RemoveTree( path,
         # ---------------------------------------------------------------------------
 
         shutil.rmtree(renamed_path, onerror=OnError)
-
+        
     # ---------------------------------------------------------------------------
 
     _RemoveImpl(Impl, path, optional_retry_iterations)
@@ -345,7 +365,7 @@ def RemoveItem( path,
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
-def _ProcessArgs(include_items, exclude_items):
+def _ProcessWalkArgs(include_items, exclude_items):
 
     # ---------------------------------------------------------------------------
     def Preprocess(items):
