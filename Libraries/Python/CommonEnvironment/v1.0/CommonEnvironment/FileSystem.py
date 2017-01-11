@@ -189,7 +189,7 @@ def EnumSubdirs( root,
 
 # ---------------------------------------------------------------------------
 def GetCommonPath(*items):
-    if not items:
+    if not items or len(items) == 1:
         return ''
 
     if _is_case_sensitive_file_system:
@@ -283,9 +283,9 @@ def AddTrailingSep(path):
 
 # ---------------------------------------------------------------------------
 def Normalize(path):
-    if not _is_case_sensitive_file_system:
-        path = os.path.normpath(path)
+    path = os.path.normpath(path)
 
+    if not _is_case_sensitive_file_system:
         if os.path.exists(path):
             path = win32api.GetLongPathName(win32api.GetShortPathName(path))
 
