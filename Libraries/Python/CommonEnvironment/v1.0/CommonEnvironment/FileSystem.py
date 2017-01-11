@@ -21,8 +21,6 @@ import stat
 import sys
 import time
 
-from . import ModifiableValue
-
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
@@ -287,7 +285,7 @@ def Normalize(path):
 
     if not _is_case_sensitive_file_system:
         if os.path.exists(path):
-            path = win32api.GetLongPathName(win32api.GetShortPathName(path))
+            path = win32api.GetLongPathName(win32api.GetShortPathName(path))    # <Class '<name>' has no '<attr>' member> pylint: disable = E1101
 
         drive, suffix = os.path.splitdrive(path)
         path = "{}{}".format(drive.upper(), suffix)
