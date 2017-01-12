@@ -187,7 +187,7 @@ def EnumSubdirs( root,
 
 # ---------------------------------------------------------------------------
 def GetCommonPath(*items):
-    if not items or len(items) == 1:
+    if not items:
         return ''
 
     if _is_case_sensitive_file_system:
