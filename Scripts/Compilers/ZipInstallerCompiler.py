@@ -176,7 +176,7 @@ class Compiler( AtomicInputProcessingMixin,
         with CallOnExit(lambda: os.remove(config_filename)):
             status_stream.write("Creating zip file...")
             with status_stream.DoneManager(associated_stream=verbose_stream) as (dm, this_verbose_stream):
-                common_prefix = os.path.commonprefix(context.input_dirs)
+                common_prefix = FileSystem.Normalize(os.path.commonprefix(context.input_dirs))
                 if not common_prefix:
                     common_prefix = FileSystem.GetCommonPath(*context.input_dirs)
                 else:

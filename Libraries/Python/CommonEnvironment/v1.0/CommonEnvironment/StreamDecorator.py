@@ -22,7 +22,7 @@ import textwrap
 from contextlib import contextmanager
 from StringIO import StringIO
 
-from . import ModifiableValue
+from . import ModifiableValue, Any
 from .TimeDelta import TimeDelta
 
 # ---------------------------------------------------------------------------
@@ -52,6 +52,7 @@ class StreamDecorator(object):
                   one_time_suffix='',       # string or def Func(column) -> string
                   tab_length=4,
                   skip_first_line_prefix=False,
+                  is_associated_stream=False,
                 ):
         self._streams                       = stream_or_streams if isinstance(stream_or_streams, list) else [ stream_or_streams, ] if stream_or_streams != None else []
         self._line_prefix                   = line_prefix if callable(line_prefix) else lambda column: line_prefix
@@ -70,14 +71,8 @@ class StreamDecorator(object):
         self._column                        = 0
         self._indent_stack                  = []
 
-        # IsSet
-        is_set = False
-        for stream in self._streams:
-            if stream and getattr(stream, "IsSet", True):
-                is_set = True
-                break
-
-        self.IsSet                          = is_set
+        self.IsSet                          = Any(self._streams, lambda stream: stream and getattr(stream, "IsSet", True))
+        self.IsAssociatedStream             = is_associated_stream or Any(self._streams, lambda stream: stream and getattr(stream, "IsAssociatedStream", False))
 
     # ---------------------------------------------------------------------------
     def write(self, content, custom_line_prefix=''):
@@ -305,7 +300,7 @@ class StreamDecorator(object):
                                                                line_prefix=' ' * len(line_prefix),
                                                                one_time_prefix='\n',
                                                                one_time_suffix="\n<flush>",
-                                                               
+                                                               is_associated_stream=True,
                                                              )
                                               for stream in associated_streams
                                             ])
@@ -320,9 +315,11 @@ class StreamDecorator(object):
                 if display_exceptions:
                     ex = sys.exc_info()[1]
 
-                    if not getattr(ex, "_DisplayedException", False):
+                    if ( not getattr(ex, "_DisplayedException", False) and
+                         not getattr(info.stream, "IsAssociatedStream", False)
+                       ):
                         ex._DisplayedException = True
-
+                        
                         if display_exception_callstack:
                             import traceback
                             info.stream.write("ERROR: {}\n".format(StreamDecorator.LeftJustify(traceback.format_exc(), len("ERROR: ")).rstrip()))
