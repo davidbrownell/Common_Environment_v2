@@ -83,6 +83,7 @@ class UnitTest(unittest.TestCase):
         for logical, expression_type in [ ( "and", AndExpression ),
                                           ( "or", OrExpression ),
                                         ]:
+            # 2 terms
             result = self._Parse("i == 10 {} s <= 'foo'".format(logical))
 
             self.assertTrue(isinstance(result, expression_type))
@@ -95,6 +96,24 @@ class UnitTest(unittest.TestCase):
             self.assertEqual(result.RHS.Operator, '<=')
             self.assertEqual(result.RHS.RHS, 'foo')
     
+            # 3 terms
+            result = self._Parse("i == 10 {logical} s <= 'foo' {logical} b != 'False'".format(logical=logical))
+            self.assertTrue(isinstance(result, expression_type))
+            self.assertTrue(isinstance(result.LHS, expression_type))
+            self.assertTrue(isinstance(result.RHS, StandardExpression))
+            
+            self.assertEqual(result.LHS.LHS.LHS, 'i')
+            self.assertEqual(result.LHS.LHS.Operator, '==')
+            self.assertEqual(result.LHS.LHS.RHS, 10)
+            
+            self.assertEqual(result.LHS.RHS.LHS, 's')
+            self.assertEqual(result.LHS.RHS.Operator, '<=')
+            self.assertEqual(result.LHS.RHS.RHS, 'foo')
+            
+            self.assertEqual(result.RHS.LHS, 'b')
+            self.assertEqual(result.RHS.Operator, '!=')
+            self.assertEqual(result.RHS.RHS, False)
+
     # ----------------------------------------------------------------------
     def test_Grouping(self):
         result = self._Parse("(i == 10 and s != 'foo') or f <= 10.2")

@@ -7,21 +7,21 @@ from io import StringIO
 def serializedATN():
     with StringIO() as buf:
         buf.write(u"\3\u0430\ud6d1\u8206\uad2d\u4417\uaef1\u8d80\uaadd\3")
-        buf.write(u"\31(\4\2\t\2\4\3\t\3\4\4\t\4\4\5\t\5\3\2\7\2\f\n\2\f")
-        buf.write(u"\2\16\2\17\13\2\3\3\3\3\3\3\5\3\24\n\3\3\4\3\4\3\4\3")
-        buf.write(u"\4\3\4\3\4\3\4\5\4\35\n\4\3\5\3\5\3\5\3\5\3\5\5\5$\n")
-        buf.write(u"\5\5\5&\n\5\3\5\2\2\6\2\4\6\b\2\6\3\2\b\t\3\2\n\21\4")
-        buf.write(u"\2\25\26\30\31\3\2\3\4)\2\r\3\2\2\2\4\20\3\2\2\2\6\34")
-        buf.write(u"\3\2\2\2\b%\3\2\2\2\n\f\5\4\3\2\13\n\3\2\2\2\f\17\3\2")
-        buf.write(u"\2\2\r\13\3\2\2\2\r\16\3\2\2\2\16\3\3\2\2\2\17\r\3\2")
-        buf.write(u"\2\2\20\23\5\6\4\2\21\22\t\2\2\2\22\24\5\4\3\2\23\21")
-        buf.write(u"\3\2\2\2\23\24\3\2\2\2\24\5\3\2\2\2\25\26\7\24\2\2\26")
-        buf.write(u"\27\t\3\2\2\27\35\5\b\5\2\30\31\7\6\2\2\31\32\5\4\3\2")
-        buf.write(u"\32\33\7\7\2\2\33\35\3\2\2\2\34\25\3\2\2\2\34\30\3\2")
-        buf.write(u"\2\2\35\7\3\2\2\2\36&\7\22\2\2\37&\7\23\2\2 #\t\4\2\2")
-        buf.write(u"!\"\t\5\2\2\"$\7\27\2\2#!\3\2\2\2#$\3\2\2\2$&\3\2\2\2")
-        buf.write(u"%\36\3\2\2\2%\37\3\2\2\2% \3\2\2\2&\t\3\2\2\2\7\r\23")
-        buf.write(u"\34#%")
+        buf.write(u"\31*\4\2\t\2\4\3\t\3\4\4\t\4\4\5\t\5\3\2\6\2\f\n\2\r")
+        buf.write(u"\2\16\2\r\3\3\3\3\3\3\7\3\23\n\3\f\3\16\3\26\13\3\3\4")
+        buf.write(u"\3\4\3\4\3\4\3\4\3\4\3\4\5\4\37\n\4\3\5\3\5\3\5\3\5\3")
+        buf.write(u"\5\5\5&\n\5\5\5(\n\5\3\5\2\2\6\2\4\6\b\2\6\3\2\b\t\3")
+        buf.write(u"\2\n\21\4\2\25\26\30\31\3\2\3\4+\2\13\3\2\2\2\4\17\3")
+        buf.write(u"\2\2\2\6\36\3\2\2\2\b\'\3\2\2\2\n\f\5\4\3\2\13\n\3\2")
+        buf.write(u"\2\2\f\r\3\2\2\2\r\13\3\2\2\2\r\16\3\2\2\2\16\3\3\2\2")
+        buf.write(u"\2\17\24\5\6\4\2\20\21\t\2\2\2\21\23\5\6\4\2\22\20\3")
+        buf.write(u"\2\2\2\23\26\3\2\2\2\24\22\3\2\2\2\24\25\3\2\2\2\25\5")
+        buf.write(u"\3\2\2\2\26\24\3\2\2\2\27\30\7\24\2\2\30\31\t\3\2\2\31")
+        buf.write(u"\37\5\b\5\2\32\33\7\6\2\2\33\34\5\4\3\2\34\35\7\7\2\2")
+        buf.write(u"\35\37\3\2\2\2\36\27\3\2\2\2\36\32\3\2\2\2\37\7\3\2\2")
+        buf.write(u"\2 (\7\22\2\2!(\7\23\2\2\"%\t\4\2\2#$\t\5\2\2$&\7\27")
+        buf.write(u"\2\2%#\3\2\2\2%&\3\2\2\2&(\3\2\2\2\' \3\2\2\2\'!\3\2")
+        buf.write(u"\2\2\'\"\3\2\2\2(\t\3\2\2\2\7\r\24\36%\'")
         return buf.getvalue()
 
 
@@ -47,11 +47,11 @@ class QueryParserParser ( Parser ):
                       u"SINGLE_QUOTE_STRING" ]
 
     RULE_statements = 0
-    RULE_expression = 1
-    RULE_atom = 2
+    RULE_statement = 1
+    RULE_expression = 2
     RULE_value = 3
 
-    ruleNames =  [ u"statements", u"expression", u"atom", u"value" ]
+    ruleNames =  [ u"statements", u"statement", u"expression", u"value" ]
 
     EOF = Token.EOF
     T__0=1
@@ -92,11 +92,11 @@ class QueryParserParser ( Parser ):
             super(QueryParserParser.StatementsContext, self).__init__(parent, invokingState)
             self.parser = parser
 
-        def expression(self, i=None):
+        def statement(self, i=None):
             if i is None:
-                return self.getTypedRuleContexts(QueryParserParser.ExpressionContext)
+                return self.getTypedRuleContexts(QueryParserParser.StatementContext)
             else:
-                return self.getTypedRuleContext(QueryParserParser.ExpressionContext,i)
+                return self.getTypedRuleContext(QueryParserParser.StatementContext,i)
 
 
         def getRuleIndex(self):
@@ -118,13 +118,86 @@ class QueryParserParser ( Parser ):
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 11
+            self.state = 9 
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la==QueryParserParser.LPAREN or _la==QueryParserParser.ID:
+            while True:
                 self.state = 8
+                self.statement()
+                self.state = 11 
+                self._errHandler.sync(self)
+                _la = self._input.LA(1)
+                if not (_la==QueryParserParser.LPAREN or _la==QueryParserParser.ID):
+                    break
+
+        except RecognitionException as re:
+            localctx.exception = re
+            self._errHandler.reportError(self, re)
+            self._errHandler.recover(self, re)
+        finally:
+            self.exitRule()
+        return localctx
+
+    class StatementContext(ParserRuleContext):
+
+        def __init__(self, parser, parent=None, invokingState=-1):
+            super(QueryParserParser.StatementContext, self).__init__(parent, invokingState)
+            self.parser = parser
+
+        def expression(self, i=None):
+            if i is None:
+                return self.getTypedRuleContexts(QueryParserParser.ExpressionContext)
+            else:
+                return self.getTypedRuleContext(QueryParserParser.ExpressionContext,i)
+
+
+        def AND(self, i=None):
+            if i is None:
+                return self.getTokens(QueryParserParser.AND)
+            else:
+                return self.getToken(QueryParserParser.AND, i)
+
+        def OR(self, i=None):
+            if i is None:
+                return self.getTokens(QueryParserParser.OR)
+            else:
+                return self.getToken(QueryParserParser.OR, i)
+
+        def getRuleIndex(self):
+            return QueryParserParser.RULE_statement
+
+        def accept(self, visitor):
+            if hasattr(visitor, "visitStatement"):
+                return visitor.visitStatement(self)
+            else:
+                return visitor.visitChildren(self)
+
+
+
+
+    def statement(self):
+
+        localctx = QueryParserParser.StatementContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 2, self.RULE_statement)
+        self._la = 0 # Token type
+        try:
+            self.enterOuterAlt(localctx, 1)
+            self.state = 13
+            self.expression()
+            self.state = 18
+            self._errHandler.sync(self)
+            _la = self._input.LA(1)
+            while _la==QueryParserParser.AND or _la==QueryParserParser.OR:
+                self.state = 14
+                _la = self._input.LA(1)
+                if not(_la==QueryParserParser.AND or _la==QueryParserParser.OR):
+                    self._errHandler.recoverInline(self)
+                else:
+                    self._errHandler.reportMatch(self)
+                    self.consume()
+                self.state = 15
                 self.expression()
-                self.state = 13
+                self.state = 20
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
 
@@ -142,70 +215,6 @@ class QueryParserParser ( Parser ):
             super(QueryParserParser.ExpressionContext, self).__init__(parent, invokingState)
             self.parser = parser
 
-        def atom(self):
-            return self.getTypedRuleContext(QueryParserParser.AtomContext,0)
-
-
-        def expression(self):
-            return self.getTypedRuleContext(QueryParserParser.ExpressionContext,0)
-
-
-        def AND(self):
-            return self.getToken(QueryParserParser.AND, 0)
-
-        def OR(self):
-            return self.getToken(QueryParserParser.OR, 0)
-
-        def getRuleIndex(self):
-            return QueryParserParser.RULE_expression
-
-        def accept(self, visitor):
-            if hasattr(visitor, "visitExpression"):
-                return visitor.visitExpression(self)
-            else:
-                return visitor.visitChildren(self)
-
-
-
-
-    def expression(self):
-
-        localctx = QueryParserParser.ExpressionContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 2, self.RULE_expression)
-        self._la = 0 # Token type
-        try:
-            self.enterOuterAlt(localctx, 1)
-            self.state = 14
-            self.atom()
-            self.state = 17
-            self._errHandler.sync(self)
-            _la = self._input.LA(1)
-            if _la==QueryParserParser.AND or _la==QueryParserParser.OR:
-                self.state = 15
-                _la = self._input.LA(1)
-                if not(_la==QueryParserParser.AND or _la==QueryParserParser.OR):
-                    self._errHandler.recoverInline(self)
-                else:
-                    self._errHandler.reportMatch(self)
-                    self.consume()
-                self.state = 16
-                self.expression()
-
-
-        except RecognitionException as re:
-            localctx.exception = re
-            self._errHandler.reportError(self, re)
-            self._errHandler.recover(self, re)
-        finally:
-            self.exitRule()
-        return localctx
-
-    class AtomContext(ParserRuleContext):
-
-        def __init__(self, parser, parent=None, invokingState=-1):
-            super(QueryParserParser.AtomContext, self).__init__(parent, invokingState)
-            self.parser = parser
-
         def ID(self):
             return self.getToken(QueryParserParser.ID, 0)
 
@@ -216,8 +225,8 @@ class QueryParserParser ( Parser ):
         def LPAREN(self):
             return self.getToken(QueryParserParser.LPAREN, 0)
 
-        def expression(self):
-            return self.getTypedRuleContext(QueryParserParser.ExpressionContext,0)
+        def statement(self):
+            return self.getTypedRuleContext(QueryParserParser.StatementContext,0)
 
 
         def RPAREN(self):
@@ -248,46 +257,46 @@ class QueryParserParser ( Parser ):
             return self.getToken(QueryParserParser.UNDER, 0)
 
         def getRuleIndex(self):
-            return QueryParserParser.RULE_atom
+            return QueryParserParser.RULE_expression
 
         def accept(self, visitor):
-            if hasattr(visitor, "visitAtom"):
-                return visitor.visitAtom(self)
+            if hasattr(visitor, "visitExpression"):
+                return visitor.visitExpression(self)
             else:
                 return visitor.visitChildren(self)
 
 
 
 
-    def atom(self):
+    def expression(self):
 
-        localctx = QueryParserParser.AtomContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 4, self.RULE_atom)
+        localctx = QueryParserParser.ExpressionContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 4, self.RULE_expression)
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 26
+            self.state = 28
             self._errHandler.sync(self)
             token = self._input.LA(1)
             if token in [QueryParserParser.ID]:
-                self.state = 19
+                self.state = 21
                 self.match(QueryParserParser.ID)
-                self.state = 20
+                self.state = 22
                 _la = self._input.LA(1)
                 if not((((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << QueryParserParser.EQUAL) | (1 << QueryParserParser.NOT_EQUAL) | (1 << QueryParserParser.LT) | (1 << QueryParserParser.LTE) | (1 << QueryParserParser.GT) | (1 << QueryParserParser.GTE) | (1 << QueryParserParser.LIKE) | (1 << QueryParserParser.UNDER))) != 0)):
                     self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
                     self.consume()
-                self.state = 21
+                self.state = 23
                 self.value()
                 pass
             elif token in [QueryParserParser.LPAREN]:
-                self.state = 22
-                self.match(QueryParserParser.LPAREN)
-                self.state = 23
-                self.expression()
                 self.state = 24
+                self.match(QueryParserParser.LPAREN)
+                self.state = 25
+                self.statement()
+                self.state = 26
                 self.match(QueryParserParser.RPAREN)
                 pass
             else:
@@ -346,40 +355,40 @@ class QueryParserParser ( Parser ):
         self.enterRule(localctx, 6, self.RULE_value)
         self._la = 0 # Token type
         try:
-            self.state = 35
+            self.state = 37
             self._errHandler.sync(self)
             token = self._input.LA(1)
             if token in [QueryParserParser.NUMBER]:
                 self.enterOuterAlt(localctx, 1)
-                self.state = 28
+                self.state = 30
                 self.match(QueryParserParser.NUMBER)
                 pass
             elif token in [QueryParserParser.INT]:
                 self.enterOuterAlt(localctx, 2)
-                self.state = 29
+                self.state = 31
                 self.match(QueryParserParser.INT)
                 pass
             elif token in [QueryParserParser.TODAY, QueryParserParser.NOW, QueryParserParser.DOUBLE_QUOTE_STRING, QueryParserParser.SINGLE_QUOTE_STRING]:
                 self.enterOuterAlt(localctx, 3)
-                self.state = 30
+                self.state = 32
                 _la = self._input.LA(1)
                 if not((((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << QueryParserParser.TODAY) | (1 << QueryParserParser.NOW) | (1 << QueryParserParser.DOUBLE_QUOTE_STRING) | (1 << QueryParserParser.SINGLE_QUOTE_STRING))) != 0)):
                     self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
                     self.consume()
-                self.state = 33
+                self.state = 35
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
                 if _la==QueryParserParser.T__0 or _la==QueryParserParser.T__1:
-                    self.state = 31
+                    self.state = 33
                     _la = self._input.LA(1)
                     if not(_la==QueryParserParser.T__0 or _la==QueryParserParser.T__1):
                         self._errHandler.recoverInline(self)
                     else:
                         self._errHandler.reportMatch(self)
                         self.consume()
-                    self.state = 32
+                    self.state = 34
                     self.match(QueryParserParser.TIME_DELTA)
 
 

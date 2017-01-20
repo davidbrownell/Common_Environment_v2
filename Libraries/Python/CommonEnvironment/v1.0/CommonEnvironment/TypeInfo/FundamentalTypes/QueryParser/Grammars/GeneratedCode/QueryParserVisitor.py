@@ -10,13 +10,13 @@ class QueryParserVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by QueryParserParser#expression.
-    def visitExpression(self, ctx):
+    # Visit a parse tree produced by QueryParserParser#statement.
+    def visitStatement(self, ctx):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by QueryParserParser#atom.
-    def visitAtom(self, ctx):
+    # Visit a parse tree produced by QueryParserParser#expression.
+    def visitExpression(self, ctx):
         return self.visitChildren(ctx)
 
 

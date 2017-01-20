@@ -80,6 +80,7 @@ def ParseFactory( string_serialization=None,
 
     Parser = Antlr4Helpers.CreateParser( os.path.join(_script_dir, "Grammars", "GeneratedCode"),
                                          "QueryParser",
+                                         "statements",
                                        )
 
     # ----------------------------------------------------------------------
@@ -96,36 +97,44 @@ def ParseFactory( string_serialization=None,
             return self.visitChildren(ctx)
     
         # ----------------------------------------------------------------------
-        def visitExpression(self, ctx):
+        def visitStatement(self, ctx):
             if len(ctx.children) == 1:
                 return self.visitChildren(ctx)
 
-            assert len(ctx.children) == 3, ctx.children
+            assert len(ctx.children) >= 3, ctx.children
+            assert (len(ctx.children) - 1) % 2 == 0, ctx.children
 
             # LHS
             self.visit(ctx.children[0])
             assert self.stack
             lhs = self.stack.pop()
 
-            # RHS
-            self.visit(ctx.children[2])
-            assert self.stack
-            rhs = self.stack.pop()
+            index = 1
+            while index < len(ctx.children):
+                # RHS
+                self.visit(ctx.children[index + 1])
+                assert self.stack
+                rhs = self.stack.pop()
 
-            expression = None
+                expression = None
 
-            if ctx.children[1].symbol.type == Parser.AND:
-                expression = AndExpression(lhs, rhs)
-            elif ctx.children[1].symbol.type == Parser.OR:
-                expression = OrExpression(lhs, rhs)
-            else:
-                assert False, ctx.children[1]
+                # Operator
+                if ctx.children[1].symbol.type == Parser.AND:
+                    expression = AndExpression(lhs, rhs)
+                elif ctx.children[1].symbol.type == Parser.OR:
+                    expression = OrExpression(lhs, rhs)
+                else:
+                    assert False, ctx.children[index]
     
-            assert expression
-            self.stack.append(expression)
+                assert expression
+                lhs = expression
+
+                index += 2
+
+            self.stack.append(lhs)
 
         # ----------------------------------------------------------------------
-        def visitAtom(self, ctx):
+        def visitExpression(self, ctx):
             assert len(ctx.children) == 3, ctx.children
 
             if ctx.children[0].symbol.type == Parser.LPAREN:

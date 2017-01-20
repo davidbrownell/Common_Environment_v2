@@ -48,14 +48,12 @@ SINGLE_QUOTE_STRING:                        '\'' ('\\\'' | '\\\\' | .)*? '\'';
 // |    (it does not have code explicitly associated with it).
 // |
 // ---------------------------------------------------------------------------
+statements:                                 statement+;						// Entry point, not decorated
 
-// Entry point, not decorated
-statements:                                 expression*;
+statement:									expression ((AND | OR) expression)*;
 
-expression:                                 atom ((AND | OR) expression)?;
-
-atom:                                       ( ID (EQUAL | NOT_EQUAL | LT | LTE | GT | GTE | LIKE | UNDER) value |
-                                              LPAREN expression RPAREN
+expression:                                 ( ID (EQUAL | NOT_EQUAL | LT | LTE | GT | GTE | LIKE | UNDER) value |
+                                              LPAREN statement RPAREN
                                             );
                                             
 value:                                      NUMBER | INT | (DOUBLE_QUOTE_STRING | SINGLE_QUOTE_STRING | TODAY | NOW) (('+' | '-') TIME_DELTA)?;
