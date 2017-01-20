@@ -44,9 +44,11 @@ def GetLiteral(parser, value):
 # ----------------------------------------------------------------------
 @FunctionConstraints( antlr_output_dir=FundamentalTypes.DirectoryTypeInfo(),
                       name_prefix=FundamentalTypes.StringTypeInfo(),
+                      root_rule_name=FundamentalTypes.StringTypeInfo(),
                     )
 def CreateParser( antlr_output_dir,
                   name_prefix,
+                  root_rule_name,
                 ):
     from .ErrorListener import ErrorListener
 
@@ -106,7 +108,7 @@ def CreateParser( antlr_output_dir,
             parser = classes["Parser"](tokens)
             parser.addErrorListener(ErrorListener(source or "<input>"))
 
-            ast = parser.statements()
+            ast = getattr(parser, root_rule_name)()
             assert ast
 
             ast.accept(visitor)
