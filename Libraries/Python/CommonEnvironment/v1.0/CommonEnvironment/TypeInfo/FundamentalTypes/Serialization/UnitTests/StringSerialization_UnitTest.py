@@ -43,7 +43,7 @@ class UnitTest(unittest.TestCase):
         self.assertEqual(StringSerialization.GetRegularExpressionString(DateTimeTypeInfo()), r"(?P<year0>[0-9]{4})[-/\.](?P<month0>0?[1-9]|1[0-2])[-/\.](?P<day0>[0-2][0-9]|3[0-1])[ T](?P<hour>[0-1][0-9]|2[0-3]):(?P<minute>[0-5][0-9]):(?P<second>[0-5][0-9])(?:\.(?P<microseconds>\d+))?(?:(?P<tz_utc>Z)|(?P<tz_sign>[\+\-])(?P<tz_hour>\d{2}):(?P<tz_minute>[0-5][0-9]))?")
         self.assertEqual(StringSerialization.GetRegularExpressionString(DateTypeInfo()), r"(?P<year0>[0-9]{4})[-/\.](?P<month0>0?[1-9]|1[0-2])[-/\.](?P<day0>[0-2][0-9]|3[0-1])")
         self.assertEqual(StringSerialization.GetRegularExpressionString(DirectoryTypeInfo()), r".+")
-        self.assertEqual(StringSerialization.GetRegularExpressionString(DurationTypeInfo()), r"(?P<hours>[1-9][0-9]*|0):(?P<minutes>[0-5][0-9]):(?P<seconds>[0-5][0-9])(?:\.(?P<microseconds>[0-9]+))?")
+        self.assertEqual(StringSerialization.GetRegularExpressionString(DurationTypeInfo()), r"(?P<hours>[1-9][0-9]*|0):(?P<minutes>[0-5][0-9]|0):(?P<seconds>[0-5][0-9])(?:\.(?P<microseconds>[0-9]+))?")
         self.assertEqual(StringSerialization.GetRegularExpressionString(EnumTypeInfo([ "one", "two", "three", ])), r"(one|two|three)")
         self.assertEqual(StringSerialization.GetRegularExpressionString(FilenameTypeInfo()), r".+")
         self.assertEqual(StringSerialization.GetRegularExpressionString(FloatTypeInfo()), r"-?[0-9]+\.[0-9]+")
@@ -79,7 +79,7 @@ class UnitTest(unittest.TestCase):
                                                                                                r'(?P<month3>0?[1-9]|1[0-2])[-/\.](?P<day3>[0-2][0-9]|3[0-1])[-/\.](?P<year3>\d{2})',
                                                                                              ])
         self.assertEqual(StringSerialization.GetRegularExpressionStringInfo(DirectoryTypeInfo()), [ r".+", ])
-        self.assertEqual(StringSerialization.GetRegularExpressionStringInfo(DurationTypeInfo()), [ r"(?P<hours>[1-9][0-9]*|0):(?P<minutes>[0-5][0-9]):(?P<seconds>[0-5][0-9])(?:\.(?P<microseconds>[0-9]+))?", ])
+        self.assertEqual(StringSerialization.GetRegularExpressionStringInfo(DurationTypeInfo()), [ r"(?P<hours>[1-9][0-9]*|0):(?P<minutes>[0-5][0-9]|0):(?P<seconds>[0-5][0-9])(?:\.(?P<microseconds>[0-9]+))?", ])
         self.assertEqual(StringSerialization.GetRegularExpressionStringInfo(EnumTypeInfo([ "one", "two", "three", ])), [ r"(one|two|three)", ])
         self.assertEqual(StringSerialization.GetRegularExpressionStringInfo(FilenameTypeInfo()), [ r".+", ])
         self.assertEqual(StringSerialization.GetRegularExpressionStringInfo(FloatTypeInfo()), [ r"-?[0-9]+\.[0-9]+", ])

@@ -47,7 +47,7 @@ class UnitTest(unittest.TestCase):
         self.assertEqual(JsonSchemaConverter.Convert(DateTimeTypeInfo()), { "type" : "string", "format" : "date-time", })
         self.assertEqual(JsonSchemaConverter.Convert(DateTypeInfo()), { "type" : "string", 'pattern': '^(?([0-9]{4})[-/\\.](?(0?[1-9]|1[0-2])[-/\\.](?([0-2][0-9]|3[0-1])$', })
         self.assertEqual(JsonSchemaConverter.Convert(DirectoryTypeInfo()), { "type" : "string", "minLength" : 1, })
-        self.assertEqual(JsonSchemaConverter.Convert(DurationTypeInfo()), { "type" : "string", 'pattern': '^(?([1-9][0-9]*|0):(?([0-5][0-9]):(?([0-5][0-9])(?:\.(?([0-9]+))?$', })
+        self.assertEqual(JsonSchemaConverter.Convert(DurationTypeInfo()), { "type" : "string", 'pattern': '^(?([1-9][0-9]*|0):(?([0-5][0-9]|0):(?([0-5][0-9])(?:\.(?([0-9]+))?$', })
         self.assertEqual(JsonSchemaConverter.Convert(EnumTypeInfo([ "one", "two", "three", ])), { "enum" : [ "one", "two", "three", ], })
         self.assertEqual(JsonSchemaConverter.Convert(FilenameTypeInfo()), { "type" : "string", "minLength" : 1, })
         self.assertEqual(JsonSchemaConverter.Convert(GuidTypeInfo()), { "type" : "string", "pattern" : "^\\{[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\\}$", })
