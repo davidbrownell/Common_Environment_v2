@@ -30,6 +30,22 @@ class ErrorListener(antlr4.error.ErrorListener.ErrorListener):
     # |  Public Types
     class AntlrException(Exception):
 
+        # ----------------------------------------------------------------------
+        @classmethod
+        def Create( cls, 
+                    symbol, 
+                    msg=None,
+                    source=None,
+                  ):
+            while not isinstance(symbol, antlr4.Token) and hasattr(symbol, "start"):
+                symbol = symbol.start
+
+            return cls( msg or str(symbol), 
+                        source or '', 
+                        symbol.line, 
+                        symbol.column + 1,
+                      )
+
         # ---------------------------------------------------------------------------
         def __init__( self,
                       msg,
