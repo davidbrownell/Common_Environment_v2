@@ -16,23 +16,29 @@ import os
 import sys
 
 from CommonEnvironment.Interface import staticderived
+from CommonEnvironment import Package
 from CommonEnvironment import RegularExpression
 
-from . import SchemaConverter
+with Package.NameInfo(__package__) as ni:
+    __package__ = ni.created
+    
+    from . import SchemaConverter
 
-from ..FundamentalTypes import ( DateTypeInfo,
-                                 DurationTypeInfo,
-                                 GuidTypeInfo,
-                                 TimeTypeInfo,
-                                 Visitor as VisitorBase,
-                                 FUNDAMENTAL_TYPES
-                               )
-
-from ..AnyOfTypeInfo import AnyOfTypeInfo
-from ..ClassTypeInfo import ClassTypeInfo
-from ..DictTypeInfo import DictTypeInfo
-
-from ..FundamentalTypes.Serialization.StringSerialization import StringSerialization
+    from ..FundamentalTypes import ( DateTypeInfo,
+                                     DurationTypeInfo,
+                                     GuidTypeInfo,
+                                     TimeTypeInfo,
+                                     Visitor as VisitorBase,
+                                     FUNDAMENTAL_TYPES
+                                   )
+    
+    from ..AnyOfTypeInfo import AnyOfTypeInfo
+    from ..ClassTypeInfo import ClassTypeInfo
+    from ..DictTypeInfo import DictTypeInfo
+    
+    from ..FundamentalTypes.Serialization.StringSerialization import StringSerialization
+    
+    __package__ = ni.original
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
