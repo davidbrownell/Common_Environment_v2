@@ -66,8 +66,6 @@ then
     
     if [ $error_bit = 0 ];
     then
-        echo
-        echo
         echo The environment has been setup for development. Please run ActivateEnvironment.cmd 
         echo within a new console window to begin development within this environment.
         echo
