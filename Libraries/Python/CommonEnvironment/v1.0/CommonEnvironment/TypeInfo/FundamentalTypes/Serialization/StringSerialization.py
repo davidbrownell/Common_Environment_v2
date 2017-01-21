@@ -19,17 +19,23 @@ import sys
 import uuid
 
 from CommonEnvironment.Interface import staticderived
+from CommonEnvironment import Package
 from CommonEnvironment import RegularExpression
 
-from . import Serialization
+with Package.NameInfo(__package__) as ni:
+    __package__ = ni.created
+    
+    from . import Serialization
 
-from .. import ( Visitor as FundamentalTypesVisitor, 
-                 CreateSimpleVisitor,
-                 DateTypeInfo,
-                 TimeTypeInfo,
-               )
+    from .. import ( Visitor as FundamentalTypesVisitor, 
+                     CreateSimpleVisitor,
+                     DateTypeInfo,
+                     TimeTypeInfo,
+                   )
+    
+    from ... import ValidationException
 
-from ... import ValidationException
+    __package__ = ni.original
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -104,7 +110,7 @@ class StringSerialization(Serialization):
             # ----------------------------------------------------------------------
             @staticmethod
             def OnDuration(type_info):
-                return [ r"(?P<hours>[1-9][0-9]*|0):(?P<minutes>[0-5][0-9]):(?P<seconds>[0-5][0-9])(?:\.(?P<microseconds>[0-9]+))?",
+                return [ r"(?P<hours>[1-9][0-9]*|0):(?P<minutes>[0-5][0-9]|0):(?P<seconds>[0-5][0-9])(?:\.(?P<microseconds>[0-9]+))?",
                        ]
         
             # ----------------------------------------------------------------------
