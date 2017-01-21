@@ -61,8 +61,6 @@ REM Cleanup...
 del "%_SETUP_ENVIRONMENT_TEMP_SCRIPT_NAME%"
 
 :complete
-@echo.
-@echo.
 @echo The environment has been setup for development. Please run ActivateEnvironment.cmd 
 @echo within a new console window to begin development within this environment.
 @echo.
