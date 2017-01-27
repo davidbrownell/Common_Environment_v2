@@ -52,6 +52,7 @@ class UnitTest(unittest.TestCase):
                         "s" : FundamentalTypes.StringTypeInfo(),
                         "time" : FundamentalTypes.TimeTypeInfo(),
                         "constrained" : FundamentalTypes.IntTypeInfo(min=10, max=20),
+                        "optional" : FundamentalTypes.IntTypeInfo(arity='?'),
                       }
 
         self._Parse = ParseFactory(**self._types)
@@ -89,11 +90,11 @@ class UnitTest(unittest.TestCase):
             self.assertTrue(isinstance(result, expression_type))
             
             self.assertEqual(result.LHS.LHS, 'i')
-            self.assertEqual(result.LHS.Operator, '==')
+            self.assertEqual(result.LHS.Operator, Operator_Equal)
             self.assertEqual(result.LHS.RHS, 10)
 
             self.assertEqual(result.RHS.LHS, 's')
-            self.assertEqual(result.RHS.Operator, '<=')
+            self.assertEqual(result.RHS.Operator, Operator_LessEqual)
             self.assertEqual(result.RHS.RHS, 'foo')
     
             # 3 terms
@@ -103,15 +104,15 @@ class UnitTest(unittest.TestCase):
             self.assertTrue(isinstance(result.RHS, StandardExpression))
             
             self.assertEqual(result.LHS.LHS.LHS, 'i')
-            self.assertEqual(result.LHS.LHS.Operator, '==')
+            self.assertEqual(result.LHS.LHS.Operator, Operator_Equal)
             self.assertEqual(result.LHS.LHS.RHS, 10)
             
             self.assertEqual(result.LHS.RHS.LHS, 's')
-            self.assertEqual(result.LHS.RHS.Operator, '<=')
+            self.assertEqual(result.LHS.RHS.Operator, Operator_LessEqual)
             self.assertEqual(result.LHS.RHS.RHS, 'foo')
             
             self.assertEqual(result.RHS.LHS, 'b')
-            self.assertEqual(result.RHS.Operator, '!=')
+            self.assertEqual(result.RHS.Operator, Operator_NotEqual)
             self.assertEqual(result.RHS.RHS, False)
 
     # ----------------------------------------------------------------------
@@ -121,29 +122,29 @@ class UnitTest(unittest.TestCase):
         
         self.assertTrue(isinstance(result.LHS, AndExpression))
         self.assertEqual(result.LHS.LHS.LHS, 'i')
-        self.assertEqual(result.LHS.LHS.Operator, '==')
+        self.assertEqual(result.LHS.LHS.Operator, Operator_Equal)
         self.assertEqual(result.LHS.LHS.RHS, 10)
         self.assertEqual(result.LHS.RHS.LHS, 's')
-        self.assertEqual(result.LHS.RHS.Operator, '!=')
+        self.assertEqual(result.LHS.RHS.Operator, Operator_NotEqual)
         self.assertEqual(result.LHS.RHS.RHS, 'foo')
 
         self.assertEqual(result.RHS.LHS, 'f')
-        self.assertEqual(result.RHS.Operator, '<=')
+        self.assertEqual(result.RHS.Operator, Operator_LessEqual)
         self.assertEqual(result.RHS.RHS, 10.2)
 
         result = self._Parse("i == 10 and (s != 'foo' or f <= 10.2)")
         self.assertTrue(isinstance(result, AndExpression))
 
         self.assertEqual(result.LHS.LHS, 'i')
-        self.assertEqual(result.LHS.Operator, '==')
+        self.assertEqual(result.LHS.Operator, Operator_Equal)
         self.assertEqual(result.LHS.RHS, 10)
 
         self.assertTrue(isinstance(result.RHS, OrExpression))
         self.assertEqual(result.RHS.LHS.LHS, 's')
-        self.assertEqual(result.RHS.LHS.Operator, '!=')
+        self.assertEqual(result.RHS.LHS.Operator, Operator_NotEqual)
         self.assertEqual(result.RHS.LHS.RHS, 'foo')
         self.assertEqual(result.RHS.RHS.LHS, 'f')
-        self.assertEqual(result.RHS.RHS.Operator, '<=')
+        self.assertEqual(result.RHS.RHS.Operator, Operator_LessEqual)
         self.assertEqual(result.RHS.RHS.RHS, 10.2)
         
     # ----------------------------------------------------------------------
@@ -189,6 +190,22 @@ class UnitTest(unittest.TestCase):
         self.assertRaises(lambda: self._Parse('s != @today'))
 
     # ----------------------------------------------------------------------
+    def test_None(self):
+        self.assertRaises(lambda: self._Parse("constrained is @none"))
+
+        result = self._Parse("optional is @none")
+        self.assertTrue(isinstance(result, StandardExpression))
+        self.assertEqual(result.LHS, "optional")
+        self.assertEqual(result.Operator, Operator_Is)
+        self.assertEqual(result.RHS, None)
+
+        result = self._Parse("optional is not @none")
+        self.assertTrue(isinstance(result, StandardExpression))
+        self.assertEqual(result.LHS, "optional")
+        self.assertEqual(result.Operator, Operator_IsNot)
+        self.assertEqual(result.RHS, None)
+
+    # ----------------------------------------------------------------------
     def test_InvalidVar(self):
         self.assertRaises(lambda: self._Parse("does_not_exist != 20"))
 
@@ -217,7 +234,7 @@ class UnitTest(unittest.TestCase):
 
         self.assertEqual(result.LHS, lhs)
         self.assertEqual(result.TypeInfo, self._types[lhs])
-        self.assertEqual(result.Operator, operator)
+        self.assertEqual(result.Operator, StringToLiteral(operator))
         self.assertEqual(result.RHS, rhs)
 
 # ---------------------------------------------------------------------------
