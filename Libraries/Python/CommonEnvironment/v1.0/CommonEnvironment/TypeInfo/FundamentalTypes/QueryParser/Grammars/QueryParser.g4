@@ -21,6 +21,8 @@ GT:                                         '>';
 GTE:                                        '>=';
 LIKE:                                       '~';
 UNDER:                                      'under';
+IS:											'is';
+IS_NOT:										'is not';
 
 NUMBER:                                     '-'? [0-9]* '.' [0-9]+;
 INT:                                        '-'? [0-9]+;
@@ -28,6 +30,8 @@ ID:                                         [a-zA-Z_][a-zA-Z_0-9\-.]*;
 
 TODAY:                                      '@today';
 NOW:                                        '@now';
+NONE:										'@none';
+
 TIME_DELTA:                                 [0-9]+ ( 'Y' |  // Years
                                                      'W' |  // Weeks
                                                      'M' |  // Months
@@ -52,7 +56,8 @@ statements:                                 statement+;						// Entry point, not
 
 statement:									expression ((AND | OR) expression)*;
 
-expression:                                 ( ID (EQUAL | NOT_EQUAL | LT | LTE | GT | GTE | LIKE | UNDER) value |
+expression:                                 ( ID (IS | IS_NOT) NONE |
+                                              ID (EQUAL | NOT_EQUAL | LT | LTE | GT | GTE | LIKE | UNDER) value |
                                               LPAREN statement RPAREN
                                             );
                                             

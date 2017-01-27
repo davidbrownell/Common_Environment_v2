@@ -22,6 +22,7 @@ import antlr4
 from CommonEnvironment import Antlr4Helpers
 from CommonEnvironment.Antlr4Helpers.ErrorListener import ErrorListener
 from CommonEnvironment.CallOnExit import CallOnExit
+from CommonEnvironment import Interface
 
 from CommonEnvironment.TypeInfo import FundamentalTypes
 from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import StringSerialization
@@ -56,6 +57,8 @@ Operator_Greater                            = _Parser.GT
 Operator_GreaterEqual                       = _Parser.GTE
 Operator_Like                               = _Parser.LIKE
 Operator_Under                              = _Parser.UNDER
+Operator_Is                                 = _Parser.IS
+Operator_IsNot                              = _Parser.IS_NOT
 
 # ----------------------------------------------------------------------
 class Expression(object):
@@ -82,6 +85,99 @@ class OrExpression(Expression):
         self.RHS                            = rhs
 
 # ----------------------------------------------------------------------
+class OperatorVisitor(Interface.Interface):
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @Interface.abstractmethod
+    def OnEqual():
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @Interface.abstractmethod
+    def OnNotEqual():
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @Interface.abstractmethod
+    def OnLess():
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @Interface.abstractmethod
+    def OnLessEqual():
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @Interface.abstractmethod
+    def OnGreater():
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @Interface.abstractmethod
+    def OnGreaterEqual():
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @Interface.abstractmethod
+    def OnLike():
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @Interface.abstractmethod
+    def OnUnder():
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @Interface.abstractmethod
+    def OnIs():
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @Interface.abstractmethod
+    def OnIsNot():
+        raise Exception("Abstract method")
+
+    # ----------------------------------------------------------------------
+    @classmethod
+    def Accept(cls, liter_or_literals):
+        dispatch = { _Parser.EQUAL : cls.OnEqual,
+                     _Parser.NOT_EQUAL : cls.OnNotEqual,
+                     _Parser.LT : cls.OnLess,
+                     _Parser.LTE : cls.OnLessEqual,
+                     _Parser.GT : cls.OnGreater,
+                     _Parser.GTE : cls.OnGreaterEqual,
+                     _Parser.LIKE : cls.OnLike,
+                     _Parser.UNDER : cls.OnUnder,
+                     _Parser.IS: cls.OnIs,
+                     _Parser.IS_NOT: cls.OnIsNot,
+                   }
+
+        literals = liter_or_literals
+        if not isinstance(literals, list):
+            literals = [ literals, ]
+
+        results = []
+
+        for literal in literals:
+            assert literal in dispatch, literal
+            results.append(dispatch[literal]())
+
+        if len(results) == 1:
+            return results[0]
+
+        return results
+
+# ----------------------------------------------------------------------
 # |  
 # |  Public Methods
 # |  
@@ -95,6 +191,8 @@ def StringToLiteral(s):
                        _Parser.GTE,
                        _Parser.LIKE,
                        _Parser.UNDER,
+                       _Parser.IS,
+                       _Parser.IS_NOT,
                      ]:
         if _Parser.GetLiteral(potential) == s:
             return potential
@@ -180,10 +278,14 @@ def ParseFactory( string_serialization=None,
             self.stack.append(type_info)
             with CallOnExit(self.stack.pop):
                 # Get the RHS
-                self.visit(ctx.children[2])
+                if isinstance(ctx.children[2], antlr4.TerminalNode):
+                    assert ctx.children[2].symbol.type == _Parser.NONE
+                    rhs = None
+                else:
+                    self.visit(ctx.children[2])
 
-                assert self.stack
-                rhs = self.stack.pop()
+                    assert self.stack
+                    rhs = self.stack.pop()
 
             # Get the operator
             symbol = ctx.children[1].symbol
@@ -195,14 +297,16 @@ def ParseFactory( string_serialization=None,
                 # ----------------------------------------------------------------------
                 @classmethod
                 def OnBool(cls, type_info, *args, **kwargs):
-                    return cls._Validate( _Parser.EQUAL,
+                    return cls._Validate( type_info,
+                                          _Parser.EQUAL,
                                           _Parser.NOT_EQUAL,
                                         )
             
                 # ----------------------------------------------------------------------
                 @classmethod
                 def OnDateTime(cls, type_info, *args, **kwargs):
-                    return cls._Validate( _Parser.EQUAL,
+                    return cls._Validate( type_info,
+                                          _Parser.EQUAL,
                                           _Parser.NOT_EQUAL,
                                           _Parser.LT,
                                           _Parser.LTE,
@@ -213,7 +317,8 @@ def ParseFactory( string_serialization=None,
                 # ----------------------------------------------------------------------
                 @classmethod
                 def OnDate(cls, type_info, *args, **kwargs):
-                    return cls._Validate( _Parser.EQUAL,
+                    return cls._Validate( type_info,
+                                          _Parser.EQUAL,
                                           _Parser.NOT_EQUAL,
                                           _Parser.LT,
                                           _Parser.LTE,
@@ -224,7 +329,8 @@ def ParseFactory( string_serialization=None,
                 # ----------------------------------------------------------------------
                 @classmethod
                 def OnDirectory(cls, type_info, *args, **kwargs):
-                    return cls._Validate( _Parser.EQUAL,
+                    return cls._Validate( type_info,
+                                          _Parser.EQUAL,
                                           _Parser.NOT_EQUAL,
                                           _Parser.LT,
                                           _Parser.LTE,
@@ -237,7 +343,8 @@ def ParseFactory( string_serialization=None,
                 # ----------------------------------------------------------------------
                 @classmethod
                 def OnDuration(cls, type_info, *args, **kwargs):
-                    return cls._Validate( _Parser.EQUAL,
+                    return cls._Validate( type_info,
+                                          _Parser.EQUAL,
                                           _Parser.NOT_EQUAL,
                                           _Parser.LT,
                                           _Parser.LTE,
@@ -248,7 +355,8 @@ def ParseFactory( string_serialization=None,
                 # ----------------------------------------------------------------------
                 @classmethod
                 def OnEnum(cls, type_info, *args, **kwargs):
-                    return cls._Validate( _Parser.EQUAL,
+                    return cls._Validate( type_info,
+                                          _Parser.EQUAL,
                                           _Parser.NOT_EQUAL,
                                           _Parser.LT,
                                           _Parser.LTE,
@@ -259,7 +367,8 @@ def ParseFactory( string_serialization=None,
                 # ----------------------------------------------------------------------
                 @classmethod
                 def OnFilename(cls, type_info, *args, **kwargs):
-                    return cls._Validate( _Parser.EQUAL,
+                    return cls._Validate( type_info,
+                                          _Parser.EQUAL,
                                           _Parser.NOT_EQUAL,
                                           _Parser.LT,
                                           _Parser.LTE,
@@ -271,7 +380,8 @@ def ParseFactory( string_serialization=None,
                 # ----------------------------------------------------------------------
                 @classmethod
                 def OnFloat(cls, type_info, *args, **kwargs):
-                    return cls._Validate( _Parser.EQUAL,
+                    return cls._Validate( type_info,
+                                          _Parser.EQUAL,
                                           _Parser.NOT_EQUAL,
                                           _Parser.LT,
                                           _Parser.LTE,
@@ -282,7 +392,8 @@ def ParseFactory( string_serialization=None,
                 # ----------------------------------------------------------------------
                 @classmethod
                 def OnGuid(cls, type_info, *args, **kwargs):
-                    return cls._Validate( _Parser.EQUAL,
+                    return cls._Validate( type_info,
+                                          _Parser.EQUAL,
                                           _Parser.NOT_EQUAL,
                                           _Parser.LT,
                                           _Parser.LTE,
@@ -293,7 +404,8 @@ def ParseFactory( string_serialization=None,
                 # ----------------------------------------------------------------------
                 @classmethod
                 def OnInt(cls, type_info, *args, **kwargs):
-                    return cls._Validate( _Parser.EQUAL,
+                    return cls._Validate( type_info,
+                                          _Parser.EQUAL,
                                           _Parser.NOT_EQUAL,
                                           _Parser.LT,
                                           _Parser.LTE,
@@ -304,7 +416,8 @@ def ParseFactory( string_serialization=None,
                 # ----------------------------------------------------------------------
                 @classmethod
                 def OnString(cls, type_info, *args, **kwargs):
-                    return cls._Validate( _Parser.EQUAL,
+                    return cls._Validate( type_info,
+                                          _Parser.EQUAL,
                                           _Parser.NOT_EQUAL,
                                           _Parser.LT,
                                           _Parser.LTE,
@@ -316,7 +429,8 @@ def ParseFactory( string_serialization=None,
                 # ----------------------------------------------------------------------
                 @classmethod
                 def OnTime(cls, type_info, *args, **kwargs):
-                    return cls._Validate( _Parser.EQUAL,
+                    return cls._Validate( type_info,
+                                          _Parser.EQUAL,
                                           _Parser.NOT_EQUAL,
                                           _Parser.LT,
                                           _Parser.LTE,
@@ -328,7 +442,13 @@ def ParseFactory( string_serialization=None,
                 # ----------------------------------------------------------------------
                 # ----------------------------------------------------------------------
                 @staticmethod
-                def _Validate(*acceptable_types):
+                def _Validate(type_info, *acceptable_types):
+                    if symbol.type in [ _Parser.IS, _Parser.IS_NOT, ]:
+                        if not type_info.Arity.IsOptional:
+                            raise AntlrException.Create(symbol, "'{}' is only a valid operator for types with an arity of '?'".format(symbol.text))
+                    
+                        acceptable_types = list(acceptable_types) + [ _Parser.IS, _Parser.IS_NOT, ]
+
                     if symbol.type not in acceptable_types:
                         raise AntlrException.Create(symbol, "'{}' is not a valid operator for '{}' types".format(symbol.text, type_info.Desc))
 

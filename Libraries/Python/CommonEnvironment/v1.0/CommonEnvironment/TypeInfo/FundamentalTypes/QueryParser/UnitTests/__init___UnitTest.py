@@ -52,6 +52,7 @@ class UnitTest(unittest.TestCase):
                         "s" : FundamentalTypes.StringTypeInfo(),
                         "time" : FundamentalTypes.TimeTypeInfo(),
                         "constrained" : FundamentalTypes.IntTypeInfo(min=10, max=20),
+                        "optional" : FundamentalTypes.IntTypeInfo(arity='?'),
                       }
 
         self._Parse = ParseFactory(**self._types)
@@ -187,6 +188,22 @@ class UnitTest(unittest.TestCase):
         self.assertAlmostEqual(result.RHS.date(), today.date(), datetime.timedelta(hours=24))
 
         self.assertRaises(lambda: self._Parse('s != @today'))
+
+    # ----------------------------------------------------------------------
+    def test_None(self):
+        self.assertRaises(lambda: self._Parse("constrained is @none"))
+
+        result = self._Parse("optional is @none")
+        self.assertTrue(isinstance(result, StandardExpression))
+        self.assertEqual(result.LHS, "optional")
+        self.assertEqual(result.Operator, Operator_Is)
+        self.assertEqual(result.RHS, None)
+
+        result = self._Parse("optional is not @none")
+        self.assertTrue(isinstance(result, StandardExpression))
+        self.assertEqual(result.LHS, "optional")
+        self.assertEqual(result.Operator, Operator_IsNot)
+        self.assertEqual(result.RHS, None)
 
     # ----------------------------------------------------------------------
     def test_InvalidVar(self):
