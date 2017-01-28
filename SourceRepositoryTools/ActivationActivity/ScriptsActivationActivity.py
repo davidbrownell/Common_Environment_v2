@@ -326,18 +326,29 @@ class ScriptsActivationActivity(IActivationActivity):
         commands.append(environment.AugmentPath(dest_dir))
 
         # Create the output text
+        lines = textwrap.dedent(
+            """\
+            Shell wrappers have been created for all the files contained within the directory
+            '{script_dir}' across all repositories. For a complete list of all wrappers, run:
+            
+            {script_name}
+            """).format( script_dir=cls.Name,
+                         script_name=environment.CreateScriptName(cls.IndexScriptFilename)
+                       ).rstrip().split('\n')
+
+        max_length = max(*[ len(line) for line in lines ])
+
         commands.append(environment.Message(textwrap.dedent(
             """\
 
-            -------------------------------------------------------------------------------
-            = Shell wrappers have been created for all the files contained within the directory 
-            = '{script_dir}' across all repositories. For a complete list of all wrappers, run:
-            =
-            =  {script_name}
-            =
-            -------------------------------------------------------------------------------
-            """).format( script_dir=cls.Name,
-                         script_name=string.center(environment.CreateScriptName(cls.IndexScriptFilename), 80),
+            {line}
+            |  {whitespace}  |
+            {content}
+            |  {whitespace}  |
+            {line}
+            """).format( line='-' * (max_length + 6),
+                         whitespace=' ' * max_length,
+                         content='\n'.join([ "|  {}  |".format(string.center(line, max_length)) for line in lines ]),
                        )))
 
         return commands
