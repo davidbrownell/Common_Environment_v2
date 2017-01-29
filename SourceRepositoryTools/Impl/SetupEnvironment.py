@@ -19,6 +19,7 @@ Sets up an environment for development.
 """
 
 import inspect
+import itertools
 import os
 import sys
 import textwrap
@@ -358,7 +359,8 @@ def _SetupBootstrap( environment,
     # ---------------------------------------------------------------------------
     def CreateGuidLookupObject(name):
         return QuickObject( name=name,
-                            repository_root=None,       # populated later
+                            repository_root=None,                           # populated later
+                            dependent_configurations=[],                    # populated later
                           )
 
     # ---------------------------------------------------------------------------
@@ -380,7 +382,11 @@ def _SetupBootstrap( environment,
                ):
                 is_tool_repository = True
 
-    if not configurations:
+    if configurations:
+        has_configurations = True
+    else:
+        has_configurations = False
+
         configurations = { None : SourceRepositoryTools.Configuration(),
                          }
 
@@ -405,21 +411,62 @@ def _SetupBootstrap( environment,
             if configuration_name not in optional_configuration_names:
                 del configurations[configuration_name]
 
-    for configuration_info in configurations.values():
+    for configuration_name, configuration_info in configurations.iteritems():
         for dependency_info in configuration_info.Dependencies:
             if dependency_info.Id not in id_lookup:
                 id_lookup[dependency_info.Id] = CreateGuidLookupObject(dependency_info.FriendlyName)
 
+            id_lookup[dependency_info.Id].dependent_configurations.append(configuration_name)
+
+    col_sizes = [ 40, 32, 100, ]
+    display_template = "{{name:<{0}}}  {{guid:<{1}}}  {{data:<{2}}}".format(*col_sizes)
+
     sys.stdout.write(textwrap.dedent(
         """\
 
-        Your system will be scanned for {num} {repositories}:
-        {values}
+        Your system will be scanned for these repositories:
+            
+            {header}
+            {sep}
+            {values}
 
+            {configurations}
 
-        """).format( num=len(id_lookup),
-                     repositories="repositories" if len(id_lookup) > 1 else "repository",
-                     values='\n'.join([ "  - {} ({})".format(v.name, k) for k, v in id_lookup.iteritems() ]),
+        """).format( header=display_template.format( name="Repository Name",
+                                                     guid="Id",
+                                                     data="Dependent Configurations",
+                                                   ),
+                     sep=display_template.format(**{ k : v for k, v in itertools.izip( [ "name", "guid", "data", ],
+                                                                                       [ '-' * col_size for col_size in col_sizes ],
+                                                                                     ) }),
+                     values=StreamDecorator.LeftJustify( '\n'.join([ display_template.format( name=v.name,
+                                                                                              guid=k,
+                                                                                              data=', '.join(sorted(v.dependent_configurations)),
+                                                                                            )
+                                                                     for k, v in id_lookup.iteritems()
+                                                                   ]),
+                                                         4,
+                                                       ),
+                     configurations=StreamDecorator.LeftJustify( '' if not has_configurations else textwrap.dedent(
+                                                                    """\
+                                                                    Based on these configurations:
+
+                                                                        {}
+                                                                        {}
+                                                                    """).format( StreamDecorator.LeftJustify('\n'.join([ "- {}".format(configuration) for configuration in configurations.iterkeys() ]), 4),
+                                                                                 StreamDecorator.LeftJustify( '' if optional_configuration_names else textwrap.dedent(
+                                                                                                                   """\
+
+                                                                                                                   To setup specific configurations, specify this argument one or more times on the command line:
+
+                                                                                                                       /configuration=<configuration name>
+                                                                                    
+                                                                                                                   """),
+                                                                                                              4,
+                                                                                                             ),
+                                                                               ),
+                                                                 4,
+                                                               ),
                    ))
 
     # Find them all
@@ -467,7 +514,10 @@ def _SetupBootstrap( environment,
     sys.stdout.write(textwrap.dedent(
         """\
         {num} {repositories} {were} found at {these} {locations}:
-        {value}
+            
+            {header}
+            {sep}
+            {value}
 
 
         """).format( num=len(id_lookup),
@@ -475,7 +525,21 @@ def _SetupBootstrap( environment,
                      were="were" if len(id_lookup) > 1 else "was",
                      these="these" if len(id_lookup) > 1 else "this",
                      locations="locations" if len(id_lookup) > 1 else "location",
-                     value='\n'.join([ "  - {0:<70}  : {1}".format("{} ({})".format(lookup_info.name, repo_guid), lookup_info.repository_root) for repo_guid, lookup_info in id_lookup.iteritems() ]),
+                     header=display_template.format( name="Repository Name",
+                                                     guid="Id",
+                                                     data="Location",
+                                                   ),
+                     sep=display_template.format(**{ k : v for k, v in itertools.izip( [ "name", "guid", "data", ],
+                                                                                       [ '-' * col_size for col_size in col_sizes ],
+                                                                                     ) }),
+                     value=StreamDecorator.LeftJustify( '\n'.join([ display_template.format( name=lookup_info.name,
+                                                                                             guid=repo_guid,
+                                                                                             data=lookup_info.repository_root,
+                                                                                           )
+                                                                    for repo_guid, lookup_info in id_lookup.iteritems()
+                                                                  ]),
+                                                        4,
+                                                      ),
                    ))
 
     # Create enhanced information based on the info we have available
