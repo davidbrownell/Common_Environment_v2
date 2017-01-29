@@ -153,6 +153,9 @@ class PythonActivationActivity(IActivationActivity):
                 if environment.IsSymLink(fullpath):
                     continue
 
+                if os.path.isfile(fullpath) and os.path.splitext(fullpath)[1] in [ ".pyc", ".pyo", ]:
+                    continue
+
                 output_stream.write(template.format( name=item,
                                                      type="Directory" if os.path.isdir(fullpath) else "File",
                                                      fullpath=fullpath,
