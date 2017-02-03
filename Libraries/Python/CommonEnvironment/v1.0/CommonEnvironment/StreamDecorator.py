@@ -361,8 +361,45 @@ class StreamDecorator(object):
         if not content:
             return ''
 
-        content = '\n'.join([ line.strip() for line in content.split('\n') ])
-        paragraphs = [ textwrap.fill(paragraph, cols) for paragraph in content.split('\n\n') ]
+        content = '\n'.join([ line.lstrip() for line in content.split('\n') ])
+
+        looks_like_a_list_regexes = [ # - Foo
+                                      # * Bar
+                                      # _ Baz
+                                      re.compile(r"^[_\-\*]\s*\S.*$"),
+
+                                      # one : two
+                                      # foo - bar
+                                      # a _ b
+                                      re.compile(r"^\S.*?[_\:\-]\s*\S.*$"),
+                                    ]
+
+        paragraphs = []
+        for paragraph in content.split('\n\n'):
+            lines = paragraph.split('\n')
+
+            # Look for a collection of lines that look like a list ("look like a list" is subjective, but 
+            # give it our best shot).
+            is_a_list = True
+            
+            for line in lines:
+                if not line:
+                    continue
+
+                found = False
+                for regex in looks_like_a_list_regexes:
+                    if regex.match(line):
+                        found = True
+                        break
+
+                if not found:
+                    is_a_list = False
+                    break
+
+            if is_a_list:
+                paragraphs.append('\n'.join([ "    {}".format(line) for line in lines ]))
+            else:
+                paragraphs.append(textwrap.fill(paragraph, cols))
 
         return '\n\n'.join(paragraphs)
         
