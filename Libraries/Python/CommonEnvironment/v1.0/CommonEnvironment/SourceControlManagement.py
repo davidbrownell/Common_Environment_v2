@@ -15,7 +15,6 @@
 # |  
 # ---------------------------------------------------------------------------
 import os
-import subprocess
 import sys
 import textwrap
 
@@ -414,30 +413,6 @@ class SourceControlManagementBase(Interface):
     # |
     # |  Protected Methods
     # |
-    # ---------------------------------------------------------------------------
-    @staticmethod
-    def Execute(repo_root, command, append_newline_to_output=True):
-        if not os.path.isdir(repo_root):
-            return -1, "'{}' is not a valid dir".format(repo_root)
-
-        current_dir = os.getcwd()
-
-        os.chdir(repo_root)
-        with CallOnExit(lambda: os.chdir(current_dir)):
-            result = subprocess.Popen( command,
-                                       shell=True,
-                                       stdout=subprocess.PIPE,
-                                       stderr=subprocess.STDOUT,
-                                       env=os.environ,
-                                     )
-            content = result.stdout.read().strip()
-            result = result.wait() or 0
-
-            if append_newline_to_output and content:
-                content += '\n'
-
-            return result, content
-
     # ---------------------------------------------------------------------------
     @staticmethod
     def AreYouSurePrompt(prompt):

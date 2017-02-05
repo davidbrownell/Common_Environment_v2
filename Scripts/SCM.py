@@ -998,7 +998,6 @@ def _AllImpl( directory,
         with si.stream.DoneManager( done_suffix='\n',
                                   ) as this_dm:
             this_dm.result = TaskPool.Execute( tasks, 
-                                               1,
                                                output_stream=this_dm.stream, 
                                              )
 
@@ -1021,7 +1020,6 @@ def _AllImpl( directory,
                                               ))
                 
                 task_pool_result = TaskPool.Execute( tasks, 
-                                                     1, 
                                                      output_stream=output_stream,
                                                      verbose=True,
                                                    )

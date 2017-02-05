@@ -16,6 +16,7 @@
 # ---------------------------------------------------------------------------
 import os
 import re
+import subprocess
 import sys
 import textwrap
 import time
@@ -62,7 +63,25 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
     
     # ---------------------------------------------------------------------------
     # |  SourceControlManagement Methods
-    
+    @staticmethod
+    def Execute(repo_root, command, append_newline_to_output=True):
+        command = command.replace("hg ", 'hg --cwd "{}" '.format(repo_root))
+
+        result = subprocess.Popen( command,
+                                   shell=True,
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.STDOUT,
+                                   env=os.environ,
+                                 )
+        content = result.stdout.read().strip()
+        result = result.wait() or 0
+
+        if append_newline_to_output and content:
+            content += '\n'
+
+        return result, content
+
+    # ----------------------------------------------------------------------
     @classmethod
     def IsAvailable(cls):
         is_available = getattr(cls, "_cached_is_available", None)
