@@ -97,7 +97,7 @@ def ActivateLibraries( name,
                                            version=version,
                                          )
 
-    # On some systems, the symbolc link commands will generate output that we will like to 
+    # On some systems, the symbolc link commands will generate output that we would like to 
     # be supressed in most cases. Instead of executing the content directly, execute it
     # ourselves.
     display_sentinel = "__DISPLAY__??!! "
