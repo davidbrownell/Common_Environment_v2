@@ -17,6 +17,7 @@
 import datetime
 import os
 import re
+import subprocess
 import sys
 import textwrap
 
@@ -643,17 +644,38 @@ class _Client(object):
         if not self.RepoName or not self.RepoRoot:
             raise Exception("Unable to map a client to '{}'".format(repo_dir))
 
-        # Patch the Execute method
-        self._execute_functor               = super(PerforceSourceControlManagement, p4scm).Execute
-        
-        # ---------------------------------------------------------------------------
-        @classmethod
-        def InvalidExecute(cls, *args, **kwargs):
-            raise Exception("Perforce commands must be executed through an Executor")
+        # TODO: This execute stuff is wonky. Originally, it was designed to
+        #       set environment variables for use with p4, but it turns out
+        #       that the info can be set on the command line. If I ever use
+        #       Perforce again in the future, remove this stuff and just do
+        #       a straight Execute without the strange work arounds.
 
-        # ---------------------------------------------------------------------------
-        
-        p4scm.Execute = InvalidExecute
+        # ----------------------------------------------------------------------
+        def Execute(repo_root, command, append_newline_to_output=True):
+            if not os.path.isdir(repo_root):
+                return -1, "'{}' is not a valid dir".format(repo_root)
+    
+            current_dir = os.getcwd()
+    
+            os.chdir(repo_root)
+            with CallOnExit(lambda: os.chdir(current_dir)):
+                result = subprocess.Popen( command,
+                                           shell=True,
+                                           stdout=subprocess.PIPE,
+                                           stderr=subprocess.STDOUT,
+                                           env=os.environ,
+                                         )
+                content = result.stdout.read().strip()
+                result = result.wait() or 0
+    
+                if append_newline_to_output and content:
+                    content += '\n'
+    
+                return result, content
+    
+        # ----------------------------------------------------------------------
+            
+        self._execute_functor               = Execute
         
     # ---------------------------------------------------------------------------
     _GetFileMappings_regex = None 
@@ -801,6 +823,7 @@ class _Client(object):
 
     # ---------------------------------------------------------------------------
     def Execute(self, command_line):
+        # TODO: Update this so it doesn't set the environment for all threads
         os.environ["P4CLIENT"] = self.RepoName
         os.environ["P4USER"] = self._username
         
@@ -813,7 +836,7 @@ class _Client(object):
         
         with CallOnExit(RemoveEnvironmentValues):
             # This is strange - Perforce will look at the environment variable PWD before checking for the
-            # working directly, meaning changing into the directory will not have any effect unless PWD changes 
+            # working directory, meaning changing into the directory will not have any effect unless PWD changes 
             # too. Capture the current PWD value, change it to our working directory, and then store it when
             # the process completes.
             original_pwd_value = None

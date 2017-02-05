@@ -211,7 +211,7 @@ class PythonActivationActivity(IActivationActivity):
         # Symbolicly link the reference python files
 
         # ----------------------------------------------------------------------
-        def PythonCallback(libraries):
+        def PythonCallback(libraries, create_messages_statement_func):
             local_actions = []
         
             # Get the python version
@@ -233,6 +233,7 @@ class PythonActivationActivity(IActivationActivity):
                        }
         
             # Create the actions
+            local_actions.append(create_messages_statement_func("    Cleaning previous links..."))
             local_actions += [ environment.Raw(statement) for statement in CreateCleanSymLinkStatements(environment, dest_dir) ]
         
             # Prepopulate with the dynamic content
@@ -249,7 +250,7 @@ class PythonActivationActivity(IActivationActivity):
         
             # Add a symbolc link for everything found in the source that doesn't
             # already exist in the dest
-        
+            
             # ----------------------------------------------------------------------
             def TraverseTree(source, dest, dynamic_subdirs):
                 if not os.path.isdir(source):
@@ -258,7 +259,14 @@ class PythonActivationActivity(IActivationActivity):
                 if not os.path.isdir(dest):
                     os.makedirs(dest)
         
-                for item in os.listdir(source):
+                items = os.listdir(source)
+                
+                local_actions.append(create_messages_statement_func("    Linking {} ({} item{})...".format( source, 
+                                                                                                            len(items), 
+                                                                                                            's' if len(items) > 1 else '',
+                                                                                                          )))
+                
+                for item in items:
                     if item not in dynamic_subdirs:
                         local_actions.append(environment.SymbolicLink(os.path.join(dest, item), os.path.join(source, item)))
         
@@ -283,6 +291,8 @@ class PythonActivationActivity(IActivationActivity):
                 
             script_dest_dir = os.path.join(dest_dir, *cls.ScriptSubdirs)
             
+            local_actions.append(create_messages_statement_func("    Linking Scripts..."))
+            
             script_actions = ActivateLibraryScripts( script_dest_dir,
                                                      libraries, 
                                                      "__scripts__",
@@ -292,6 +302,8 @@ class PythonActivationActivity(IActivationActivity):
                 local_actions += script_actions
                 global_actions.append(environment.AugmentPath(script_dest_dir))
         
+            local_actions.append(create_messages_statement_func(""))
+            
             return local_actions
         
         # ----------------------------------------------------------------------
