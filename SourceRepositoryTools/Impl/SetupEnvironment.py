@@ -382,14 +382,12 @@ def _SetupBootstrap( environment,
                ):
                 is_tool_repository = True
 
-    if configurations:
-        has_configurations = True
-    else:
-        has_configurations = False
-
+    if not configurations:
         configurations = { None : SourceRepositoryTools.Configuration(),
                          }
-
+                         
+    has_configurations = len(configurations) > 1 or configurations.keys()[0] != None
+    
     # A tool repository cannot have any configurations, dependencies, or version specs
     if ( is_tool_repository and 
          ( len(configurations) != 1 or 
@@ -440,33 +438,33 @@ def _SetupBootstrap( environment,
                                                                                        [ '-' * col_size for col_size in col_sizes ],
                                                                                      ) }),
                      values=StreamDecorator.LeftJustify( '\n'.join([ display_template.format( name=v.name,
-                                                                                              guid=k,
-                                                                                              data=', '.join(sorted(v.dependent_configurations)),
-                                                                                            )
-                                                                     for k, v in id_lookup.iteritems()
-                                                                   ]),
-                                                         4,
-                                                       ),
+                                                                                     guid=k,
+                                                                                     data=', '.join(sorted([ dc for dc in v.dependent_configurations if dc ])),
+                                                                                   )
+                                                            for k, v in id_lookup.iteritems()
+                                                          ]),
+                                                4,
+                                              ),
                      configurations=StreamDecorator.LeftJustify( '' if not has_configurations else textwrap.dedent(
-                                                                    """\
-                                                                    Based on these configurations:
-
-                                                                        {}
-                                                                        {}
-                                                                    """).format( StreamDecorator.LeftJustify('\n'.join([ "- {}".format(configuration) for configuration in configurations.iterkeys() ]), 4),
-                                                                                 StreamDecorator.LeftJustify( '' if optional_configuration_names else textwrap.dedent(
-                                                                                                                   """\
-
-                                                                                                                   To setup specific configurations, specify this argument one or more times on the command line:
-
-                                                                                                                       /configuration=<configuration name>
-                                                                                    
-                                                                                                                   """),
-                                                                                                              4,
-                                                                                                             ),
-                                                                               ),
-                                                                 4,
-                                                               ),
+                                                           """\
+                                                           Based on these configurations:
+                                    
+                                                               {}
+                                                               {}
+                                                           """).format( StreamDecorator.LeftJustify('\n'.join([ "- {}".format(configuration) for configuration in configurations.iterkeys() ]), 4),
+                                                                        StreamDecorator.LeftJustify( '' if optional_configuration_names else textwrap.dedent(
+                                                                                                          """\
+                                    
+                                                                                                          To setup specific configurations, specify this argument one or more times on the command line:
+                                    
+                                                                                                              /configuration=<configuration name>
+                                                                           
+                                                                                                          """),
+                                                                                                     4,
+                                                                                                    ),
+                                                                      ),
+                                                        4,
+                                                      ),
                    ))
 
     # Find them all
