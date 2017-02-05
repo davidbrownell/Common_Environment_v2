@@ -1020,6 +1020,7 @@ def _AllImpl( directory,
                                               ))
                 
                 task_pool_result = TaskPool.Execute( tasks, 
+                                                     progress_bar=True,
                                                      output_stream=output_stream,
                                                      verbose=True,
                                                    )
