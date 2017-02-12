@@ -80,38 +80,33 @@ class StreamDecorator(object):
             return self
 
         # ---------------------------------------------------------------------------
-        def WriteRaw(content):
-            for stream in self._streams:
-                stream.write(content)
-
-        # ---------------------------------------------------------------------------
         def Impl(content, eol=None):
             if self._column == 0:
                 if self._skip_first_line_prefix:
                     self._skip_first_line_prefix = False
                 else:
-                    WriteRaw(self._line_prefix(self._column))
+                    self.write_raw(self._line_prefix(self._column))
 
                     if custom_line_prefix:
-                        WriteRaw(custom_line_prefix)
+                        self.write_raw(custom_line_prefix)
 
-            WriteRaw(content)
+            self.write_raw(content)
             self._column += len(content) + (content.count('\t') * (self._tab_length - 1))
 
             if eol:
-                WriteRaw(self._line_suffix(self._column))
-                WriteRaw(eol)
+                self.write_raw(self._line_suffix(self._column))
+                self.write_raw(eol)
 
                 self._column = 0
 
         # ---------------------------------------------------------------------------
         
         if not self._displayed_one_time_prefix:
-            WriteRaw(self._one_time_prefix(self._column))
+            self.write_raw(self._one_time_prefix(self._column))
             self._displayed_one_time_prefix = True
 
         if not self._displayed_prefix:
-            WriteRaw(self._prefix(self._column))
+            self.write_raw(self._prefix(self._column))
             self._displayed_prefix = True
 
         while True:

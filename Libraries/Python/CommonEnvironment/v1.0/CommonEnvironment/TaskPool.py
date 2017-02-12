@@ -367,7 +367,7 @@ def Transform( items,
                num_concurrent_tasks=multiprocessing.cpu_count(),
              ):
     """\
-    Applies the functor to each item in the item lists, returning a list of 
+    Applies the functor to each item in the item list, returning a list of 
     the transformed items. The operation is considered to be atomic, and will
     raise an exception if one or more of the functor invocations fail.
     """
