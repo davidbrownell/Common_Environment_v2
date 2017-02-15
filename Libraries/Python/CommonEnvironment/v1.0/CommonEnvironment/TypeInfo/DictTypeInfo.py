@@ -34,10 +34,5 @@ class DictTypeInfo(ObjectLikeTypeInfo):
 
     # ----------------------------------------------------------------------
     @staticmethod
-    def _HasAttribute(item, attribute_name):
-        return attribute_name in item
-
-    # ----------------------------------------------------------------------
-    @staticmethod
     def _GetAttributeValue(type_info, item, attribute_name):
         return item[attribute_name]

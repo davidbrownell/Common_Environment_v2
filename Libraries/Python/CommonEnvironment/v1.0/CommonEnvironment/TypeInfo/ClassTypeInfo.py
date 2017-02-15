@@ -75,11 +75,6 @@ class ClassTypeInfo(ObjectLikeTypeInfo):
     ExpectedType                            = staticmethod(lambda item: True) # Everything is an object in Python
     
     # ----------------------------------------------------------------------
-    @staticmethod
-    def _HasAttribute(item, attribute_name):
-        return hasattr(item, attribute_name)
-
-    # ----------------------------------------------------------------------
     @classmethod
     def _GetAttributeValue(cls, type_info, item, attribute_name):
         if isinstance(type_info, _MethodTypeInfo):
