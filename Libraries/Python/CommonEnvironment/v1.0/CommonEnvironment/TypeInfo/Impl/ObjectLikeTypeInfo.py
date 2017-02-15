@@ -87,40 +87,24 @@ class ObjectLikeTypeInfo(TypeInfo):
         if require_exact_match == None:
             require_exact_match = self.RequireExactMatchDefault if self.RequireExactMatchDefault != None else True
 
-        if require_exact_match:
-            if self.Desc == "Class":
-                attributes = dir(item)
-            elif isinstance(item, dict):
-                attributes = item.keys()
-            else:
-                attributes = item.__dict__.keys()
-
-            attributes = { a for a in attributes if not a.startswith('__') }
-
-            # ----------------------------------------------------------------------
-            def ProcessAttribute(attr):
-                attributes.remove(attr)
-
-            # ----------------------------------------------------------------------
-            def OnComplete():
-                if attributes:
-                    return "The item contains extraneous data: {}".format(', '.join([ "'{}'".format(attr) for attr in attributes ]))
-
-            # ----------------------------------------------------------------------
-            
+        if self.Desc == "Class":
+            attributes = dir(item)
+        elif isinstance(item, dict):
+            attributes = item.keys()
         else:
-            ProcessAttribute = lambda attr: None
-            OnComplete = lambda: None
+            attributes = item.__dict__.keys()
 
+        attributes = { a for a in attributes if not a.startswith('__') }
+    
         for attribute_name, type_info in self.Items.iteritems():
-            if not self._HasAttribute(item, attribute_name):
+            if attribute_name not in attributes:
                 if type_info.Arity.Min == 0:
                     continue
 
                 return "The required attribute '{}' was not found".format(attribute_name)
 
-            ProcessAttribute(attribute_name)
-
+            attributes.remove(attribute_name)
+            
             this_value = self._GetAttributeValue(type_info, item, attribute_name)
 
             if recurse:
@@ -131,18 +115,11 @@ class ObjectLikeTypeInfo(TypeInfo):
             if result != None:
                 return "The attribute '{}' is not valid - {}".format(attribute_name, result)
 
-        result = OnComplete()
-        if result != None:
-            return result
+        if require_exact_match and attributes:
+            return "The item contains extraneous data: {}".format(', '.join([ "'{}'".format(attr) for attr in attributes ]))
 
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
-    # ----------------------------------------------------------------------
-    @staticmethod
-    @abstractmethod
-    def _HasAttribute(item, attribute_name):
-        raise Exception("Abstract method")
-
     # ----------------------------------------------------------------------
     @staticmethod
     @abstractmethod
