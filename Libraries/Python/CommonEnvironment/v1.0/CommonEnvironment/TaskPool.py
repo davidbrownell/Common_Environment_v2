@@ -168,7 +168,6 @@ def Execute( tasks,
                                                         ( "output_stream", sink ),
                                                         ( "core_index", core_index ),
                                                       ]))
-
                     if result == None:
                         task.result = 0
 
@@ -184,13 +183,13 @@ def Execute( tasks,
                         task.result = result
 
                 except:
+                    task.result = -1
+
                     if display_exception_callstack:
                         sink.write(traceback.format_exc())
                     else:
                         ex = sys.exc_info()[1]
                         sink.write("{}\n".format(str(ex).rstrip()))
-
-                    task.result = -1
 
                 task.output = sink.getvalue()
                 task.time_delta_string = datetime.timedelta(seconds=(time.time() - start_time))

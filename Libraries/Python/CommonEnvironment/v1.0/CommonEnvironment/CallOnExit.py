@@ -80,6 +80,7 @@ def CallOnExit( # Argument may be:
 
                         """).format( error=StreamDecorator.LeftJustify(traceback.format_exc(), 4),
                                    ))
+                    assert False
 
     # ---------------------------------------------------------------------------
     
