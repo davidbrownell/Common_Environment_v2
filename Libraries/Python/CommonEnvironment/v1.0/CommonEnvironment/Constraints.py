@@ -67,7 +67,7 @@ class FunctionConstraint(object):
                 first_optional_arg_index = len(arg_info.args) - len(optional_args)
 
                 # Ensure that the validation values match the function arguments
-                validation_names = self.Preconditions.keys()
+                validation_names = set(self.Preconditions.keys())
                 missing = []
                 
                 for index, arg in enumerate(arg_info.args):

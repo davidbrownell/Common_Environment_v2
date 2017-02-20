@@ -752,10 +752,11 @@ def _CommandLineImpl( compiler,
             try:
                 contexts = list(compiler.GenerateContextItems(inputs, **compiler_kwargs))
             except Exception, ex:
+                dm.result = -1
+
                 if getattr(ex, "IsDiagnosticException", False):
                     dm.stream.write("{}\n".format(str(ex)))
-                    dm.result = -1
-
+                    
                     contexts = []
                 else:
                     raise
@@ -764,7 +765,6 @@ def _CommandLineImpl( compiler,
             stream_info.stream.flush()
 
             result = functor(context, output_stream)
-            
             stream_info.result = stream_info.result or result
             
-    return stream_info.result
+        return stream_info.result
