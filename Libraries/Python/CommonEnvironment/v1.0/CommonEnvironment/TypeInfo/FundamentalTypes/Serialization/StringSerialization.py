@@ -19,24 +19,14 @@ import sys
 import uuid
 
 from CommonEnvironment.Interface import staticderived
-from CommonEnvironment import Package
 from CommonEnvironment import RegularExpression
-
-with Package.NameInfo(__package__) as ni:
-    __package__ = ni.created
-    
-    from . import Serialization
-
-    from .. import ( Visitor as FundamentalTypesVisitor, 
-                     CreateSimpleVisitor,
-                     DateTypeInfo,
-                     TimeTypeInfo,
-                   )
-    
-    from ... import ValidationException
-
-    __package__ = ni.original
-
+from CommonEnvironment.TypeInfo import ValidationException
+from CommonEnvironment.TypeInfo.FundamentalTypes import Visitor as FundamentalTypesVisitor, \
+                                                        CreateSimpleVisitor, \
+                                                        DateTypeInfo, \
+                                                        TimeTypeInfo
+from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization import Serialization                                                        
+                                                     
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
