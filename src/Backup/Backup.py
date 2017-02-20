@@ -270,6 +270,7 @@ def Mirror( destination,
     matches the input source(s).
     """
 
+    destination = FileSystem.Normalize(destination)
     inputs = input; del input
     includes = include; del include
     excludes = exclude; del exclude
@@ -298,6 +299,25 @@ def Mirror( destination,
                                            None,
                                            dm.stream,
                                          )
+
+            # _CreateWork expects a dictionary organized by original source drive;
+            # Perform that conversion.
+            new_dest_file_info = OrderedDict()
+            len_normalized_destination = len(FileSystem.AddTrailingSep(destination))
+
+            assert len(dest_file_info) == 1, dest_file_info.keys()
+            for k, v in dest_file_info.values()[0].iteritems():
+                assert len(k) > len_normalized_destination, k
+
+                drive = k[len_normalized_destination:].split(os.path.sep)[0]
+                assert drive.endswith('_'), drive
+
+                drive = drive.replace('_', ':')
+
+                new_dest_file_info.setdefault(drive, {})[k] = v
+
+            dest_file_info = new_dest_file_info
+
             dm.stream.write("\n")
         else:
             dest_file_info = {}
@@ -527,7 +547,7 @@ def _CreateWork( source_file_info,
                     return lambda filename: os.path.join(destination, filename[common_path_len:])
 
                 dest_drive_dir = drive.replace(':', '_')
-
+                
                 return lambda filename: os.path.join(destination, dest_drive_dir, filename[common_path_len:])
 
             # ----------------------------------------------------------------------
@@ -558,7 +578,7 @@ def _CreateWork( source_file_info,
             # Files to copy
             for k, v in this_source_file_info.iteritems():
                 dest_filename = ToDestFullPath(k)
-
+                
                 copy = False
 
                 if dest_filename not in this_dest_file_info:
@@ -574,7 +594,7 @@ def _CreateWork( source_file_info,
             # Files to remove
             for k, v in this_dest_file_info.iteritems():
                 source_filename = ToSourceFullPath(k)
-
+                
                 if source_filename not in this_source_file_info:
                     verbose_stream.write("[Remove] '{}' does not exist.\n".format(source_filename))
                     to_remove.append(k)
