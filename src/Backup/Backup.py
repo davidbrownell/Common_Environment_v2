@@ -271,7 +271,7 @@ def Mirror( destination,
     """
 
     destination = FileSystem.Normalize(destination)
-    inputs = input; del input
+    inputs = [ FileSystem.Normalize(i) for i in input ]; del input
     includes = include; del include
     excludes = exclude; del exclude
     traverse_includes = traverse_include; del traverse_include
@@ -305,18 +305,23 @@ def Mirror( destination,
             new_dest_file_info = OrderedDict()
             len_normalized_destination = len(FileSystem.AddTrailingSep(destination))
 
-            assert len(dest_file_info) == 1, dest_file_info.keys()
-            for k, v in dest_file_info.values()[0].iteritems():
-                assert len(k) > len_normalized_destination, k
+            assert len(dest_file_info) <= 1, dest_file_info.keys()
+            if dest_file_info:
+                for k, v in dest_file_info.values()[0].iteritems():
+                    assert len(k) > len_normalized_destination, k
+                
+                    potential_drive = k[len_normalized_destination:].split(os.path.sep)[0]
+                    if potential_drive.endswith('_') and len(potential_drive) <= 3:
+                        drive = potential_drive.replace('_', ':')
+                    else:
+                        assert len(source_file_info) == 1, source_file_info.keys()
+                        assert source_file_info.values()[0]
 
-                drive = k[len_normalized_destination:].split(os.path.sep)[0]
-                assert drive.endswith('_'), drive
+                        drive = os.path.splitdrive(source_file_info.values()[0].keys()[0])[0]
 
-                drive = drive.replace('_', ':')
-
-                new_dest_file_info.setdefault(drive, {})[k] = v
-
-            dest_file_info = new_dest_file_info
+                    new_dest_file_info.setdefault(drive, {})[k] = v
+                
+                dest_file_info = new_dest_file_info
 
             dm.stream.write("\n")
         else:
