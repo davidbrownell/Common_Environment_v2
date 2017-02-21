@@ -270,7 +270,8 @@ def Mirror( destination,
     matches the input source(s).
     """
 
-    inputs = input; del input
+    destination = FileSystem.Normalize(destination)
+    inputs = [ FileSystem.Normalize(i) for i in input ]; del input
     includes = include; del include
     excludes = exclude; del exclude
     traverse_includes = traverse_include; del traverse_include
@@ -298,6 +299,30 @@ def Mirror( destination,
                                            None,
                                            dm.stream,
                                          )
+
+            # _CreateWork expects a dictionary organized by original source drive;
+            # Perform that conversion.
+            new_dest_file_info = OrderedDict()
+            len_normalized_destination = len(FileSystem.AddTrailingSep(destination))
+
+            assert len(dest_file_info) <= 1, dest_file_info.keys()
+            if dest_file_info:
+                for k, v in dest_file_info.values()[0].iteritems():
+                    assert len(k) > len_normalized_destination, k
+                
+                    potential_drive = k[len_normalized_destination:].split(os.path.sep)[0]
+                    if potential_drive.endswith('_') and len(potential_drive) <= 3:
+                        drive = potential_drive.replace('_', ':')
+                    else:
+                        assert len(source_file_info) == 1, source_file_info.keys()
+                        assert source_file_info.values()[0]
+
+                        drive = os.path.splitdrive(source_file_info.values()[0].keys()[0])[0]
+
+                    new_dest_file_info.setdefault(drive, {})[k] = v
+                
+                dest_file_info = new_dest_file_info
+
             dm.stream.write("\n")
         else:
             dest_file_info = {}
@@ -527,7 +552,7 @@ def _CreateWork( source_file_info,
                     return lambda filename: os.path.join(destination, filename[common_path_len:])
 
                 dest_drive_dir = drive.replace(':', '_')
-
+                
                 return lambda filename: os.path.join(destination, dest_drive_dir, filename[common_path_len:])
 
             # ----------------------------------------------------------------------
@@ -558,7 +583,7 @@ def _CreateWork( source_file_info,
             # Files to copy
             for k, v in this_source_file_info.iteritems():
                 dest_filename = ToDestFullPath(k)
-
+                
                 copy = False
 
                 if dest_filename not in this_dest_file_info:
@@ -574,7 +599,7 @@ def _CreateWork( source_file_info,
             # Files to remove
             for k, v in this_dest_file_info.iteritems():
                 source_filename = ToSourceFullPath(k)
-
+                
                 if source_filename not in this_source_file_info:
                     verbose_stream.write("[Remove] '{}' does not exist.\n".format(source_filename))
                     to_remove.append(k)

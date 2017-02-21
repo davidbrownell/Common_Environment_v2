@@ -204,6 +204,14 @@ def GetCommonPath(*items):
 
         # ----------------------------------------------------------------------
         
+    if len(items) == 1:
+        result = items[0]
+
+        if os.path.isfile(result):
+            result = os.path.dirname(result)
+
+        return AddTrailingSep(result)
+
     # Break the items into parts, as comparing by string leads to strange corner cases
     # with similarly named paths.
     items = [ os.path.realpath(item).split(os.path.sep) for item in items ]
