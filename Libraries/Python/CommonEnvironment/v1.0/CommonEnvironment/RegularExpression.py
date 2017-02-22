@@ -187,3 +187,80 @@ def Generate( regex_or_regex_string,
             for item in items:
                 yield { "__data__" : item,
                       }
+
+# ----------------------------------------------------------------------
+def GenerateClusteredStrings( items,
+                              optional_output_stream=None,
+                            ):
+    import itertools
+
+    from collections import OrderedDict
+
+    import cluster
+    from cluster.linkage import single, complete, average, uclus
+    import editdistance
+
+    from CommonEnvironment.StreamDecorator import StreamDecorator
+    from CommonEnvironment import TaskPool
+
+    output_stream = StreamDecorator(optional_output_stream)
+
+    # Calculate distances
+    items = list({ item for item in items })
+
+    distances = OrderedDict()
+
+    desc = "Calculating distances..."
+    
+    output_stream.write(desc)
+    with output_stream.DoneManager( done_prefix="\033[1A{}DONE! ".format(desc),
+                                  ) as dm:
+        len_items = len(items)
+
+        comparisons = []
+
+        for index in xrange(len_items):
+            for i in xrange(index + 1, len_items):
+                comparisons.append((items[index], items[i]))
+
+        # ----------------------------------------------------------------------
+        def Evaluate(t):
+            return editdistance.eval(t[0], t[1])
+
+        # ----------------------------------------------------------------------
+        
+        results = TaskPool.Transform( comparisons,
+                                      Evaluate,
+                                      dm.stream,
+                                    )
+
+        for k, v in itertools.izip(comparisons, results):
+            distances[k] = v
+
+    # ----------------------------------------------------------------------
+    def Impl(x, y):
+        for key in [ (x, y),
+                     (y, x),
+                   ]:
+            if key in distances:
+                return distances[key]
+
+        assert False
+
+    # ----------------------------------------------------------------------
+    
+    cl = cluster.HierarchicalClustering(items, Impl, linkage=uclus)
+
+    level = 0
+    while True:
+        results = cl.getlevel(level)
+
+        for index, result_level in enumerate(results):
+            results[index] = sorted(result_level)
+
+        yield results
+
+        if len(results) == 1:
+            break
+
+        level += 1
