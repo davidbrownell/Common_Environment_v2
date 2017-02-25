@@ -23,6 +23,7 @@ LIKE:                                       '~';
 UNDER:                                      'under';
 IS:											'is';
 IS_NOT:										'is not';
+NOT:                                        'not';
 
 NUMBER:                                     '-'? [0-9]* '.' [0-9]+;
 INT:                                        '-'? [0-9]+;
@@ -57,7 +58,7 @@ statements:                                 statement+;						// Entry point, not
 statement:									expression ((AND | OR) expression)*;
 
 expression:                                 ( ID (IS | IS_NOT) NONE |
-                                              ID (EQUAL | NOT_EQUAL | LT | LTE | GT | GTE | LIKE | UNDER) value |
+                                              NOT? ID (EQUAL | NOT_EQUAL | LT | LTE | GT | GTE | LIKE | UNDER) value |
                                               LPAREN statement RPAREN
                                             );
                                             
