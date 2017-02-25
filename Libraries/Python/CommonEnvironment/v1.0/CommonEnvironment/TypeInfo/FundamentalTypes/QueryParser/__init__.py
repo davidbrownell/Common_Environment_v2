@@ -66,12 +66,13 @@ class Expression(object):
 
 # ----------------------------------------------------------------------
 class StandardExpression(Expression):
-    def __init__(self, var_name, type_info, operator, rhs):
+    def __init__(self, var_name, type_info, operator, rhs, is_not=False):
         self.LHS                            = var_name
         self.TypeInfo                       = type_info
         self.Operator                       = operator
         self.RHS                            = rhs
-
+        self.IsNot                          = is_not
+        
 # ----------------------------------------------------------------------
 class AndExpression(Expression):
     def __init__(self, lhs, rhs):
@@ -259,36 +260,45 @@ def ParseFactory( string_serialization=None,
 
         # ----------------------------------------------------------------------
         def visitExpression(self, ctx):
-            assert len(ctx.children) == 3, ctx.children
-
             if ctx.children[0].symbol.type == _Parser.LPAREN:
                 assert ctx.children[2].symbol.type == _Parser.RPAREN, ctx.children[2]
 
                 return self.visit(ctx.children[1])
 
-            # Get the LHS
-            assert ctx.children[0].symbol.type == _Parser.ID, ctx.children[0]
+            if len(ctx.children) == 4:
+                assert ctx.children[0].symbol.type == _Parser.NOT
+                
+                is_not = True
+                child_offset = 1
+            else:
+                assert len(ctx.children) == 3, ctx.children
 
-            lhs = ctx.children[0].symbol.text
+                is_not = False
+                child_offset = 0
+            
+            # Get the LHS
+            assert ctx.children[0 + child_offset].symbol.type == _Parser.ID, ctx.children[0 + child_offset]
+
+            lhs = ctx.children[0 + child_offset].symbol.text
             if lhs not in variables:
-                raise AntlrException.Create(ctx.children[0].symbol, "'{}' is not a valid variable name".format(lhs))
+                raise AntlrException.Create(ctx.children[0 + child_offset].symbol, "'{}' is not a valid variable name".format(lhs))
 
             type_info = variables[lhs]
             
             self.stack.append(type_info)
             with CallOnExit(self.stack.pop):
                 # Get the RHS
-                if isinstance(ctx.children[2], antlr4.TerminalNode):
-                    assert ctx.children[2].symbol.type == _Parser.NONE
+                if isinstance(ctx.children[2 + child_offset], antlr4.TerminalNode):
+                    assert ctx.children[2 + child_offset].symbol.type == _Parser.NONE
                     rhs = None
                 else:
-                    self.visit(ctx.children[2])
+                    self.visit(ctx.children[2 + child_offset])
 
                     assert self.stack
                     rhs = self.stack.pop()
 
             # Get the operator
-            symbol = ctx.children[1].symbol
+            symbol = ctx.children[1 + child_offset].symbol
             
             # Verify allowed operations
 
@@ -458,7 +468,7 @@ def ParseFactory( string_serialization=None,
             
             operator = Visitor.Accept(type_info)
 
-            self.stack.append(StandardExpression(lhs, type_info, operator, rhs))
+            self.stack.append(StandardExpression(lhs, type_info, operator, rhs, is_not=is_not))
 
         # ----------------------------------------------------------------------
         def visitValue(self, ctx):

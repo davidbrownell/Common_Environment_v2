@@ -223,6 +223,22 @@ class UnitTest(unittest.TestCase):
         self.assertRaises(lambda: self._Parse("constrained == 100"))
 
     # ----------------------------------------------------------------------
+    def test_Not(self):
+        result = self._Parse("i < 20")
+        self.assertTrue(isinstance(result, StandardExpression))
+        self.assertEqual(result.LHS, "i")
+        self.assertEqual(result.Operator, Operator_Less)
+        self.assertEqual(result.RHS, 20)
+        self.assertEqual(result.IsNot, False)
+        
+        result = self._Parse("not i < 20")
+        self.assertTrue(isinstance(result, StandardExpression))
+        self.assertEqual(result.LHS, "i")
+        self.assertEqual(result.Operator, Operator_Less)
+        self.assertEqual(result.RHS, 20)
+        self.assertEqual(result.IsNot, True)
+        
+    # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
     def _ValidateStandard(self, lhs, operator, rhs):
