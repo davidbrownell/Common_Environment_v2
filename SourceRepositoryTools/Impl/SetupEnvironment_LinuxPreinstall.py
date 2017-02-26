@@ -25,7 +25,11 @@ import tempfile
 import textwrap
 
 # ---------------------------------------------------------------------------
-_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
+if "python" in sys.executable.lower():
+    _script_fullpath = os.path.abspath(__file__)
+else:
+    _script_fullpath = sys.executable
+
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ---------------------------------------------------------------------------
 

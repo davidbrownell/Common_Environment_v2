@@ -27,7 +27,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 
 class UbuntuEnvironment(LinuxEnvironmentImpl):
     Name                                    = "Ubuntu"
-    PotentialOSVersionDirectoryNames        = [ "14.04", "12.04", "11.10", "11.04", ]
+    PotentialOSVersionDirectoryNames        = [ "16.04", "14.04", "12.04", "11.10", "11.04", ]
     
     # ---------------------------------------------------------------------------
     def __init__(self):
