@@ -56,8 +56,6 @@ class PythonActivationActivity(IActivationActivity):
     BinSubdirs                              = None      # Initialized in __clsinit__
     BinExtension                            = None      # Initialized in __clsinit__
     
-    CopyFiles                               = None      # Initialized in __clsinit__
-    
     # ---------------------------------------------------------------------------
     @classmethod
     def __clsinit__(cls):
@@ -69,9 +67,6 @@ class PythonActivationActivity(IActivationActivity):
             
             cls.BinSubdirs = None
             cls.BinExtension = ".exe"
-            
-            cls.CopyFiles = [ os.path.join("Lib", "site-packages", "easy-install.pth"),
-                            ]
             
             # ----------------------------------------------------------------------
             def ValidatePythonBinary(bin_name):
@@ -102,8 +97,6 @@ class PythonActivationActivity(IActivationActivity):
             cls.BinSubdirs = [ "bin", ]
             cls.BinExtension = ''
             
-            cls.CopyFiles = None
-
             cls.ValidatePythonBinary = staticmethod(lambda item: None)
             
         else:

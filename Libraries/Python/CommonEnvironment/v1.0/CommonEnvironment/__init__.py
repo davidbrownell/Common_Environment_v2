@@ -55,8 +55,11 @@ def GetIndex( items,
 
 # ---------------------------------------------------------------------------
 def All( items,
-         functor,                           # def Func(item) -> Bool
+         functor=None,                      # def Func(item) -> Bool
        ):
+    if functor == None:
+        functor = lambda item: bool(item)
+
     for item in items:
         if not functor(item):
             return False
@@ -65,8 +68,11 @@ def All( items,
 
 # ---------------------------------------------------------------------------
 def Any( items,
-         functor,                           # def Func(item) -> Bool
+         functor=None,                      # def Func(item) -> Bool
        ):
+    if functor == None:
+        functor = lambda item: bool(item)
+
     for item in items:
         if functor(item):
             return True
