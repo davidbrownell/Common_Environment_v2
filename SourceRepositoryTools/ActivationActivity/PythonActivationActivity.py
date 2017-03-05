@@ -20,6 +20,7 @@ import os
 import sys
 import textwrap
 
+import CommonEnvironment
 from CommonEnvironment.Interface import staticderived, clsinit
 from CommonEnvironment import Package, ModifiableValue
 from CommonEnvironment import Shell
@@ -40,6 +41,11 @@ with Package.NameInfo(__package__) as ni:
 
     
     __package__ = ni.original
+
+SourceRepositoryTools = Package.ImportInit("SourceRepositoryTools")
+
+# ----------------------------------------------------------------------
+EASY_INSTALL_PTH_FILENAME                   = "easy-install.pth"
 
 # ----------------------------------------------------------------------
 @staticderived
@@ -204,7 +210,7 @@ class PythonActivationActivity(IActivationActivity):
         # Symbolicly link the reference python files
 
         # ----------------------------------------------------------------------
-        def PythonCallback(libraries, create_messages_statement_func):
+        def PythonCallback(libraries, display_sentinel):
             local_actions = []
         
             # Get the python version
@@ -226,7 +232,7 @@ class PythonActivationActivity(IActivationActivity):
                        }
         
             # Create the actions
-            local_actions.append(create_messages_statement_func("    Cleaning previous links..."))
+            local_actions.append(Shell.Message("{}    Cleaning previous links...".format(display_sentinel)))
             local_actions += [ environment.Raw(statement) for statement in CreateCleanSymLinkStatements(environment, dest_dir) ]
         
             # Prepopulate with the dynamic content
@@ -243,7 +249,8 @@ class PythonActivationActivity(IActivationActivity):
         
             # Add a symbolc link for everything found in the source that doesn't
             # already exist in the dest
-            
+            easy_install_path_filename = CommonEnvironment.ModifiableValue(None)
+
             # ----------------------------------------------------------------------
             def TraverseTree(source, dest, dynamic_subdirs):
                 if not os.path.isdir(source):
@@ -254,13 +261,20 @@ class PythonActivationActivity(IActivationActivity):
         
                 items = os.listdir(source)
                 
-                local_actions.append(create_messages_statement_func("    Linking {} ({} item{})...".format( source, 
-                                                                                                            len(items), 
-                                                                                                            's' if len(items) > 1 else '',
-                                                                                                          )))
+                local_actions.append(Shell.Message("{}    Linking {} ({} item{})...".format( display_sentinel,
+                                                                                             source, 
+                                                                                             len(items), 
+                                                                                             's' if len(items) > 1 else '',
+                                                                                           )))
                 
                 for item in items:
                     if item not in dynamic_subdirs:
+                        if item == EASY_INSTALL_PTH_FILENAME:
+                            assert easy_install_path_filename.value == None
+                            easy_install_path_filename.value = os.path.join(source, item)
+
+                            continue
+
                         local_actions.append(environment.SymbolicLink(os.path.join(dest, item), os.path.join(source, item)))
         
                 # We have already created links for everything that isn't dynamic,
@@ -284,7 +298,7 @@ class PythonActivationActivity(IActivationActivity):
                 
             script_dest_dir = os.path.join(dest_dir, *cls.ScriptSubdirs)
             
-            local_actions.append(create_messages_statement_func("    Linking Scripts..."))
+            local_actions.append(Shell.Message("{}    Linking Scripts...".format(display_sentinel)))
             
             script_actions = ActivateLibraryScripts( script_dest_dir,
                                                      libraries, 
@@ -295,8 +309,12 @@ class PythonActivationActivity(IActivationActivity):
                 local_actions += script_actions
                 global_actions.append(environment.AugmentPath(script_dest_dir))
         
-            local_actions.append(create_messages_statement_func(""))
-            
+            local_actions += SourceRepositoryTools.DelayExecute( _EasyInstallPathCallback,
+                                                                 display_sentinel,
+                                                                 easy_install_path_filename.value,
+                                                                 library_dest_dir,
+                                                               )
+                                                                 
             return local_actions
         
         # ----------------------------------------------------------------------
@@ -310,3 +328,35 @@ class PythonActivationActivity(IActivationActivity):
                          )
         
         return global_actions
+
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+def _EasyInstallPathCallback(display_sentinel, original_path_filename, dest_dir):
+    eggs = []
+
+    for item in os.listdir(dest_dir):
+        if os.path.splitext(item)[1] == ".egg":
+            eggs.append(item)
+
+    original_content = '' if not original_path_filename else open(original_path_filename).read()
+
+    dest_filename = os.path.join(dest_dir, EASY_INSTALL_PTH_FILENAME)
+    with open(dest_filename, 'w') as f:
+        f.write(textwrap.dedent(
+            """\
+            {}
+
+            {}
+            """).format( original_content,
+                         '\n'.join([ "./{}".format(egg) for egg in eggs ]),
+                       ))
+
+    return [ Shell.Message("{}    Collecting eggs ({} item{})...".format( display_sentinel,
+                                                                          len(eggs),
+                                                                          '' if len(eggs) == 1 else 's',
+                                                                        )),
+             Shell.Message(display_sentinel),
+           ]
+
+        
