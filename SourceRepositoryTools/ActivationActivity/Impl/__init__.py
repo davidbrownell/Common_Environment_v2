@@ -104,6 +104,7 @@ def ActivateLibraries( name,
 
     commands = create_commands_func(OrderedDict([ ( "libraries", libraries ),
                                                   ( "create_message_statement_func", lambda message: environment.Message("{}{}".format(display_sentinel, message)) ),
+                                                  ( "display_sentinel", display_sentinel ),
                                                 ]))
 
     if commands:
@@ -121,10 +122,13 @@ def ActivateLibraries( name,
                                        stderr=subprocess.STDOUT,
                                      )
 
+            content = []
             while True:
                 line = result.stdout.readline()
                 if not line:
                     break
+
+                content.append(line)
 
                 if line.startswith(display_sentinel):
                     sys.stdout.write("{}".format(line[len(display_sentinel):]))
@@ -137,7 +141,7 @@ def ActivateLibraries( name,
                     Error generating links ({code}):
                         {error}
                     """).format( code=result,
-                                 error=StreamDecorator.LeftJustify(content, 4),
+                                 error=StreamDecorator.LeftJustify(''.join(content), 4),
                                ))
 
     # Write the link file

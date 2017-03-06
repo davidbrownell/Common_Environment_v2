@@ -1,2 +1,2 @@
 @echo off
-python %~dp$PATH:0\cog.py %*
+python %~dp0\cog.py %*
