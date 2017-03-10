@@ -339,7 +339,7 @@ def _RedirectEntryPoint(function_name, entry_point, config):
         exec(textwrap.dedent(
             """\
             def {name}({args}):
-                sys.stdout.write("\nINFO: This can only be run on '{env}'.\n")
+                sys.stdout.write("\\nINFO: This can only be run on '{env}'.\\n")
                 return 0
             """).format( name=function_name,
                          args=', '.join(arguments),
@@ -352,7 +352,7 @@ def _RedirectEntryPoint(function_name, entry_point, config):
         exec(textwrap.dedent(
             """\
             def {name}({args}):
-                sys.stdout.write("\nINFO: This can only be run in development environments activated with the configurations {configs}.\n")
+                sys.stdout.write("\\nINFO: This can only be run in development environments activated with the configurations {configs}.\\n")
                 return 0
             """).format( name=function_name,
                          args=', '.join(arguments),
@@ -363,11 +363,12 @@ def _RedirectEntryPoint(function_name, entry_point, config):
 
     elif config.DisableIfDependencyEnvironment:
         repo_path = os.getenv("DEVELOPMENT_ENVIRONMENT_REPOSITORY")
-        if FileSystem.RemoveTrailingSep(FileSystem.GetCommonPath(repo_path, inspect.getfile(function))) != repo_path:
+
+        if FileSystem.RemoveTrailingSep(FileSystem.GetCommonPath(repo_path, inspect.getfile(entry_point.Func))) != repo_path:
             exec(textwrap.dedent(
                 """\
                 def {name}({args}):
-                    sys.stdout.write("\nINFO: This module is not built when invoked as a dependency environment.\n")
+                    sys.stdout.write("\\nINFO: This module is not built when invoked as a dependency environment.\\n")
                     return 0
                 """).format( name=function_name,
                              args=', '.join(arguments),
