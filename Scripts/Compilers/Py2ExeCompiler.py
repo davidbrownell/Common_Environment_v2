@@ -23,6 +23,7 @@ import shutil
 import sys
 import textwrap
 
+from collections import OrderedDict
 from StringIO import StringIO
 
 from CommonEnvironment.CallOnExit import CallOnExit
@@ -104,6 +105,16 @@ class Compiler( AtomicInputProcessingMixin,
                  "packages" : [],
                  "distutil_args" : [],
                  "output_name" : None,
+
+                 # Embedded metadata
+                 "comments" : '',
+                 "company_name" : '',
+                 "file_description" : '',
+                 "internal_name" : '',
+                 "copyright" : '',
+                 "trademarks" : '',
+                 "name" : '',
+                 "version" : '',
                }
 
     # ---------------------------------------------------------------------------
@@ -157,7 +168,24 @@ class Compiler( AtomicInputProcessingMixin,
                 assert False
 
         # ---------------------------------------------------------------------------
+
+        version_info = OrderedDict()
         
+        for attribute_name in [ "comments",
+                                "company_name",
+                                "file_description",
+                                "internal_name",
+                                "copyright",
+                                "trademarks",
+                                "name",
+                                "version",
+                              ]:
+            value = getattr(context, attribute_name)
+            if not value:
+                continue
+            
+            version_info[attribute_name] = value
+             
         for index, input_filename in enumerate(context.input_filenames):
             status_stream.write("Processing '{}' ({} of {})...".format( input_filename,
                                                                         index + 1,
@@ -216,6 +244,7 @@ class Compiler( AtomicInputProcessingMixin,
                             {type}= [ {{ "script" : r"{script}",
                                         "dest_base" : "{name}",
                                         # "other_resources" : [ (24, 1, manifest), ],
+                                        {version_info}
                                         {icon}
                                       }},
                                     ],
@@ -236,6 +265,9 @@ class Compiler( AtomicInputProcessingMixin,
                                  packages=', '.join([ '"{}"'.format(package) for package in context.packages ]),
                                  script=input_filename,
                                  type=BuildTypeToString(context.build_type),
+                                 version_info='' if not version_info else StreamDecorator.LeftJustify( '\n'.join([ '"{}" : "{}",'.format(k, v) for k, v in version_info.iteritems() ]),
+                                                                                                       len("setup( "),
+                                                                                                     ),
                                  icon='' if context.icon_filename == None else '"icon_resources" : [ (1, "{}"), ],'.format(context.icon_filename),
 
                                )
@@ -300,6 +332,16 @@ class Compiler( AtomicInputProcessingMixin,
                                   exclude=CommandLine.StringTypeInfo(arity='*'),
                                   package=CommandLine.StringTypeInfo(arity='*'),
                                   distutil_arg=CommandLine.StringTypeInfo(arity='*'),
+                                  
+                                  comments=CommandLine.StringTypeInfo(arity='?'),
+                                  company_name=CommandLine.StringTypeInfo(arity='?'),
+                                  file_description=CommandLine.StringTypeInfo(arity='?'),
+                                  internal_name=CommandLine.StringTypeInfo(arity='?'),
+                                  copyright=CommandLine.StringTypeInfo(arity='?'),
+                                  trademarks=CommandLine.StringTypeInfo(arity='?'),
+                                  name=CommandLine.StringTypeInfo(arity='?'),
+                                  version=CommandLine.StringTypeInfo(arity='?'),
+
                                   output_stream=None,
                                 )
 def Compile( input,
@@ -316,6 +358,16 @@ def Compile( input,
              exclude=None,
              package=None,
              distutil_arg=None,
+
+             comments=None,
+             company_name=None,
+             file_description=None,
+             internal_name=None,
+             copyright=None,
+             trademarks=None,
+             name=None,
+             version=None,
+
              output_stream=sys.stdout,
              verbose=False,
            ):
@@ -344,6 +396,15 @@ def Compile( input,
                                            excludes=exclude or [],
                                            packages=package or [],
                                            distutil_args=distutil_arg or [],
+
+                                           comments=comments,
+                                           company_name=company_name,
+                                           file_description=file_description,
+                                           internal_name=internal_name,
+                                           copyright=copyright,
+                                           trademarks=trademarks,
+                                           name=name,
+                                           version=version,
                                          )
 
 # ---------------------------------------------------------------------------
