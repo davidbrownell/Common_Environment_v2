@@ -170,7 +170,7 @@ class Verifier( CustomInvocationMixin,
                              filename=filename,
                            ))
 
-        with CallOnExit(lambda: FileSystem.RemoveItem(temp_filename)):
+        with CallOnExit(lambda: FileSystem.RemoveFile(temp_filename)):
             # Run the generated file
             command_line = 'python "{}"'.format(temp_filename)
 

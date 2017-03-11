@@ -359,7 +359,7 @@ def RemoveTree( path,
     return True
 
 # ----------------------------------------------------------------------
-def RemoveItem( path,
+def RemoveFile( path,
                 optional_retry_iterations=5,            # Can be None
               ):
     if not os.path.isfile(path):
