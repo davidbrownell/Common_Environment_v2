@@ -1,5 +1,3 @@
-# Placeholder unit test
-
 import os
 import sys
 import unittest
