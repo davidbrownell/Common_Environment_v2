@@ -159,15 +159,16 @@ class StreamDecorator(object):
                      
                      line_prefix="  ",
 
-                     done_prefix='',
-                     done_suffix='',
+                     done_prefix='',                    # Can be a string or functor, def Func() -> string
+                     done_suffix='',                    # Can be a string or functor, def Func() -> string
                      done_suffix_functor=None,          # Can be functor or list, def Func() -> string
-                     done_result=True,
-                     done_time=True,
 
-                     display_exceptions=True,
-                     display_exception_callstack=True,
-                     suppress_exceptions=False,
+                     done_result=True,                  # Display the result
+                     done_time=True,                    # Display the time delta
+
+                     display_exceptions=True,           # Will display the exception if True
+                     display_exception_callstack=True,  # Will display the exception with a callstack if True
+                     suppress_exceptions=False,         # Will not propigate the exception if True
 
                      associated_stream=None,
                      associated_streams=None,           # Streams that should be adjusted in conjunction with this stream. Most of the time, this is used
@@ -208,6 +209,9 @@ class StreamDecorator(object):
 
         start_time = TimeDelta()
 
+        done_prefix = [ done_prefix, ]
+        done_suffix = [ done_suffix, ]
+
         # ----------------------------------------------------------------------
         class Info(object):
             def __init__(self, stream, result=0):
@@ -243,10 +247,16 @@ class StreamDecorator(object):
                 if result != None:
                     suffixes.append(result)
 
+            if not isinstance(done_prefix[0], basestring):
+                done_prefix[0] = done_prefix[0]()
+            
+            if not isinstance(done_suffix[0], basestring):
+                done_suffix[0] = done_suffix[0]()
+
             if suffixes:
                 content = ', '.join(suffixes)
 
-                if done_prefix.strip():
+                if done_prefix[0].strip():
                     # Custom Prefix
                     content = "({})".format(content)
                 elif not line_prefix:
@@ -259,9 +269,9 @@ class StreamDecorator(object):
                 content = ''
 
             self.write("{prefix}{content}{suffix}\n" \
-                            .format( prefix=done_prefix,
+                            .format( prefix=done_prefix[0],
                                      content=content,
-                                     suffix=done_suffix,
+                                     suffix=done_suffix[0],
                                    ))
             self.flush()
 
