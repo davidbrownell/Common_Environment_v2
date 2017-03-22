@@ -21,6 +21,8 @@
 import os
 import sys
 
+import six
+
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import Shell
 
@@ -88,7 +90,8 @@ def CustomScriptExtractors(environment):
 
         try:
             co = compile(open(script_filename).read(), script_filename, "exec")
-            if co and co.co_consts and isinstance(co.co_consts[0], basestring) and co.co_consts[0][0] != '_':
+            
+            if co and co.co_consts and isinstance(co.co_consts[0], six.string_types) and co.co_consts[0][0] != '_':
                 return StreamDecorator.Wrap(co.co_consts[0], 100)
 
         except:
