@@ -20,7 +20,7 @@ import sys
 import textwrap
 
 from contextlib import contextmanager
-from StringIO import StringIO
+from six import StringIO
 
 from . import ModifiableValue, Any
 from .TimeDelta import TimeDelta

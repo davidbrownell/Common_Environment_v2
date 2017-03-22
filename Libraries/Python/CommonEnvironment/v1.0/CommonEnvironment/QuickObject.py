@@ -18,7 +18,7 @@
 import os
 import sys
 
-from StreamDecorator import StreamDecorator
+from .StreamDecorator import StreamDecorator
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable

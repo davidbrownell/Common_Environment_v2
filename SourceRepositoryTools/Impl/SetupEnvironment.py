@@ -26,19 +26,28 @@ import textwrap
 
 from collections import OrderedDict
 
+import six
+
+import CommonEnvironmentImports
+
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ---------------------------------------------------------------------------
 
-import __init__ as Impl
+with CommonEnvironmentImports.Package.NameInfo(__package__) as ni:
+    __package__ = ni.created
 
-SourceRepositoryTools                       = Impl.SourceRepositoryTools
+    from .. import Constants
 
-CommandLine                                 = Impl.CommandLine
-QuickObject                                 = Impl.QuickObject
-Shell                                       = Impl.Shell
-StreamDecorator                             = Impl.StreamDecorator
+    __package__ = ni.original
+
+Impl                                        = CommonEnvironmentImports.Package.ImportInit()
+SourceRepositoryTools                       = CommonEnvironmentImports.Package.ImportInit("..")
+
+# ----------------------------------------------------------------------
+Shell                                       = CommonEnvironmentImports.Shell
+StreamDecorator                             = CommonEnvironmentImports.StreamDecorator
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
@@ -51,15 +60,15 @@ CUSTOM_ACTIONS_METHOD_NAME                  = "CustomActions"
 # |  Public Methods
 # |
 # ---------------------------------------------------------------------------
-@CommandLine.EntryPoint( output_filename_or_stdout=CommandLine.EntryPoint.ArgumentInfo(description="Created file containing the generated content or stdout if the value is 'stdout'"),
-                         repository_root=CommandLine.EntryPoint.ArgumentInfo(description="Root of the repository"),
-                         debug=CommandLine.EntryPoint.ArgumentInfo(description="Displays additional debug information if provided"),
-                         configuration=CommandLine.EntryPoint.ArgumentInfo(description="Configuration value to setup; all configurations will be setup if no configurations are provided."),
-                       )
-@CommandLine.FunctionConstraints( output_filename_or_stdout=CommandLine.StringTypeInfo(),
-                                  repository_root=CommandLine.DirectoryTypeInfo(),
-                                  configuration=CommandLine.StringTypeInfo(arity='*'),
-                                )
+@CommonEnvironmentImports.CommandLine.EntryPoint( output_filename_or_stdout=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo(description="Created file containing the generated content or stdout if the value is 'stdout'"),
+                                                  repository_root=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo(description="Root of the repository"),
+                                                  debug=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo(description="Displays additional debug information if provided"),
+                                                  configuration=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo(description="Configuration value to setup; all configurations will be setup if no configurations are provided."),
+                                                )
+@CommonEnvironmentImports.CommandLine.FunctionConstraints( output_filename_or_stdout=CommonEnvironmentImports.CommandLine.StringTypeInfo(),
+                                                           repository_root=CommonEnvironmentImports.CommandLine.DirectoryTypeInfo(),
+                                                           configuration=CommonEnvironmentImports.CommandLine.StringTypeInfo(arity='*'),
+                                                         )
 def EntryPoint( output_filename_or_stdout,
                 repository_root,
                 debug=False,
@@ -75,7 +84,7 @@ def EntryPoint( output_filename_or_stdout,
     def Execute():
         commands = []
         
-        tools_subdir = os.path.join(repository_root, SourceRepositoryTools.TOOLS_SUBDIR)
+        tools_subdir = os.path.join(repository_root, Constants.TOOLS_SUBDIR)
         if os.path.isdir(tools_subdir):
             for name, path in [ (name, os.path.join(tools_subdir, name)) for name in os.listdir(tools_subdir) if os.path.isdir(os.path.join(tools_subdir, name)) ]:
                 version_paths = [ os.path.join(path, item) for item in os.listdir(path) if os.path.isdir(os.path.join(path, item)) ]
@@ -97,14 +106,14 @@ def EntryPoint( output_filename_or_stdout,
                     # to eliminate the potential for change need to be installed to the location that they
                     # were originally configured for.
                     
-                    potential_install_location = os.path.join(version_path, SourceRepositoryTools.INSTALL_LOCATION_FILENAME)
-                    potential_install_binary = os.path.join(version_path, SourceRepositoryTools.INSTALL_BINARY_FILENAME)
+                    potential_install_location = os.path.join(version_path, Constants.INSTALL_LOCATION_FILENAME)
+                    potential_install_binary = os.path.join(version_path, Constants.INSTALL_BINARY_FILENAME)
                     
                     if os.path.isfile(potential_install_location) and os.path.isfile(potential_install_binary):
                         commands.append(environment.CreateInstallBinaryCommand(potential_install_location, potential_install_binary))
 
         return commands + \
-               SourceRepositoryTools.DelayExecuteWithPython( SourceRepositoryTools.PYTHON_BINARY,
+               SourceRepositoryTools.DelayExecuteWithPython( Constants.PYTHON_BINARY,
                                                              _EntryPointPostInstall,
                                                              repository_root,
                                                              debug,
@@ -176,9 +185,9 @@ def _EntryPointPostInstall(repository_root, debug, optional_configuration_names)
                           _SetupGenerated,
                         ]
 
-        potential_customization_filename = os.path.join(repository_root, SourceRepositoryTools.SETUP_ENVIRONMENT_CUSTOMIZATION_FILENAME)
+        potential_customization_filename = os.path.join(repository_root, Constants.SETUP_ENVIRONMENT_CUSTOMIZATION_FILENAME)
         if os.path.isfile(potential_customization_filename):
-            customization_name = os.path.splitext(SourceRepositoryTools.SETUP_ENVIRONMENT_CUSTOMIZATION_FILENAME)[0]
+            customization_name = os.path.splitext(Constants.SETUP_ENVIRONMENT_CUSTOMIZATION_FILENAME)[0]
 
             sys.path.insert(0, repository_root)
             customization_mod = __import__(customization_name)
@@ -288,7 +297,7 @@ def _SetupBootstrap( environment,
                     continue
 
                 # Don't process if the dir has been explicitly ignored
-                if os.path.exists(os.path.join(search_item, SourceRepositoryTools.IGNORE_DIRECTORY_AS_BOOTSTRAP_DEPENDENCY_SENTINEL_FILENAME)):
+                if os.path.exists(os.path.join(search_item, Constants.IGNORE_DIRECTORY_AS_BOOTSTRAP_DEPENDENCY_SENTINEL_FILENAME)):
                     continue
 
                 yield search_item
@@ -358,10 +367,10 @@ def _SetupBootstrap( environment,
 
     # ---------------------------------------------------------------------------
     def CreateGuidLookupObject(name):
-        return QuickObject( name=name,
-                            repository_root=None,                           # populated later
-                            dependent_configurations=[],                    # populated later
-                          )
+        return CommonEnvironmentImports.QuickObject( name=name,
+                                                     repository_root=None,                           # populated later
+                                                     dependent_configurations=[],                    # populated later
+                                                   )
 
     # ---------------------------------------------------------------------------
     
@@ -386,7 +395,7 @@ def _SetupBootstrap( environment,
         configurations = { None : SourceRepositoryTools.Configuration(),
                          }
                          
-    has_configurations = len(configurations) > 1 or configurations.keys()[0] != None
+    has_configurations = len(configurations) > 1 or next(iter(six.viewkeys(configurations))) != None
     
     # A tool repository cannot have any configurations, dependencies, or version specs
     if ( is_tool_repository and 
@@ -399,7 +408,7 @@ def _SetupBootstrap( environment,
         raise Exception("A tool repository cannot have any configurations, dependencies, or version specs")
 
     # Calculate all of the repositories that we need to find
-    fundamental_name, fundamental_guid = Impl.GetRepositoryUniqueId(SourceRepositoryTools.DE_FUNDAMENTAL)
+    fundamental_name, fundamental_guid = Impl.GetRepositoryUniqueId(Constants.DE_FUNDAMENTAL)
     
     id_lookup = OrderedDict([ ( fundamental_guid, CreateGuidLookupObject(fundamental_name) ),
                             ])
@@ -409,7 +418,7 @@ def _SetupBootstrap( environment,
             if configuration_name not in optional_configuration_names:
                 del configurations[configuration_name]
 
-    for configuration_name, configuration_info in configurations.iteritems():
+    for configuration_name, configuration_info in six.iteritems(configurations):
         for dependency_info in configuration_info.Dependencies:
             if dependency_info.Id not in id_lookup:
                 id_lookup[dependency_info.Id] = CreateGuidLookupObject(dependency_info.FriendlyName)
@@ -434,37 +443,37 @@ def _SetupBootstrap( environment,
                                                      guid="Id",
                                                      data="Dependent Configurations",
                                                    ),
-                     sep=display_template.format(**{ k : v for k, v in itertools.izip( [ "name", "guid", "data", ],
-                                                                                       [ '-' * col_size for col_size in col_sizes ],
-                                                                                     ) }),
+                     sep=display_template.format(**{ k : v for k, v in six.moves.zip( [ "name", "guid", "data", ],
+                                                                                      [ '-' * col_size for col_size in col_sizes ],
+                                                                                    ) }),
                      values=StreamDecorator.LeftJustify( '\n'.join([ display_template.format( name=v.name,
-                                                                                     guid=k,
-                                                                                     data=', '.join(sorted([ dc for dc in v.dependent_configurations if dc ])),
-                                                                                   )
-                                                            for k, v in id_lookup.iteritems()
-                                                          ]),
-                                                4,
-                                              ),
+                                                                                                guid=k,
+                                                                                                data=', '.join(sorted([ dc for dc in v.dependent_configurations if dc ])),
+                                                                                              )
+                                                                       for k, v in six.iteritems(id_lookup)
+                                                                     ]),
+                                                           4,
+                                                         ),
                      configurations=StreamDecorator.LeftJustify( '' if not has_configurations else textwrap.dedent(
-                                                           """\
-                                                           Based on these configurations:
+                                                                      """\
+                                                                      Based on these configurations:
                                     
-                                                               {}
-                                                               {}
-                                                           """).format( StreamDecorator.LeftJustify('\n'.join([ "- {}".format(configuration) for configuration in configurations.iterkeys() ]), 4),
-                                                                        StreamDecorator.LeftJustify( '' if optional_configuration_names else textwrap.dedent(
-                                                                                                          """\
+                                                                          {}
+                                                                          {}
+                                                                      """).format( StreamDecorator.LeftJustify('\n'.join([ "- {}".format(configuration) for configuration in configurations.iterkeys() ]), 4),
+                                                                                   StreamDecorator.LeftJustify( '' if optional_configuration_names else textwrap.dedent(
+                                                                                                                     """\
                                     
-                                                                                                          To setup specific configurations, specify this argument one or more times on the command line:
+                                                                                                                     To setup specific configurations, specify this argument one or more times on the command line:
                                     
-                                                                                                              /configuration=<configuration name>
-                                                                           
-                                                                                                          """),
-                                                                                                     4,
-                                                                                                    ),
-                                                                      ),
-                                                        4,
-                                                      ),
+                                                                                                                         /configuration=<configuration name>
+                                                                                      
+                                                                                                                     """),
+                                                                                                                4,
+                                                                                                              ),
+                                                                                 ),
+                                                                 4,
+                                                               ),
                    ))
 
     # Find them all
@@ -496,9 +505,9 @@ def _SetupBootstrap( environment,
 
         for repo_guid, lookup_info in id_lookup.iteritems():
             if lookup_info.repository_root == None:
-                unknown_repos.append(QuickObject( name=lookup_info.name,
-                                                  guid=repo_guid,
-                                                ))
+                unknown_repos.append(CommonEnvironmentImports.QuickObject( name=lookup_info.name,
+                                                                           guid=repo_guid,
+                                                                         ))
 
         assert unknown_repos
         raise Exception(textwrap.dedent(
@@ -527,14 +536,14 @@ def _SetupBootstrap( environment,
                                                      guid="Id",
                                                      data="Location",
                                                    ),
-                     sep=display_template.format(**{ k : v for k, v in itertools.izip( [ "name", "guid", "data", ],
-                                                                                       [ '-' * col_size for col_size in col_sizes ],
-                                                                                     ) }),
+                     sep=display_template.format(**{ k : v for k, v in six.moves.zip( [ "name", "guid", "data", ],
+                                                                                      [ '-' * col_size for col_size in col_sizes ],
+                                                                                    ) }),
                      value=StreamDecorator.LeftJustify( '\n'.join([ display_template.format( name=lookup_info.name,
                                                                                              guid=repo_guid,
                                                                                              data=lookup_info.repository_root,
                                                                                            )
-                                                                    for repo_guid, lookup_info in id_lookup.iteritems()
+                                                                    for repo_guid, lookup_info in six.iteritems(id_lookup)
                                                                   ]),
                                                         4,
                                                       ),
@@ -543,7 +552,7 @@ def _SetupBootstrap( environment,
     # Create enhanced information based on the info we have available
     enhanced_configurations = OrderedDict()
 
-    for configuration_name, configuration in configurations.iteritems():
+    for configuration_name, configuration in six.iteritems(configurations):
         added_fundamental = False
 
         enhanced_dependencies = []
@@ -561,7 +570,7 @@ def _SetupBootstrap( environment,
              not is_tool_repository
            ):
             enhanced_dependencies.append(_EnhancedDependency( SourceRepositoryTools.Dependency(fundamental_guid, fundamental_name),
-                                                              SourceRepositoryTools.DE_FUNDAMENTAL,
+                                                              Constants.DE_FUNDAMENTAL,
                                                             ))
 
         enhanced_configurations[configuration_name] = _EnhancedConfiguration( enhanced_dependencies,
@@ -574,7 +583,7 @@ def _SetupBootstrap( environment,
     # Get the python binary. Note that we can't use the binary that invoked this
     # file, as we may have installed a new version.
     python_binary = SourceRepositoryTools.GetVersionedDirectory( [], # Always get the latest version
-                                                                 SourceRepositoryTools.DE_FUNDAMENTAL,
+                                                                 Constants.DE_FUNDAMENTAL,
                                                                  "Tools",
                                                                  "Python",
                                                                )
@@ -592,7 +601,8 @@ def _SetupBootstrap( environment,
     assert os.path.isfile(python_binary), python_binary
 
     # Write the bootstrap data
-    Impl.RepositoryInformation( python_binary,                                SourceRepositoryTools.DE_FUNDAMENTAL,
+    Impl.RepositoryInformation( python_binary,                                
+                                Constants.DE_FUNDAMENTAL,
                                 is_tool_repository,
                                 enhanced_configurations,
                               ).Save(repository_root)
@@ -611,9 +621,9 @@ def _SetupCustom(environment, repository_root, customization_mod, debug, optiona
 
 # ---------------------------------------------------------------------------
 def _SetupShortcuts(environment, repository_root, customization_mod, debug, optional_configuration_names):
-    script_name = environment.CreateScriptName(SourceRepositoryTools.ACTIVATE_ENVIRONMENT_NAME)
+    script_name = environment.CreateScriptName(Constants.ACTIVATE_ENVIRONMENT_NAME)
 
-    shortcut_dest = os.path.join(SourceRepositoryTools.DE_FUNDAMENTAL, "SourceRepositoryTools", "Impl", script_name)
+    shortcut_dest = os.path.join(Constants.DE_FUNDAMENTAL, "SourceRepositoryTools", "Impl", script_name)
     assert os.path.isfile(shortcut_dest), shortcut_dest
 
     return [ Shell.SymbolicLink( os.path.join(repository_root, script_name),
@@ -623,7 +633,7 @@ def _SetupShortcuts(environment, repository_root, customization_mod, debug, opti
 
 # ---------------------------------------------------------------------------
 def _SetupGenerated(environment, repository_root, customization_mod, debug, optional_configuration_names):
-    generated_dir = os.path.join(repository_root, SourceRepositoryTools.GENERATED_DIRECTORY_NAME, environment.CategoryName)
+    generated_dir = os.path.join(repository_root, Constants.GENERATED_DIRECTORY_NAME, environment.CategoryName)
     assert os.path.isdir(generated_dir), generated_dir
     
     os.chmod(generated_dir, 0x777)
@@ -632,5 +642,5 @@ def _SetupGenerated(environment, repository_root, customization_mod, debug, opti
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    try: sys.exit(CommandLine.Main())
+    try: sys.exit(CommonEnvironmentImports.CommandLine.Main())
     except KeyboardInterrupt: pass

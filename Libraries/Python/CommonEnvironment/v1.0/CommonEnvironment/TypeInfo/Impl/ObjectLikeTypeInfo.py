@@ -18,9 +18,10 @@ import sys
 
 from collections import OrderedDict
 
-from CommonEnvironment.Interface import *
+import six
 
 from .. import TypeInfo
+from ...Interface import *
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -52,7 +53,7 @@ class ObjectLikeTypeInfo(TypeInfo):
         self.Items                          = items or OrderedDict()
         self.RequireExactMatchDefault       = require_exact_match
 
-        for k, v in kwargs.iteritems():
+        for k, v in six.iteritems(kwargs):
             assert k not in self.Items, k
             self.Items[k] = v
 

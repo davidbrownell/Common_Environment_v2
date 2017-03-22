@@ -20,9 +20,12 @@ import os
 import sys
 import textwrap
 
+import six
+
 import CommonEnvironment
 from CommonEnvironment.Interface import staticderived, clsinit
 from CommonEnvironment import Package, ModifiableValue
+from CommonEnvironment import six_plus
 from CommonEnvironment import Shell
 
 # ---------------------------------------------------------------------------
@@ -42,7 +45,7 @@ with Package.NameInfo(__package__) as ni:
     
     __package__ = ni.original
 
-SourceRepositoryTools = Package.ImportInit("SourceRepositoryTools")
+SourceRepositoryTools                       = Package.ImportInit("..")
 
 # ----------------------------------------------------------------------
 EASY_INSTALL_PTH_FILENAME                   = "easy-install.pth"
@@ -279,7 +282,7 @@ class PythonActivationActivity(IActivationActivity):
         
                 # We have already created links for everything that isn't dynamic,
                 # so we only need to walk what is dynamic.
-                for k, v in dynamic_subdirs.iteritems():
+                for k, v in six.iteritems(dynamic_subdirs):
                     TraverseTree(os.path.join(source, k), os.path.join(dest, k), v)
         
             # ----------------------------------------------------------------------
@@ -288,7 +291,7 @@ class PythonActivationActivity(IActivationActivity):
         
             library_dest_dir = os.path.join(dest_dir, *[ subdir.format(**sub_dict) for subdir in cls.LibrarySubdirs ])
         
-            for name, info in libraries.iteritems():
+            for name, info in six.iteritems(libraries):
                 for item in os.listdir(info.fullpath):
                     fullpath = os.path.join(info.fullpath, item)
                     if os.path.isdir(fullpath) and item == "__scripts__":

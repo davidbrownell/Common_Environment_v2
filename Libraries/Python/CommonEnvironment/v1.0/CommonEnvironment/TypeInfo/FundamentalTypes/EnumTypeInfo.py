@@ -15,6 +15,8 @@
 import os
 import sys
 
+import six
+
 from .. import TypeInfo
 
 # ----------------------------------------------------------------------
@@ -25,7 +27,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 class EnumTypeInfo(TypeInfo):
 
-    ExpectedType                            = (str, unicode)
+    ExpectedType                            = six.string_types
     Desc                                    = "Enum"
 
     # ----------------------------------------------------------------------

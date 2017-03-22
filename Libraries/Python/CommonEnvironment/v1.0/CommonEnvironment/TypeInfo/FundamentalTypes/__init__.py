@@ -15,6 +15,8 @@
 import os
 import sys
 
+import six
+
 from CommonEnvironment import Interface as _Interface
 
 # If we are importing as part of a unit test, we don't want to include
@@ -290,7 +292,7 @@ def CreateSimpleVisitor( onBoolFunc=None,               # def Func(type_info, *a
 
 # ----------------------------------------------------------------------
 def CreateTypeInfo(type, **kwargs):
-    if type in [ str, unicode, ]:
+    if type in six.string_types:
         return StringTypeInfo(**kwargs)
 
     for potential_type_info in [ BoolTypeInfo,

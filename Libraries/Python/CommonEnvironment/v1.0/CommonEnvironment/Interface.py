@@ -23,7 +23,9 @@ import textwrap
 from collections import OrderedDict
 from functools import wraps
 
-from QuickObject import QuickObject
+import six
+
+from .QuickObject import QuickObject
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -70,7 +72,8 @@ class Interface(object):
             Obj.AbstractItems is a list of the names of all abstract items defined by this class
     """
 
-    if __debug__:
+    if False: # BugBug
+    # BugBug if __debug__:
         __metaclass__ = abc.ABCMeta
         
         ExtensionMethods = []
@@ -87,7 +90,7 @@ class Interface(object):
             if cls in Interface._verified_types:
                 return instance
         
-            ( FunctionType, ClassFunctionType, MethodType, PropertyType ) = xrange(4)   # <Invalid name> pylint: disable = C0103
+            ( FunctionType, ClassFunctionType, MethodType, PropertyType ) = six.moves.range(4)   # <Invalid name> pylint: disable = C0103
         
             # ---------------------------------------------------------------------------
             def TypeToString(type_):
@@ -572,7 +575,7 @@ def CreateCulledCallable(callable):
     def Method(kwargs):
         potential_positional_args = []
 
-        for k in kwargs.keys():
+        for k in list(six.iterkeys(kwargs)):
             if k not in arg_names:
                 potential_positional_args.append(kwargs[k])
                 del kwargs[k]

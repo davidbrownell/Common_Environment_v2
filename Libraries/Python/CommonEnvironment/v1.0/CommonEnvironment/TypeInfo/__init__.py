@@ -16,6 +16,8 @@ import inflect
 import os
 import sys
 
+import six
+
 from CommonEnvironment.Interface import *
 
 # ----------------------------------------------------------------------
@@ -200,7 +202,7 @@ class TypeInfo(Interface):
                   validation_func=None,                 # def Func(value) -> string on error
                   collection_validation_func=None,      # def Func(values) -> string on error
                 ):
-        if isinstance(arity, (str, unicode)):
+        if isinstance(arity, six.string_types):
             arity = Arity.FromString(arity)
         else:
             arity = arity or Arity(1, 1)

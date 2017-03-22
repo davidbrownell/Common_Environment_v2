@@ -23,6 +23,7 @@ import types
 
 from collections import OrderedDict
 
+import six
 import wrapt
 
 import CommonEnvironment.Decorator
@@ -141,7 +142,7 @@ class EntryPointData(object):
                 entry_points.append(epd)
 
         # Sort by line number, as we want the functions displayed in the order in which they were declared
-        entry_points.sort(key=lambda x: x.Func.func_code.co_firstlineno)
+        # BugBug entry_points.sort(key=lambda x: x.Func.func_code.co_firstlineno)
 
         return entry_points
 
@@ -168,7 +169,7 @@ class EntryPointData(object):
 
         # Remove any explicitly ignored parameters and verify that all items
         # are accounted for.
-        entry_point_decorator_names = self.EntryPointDecorator.Args.keys()
+        entry_point_decorator_names = list(six.iterkeys(self.EntryPointDecorator.Args))
         new_args = []
 
         for index, arg in enumerate(args):
@@ -401,9 +402,9 @@ class Executor(object):
                 if result == None:
                     result = 0
 
-            except UsageException, ex:
+            except UsageException as ex:
                 result = self.Usage(error=str(ex))
-            except TypeInfo.ValidationException, ex:
+            except TypeInfo.ValidationException as ex:
                 result = self.Usage(error=str(ex))
             except KeyboardInterrupt:
                 result = -1
@@ -602,7 +603,7 @@ class Executor(object):
                 if param.postprocess_func:
                     value = param.postprocess_func(value)
 
-            except TypeInfo.ValidationException, ex:
+            except TypeInfo.ValidationException as ex:
                 return str(ex)
 
             if param.display_arity in [ '?', '1' ,]:
