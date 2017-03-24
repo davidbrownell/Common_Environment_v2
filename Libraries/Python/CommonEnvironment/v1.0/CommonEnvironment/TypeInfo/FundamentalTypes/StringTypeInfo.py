@@ -94,7 +94,7 @@ class StringTypeInfo(TypeInfo):
         assert args
         return "StringTypeInfo({}{})" \
                     .format( self._PythonDefinitionStringContents,
-                             ", {}".format(', '.join([ "{}={}".format(k, v) for k, v in args.iteritems() ])),
+                             ", {}".format(', '.join([ "{}={}".format(k, v) for k, v in six.iteritems(args) ])),
                            )
 
     # ----------------------------------------------------------------------

@@ -17,6 +17,8 @@ import sys
 
 from collections import OrderedDict
 
+import six
+
 from .. import TypeInfo
 
 # ----------------------------------------------------------------------
@@ -52,7 +54,7 @@ class IntTypeInfo(TypeInfo):
             range_max = (1 << (bytes * 8)) - 1
 
             if min == None or min < 0:
-                half = range_max / 2
+                half = int(range_max / 2)
                 
                 range_min = -(half + 1)
                 range_max = half
@@ -108,7 +110,7 @@ class IntTypeInfo(TypeInfo):
 
         return "IntTypeInfo({}{})" \
                     .format( self._PythonDefinitionStringContents,
-                             '' if not args else ", {}".format(', '.join([ "{}={}".format(k, v) for k, v in args.iteritems() ])),
+                             '' if not args else ", {}".format(', '.join([ "{}={}".format(k, v) for k, v in six.iteritems(args) ])),
                            )
 
     # ----------------------------------------------------------------------

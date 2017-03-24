@@ -270,6 +270,55 @@ class TestCreateCulledCallable(unittest.TestCase):
                                                           ( "baz", 300 ),
                                                         ])), ( 10, 20, 30, 40 ))
 
+# ----------------------------------------------------------------------
+class TestIsMethodsSuite(unittest.TestCase):
+
+    # ----------------------------------------------------------------------
+    class Object(object):
+        def Method(self, a, b): pass
+
+        @staticmethod
+        def StaticMethod(a, b): pass
+
+        @classmethod
+        def ClassMethod(cls, a, b): pass
+
+    # ----------------------------------------------------------------------
+    def test_IsStaticMethod(self):
+        self.assertEqual(IsStaticMethod(self.Object.Method), False)
+        self.assertEqual(IsStaticMethod(self.Object.StaticMethod), True)
+        self.assertEqual(IsStaticMethod(self.Object.ClassMethod), False)
+
+        o = self.Object()
+
+        self.assertEqual(IsStaticMethod(o.Method), False)
+        self.assertEqual(IsStaticMethod(o.StaticMethod), True)
+        self.assertEqual(IsStaticMethod(o.ClassMethod), False)
+
+    # ----------------------------------------------------------------------
+    def test_IsClassMethod(self):
+        self.assertEqual(IsClassMethod(self.Object.Method), False)
+        self.assertEqual(IsClassMethod(self.Object.StaticMethod), False)
+        self.assertEqual(IsClassMethod(self.Object.ClassMethod), True)
+
+        o = self.Object()
+
+        self.assertEqual(IsClassMethod(o.Method), False)
+        self.assertEqual(IsClassMethod(o.StaticMethod), False)
+        self.assertEqual(IsClassMethod(o.ClassMethod), True)
+
+    # ----------------------------------------------------------------------
+    def test_IsStandardMethod(self):
+        self.assertEqual(IsStandardMethod(self.Object.Method), True)
+        self.assertEqual(IsStandardMethod(self.Object.StaticMethod), False)
+        self.assertEqual(IsStandardMethod(self.Object.ClassMethod), False)
+
+        o = self.Object()
+
+        self.assertEqual(IsStandardMethod(o.Method), True)
+        self.assertEqual(IsStandardMethod(o.StaticMethod), False)
+        self.assertEqual(IsStandardMethod(o.ClassMethod), False)
+
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
     try: sys.exit(unittest.main(verbosity=2))

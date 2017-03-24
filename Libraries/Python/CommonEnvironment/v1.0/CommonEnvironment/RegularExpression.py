@@ -22,6 +22,8 @@ import os
 import re
 import sys
 
+import six
+
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
@@ -153,7 +155,7 @@ def Generate( regex_or_regex_string,
             ):
     # Handles some of the wonkiness associated with re.split.
 
-    if isinstance(regex_or_regex_string, (str, unicode)):
+    if isinstance(regex_or_regex_string, six.string_types):
         regex = re.compile(regex_or_regex_string)
     else:
         regex = regex_or_regex_string
@@ -174,11 +176,11 @@ def Generate( regex_or_regex_string,
                 MatchDecorator = lambda match: match
 
             # We have capture values.
-            for index in xrange(0, len(items), 2):
+            for index in six.moves.range(0, len(items), 2):
                 match = MatchDecorator(items[index])
                 data = items[index + 1]
 
-                result = { k : v for k, v in itertools.izip(regex.groupindex.iterkeys(), match) }
+                result = { k : v for k, v in six.moves.zip(six.iterkeys(regex.groupindex), match) }
                 result["__data__"] = data
 
                 yield result
@@ -234,7 +236,7 @@ def GenerateClusteredStrings( items,
                                       dm.stream,
                                     )
 
-        for k, v in itertools.izip(comparisons, results):
+        for k, v in six.moves.zip(comparisons, results):
             distances[k] = v
 
     # ----------------------------------------------------------------------

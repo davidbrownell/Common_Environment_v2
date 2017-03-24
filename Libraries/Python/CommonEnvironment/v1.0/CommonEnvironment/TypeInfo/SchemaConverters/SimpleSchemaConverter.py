@@ -15,6 +15,8 @@
 import os
 import sys
 
+import six
+
 from CommonEnvironment.Interface import staticderived
 
 from . import SchemaConverter
@@ -127,7 +129,7 @@ class SimpleSchemaConveter(SchemaConverter):
 
             attributes = []
 
-            for attribute_name, simple_schema_name in dynamic_attributes.iteritems():
+            for attribute_name, simple_schema_name in six.iteritems(dynamic_attributes):
                 value = getattr(type_info, attribute_name, None)
                 if value != None:
                     if isinstance(value, list):
@@ -137,7 +139,7 @@ class SimpleSchemaConveter(SchemaConverter):
 
                     attributes.append("{}={}".format(simple_schema_name, value))
 
-            for simple_schema_name, value in static_attributes.iteritems():
+            for simple_schema_name, value in six.iteritems(static_attributes):
                 attributes.append("{}={}".format(simple_schema_name, value))
 
         else:

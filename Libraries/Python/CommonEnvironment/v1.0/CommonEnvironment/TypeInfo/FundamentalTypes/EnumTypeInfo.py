@@ -48,8 +48,8 @@ class EnumTypeInfo(TypeInfo):
             if not isinstance(friendly_values, list):
                 friendly_values = list(friendly_values)
                
-                if len(friendly_values) != len(values):
-                    raise Exception("The number of 'friendly_values' must match the number of 'values'")
+            if len(friendly_values) != len(values):
+                raise Exception("The number of 'friendly_values' must match the number of 'values'")
 
         self.Values                         = values
         self.FriendlyValues                 = friendly_values

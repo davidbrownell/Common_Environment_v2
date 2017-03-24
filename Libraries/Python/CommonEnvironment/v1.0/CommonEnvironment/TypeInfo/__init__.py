@@ -72,6 +72,10 @@ class Arity(object):
         self.Max                            = max_or_none
 
     # ----------------------------------------------------------------------
+    def __str__(self):
+        return "Arity({}, {})".format(self.Min, self.Max)
+
+    # ----------------------------------------------------------------------
     @property
     def IsSingle(self):
         return self.Min == 1 and self.Max == 1
@@ -168,6 +172,14 @@ class Arity(object):
 
         return 0
 
+    # ----------------------------------------------------------------------
+    def __lt__(self, other):
+        return self.__cmp__(other) < 0
+
+    # ----------------------------------------------------------------------
+    def __eq__(self, other):
+        return self.__cmp__(other) == 0
+
 # ----------------------------------------------------------------------
 class TypeInfo(Interface):
     
@@ -180,7 +192,12 @@ class TypeInfo(Interface):
     def Desc(self):
         raise Exception("Abstract property")
 
-    @abstractproperty
+    # In theory, this should be an abstract property. However, some implementations
+    # have a callable ExpectedType, which will cause Interface validation to fail.
+    # If someone forgets to implement this property/method, they will see an exception
+    # raised on the first invocation.
+    #
+    # @abstractproperty
     def ExpectedType(self):
         raise Exception("Abstract property")
 

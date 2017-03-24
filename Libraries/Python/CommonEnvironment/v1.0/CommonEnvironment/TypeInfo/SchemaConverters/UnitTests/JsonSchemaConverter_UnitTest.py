@@ -103,7 +103,7 @@ class UnitTest(unittest.TestCase):
                                                       "required" : [ "a", "b", ],
                                                     },                         
                                           },
-                           "required" : [ "baz", "foo", ],
+                           "required" : [ "foo", "baz", ],
                          })
 
 # ---------------------------------------------------------------------------

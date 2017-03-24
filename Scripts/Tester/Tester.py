@@ -326,7 +326,7 @@ def TestAll( input_dir,
     with StreamDecorator(sys.stdout).DoneManager( done_prefix="\n\nComposite Results: ",
                                                   line_prefix='',
                                                 ) as dm:
-        for index, configuration in enumerate(CONFIGURATIONS.iterkeys()):
+        for index, configuration in enumerate(six.iterkeys(CONFIGURATIONS)):
             dm.stream.write("Testing '{}' ({} of {})...".format( configuration,
                                                                  index + 1,
                                                                  len(CONFIGURATIONS),
@@ -388,7 +388,7 @@ def MatchAllTests( input_dir,
     with StreamDecorator(sys.stdout).DoneManager( done_prefix="\n\nComposite Results: ",
                                                   line_prefix='',
                                                 ) as dm:
-        for index, configuration in enumerate(CONFIGURATIONS.iterkeys()):
+        for index, configuration in enumerate(six.iterkeys(CONFIGURATIONS)):
             dm.stream.write("Matching '{}' ({} of {})...".format( configuration, 
                                                                   index + 1, 
                                                                   len(CONFIGURATIONS),

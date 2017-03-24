@@ -108,61 +108,21 @@ class Interface(object):
                 assert False, type_
         
             # ---------------------------------------------------------------------------
-            if sys.version_info[0] == 2:
-            
-                # ----------------------------------------------------------------------
-                def GenerateInfo(item):
-                    if inspect.isfunction(item):
-                        return QuickObject( type_=FunctionType,
-                                            func_code=item.func_code,
-                                            func_defaults=item.func_defaults,
-                                          )
-        
-                    elif inspect.ismethod(item):
-                        # This is a bit strange, but static functions will have a __self__ value != None
-                        if item.__self__ != None:
-                            type_ = ClassFunctionType
-                        else:
-                            type_ = MethodType
-        
-                        return QuickObject( type_=type_,
-                                            func_code=item.im_func.func_code,
-                                            func_defaults=item.im_func.func_defaults,
-                                          )
-        
-                    else:
-                        return QuickObject( type_=PropertyType,
-                                          )
-            else:
+            def GenerateInfo(item):
+                if IsStaticMethod(item):
+                    type_ = FunctionType
+                elif IsClassMethod(item):
+                    type_ = ClassFunctionType
+                elif IsStandardMethod(item):
+                    type_ = MethodType
+                else:
+                    return QuickObject( type_=PropertyType,
+                                      )
 
-                # ----------------------------------------------------------------------
-                def GenerateInfo(item):
-                    type_name = type(item).__name__
-                    
-                    if type_name == "function":
-                        type_ = FunctionType
-
-                        var_names = item.__code__.co_varnames
-                        if var_names:
-                            if var_names[0] == "self":
-                                type_ = MethodType
-                            elif var_names[0] == "cls":
-                                type_ = ClassFunctionType
-
-                        return QuickObject( type_=type_,
-                                            func_code=item.__code__,
-                                            func_defaults=item.__defaults__,
-                                          )
-
-                    elif type_name == "method":
-                        return QuickObject( type_=ClassFunctionType,
-                                            func_code=item.__code__,
-                                            func_defaults=item.__defaults__,
-                                          )
-
-                    else:
-                        return QuickObject( type_=PropertyType,
-                                          )
+                return QuickObject( type_=type_,
+                                    func_code=item.__code__,
+                                    func_defaults=item.__defaults__,
+                                  )
 
             # ---------------------------------------------------------------------------
             def LocationString(info):
@@ -640,3 +600,46 @@ def CreateCulledCallable(callable):
     # ----------------------------------------------------------------------
     
     return Method
+
+# ----------------------------------------------------------------------
+def IsStaticMethod(item):
+    if type(item).__name__ != "function":
+        return False
+
+    # There should be a more definitive way to differentiate
+    # between static/class/standard methods. Things are more
+    # predictable if we have an item associated with an instance
+    # of an object, but not as clear when given a method associate
+    # with the class instance.
+    #
+    # This is a hack!
+    var_names = item.__code__.co_varnames
+    return not var_names or not _CheckVariableNameVariants(var_names[0], "self", "cls")
+
+# ----------------------------------------------------------------------
+def IsClassMethod(item):
+    if type(item).__name__ not in [ "function", "method", ]:
+        return False
+
+    # See notes in IsStaticMethod
+    var_names = item.__code__.co_varnames
+    return var_names and _CheckVariableNameVariants(var_names[0], "cls")
+
+# ----------------------------------------------------------------------
+def IsStandardMethod(item):
+    if type(item).__name__ not in [ "function", "method", ]:
+        return False
+
+    # See notes in IsStaticMethod
+    var_names = item.__code__.co_varnames
+    return var_names and _CheckVariableNameVariants(var_names[0], "self")
+
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+def _CheckVariableNameVariants(var, *variants):
+    for variant in variants:
+        if var.startswith(variant) or var.endswith(variant):
+            return True
+
+    return False

@@ -15,6 +15,8 @@
 import os
 import sys
 
+import six
+
 from CommonEnvironment.Interface import staticderived
 from CommonEnvironment import Package
 from CommonEnvironment import RegularExpression
@@ -226,6 +228,6 @@ class JsonSchemaConverter(SchemaConverter):
                   items,                    # { name : type_info, }
                 ):
         return { "type" : "object",
-                 "properties" : { k : cls.Convert(v) for k, v in items.iteritems() },
-                 "required" : [ k for k, v in items.iteritems() if v.Arity.Min != 0 ],
+                 "properties" : { k : cls.Convert(v) for k, v in six.iteritems(items) },
+                 "required" : [ k for k, v in six.iteritems(items) if v.Arity.Min != 0 ],
                }

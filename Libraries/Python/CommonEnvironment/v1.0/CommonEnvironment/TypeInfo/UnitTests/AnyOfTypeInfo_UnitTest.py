@@ -17,6 +17,7 @@ import sys
 import unittest
 
 from CommonEnvironment import Package
+from CommonEnvironment.TypeInfo import FundamentalTypes
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -27,8 +28,7 @@ with Package.NameInfo(__package__) as ni:
     __package__ = ni.created
     
     from ..AnyOfTypeInfo import *
-    from .. import FundamentalTypes
-
+    
     __package__ = ni.original
 
 # ----------------------------------------------------------------------
