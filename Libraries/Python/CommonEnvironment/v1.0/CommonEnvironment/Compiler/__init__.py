@@ -22,7 +22,8 @@ import shutil
 import sys
 import textwrap
 
-from StringIO import StringIO
+import six
+from six import StringIO
 
 from CommonEnvironment import CommandLine
 from CommonEnvironment import Enum
@@ -751,7 +752,7 @@ def _CommandLineImpl( compiler,
         with stream_info.stream.DoneManager() as dm:
             try:
                 contexts = list(compiler.GenerateContextItems(inputs, **compiler_kwargs))
-            except Exception, ex:
+            except Exception as ex:
                 dm.result = -1
 
                 if getattr(ex, "IsDiagnosticException", False):

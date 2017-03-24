@@ -24,7 +24,7 @@ import sys
 import textwrap
 
 from collections import OrderedDict
-from StringIO import StringIO
+from six.moves import StringIO
 
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CommandLine
@@ -285,6 +285,7 @@ class Compiler( AtomicInputProcessingMixin,
                                                shell=True,
                                                stdout=subprocess.PIPE,
                                                stderr=subprocess.STDOUT,
+                                               encoding="ansi",
                                              )
                                         
                     sink = StringIO()

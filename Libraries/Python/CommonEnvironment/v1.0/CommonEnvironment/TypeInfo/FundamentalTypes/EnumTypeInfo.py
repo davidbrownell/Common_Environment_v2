@@ -41,8 +41,15 @@ class EnumTypeInfo(TypeInfo):
         if not values:
             raise Exception("A list of values must be provided")
 
-        if friendly_values != None and len(friendly_values) != len(values):
-            raise Exception("The number of 'friendly_values' must match the number of 'values'")
+        if not isinstance(values, list):
+            values = list(values)
+
+        if friendly_values != None:
+            if not isinstance(friendly_values, list):
+                friendly_values = list(friendly_values)
+               
+                if len(friendly_values) != len(values):
+                    raise Exception("The number of 'friendly_values' must match the number of 'values'")
 
         self.Values                         = values
         self.FriendlyValues                 = friendly_values

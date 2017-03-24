@@ -20,7 +20,7 @@ import sys
 from CommonEnvironment import Package
 from CommonEnvironment.StreamDecorator import StreamDecorator
 
-OutputMixin = Package.ImportInit().OutputMixin
+OutputMixin                                 = Package.ImportInit().OutputMixin
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable

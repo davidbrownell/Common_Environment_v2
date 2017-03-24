@@ -67,6 +67,7 @@ class CodeCoverageExtractor(CodeCoverageExtractorMod.CodeCoverageExtractor):
                                    shell=True,
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.STDOUT,
+                                   encoding="ansi",
                                  )
 
         results.test_output = result.stdout.read()

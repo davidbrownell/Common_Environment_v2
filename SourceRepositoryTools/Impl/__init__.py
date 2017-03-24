@@ -274,7 +274,7 @@ def GetRepositoryUniqueId( repository_root,
         unique_id = match.group("guid").upper()
     else:
         if scm == None:
-            scm or SourceControlManagement.GetSCM(repository_root, throw_on_error=False)
+            scm or CommonEnvironmentImports.SourceControlManagement.GetSCM(repository_root, throw_on_error=False)
             if scm == None:
                 if throw_on_error:
                     raise Exception("Id information was not found nor could SCM information be extracted from '{}'".format(repository_root))

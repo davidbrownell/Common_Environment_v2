@@ -32,6 +32,7 @@ from ...SourceControlManagement import DistributedSourceControlManagementBase, \
 
 from CommonEnvironment.Interface import staticderived
 from CommonEnvironment.QuickObject import QuickObject
+from CommonEnvironment import six_plus
 
 from CommonEnvironment.TypeInfo.FundamentalTypes.DateTimeTypeInfo import DateTimeTypeInfo
 from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import StringSerialization
@@ -72,6 +73,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.STDOUT,
                                    env=os.environ,
+                                   encoding="ansi",
                                  )
         content = result.stdout.read().strip()
         result = result.wait() or 0

@@ -25,7 +25,7 @@ import sys
 import textwrap
 import time
 
-from StringIO import StringIO
+from six.moves import StringIO
 
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CommandLine
@@ -143,6 +143,7 @@ class Verifier( CustomInvocationMixin,
                      verbose_stream,
                      verbose,
                    ):                       # <Too many local variables> pylint: disable = R0914
+        return 0 # BugBug
         environment = Shell.GetEnvironment()
 
         # If the file being invoked is a test file, measure the file under
@@ -178,6 +179,7 @@ class Verifier( CustomInvocationMixin,
                                        shell=True,
                                        stdout=subprocess.PIPE,
                                        stderr=subprocess.STDOUT,
+                                       encoding="ansi",
                                      )
             sink = StringIO()
             output_stream = StreamDecorator([ sink, verbose_stream, ])

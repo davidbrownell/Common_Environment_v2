@@ -85,6 +85,7 @@ class CodeGenerator( IndividualInputProcessingMixin,
                                        stdout=subprocess.PIPE,
                                        stderr=subprocess.STDOUT,
                                        shell=True,
+                                       encoding="ansi",
                                      )
 
             content = result.stdout.read()

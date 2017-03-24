@@ -18,6 +18,8 @@
 import os
 import sys
 
+import six
+
 from .StreamDecorator import StreamDecorator
 
 # ---------------------------------------------------------------------------
@@ -48,7 +50,7 @@ class QuickObject(object):
     def __str__(self):
         output = [ "QuickObject", ]
 
-        for key, value in self.__dict__.iteritems():
+        for key, value in six.iteritems(self.__dict__):
             if isinstance(value, QuickObject):
                 value = StreamDecorator.LeftJustify(str(value), 24)
 

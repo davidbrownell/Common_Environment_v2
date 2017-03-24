@@ -19,8 +19,10 @@ import re
 import sys
 import textwrap
 
-from contextlib import contextmanager
+import six
 from six import StringIO
+
+from contextlib import contextmanager
 
 from . import ModifiableValue, Any
 from .TimeDelta import TimeDelta
@@ -247,10 +249,10 @@ class StreamDecorator(object):
                 if result != None:
                     suffixes.append(result)
 
-            if not isinstance(done_prefix[0], basestring):
+            if not isinstance(done_prefix[0], six.string_types):
                 done_prefix[0] = done_prefix[0]()
             
-            if not isinstance(done_suffix[0], basestring):
+            if not isinstance(done_suffix[0], six.string_types):
                 done_suffix[0] = done_suffix[0]()
 
             if suffixes:

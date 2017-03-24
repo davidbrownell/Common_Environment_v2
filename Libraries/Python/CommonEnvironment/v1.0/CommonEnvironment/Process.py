@@ -17,7 +17,7 @@ import subprocess
 import string
 import sys
 
-from StringIO import StringIO
+from six.moves import StringIO
 
 from .CallOnExit import CallOnExit
 from .StreamDecorator import StreamDecorator
@@ -98,6 +98,7 @@ def _ExecuteImpl( command_line,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.STDOUT,
                                env=environment,
+                               encoding="ansi",
                              )
 
     try:

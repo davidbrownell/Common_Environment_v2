@@ -72,8 +72,7 @@ class Interface(object):
             Obj.AbstractItems is a list of the names of all abstract items defined by this class
     """
 
-    if False: # BugBug
-    # BugBug if __debug__:
+    if __debug__:
         __metaclass__ = abc.ABCMeta
         
         ExtensionMethods = []
@@ -85,8 +84,8 @@ class Interface(object):
             # present and named correctly. We now need to validate static methods and
             # parameters.
         
-            instance = super(Interface, cls).__new__(cls, *args, **kwargs)
-        
+            instance = super(Interface, cls).__new__(cls)
+
             if cls in Interface._verified_types:
                 return instance
         
@@ -109,29 +108,62 @@ class Interface(object):
                 assert False, type_
         
             # ---------------------------------------------------------------------------
-            def GenerateInfo(item):
-                if inspect.isfunction(item):
-                    return QuickObject( type_=FunctionType,
-                                        func_code=item.func_code,
-                                        func_defaults=item.func_defaults,
-                                      )
+            if sys.version_info[0] == 2:
+            
+                # ----------------------------------------------------------------------
+                def GenerateInfo(item):
+                    if inspect.isfunction(item):
+                        return QuickObject( type_=FunctionType,
+                                            func_code=item.func_code,
+                                            func_defaults=item.func_defaults,
+                                          )
         
-                elif inspect.ismethod(item):
-                    # This is a bit strange, but static functions will have a __self__ value != None
-                    if item.__self__ != None:
-                        type_ = ClassFunctionType
+                    elif inspect.ismethod(item):
+                        # This is a bit strange, but static functions will have a __self__ value != None
+                        if item.__self__ != None:
+                            type_ = ClassFunctionType
+                        else:
+                            type_ = MethodType
+        
+                        return QuickObject( type_=type_,
+                                            func_code=item.im_func.func_code,
+                                            func_defaults=item.im_func.func_defaults,
+                                          )
+        
                     else:
-                        type_ = MethodType
-        
-                    return QuickObject( type_=type_,
-                                        func_code=item.im_func.func_code,
-                                        func_defaults=item.im_func.func_defaults,
-                                      )
-        
-                else:
-                    return QuickObject( type_=PropertyType,
-                                      )
-        
+                        return QuickObject( type_=PropertyType,
+                                          )
+            else:
+
+                # ----------------------------------------------------------------------
+                def GenerateInfo(item):
+                    type_name = type(item).__name__
+                    
+                    if type_name == "function":
+                        type_ = FunctionType
+
+                        var_names = item.__code__.co_varnames
+                        if var_names:
+                            if var_names[0] == "self":
+                                type_ = MethodType
+                            elif var_names[0] == "cls":
+                                type_ = ClassFunctionType
+
+                        return QuickObject( type_=type_,
+                                            func_code=item.__code__,
+                                            func_defaults=item.__defaults__,
+                                          )
+
+                    elif type_name == "method":
+                        return QuickObject( type_=ClassFunctionType,
+                                            func_code=item.__code__,
+                                            func_defaults=item.__defaults__,
+                                          )
+
+                    else:
+                        return QuickObject( type_=PropertyType,
+                                          )
+
             # ---------------------------------------------------------------------------
             def LocationString(info):
                 if hasattr(info, "func_code"):
@@ -171,7 +203,7 @@ class Interface(object):
                         Interface._verified_types.add(base)
                         base.AbstractItems = these_abstracts
         
-                extension_method_keys = extension_methods.keys()
+                extension_method_keys = list(six.iterkeys(extension_methods))
                 extension_method_keys.sort()
         
                 for emk in extension_method_keys:
@@ -180,8 +212,22 @@ class Interface(object):
                 # Verify that all abstracts exist
                 errors = []
         
-                for abstract_name, abstract_info in abstracts.iteritems():
-                    if not hasattr(cls, abstract_name):
+                # ----------------------------------------------------------------------
+                def HasItem(abstract_name, abstract_info):
+                    if abstract_info.type_ == MethodType:
+                        value = getattr(cls, abstract_name, None)
+                        if value == None:
+                            return False
+
+                        if six.get_function_code(value) == abstract_info.func_code:
+                            return False
+
+                    return hasattr(cls, abstract_name)
+
+                # ----------------------------------------------------------------------
+                
+                for abstract_name, abstract_info in six.iteritems(abstracts):
+                    if not HasItem(abstract_name, abstract_info):
                         errors.append("The abstract {type_} '{name}' is missing {location}".format( type_=TypeToString(abstract_info.type_),
                                                                                                     name=abstract_name,
                                                                                                     location=LocationString(abstract_info),
@@ -193,7 +239,7 @@ class Interface(object):
                 # Ensure that all abstracts are of the correct type
                 errors = []
         
-                for abstract_name, abstract_info in abstracts.iteritems():
+                for abstract_name, abstract_info in six.iteritems(abstracts):
                     concrete_value = getattr(cls, abstract_name)
                     concrete_info = GenerateInfo(concrete_value)
         
@@ -201,9 +247,7 @@ class Interface(object):
                     # to implement an abstract static/method with a standard method if the implementation
                     # requires state.
                     if not ( abstract_info.type_ == concrete_info.type_ or
-                             (abstract_info.type_ in [ FunctionType, ClassFunctionType, ] and concrete_info.type_ in [ FunctionType, ClassFunctionType, MethodType, ]) or
-                             (abstract_info.type_ in [ FunctionType, ] and concrete_info.type_ in [ FunctionType, ClassFunctionType, ]) or
-                             (abstract_info.type_ in [ PropertyType, ] and concrete_info.type_ in [ FunctionType, ClassFunctionType, MethodType, ])
+                             (abstract_info.type_ in [ FunctionType, ClassFunctionType, MethodType, ] and concrete_info.type_ in [ FunctionType, ClassFunctionType, MethodType, ])
                            ):
                         errors.append("'{name}' was expected to be a {abstract_type} but {concrete_type} was found ({abstract_location}, {concrete_location})".format( name=abstract_name,
                                                                                                                                                                        abstract_type=TypeToString(abstract_info.type_),
@@ -218,11 +262,12 @@ class Interface(object):
                 # the function to ensure that the value defined is the same as the abstract value.
                 errors = []
         
-                for abstract_name, abstract_info in [ (k, v) for k, v in abstracts.iteritems() if v.type_ in [ FunctionType, ClassFunctionType, ] ]:
+                for abstract_name, abstract_info in [ (k, v) for k, v in six.iteritems(abstracts) if v.type_ in [ FunctionType, ClassFunctionType, ] ]:
                     concrete_value = getattr(cls, abstract_name)
-        
-                    if ( concrete_value.func_code.co_filename == abstract_info.func_code.co_filename and 
-                         concrete_value.func_code.co_firstlineno == abstract_info.func_code.co_firstlineno
+                    concrete_value_func_code = six.get_function_code(concrete_value)
+
+                    if ( concrete_value_func_code.co_filename == abstract_info.func_code.co_filename and 
+                         concrete_value_func_code.co_firstlineno == abstract_info.func_code.co_firstlineno
                        ):
                         errors.append("The abstract {type_} '{name}' is missing {location}".format( type_=TypeToString(abstract_info.type_),
                                                                                                     name=abstract_name,
@@ -266,7 +311,7 @@ class Interface(object):
                     values = []
                     has_default_value = False
         
-                    for name, default_value in params.iteritems():
+                    for name, default_value in six.iteritems(params):
                         if default_value != NoDefault:
                             has_default_value = True
                             
@@ -289,7 +334,7 @@ class Interface(object):
         
                 errors = []
         
-                for abstract_name, abstract_info in [ (k, v) for k, v in abstracts.iteritems() if v.type_ != PropertyType ]:
+                for abstract_name, abstract_info in [ (k, v) for k, v in six.iteritems(abstracts) if v.type_ != PropertyType ]:
                     concrete_value = getattr(cls, abstract_name)
                     concrete_info = GenerateInfo(concrete_value)
                     concrete_params = GetParams(concrete_info)
@@ -316,11 +361,13 @@ class Interface(object):
                     if len(concrete_params) > len(abstract_params):
                         params_to_remove = min(len(concrete_params) - len(abstract_params), len(concrete_info.func_defaults or []))
                         
+                        keys = list(six.iterkeys(concrete_params))
+
                         for _ in range(params_to_remove):
-                            del concrete_params[concrete_params.keys()[-1]]
+                            del concrete_params[keys.pop()]
         
                     if ( (require_exact_match and len(concrete_params) != len(abstract_params)) or 
-                         not all(k in concrete_params and concrete_params[k] == v for k, v in abstract_params.iteritems())
+                         not all(k in concrete_params and concrete_params[k] == v for k, v in six.iteritems(abstract_params))
                        ):
                         errors.append((abstract_name, DisplayParams(abstract_params), LocationString(abstract_info), DisplayParams(concrete_params), LocationString(concrete_info)))
         
@@ -351,7 +398,7 @@ class Interface(object):
                     Can't instantiate class '{class_}' due to:
                         - {errors}
                     """).format( class_=cls.__name__,
-                                 errors="\n    - ".join(ex.args[0]),
+                                 errors="\n    - ".join(ex.args[0] if isinstance(ex.args[0], ( list, tuple )) else [ ex.args[0], ]),
                                ))
 
 # ---------------------------------------------------------------------------
@@ -566,7 +613,10 @@ def CreateCulledCallable(callable):
         culled_method(2, a=1, c=3) -> MyMethod(a=2)
     """
 
-    arg_spec = inspect.getargspec(callable)
+    if sys.version_info[0] == 2:
+        arg_spec = inspect.getargspec(callable)
+    else:
+        arg_spec = inspect.getfullargspec(callable)
     
     arg_names = { arg for arg in arg_spec.args }
     positional_arg_names = arg_spec.args[:len(arg_spec.args) - len(arg_spec.defaults or [])]

@@ -142,7 +142,7 @@ class EntryPointData(object):
                 entry_points.append(epd)
 
         # Sort by line number, as we want the functions displayed in the order in which they were declared
-        # BugBug entry_points.sort(key=lambda x: x.Func.func_code.co_firstlineno)
+        entry_points.sort(key=lambda x: six.get_function_code(x.Func).co_firstlineno)
 
         return entry_points
 
@@ -224,7 +224,7 @@ class EntryPointData(object):
                     raise Exception("Dictionaries must have an arity of 1 or ? ({})".format(name))
 
                 # <Instance of '<obj>' has no '<name>' member> pylint: disable = E1101, E1103
-                for k, v in type_info.Items.iteritems():
+                for k, v in six.iteritems(type_info.Items):
                     if not isinstance(v, StringTypeInfo):
                         raise Exception("Dictionary value types must be strings ({}, {})".format(name, k))
 
@@ -379,7 +379,7 @@ class Executor(object):
                     {args}
 
                 """).format( name=entry_point.Name,
-                             args='\n'.join([ "    {k:<20} {v}".format(k="{}:".format(k), v=v) for k, v in kwargs.iteritems() ]),
+                             args='\n'.join([ "    {k:<20} {v}".format(k="{}:".format(k), v=v) for k, v in six.iteritems(kwargs) ]),
                            ))
 
         # ----------------------------------------------------------------------

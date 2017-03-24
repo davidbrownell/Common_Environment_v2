@@ -189,6 +189,7 @@ class CodeCoverageExtractor(CodeCoverageExtractorMod.CodeCoverageExtractor):
                                        shell=True,
                                        stdout=subprocess.PIPE,
                                        stderr=subprocess.STDOUT,
+                                       encoding="ansi",
                                      )
 
             results.test_output = result.stdout.read()
@@ -209,6 +210,7 @@ class CodeCoverageExtractor(CodeCoverageExtractorMod.CodeCoverageExtractor):
                                        shell=True,
                                        stdout=subprocess.PIPE,
                                        stderr=subprocess.STDOUT,
+                                       encoding="ansi",
                                      )
             results.coverage_output = result.stdout.read()
             results.coverage_result = result.wait() or 0

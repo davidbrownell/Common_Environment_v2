@@ -106,8 +106,7 @@ def ActivateLibraries( name,
     # be supressed in most cases. Instead of executing the content directly, execute it
     # ourselves.
     display_sentinel = "__DISPLAY__??!! "
-    display_sentinel_bytes = six_plus.StringToBytes(display_sentinel)
-
+    
     commands = create_commands_func(OrderedDict([ ( "libraries", libraries ),
                                                   ( "create_message_statement_func", lambda message: environment.Message("{}{}".format(display_sentinel, message)) ),
                                                   ( "display_sentinel", display_sentinel ),
@@ -126,6 +125,7 @@ def ActivateLibraries( name,
                                        shell=True,
                                        stdout=subprocess.PIPE,
                                        stderr=subprocess.STDOUT,
+                                       encoding="ansi",
                                      )
 
             content = []
@@ -136,8 +136,8 @@ def ActivateLibraries( name,
 
                 content.append(line)
                 
-                if line.startswith(display_sentinel_bytes):
-                    sys.stdout.write("{}".format(six_plus.BytesToString(line[len(display_sentinel_bytes):])))
+                if line.startswith(display_sentinel):
+                    sys.stdout.write("{}".format(line[len(display_sentinel):]))
 
             result = result.wait() or 0
 

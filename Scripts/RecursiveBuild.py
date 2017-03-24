@@ -146,6 +146,7 @@ def Execute( code_dir,
                                                    shell=True,
                                                    stdout=subprocess.PIPE,
                                                    stderr=subprocess.STDOUT,
+                                                   encoding="ansi",
                                                  )
                         output = result.stdout.read()
 

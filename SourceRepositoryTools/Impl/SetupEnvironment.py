@@ -387,7 +387,7 @@ def _SetupBootstrap( environment,
 
             # Is this a tool repo
             if ( hasattr(dependencies_func, "_self_wrapper") and
-                 dependencies_func._self_wrapper.func_name == "ToolRepository"
+                 dependencies_func._self_wrapper.__name__ == "ToolRepository"
                ):
                 is_tool_repository = True
 
@@ -400,9 +400,9 @@ def _SetupBootstrap( environment,
     # A tool repository cannot have any configurations, dependencies, or version specs
     if ( is_tool_repository and 
          ( len(configurations) != 1 or 
-           configurations.values()[0].Dependencies or 
-           configurations.values()[0].VersionSpecs.Tools or 
-           configurations.values()[0].VersionSpecs.Libraries
+           next(six.itervalues(configurations)).Dependencies or 
+           next(six.itervalues(configurations)).VersionSpecs.Tools or 
+           next(six.itervalues(configurations)).VersionSpecs.Libraries
          )
        ):
         raise Exception("A tool repository cannot have any configurations, dependencies, or version specs")
@@ -612,9 +612,9 @@ def _SetupCustom(environment, repository_root, customization_mod, debug, optiona
     if customization_mod == None or not hasattr(customization_mod, CUSTOM_ACTIONS_METHOD_NAME):
         return
 
-    if customization_mod.CustomActions.func_code.co_argcount == 0:
+    if customization_mod.CustomActions.__code__.co_argcount == 0:
         return customization_mod.CustomActions()
-    elif customization_mod.CustomActions.func_code.co_argcount == 1:
+    elif customization_mod.CustomActions.__code__.co_argcount == 1:
         return customization_mod.CustomActions(optional_configuration_names)
 
     raise Exception("'{}' in '{}' should take 0..1 paramters".format(CUSTOM_ACTIONS_METHOD_NAME, inspect.getsourcefile(customization_mod)))

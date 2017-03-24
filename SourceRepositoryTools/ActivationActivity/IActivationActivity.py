@@ -140,6 +140,7 @@ class IActivationActivity(Interface):
                                        shell=True,
                                        stdout=subprocess.PIPE,
                                        stderr=subprocess.STDOUT,
+                                       encoding="ansi",
                                      )
 
             if process_lines:
