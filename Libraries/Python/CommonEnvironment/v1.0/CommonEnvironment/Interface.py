@@ -602,37 +602,59 @@ def CreateCulledCallable(callable):
     return Method
 
 # ----------------------------------------------------------------------
-def IsStaticMethod(item):
-    if type(item).__name__ != "function":
-        return False
+if sys.version_info[0] == 2:
+    # ----------------------------------------------------------------------
+    def IsStaticMethod(item):
+        return inspect.isfunction(item)
 
-    # There should be a more definitive way to differentiate
-    # between static/class/standard methods. Things are more
-    # predictable if we have an item associated with an instance
-    # of an object, but not as clear when given a method associate
-    # with the class instance.
-    #
-    # This is a hack!
-    var_names = item.__code__.co_varnames
-    return not var_names or not _CheckVariableNameVariants(var_names[0], "self", "cls")
+    # ----------------------------------------------------------------------
+    def IsClassMethod(item):
+        if not inspect.ismethod(item):
+            return False
 
-# ----------------------------------------------------------------------
-def IsClassMethod(item):
-    if type(item).__name__ not in [ "function", "method", ]:
-        return False
+        # This is a bit strange, but class functions will have a __self__ value != None
+        return item.__self__ != None and type(item.__self__) == type
 
-    # See notes in IsStaticMethod
-    var_names = item.__code__.co_varnames
-    return var_names and _CheckVariableNameVariants(var_names[0], "cls")
+    # ----------------------------------------------------------------------
+    def IsStandardMethod(item):
+        if not inspect.ismethod(item):
+            return False
 
-# ----------------------------------------------------------------------
-def IsStandardMethod(item):
-    if type(item).__name__ not in [ "function", "method", ]:
-        return False
+        return item.__self__ == None or type(item.__self__) != type
 
-    # See notes in IsStaticMethod
-    var_names = item.__code__.co_varnames
-    return var_names and _CheckVariableNameVariants(var_names[0], "self")
+else:
+    # ----------------------------------------------------------------------
+    def IsStaticMethod(item):
+        if type(item).__name__ != "function":
+            return False
+    
+        # There should be a more definitive way to differentiate
+        # between static/class/standard methods. Things are more
+        # predictable if we have an item associated with an instance
+        # of an object, but not as clear when given a method associate
+        # with the class instance.
+        #
+        # This is a hack!
+        var_names = item.__code__.co_varnames
+        return not var_names or not _CheckVariableNameVariants(var_names[0], "self", "cls")
+    
+    # ----------------------------------------------------------------------
+    def IsClassMethod(item):
+        if type(item).__name__ not in [ "function", "method", ]:
+            return False
+    
+        # See notes in IsStaticMethod
+        var_names = item.__code__.co_varnames
+        return var_names and _CheckVariableNameVariants(var_names[0], "cls")
+    
+    # ----------------------------------------------------------------------
+    def IsStandardMethod(item):
+        if type(item).__name__ not in [ "function", "method", ]:
+            return False
+    
+        # See notes in IsStaticMethod
+        var_names = item.__code__.co_varnames
+        return var_names and _CheckVariableNameVariants(var_names[0], "self")
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------

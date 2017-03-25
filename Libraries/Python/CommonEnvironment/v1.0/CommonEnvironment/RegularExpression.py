@@ -194,8 +194,6 @@ def Generate( regex_or_regex_string,
 def GenerateClusteredStrings( items,
                               optional_output_stream=None,
                             ):
-    import itertools
-
     from collections import OrderedDict
 
     import cluster

@@ -19,7 +19,6 @@ from __future__ import absolute_import
 import inspect
 import os
 import copy
-import subprocess
 import sys
 
 import six
@@ -27,6 +26,7 @@ import six
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment.Interface import Interface, abstractmethod, abstractproperty
 from CommonEnvironment import Package
+from CommonEnvironment import Process
 
 SourceRepositoryTools                       = Package.ImportInit("..")
 
@@ -136,26 +136,7 @@ class IActivationActivity(Interface):
         with CallOnExit(lambda: os.remove(temp_filename)):
             environment.MakeFileExecutable(temp_filename)
 
-            result = subprocess.Popen( temp_filename,
-                                       shell=True,
-                                       stdout=subprocess.PIPE,
-                                       stderr=subprocess.STDOUT,
-                                       encoding="ansi",
-                                     )
-
-            if process_lines:
-                read_func = result.stdout.readline
-            else:
-                read_func = lambda: result.stdout.read(1)
-
-            while True:
-                content = read_func()
-                if not content:
-                    break
-
-                output_stream.write(content)
-
-            return result.wait() or 0
+            return Process.Execute(temp_filename, output_stream.write)
 
     # ---------------------------------------------------------------------------
     @staticmethod

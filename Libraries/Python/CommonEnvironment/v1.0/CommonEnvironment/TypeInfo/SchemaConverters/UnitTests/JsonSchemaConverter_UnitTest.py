@@ -82,7 +82,7 @@ class UnitTest(unittest.TestCase):
                                                                                                                 "properties" : { "foo" : { "type" : "string", "minLength" : 1, },
                                                                                                                                  "bar" : { "type" : "integer", },
                                                                                                                                },
-                                                                                                                "required" : [ "foo", "bar", ],
+                                                                                                                "required" : [ "bar", "foo", ],
                                                                                                               })
 
         self.assertEqual(JsonSchemaConverter.Convert(ClassTypeInfo(foo=StringTypeInfo(), bar=IntTypeInfo(arity='?'))), { "type" : "object",
@@ -103,7 +103,7 @@ class UnitTest(unittest.TestCase):
                                                       "required" : [ "a", "b", ],
                                                     },                         
                                           },
-                           "required" : [ "foo", "baz", ],
+                           "required" : [ "baz", "foo", ],
                          })
 
 # ---------------------------------------------------------------------------

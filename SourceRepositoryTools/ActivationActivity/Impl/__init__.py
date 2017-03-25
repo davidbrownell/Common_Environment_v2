@@ -14,7 +14,6 @@
 # ----------------------------------------------------------------------
 import os
 import shutil
-import subprocess
 import sys
 import textwrap
 import traceback
@@ -29,6 +28,7 @@ from CommonEnvironment import ModifiableValue
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import FileSystem
 from CommonEnvironment.Interface import CreateCulledCallable
+from CommonEnvironment import Process
 from CommonEnvironment.QuickObject import QuickObject
 from CommonEnvironment import six_plus
 from CommonEnvironment import Shell
@@ -121,28 +121,24 @@ def ActivateLibraries( name,
         with CallOnExit(lambda: os.remove(temp_filename)):
             environment.MakeFileExecutable(temp_filename)
 
-            result = subprocess.Popen( temp_filename,
-                                       shell=True,
-                                       stdout=subprocess.PIPE,
-                                       stderr=subprocess.STDOUT,
-                                       encoding="ansi",
-                                     )
-
             content = []
-            while True:
-                line = result.stdout.readline()
-                if not line:
-                    break
 
+            # ----------------------------------------------------------------------
+            def OnLine(line):
                 content.append(line)
-                
+
                 if line.startswith(display_sentinel):
                     sys.stdout.write("{}".format(line[len(display_sentinel):]))
 
-            result = result.wait() or 0
-
+            # ----------------------------------------------------------------------
+            
+            result = Process.Execute( temp_filename, 
+                                      OnLine,
+                                      line_delimited_output=True,
+                                    )
+            
             if result != 0:
-                content = ''.join([ line.decode("utf-8") for line in content ])
+                content = ''.join(content)
 
                 raise Exception(textwrap.dedent(
                     """\

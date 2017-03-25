@@ -12,6 +12,7 @@
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 # |  
 # ----------------------------------------------------------------------
+import math
 import os
 import sys
 
@@ -54,10 +55,11 @@ class IntTypeInfo(TypeInfo):
             range_max = (1 << (bytes * 8)) - 1
 
             if min == None or min < 0:
-                half = int(range_max / 2)
+                print "BugBug", range_max
+                half = int(math.ceil(float(range_max) / 2))
                 
-                range_min = -(half + 1)
-                range_max = half
+                range_min = -half
+                range_max = half - 1
 
             if min != None:
                 if min < range_min:

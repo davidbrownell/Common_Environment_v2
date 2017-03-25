@@ -16,7 +16,6 @@
 # ---------------------------------------------------------------------------
 import os
 import re
-import subprocess
 import sys
 import textwrap
 import time
@@ -31,6 +30,7 @@ from ...SourceControlManagement import DistributedSourceControlManagementBase, \
                                        BranchAndDateUpdateMergeArg
 
 from CommonEnvironment.Interface import staticderived
+from CommonEnvironment import Process
 from CommonEnvironment.QuickObject import QuickObject
 from CommonEnvironment import six_plus
 
@@ -68,15 +68,11 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
     def Execute(repo_root, command, append_newline_to_output=True):
         command = command.replace("hg ", 'hg --cwd "{}" '.format(repo_root))
 
-        result = subprocess.Popen( command,
-                                   shell=True,
-                                   stdout=subprocess.PIPE,
-                                   stderr=subprocess.STDOUT,
-                                   env=os.environ,
-                                   encoding="ansi",
-                                 )
-        content = result.stdout.read().strip()
-        result = result.wait() or 0
+        result, content = Process.Execute( command,
+                                           environment=os.environ,
+                                         )
+
+        content = content.strip()
 
         if append_newline_to_output and content:
             content += '\n'

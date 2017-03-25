@@ -227,7 +227,10 @@ class JsonSchemaConverter(SchemaConverter):
     def Classify( cls, 
                   items,                    # { name : type_info, }
                 ):
+        required = [ k for k, v in six.iteritems(items) if v.Arity.Min != 0 ]
+        required.sort()
+
         return { "type" : "object",
                  "properties" : { k : cls.Convert(v) for k, v in six.iteritems(items) },
-                 "required" : [ k for k, v in six.iteritems(items) if v.Arity.Min != 0 ],
+                 "required" : required,
                }

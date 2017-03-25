@@ -31,6 +31,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 def Execute( command_line,
              optional_output_stream_or_functor=None,
              convert_newlines=True,
+             line_delimited_output=False,
              environment=None,
            ):
     return _ExecuteImpl( command_line,
@@ -38,11 +39,13 @@ def Execute( command_line,
                          environment=environment,
                          optional_output_stream_or_functor=optional_output_stream_or_functor,
                          using_colorama=False,
+                         line_delimited_output=line_delimited_output,
                        )
 
 # ----------------------------------------------------------------------
 def ExecuteWithColorama( command_line,
                          convert_newlines=True,
+                         line_delimited_output=False,
                          environment=None,
                        ):
     import colorama
@@ -56,6 +59,7 @@ def ExecuteWithColorama( command_line,
                              environment=environment,
                              optional_output_stream_or_functor=sys.stdout,
                              using_colorama=True,
+                             line_delimited_output=line_delimited_output,
                            )
 
 # ----------------------------------------------------------------------
@@ -66,6 +70,7 @@ def _ExecuteImpl( command_line,
                   environment,
                   optional_output_stream_or_functor,
                   using_colorama,
+                  line_delimited_output,
                 ):
     assert command_line
     
@@ -92,72 +97,110 @@ def _ExecuteImpl( command_line,
         # ----------------------------------------------------------------------
         
         optional_output_stream_or_functor = StreamOutputFunctor
+        
+    if line_delimited_output:
+        internal_content = []
 
-    result = subprocess.Popen( command_line,
-                               shell=True,
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.STDOUT,
-                               env=environment,
-                               encoding="ansi",
-                             )
+        prev_optional_output_stream_or_functor = optional_output_stream_or_functor
 
-    try:
-        escape_sequence = []
-        newline_sequence = []
-
-        while True:
-            c = result.stdout.read(1)
-            if not c:
-                break
-
-            # Process special chars
-            value = ord(c)
-            
-            # Escape sequences need to be sent to colorama as an atomic string
-            if value == 27:     # ASCII ESC
-                assert not escape_sequence
-                escape_sequence.append(c)
-                continue
-
-            if value == 13:     # ASCII '\r'
-                newline_sequence.append(c)
-                continue
-
-            # Process sequences
-            content = None
-
-            if escape_sequence:
-                escape_sequence.append(c)
-
-                if c not in string.ascii_letters:
-                    continue
-
-                content = ''.join(escape_sequence)
-                escape_sequence = []
-
-                if not using_colorama:
-                    continue
-
-            elif newline_sequence:
-                newline_sequence.append(c)
-
-                content = ''.join(newline_sequence)
-                newline_sequence = []
-
-                if convert_newlines and content == '\r\n':
-                    content = '\n'
+        # ----------------------------------------------------------------------
+        def OutputFunctor(c):
+            if '\n' in c:
+                assert c.endswith('\n'), c
+                
+                prev_optional_output_stream_or_functor("{}{}".format(''.join(internal_content), c))
+                internal_content[:] = []
 
             else:
-                content = c
+                internal_content.append(c)
 
-            assert content
-            if optional_output_stream_or_functor(content) == False:
-                break
+        # ----------------------------------------------------------------------
+        def Flush():
+            if internal_content:
+                prev_optional_output_stream_or_functor(''.join(internal_content))
+                internal_content[:] = []
 
-        result = result.wait() or 0
+        # ----------------------------------------------------------------------
+        
+        optional_output_stream_or_functor = OutputFunctor
 
-    except IOError:
-        result = -1
+    else:
+        # ----------------------------------------------------------------------
+        def Flush():
+            pass
+
+        # ----------------------------------------------------------------------
+        
+    args = [ command_line, ]
+    kwargs = { "shell" : True,
+               "stdout" : subprocess.PIPE,
+               "stderr" : subprocess.STDOUT,
+               "env" : environment,
+             }
+
+    if sys.version_info[0] != 2:
+        kwargs["encoding"] = "ansi"
+
+    result = subprocess.Popen(*args, **kwargs)
+
+    with CallOnExit(Flush):
+        try:
+            escape_sequence = []
+            newline_sequence = []
+        
+            while True:
+                c = result.stdout.read(1)
+                if not c:
+                    break
+        
+                # Process special chars
+                value = ord(c)
+                
+                # Escape sequences need to be sent to colorama as an atomic string
+                if value == 27:     # ASCII ESC
+                    assert not escape_sequence
+                    escape_sequence.append(c)
+                    continue
+        
+                if value == 13:     # ASCII '\r'
+                    newline_sequence.append(c)
+                    continue
+        
+                # Process sequences
+                content = None
+        
+                if escape_sequence:
+                    escape_sequence.append(c)
+        
+                    if c not in string.ascii_letters:
+                        continue
+        
+                    content = ''.join(escape_sequence)
+                    escape_sequence = []
+        
+                    if not using_colorama:
+                        continue
+        
+                elif newline_sequence:
+                    newline_sequence.append(c)
+        
+                    content = ''.join(newline_sequence)
+                    newline_sequence = []
+        
+                    if convert_newlines and content == '\r\n':
+                        content = '\n'
+        
+                else:
+                    content = c
+        
+                assert content
+                if optional_output_stream_or_functor(content) == False:
+                    break
+        
+            result = result.wait() or 0
+        
+        except IOError:
+            result = -1
 
     if sink == None:
         return result

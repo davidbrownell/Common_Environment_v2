@@ -86,8 +86,10 @@ def CustomScriptExtractors(environment):
 
     # ---------------------------------------------------------------------------
     def PythonDocs(script_filename):
-        from CommonEnvironment.StreamDecorator import StreamDecorator
+        import six
 
+        from CommonEnvironment.StreamDecorator import StreamDecorator
+        
         try:
             co = compile(open(script_filename, "rb").read(), script_filename, "exec")
             

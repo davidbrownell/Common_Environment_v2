@@ -292,7 +292,7 @@ def CreateSimpleVisitor( onBoolFunc=None,               # def Func(type_info, *a
 
 # ----------------------------------------------------------------------
 def CreateTypeInfo(type, **kwargs):
-    if type in six.string_types:
+    if _IsStringType(type):
         return StringTypeInfo(**kwargs)
 
     for potential_type_info in [ BoolTypeInfo,
@@ -311,4 +311,22 @@ def CreateTypeInfo(type, **kwargs):
         if potential_type_info.ExpectedType == type:
             return potential_type_info(**kwargs)
 
-    raise BaseException("'{}' is not a recognized type".format(type))
+    raise Exception("'{}' is not a recognized type".format(type))
+
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+if sys.version_info[0] == 2:
+    # ----------------------------------------------------------------------
+    def _IsStringType(t):
+        return t in [ str, unicode, basestring, ]
+
+    # ----------------------------------------------------------------------
+    
+else:
+    # ----------------------------------------------------------------------
+    def _IsStringType(t):
+        return t == str
+
+    # ----------------------------------------------------------------------
+    

@@ -18,7 +18,6 @@
 """
 
 import os
-import subprocess
 import shutil
 import sys
 import textwrap
@@ -30,6 +29,7 @@ from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CommandLine
 from CommonEnvironment import FileSystem
 from CommonEnvironment import Interface
+from CommonEnvironment import Process
 from CommonEnvironment import Shell
 from CommonEnvironment.StreamDecorator import StreamDecorator
 
@@ -281,24 +281,10 @@ class Compiler( AtomicInputProcessingMixin,
                                                                   '' if not context.distutil_args else " {}".format(' '.join([ '"{}"'.format(arg) for arg in context.distutil_args ])),
                                                                 )
 
-                    result = subprocess.Popen( command_line,
-                                               shell=True,
-                                               stdout=subprocess.PIPE,
-                                               stderr=subprocess.STDOUT,
-                                               encoding="ansi",
-                                             )
-                                        
                     sink = StringIO()
-                    output_stream = StreamDecorator([ sink, this_verbose_stream, ])
-                         
-                    while True:
-                        line = result.stdout.readline()
-                        if not line:
-                            break
-                            
-                        output_stream.write(line)
-                        
-                    this_dm.result = result.wait() or 0
+
+                    this_dm.result = Process.Execute(command_line, StreamDecorator([ sink, this_verbose_stream, ]))
+
                     if this_dm.result != 0:
                         if not verbose:
                             this_dm.stream.write(sink.getvalue())

@@ -24,7 +24,7 @@
 @REM *** Python is hard-coded; this file will need to be updated should the python version change ***
 
 set DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=%~dp0
-set PYTHON_BINARY=%~dp0Tools\Python\v3.6.0\Windows\python.exe
+set PYTHON_BINARY=%~dp0Tools\Python\v2.7.10\Windows\python.exe
 @REM Common_Environment END
 
 if "%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%"=="" (
