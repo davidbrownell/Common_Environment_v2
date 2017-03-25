@@ -20,6 +20,8 @@ import os
 import sys
 import textwrap
 
+import six
+
 from .StreamDecorator import StreamDecorator
 
 # ---------------------------------------------------------------------------
@@ -58,7 +60,7 @@ def Create(*values):
     except:
         calling_filename = "<<Unknown>>"
 
-    index_key = "_CreateEnumClass_%s" % hashlib.sha1(calling_filename).hexdigest()
+    index_key = "_CreateEnumClass_%s" % hashlib.sha1(six.b(calling_filename)).hexdigest()
     these_globals = globals()
 
     if index_key not in these_globals:
@@ -192,9 +194,12 @@ def Create(*values):
                      internal_statements=StreamDecorator.LeftJustify('\n'.join([ "{value} = {class_name}_{value}Obj()".format(value=value, class_name=class_name) for value in values ]), 4),
                      comma_delimited_value_names=', '.join(values),
                      comma_delimited_value_strings=', '.join([ '"{}"'.format(value) for value in values ]),
-                     comma_delimited_value_values=', '.join([ str(x) for x in xrange(len(values)) ]),
+                     comma_delimited_value_values=', '.join([ str(x) for x in six.moves.range(len(values)) ]),
                    )
 
-    exec(statements)                        # <Use of exec> pylint: disable = W0122
-    return dynamic_result                   # <Use of undefined variable> pylint: disable = E0602
+    l = locals()
+    l["dynamic_result"] = None
+
+    exec(statements, globals(), l)          # <Use of exec> pylint: disable = W0122
+    return l["dynamic_result"]
 

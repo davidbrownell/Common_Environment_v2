@@ -20,11 +20,12 @@ import itertools
 import os
 import sys
 
+import six
 import wrapt
 
-import TypeInfo
-from TypeInfo.FundamentalTypes import *                 # <Unused import> pylint: disable = W0611, W0614
-from TypeInfo.DictTypeInfo import DictTypeInfo          # <Unused import> pylint: disable = W0611, W0614
+from CommonEnvironment import TypeInfo
+from CommonEnvironment.TypeInfo.FundamentalTypes import *                # <Unused import> pylint: disable = W0611, W0614
+from CommonEnvironment.TypeInfo.DictTypeInfo import DictTypeInfo         # <Unused import> pylint: disable = W0611, W0614
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -109,7 +110,7 @@ class FunctionConstraint(object):
                     index += 1
 
                 # Copy the optional args
-                for arg, default_value in itertools.izip(optional_args, arg_defaults):
+                for arg, default_value in six.moves.zip(optional_args, arg_defaults):
                     if arg not in kwargs:
                         kwargs[arg] = default_value
 
@@ -135,7 +136,7 @@ class FunctionConstraint(object):
         if self.Preconditions:
             assert len(kwargs) == len(self.Preconditions)
             
-            for k, v in kwargs.iteritems():
+            for k, v in six.iteritems(kwargs):
                 assert k in self.Preconditions, k
 
                 type_info = self.Preconditions[k]

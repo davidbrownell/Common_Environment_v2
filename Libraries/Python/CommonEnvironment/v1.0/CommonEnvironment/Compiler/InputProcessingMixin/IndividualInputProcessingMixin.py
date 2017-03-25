@@ -19,7 +19,7 @@ import sys
 
 from CommonEnvironment import Package
 
-InputProcessingMixin = Package.ImportInit().InputProcessingMixin
+InputProcessingMixin                        = Package.ImportInit().InputProcessingMixin
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable

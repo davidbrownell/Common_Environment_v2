@@ -17,6 +17,8 @@ import sys
 
 from collections import OrderedDict
 
+import six
+
 from .. import TypeInfo
 
 # ----------------------------------------------------------------------
@@ -73,7 +75,7 @@ class FloatTypeInfo(TypeInfo):
 
         return "FloatTypeInfo({}{})" \
                     .format( self._PythonDefinitionStringContents,
-                             '' if not args else ", {}".format(', '.join([ "{}={}".format(k, v) for k, v in args.iteritems() ])),
+                             '' if not args else ", {}".format(', '.join([ "{}={}".format(k, v) for k, v in six.iteritems(args) ])),
                            )
 
     # ----------------------------------------------------------------------

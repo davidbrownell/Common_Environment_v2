@@ -19,7 +19,7 @@ import os
 import smtplib
 import sys
 
-import cPickle as pickle
+from six.moves import cPickle as pickle
 
 from email import encoders
 from email.mime.audio import MIMEAudio

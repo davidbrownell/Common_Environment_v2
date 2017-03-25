@@ -24,7 +24,7 @@ import sys
 import textwrap
 
 from collections import OrderedDict
-from StringIO import StringIO
+from six.moves import StringIO
 
 import inflect
 

@@ -20,17 +20,17 @@ Verifies Python source code
 
 import os
 import re
-import subprocess
 import sys
 import textwrap
 import time
 
-from StringIO import StringIO
+from six.moves import StringIO
 
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CommandLine
 from CommonEnvironment import FileSystem
 from CommonEnvironment import Interface
+from CommonEnvironment import Process
 from CommonEnvironment import Shell
 from CommonEnvironment.StreamDecorator import StreamDecorator
 
@@ -143,6 +143,10 @@ class Verifier( CustomInvocationMixin,
                      verbose_stream,
                      verbose,
                    ):                       # <Too many local variables> pylint: disable = R0914
+        # TODO: Python 3.6 is not supported by pylint at this time
+        if sys.version_info[0] == 3:
+            return 0
+
         environment = Shell.GetEnvironment()
 
         # If the file being invoked is a test file, measure the file under
@@ -174,26 +178,17 @@ class Verifier( CustomInvocationMixin,
             # Run the generated file
             command_line = 'python "{}"'.format(temp_filename)
 
-            result = subprocess.Popen( command_line,
-                                       shell=True,
-                                       stdout=subprocess.PIPE,
-                                       stderr=subprocess.STDOUT,
-                                     )
             sink = StringIO()
             output_stream = StreamDecorator([ sink, verbose_stream, ])
 
-            while True:
-                content = result.stdout.readline()
-                if not content:
-                    break
+            regex_sink = StringIO()
+            Process.Execute(command_line, StreamDecorator([ regex_sink, output_stream, ]))
+            regex_sink = regex_sink.getvalue()
 
-                output_stream.write(content)
-            
-            result.wait()
             result = 0
             
             # Extract the results
-            match = re.search(r"Your code has been rated at (?P<score>[-\d\.]+)/(?P<max>[\d\.]+)", sink.getvalue(), re.MULTILINE)
+            match = re.search(r"Your code has been rated at (?P<score>[-\d\.]+)/(?P<max>[\d\.]+)", regex_sink, re.MULTILINE)
             if not match:
                 result = -1
             else:

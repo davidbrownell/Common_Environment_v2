@@ -82,7 +82,7 @@ def CreateName(package, name, file):
     # Ensure that relative imports work as expected by inserting the current
     # dir at the head of the path.
     original_dir = os.path.dirname(os.path.realpath(file))
-
+    
     if original_dir in sys.path:
         sys.path.remove(original_dir)
 
@@ -140,25 +140,62 @@ def CreateName(package, name, file):
     return this_name
     
 # ---------------------------------------------------------------------------
-def ImportInit(name=None):
-    calling_dir = os.path.dirname(traceback.extract_stack(limit=2)[0][0])
+def ImportInit( dotted_name=None,
+              ):
+    original_calling_dir = os.path.dirname(traceback.extract_stack(limit=2)[0][0])
 
-    if name == None:
-        name = os.path.split(calling_dir)[1]
+    if dotted_name:
+        path_parts = []
 
-    if name in sys.modules:
-        return sys.modules[name]
+        if dotted_name.startswith(".."):
+            dots = 0
+            while dots < len(dotted_name) and dotted_name[dots] == '.':
+                dots += 1
 
+            dotted_name = dotted_name[dots:]
+
+            path_parts += [ "..", ] * (dots - 1)
+
+        path_parts += dotted_name.split('.')
+
+        original_calling_dir = os.path.join(original_calling_dir, *path_parts)
+        assert os.path.isdir(original_calling_dir), original_calling_dir
+
+    original_calling_dir = os.path.realpath(os.path.normpath(original_calling_dir))
+
+    name_stack = []
+
+    calling_dir = original_calling_dir
     while True:
-        this_calling_dir, this_name = os.path.split(calling_dir)
-        if name == this_name:
-            init_filename = os.path.join(calling_dir, "__init__.py")
-            assert os.path.isfile(init_filename), init_filename
+        if not os.path.isfile(os.path.join(calling_dir, "__init__.py")):
+            break
 
-            sys.path.insert(0, this_calling_dir)
-            with CallOnExit(lambda: sys.path.pop(0)):
-                return __import__(name)
+        name_stack.append(os.path.basename(calling_dir))
+        
+        potential_calling_dir = os.path.dirname(calling_dir)
+        if potential_calling_dir == calling_dir:
+            break
 
-        assert this_calling_dir != calling_dir, this_calling_dir
-        calling_dir = this_calling_dir
+        calling_dir = potential_calling_dir
+
+    assert name_stack, original_calling_dir
+
+    if calling_dir:
+        sys.path.insert(0, calling_dir)
+        Cleanup = lambda: sys.path.pop(0)
+    else:
+        Cleanup = lambda: None
+
+    with CallOnExit(Cleanup):
+        prefix = []
+        
+        while name_stack:
+            prefix.append(name_stack.pop())
+
+            module_name = '.'.join(prefix)
+
+            if module_name not in sys.modules:
+                __import__(module_name)
+
+        return sys.modules[module_name]
         

@@ -320,7 +320,7 @@ def RemoveTree( path,
     def Impl(renamed_path):
         # Take care of any sym links/junctions, as removing them will remove the source
         # as well.
-        import Shell
+        from CommonEnvironment import Shell
 
         environment = Shell.GetEnvironment()
 

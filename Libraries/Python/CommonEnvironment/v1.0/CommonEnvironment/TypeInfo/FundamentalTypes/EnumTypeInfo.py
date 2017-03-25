@@ -15,6 +15,8 @@
 import os
 import sys
 
+import six
+
 from .. import TypeInfo
 
 # ----------------------------------------------------------------------
@@ -25,7 +27,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 class EnumTypeInfo(TypeInfo):
 
-    ExpectedType                            = (str, unicode)
+    ExpectedType                            = six.string_types
     Desc                                    = "Enum"
 
     # ----------------------------------------------------------------------
@@ -39,8 +41,15 @@ class EnumTypeInfo(TypeInfo):
         if not values:
             raise Exception("A list of values must be provided")
 
-        if friendly_values != None and len(friendly_values) != len(values):
-            raise Exception("The number of 'friendly_values' must match the number of 'values'")
+        if not isinstance(values, list):
+            values = list(values)
+
+        if friendly_values != None:
+            if not isinstance(friendly_values, list):
+                friendly_values = list(friendly_values)
+               
+            if len(friendly_values) != len(values):
+                raise Exception("The number of 'friendly_values' must match the number of 'values'")
 
         self.Values                         = values
         self.FriendlyValues                 = friendly_values
