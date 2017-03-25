@@ -504,7 +504,7 @@ def TraverseDependencies(repository_root, configuration):
         # ---------------------------------------------------------------------------
         
         for version_info in repo_info.configurations[context.configuration].VersionSpecs.Tools:
-            existing_version_info = CommonEnvironment.Get(tool_version_info, lambda tvi: tvi.Name == version_info.Name)
+            existing_version_info = CommonEnvironmentImports.CommonEnvironment.Get(tool_version_info, lambda tvi: tvi.Name == version_info.Name)
             
             if existing_version_info == None:
                 tool_version_info.append(version_info)
@@ -515,7 +515,7 @@ def TraverseDependencies(repository_root, configuration):
 
         for library_language, version_info_items in six.iteritems(repo_info.configurations[context.configuration].VersionSpecs.Libraries):
             for version_info in version_info_items:
-                existing_version_info = CommonEnvironment.Get(library_version_info.get(library_language, []), lambda lvi: lvi.Name == version_info.Name)
+                existing_version_info = CommonEnvironmentImports.CommonEnvironment.Get(library_version_info.get(library_language, []), lambda lvi: lvi.Name == version_info.Name)
 
                 if existing_version_info == None:
                     library_version_info.setdefault(library_language, []).append(version_info)

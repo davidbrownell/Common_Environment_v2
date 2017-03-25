@@ -53,7 +53,10 @@ def ActivateLibraries( name,
                        repositories,
                        version_specs,
                        generated_dir,
+                       library_version_dirs=None,       # { ( <potential_version_dir>, ) : <dir_to_use>, }
                      ):
+    library_version_dirs = library_version_dirs or {}
+
     version_info = version_specs.Libraries.get(name, [])
     create_commands_func = CreateCulledCallable(create_commands_func)
 
@@ -66,6 +69,32 @@ def ActivateLibraries( name,
             return "{} ({})".format(repository.name, repository.configuration)
 
         return repository.name
+
+    # ----------------------------------------------------------------------
+    def AugmentLibraryDir(fullpath):
+        while True:
+            prev_fullpath = fullpath
+
+            dirs = [ item for item in os.listdir(fullpath) if os.path.isdir(os.path.join(fullpath, item)) ]
+
+            for library_versions, this_version in library_version_dirs.iteritems():
+                found = True
+
+                for library_version in library_versions:
+                    if library_version not in dirs:
+                        found = False
+                        break
+
+                if found:
+                    assert this_version in library_versions, this_version
+                    fullpath = os.path.join(fullpath, this_version)
+
+                    break
+
+            if prev_fullpath == fullpath:
+                break
+
+        return fullpath
 
     # ----------------------------------------------------------------------
     
@@ -92,6 +121,9 @@ def ActivateLibraries( name,
                                    ))
 
             fullpath = os.path.join(potential_library_dir, item)
+            assert os.path.isdir(fullpath), fullpath
+
+            fullpath = AugmentLibraryDir(fullpath)
             assert os.path.isdir(fullpath), fullpath
 
             fullpath, version = SourceRepositoryTools.GetVersionedDirectoryEx(version_info, fullpath)

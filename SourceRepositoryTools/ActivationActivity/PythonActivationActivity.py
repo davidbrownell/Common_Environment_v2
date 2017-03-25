@@ -322,12 +322,18 @@ class PythonActivationActivity(IActivationActivity):
         
         # ----------------------------------------------------------------------
         
+        if sys.version_info[0] == 2:
+            version_dir = "v2"
+        else:
+            version_dir = "v3"
+
         ActivateLibraries( "Python",
                            PythonCallback,
                            environment,
                            repositories,
                            version_specs,
                            generated_dir,
+                           library_version_dirs={ ( "v2", "v3" ) : version_dir, },
                          )
         
         return global_actions
