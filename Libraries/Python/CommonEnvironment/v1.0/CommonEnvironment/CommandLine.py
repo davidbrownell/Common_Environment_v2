@@ -23,6 +23,7 @@ import types
 
 from collections import OrderedDict
 
+import six
 import wrapt
 
 import CommonEnvironment.Decorator
@@ -141,7 +142,7 @@ class EntryPointData(object):
                 entry_points.append(epd)
 
         # Sort by line number, as we want the functions displayed in the order in which they were declared
-        entry_points.sort(key=lambda x: x.Func.func_code.co_firstlineno)
+        entry_points.sort(key=lambda x: six.get_function_code(x.Func).co_firstlineno)
 
         return entry_points
 
@@ -168,7 +169,7 @@ class EntryPointData(object):
 
         # Remove any explicitly ignored parameters and verify that all items
         # are accounted for.
-        entry_point_decorator_names = self.EntryPointDecorator.Args.keys()
+        entry_point_decorator_names = list(six.iterkeys(self.EntryPointDecorator.Args))
         new_args = []
 
         for index, arg in enumerate(args):
@@ -223,7 +224,7 @@ class EntryPointData(object):
                     raise Exception("Dictionaries must have an arity of 1 or ? ({})".format(name))
 
                 # <Instance of '<obj>' has no '<name>' member> pylint: disable = E1101, E1103
-                for k, v in type_info.Items.iteritems():
+                for k, v in six.iteritems(type_info.Items):
                     if not isinstance(v, StringTypeInfo):
                         raise Exception("Dictionary value types must be strings ({}, {})".format(name, k))
 
@@ -378,7 +379,7 @@ class Executor(object):
                     {args}
 
                 """).format( name=entry_point.Name,
-                             args='\n'.join([ "    {k:<20} {v}".format(k="{}:".format(k), v=v) for k, v in kwargs.iteritems() ]),
+                             args='\n'.join([ "    {k:<20} {v}".format(k="{}:".format(k), v=v) for k, v in six.iteritems(kwargs) ]),
                            ))
 
         # ----------------------------------------------------------------------
@@ -401,9 +402,9 @@ class Executor(object):
                 if result == None:
                     result = 0
 
-            except UsageException, ex:
+            except UsageException as ex:
                 result = self.Usage(error=str(ex))
-            except TypeInfo.ValidationException, ex:
+            except TypeInfo.ValidationException as ex:
                 result = self.Usage(error=str(ex))
             except KeyboardInterrupt:
                 result = -1
@@ -602,7 +603,7 @@ class Executor(object):
                 if param.postprocess_func:
                     value = param.postprocess_func(value)
 
-            except TypeInfo.ValidationException, ex:
+            except TypeInfo.ValidationException as ex:
                 return str(ex)
 
             if param.display_arity in [ '?', '1' ,]:

@@ -20,7 +20,8 @@ import subprocess
 import sys
 import textwrap
 
-from StringIO import StringIO
+import six
+from six import StringIO
 
 from CommonEnvironment.Interface import abstractmethod
 from CommonEnvironment import Shell

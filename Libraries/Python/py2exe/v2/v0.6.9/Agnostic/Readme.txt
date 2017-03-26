@@ -1,0 +1,1 @@
+py2exe is only supported on Windows.

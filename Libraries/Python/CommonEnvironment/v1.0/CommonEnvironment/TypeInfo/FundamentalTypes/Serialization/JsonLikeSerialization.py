@@ -15,6 +15,8 @@
 import os
 import sys
 
+import six
+
 from .StringSerialization import StringSerialization
 
 from .. import ( BoolTypeInfo,
@@ -44,7 +46,7 @@ class JsonLikeSerialization(StringSerialization):
     # ----------------------------------------------------------------------
     @classmethod
     def _DeserializeItemImpl(cls, type_info, item, **custom_args):
-        if isinstance(type_info, (BoolTypeInfo, FloatTypeInfo, IntTypeInfo)) and not isinstance(item, (str, unicode)):
+        if isinstance(type_info, (BoolTypeInfo, FloatTypeInfo, IntTypeInfo)) and not isinstance(item, six.string_types):
             return item
 
         return super(JsonLikeSerialization, cls)._DeserializeItemImpl(type_info, item, **custom_args)

@@ -43,7 +43,7 @@ class ArityTest(unittest.TestCase):
 
     # ----------------------------------------------------------------------
     def test_Compare(self):
-        self.assertTrue(Arity(1, 1) == Arity(1, 1))
+        self.assertEqual(Arity(1, 1), Arity(1, 1))
         self.assertTrue(Arity(0, None) < Arity(1, None))
         self.assertTrue(Arity(1, None) > Arity(0, None))
         self.assertTrue(Arity(5, None) > Arity(5, 10))

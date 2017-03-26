@@ -19,6 +19,8 @@ import sys
 
 from collections import OrderedDict
 
+import six
+
 from .. import TypeInfo
 
 # ----------------------------------------------------------------------
@@ -31,7 +33,7 @@ Plural = inflect.engine()
 # ----------------------------------------------------------------------
 class StringTypeInfo(TypeInfo):
 
-    ExpectedType                            = (str, unicode)
+    ExpectedType                            = six.string_types
     Desc                                    = "String"
 
     # ----------------------------------------------------------------------
@@ -92,7 +94,7 @@ class StringTypeInfo(TypeInfo):
         assert args
         return "StringTypeInfo({}{})" \
                     .format( self._PythonDefinitionStringContents,
-                             ", {}".format(', '.join([ "{}={}".format(k, v) for k, v in args.iteritems() ])),
+                             ", {}".format(', '.join([ "{}={}".format(k, v) for k, v in six.iteritems(args) ])),
                            )
 
     # ----------------------------------------------------------------------

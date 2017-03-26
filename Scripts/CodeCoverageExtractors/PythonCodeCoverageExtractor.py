@@ -20,7 +20,6 @@
 
 import os
 import re
-import subprocess
 import sys
 import textwrap
 
@@ -30,6 +29,7 @@ from xml.etree import ElementTree as ET
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CodeCoverageExtractor as CodeCoverageExtractorMod
 from CommonEnvironment import Interface
+from CommonEnvironment import Process
 from CommonEnvironment import Shell
 from CommonEnvironment.TimeDelta import TimeDelta
 
@@ -185,14 +185,9 @@ class CodeCoverageExtractor(CodeCoverageExtractorMod.CodeCoverageExtractor):
             command_line = '{template} "{filename}"'.format( template=command_line_template.format("run"),
                                                              filename=filename,
                                                            )
-            result = subprocess.Popen( command_line,
-                                       shell=True,
-                                       stdout=subprocess.PIPE,
-                                       stderr=subprocess.STDOUT,
-                                     )
 
-            results.test_output = result.stdout.read()
-            results.test_result = result.wait() or 0
+            results.test_result, results.test_output = Process.Execute(command_line)
+            
             results.test_duration = start_time.CalculateDelta(as_string=True)
 
             # Get the code coverage info
@@ -205,13 +200,9 @@ class CodeCoverageExtractor(CodeCoverageExtractorMod.CodeCoverageExtractor):
                                                                                     includes='"--include={}"'.format(','.join(includes)) if includes else '',
                                                                                     excludes='"--omit={}"'.format(','.join(excludes)) if excludes else '',
                                                                                   )
-            result = subprocess.Popen( command_line,
-                                       shell=True,
-                                       stdout=subprocess.PIPE,
-                                       stderr=subprocess.STDOUT,
-                                     )
-            results.coverage_output = result.stdout.read()
-            results.coverage_result = result.wait() or 0
+
+            results.coverage_result, results.coverage_output = Process.Execute(command_line)
+            
             results.coverage_duration = start_time.CalculateDelta(as_string=True)
 
             results.data = xml_temp_filename

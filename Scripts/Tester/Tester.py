@@ -22,11 +22,12 @@ import colorama
 import os
 import re
 import string
-import subprocess
 import sys
 import textwrap
 
 from collections import OrderedDict
+
+import six
 
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CommandLine
@@ -95,7 +96,7 @@ if custom_configurations:
         else:
             configuration_map[configuration_name][type_] = value
 
-    for key, item_map in configuration_map.iteritems():
+    for key, item_map in six.iteritems(configuration_map):
         # compiler and test_parser are requried
         if "compiler" not in item_map or "test_parser" not in item_map:
             continue
@@ -223,7 +224,7 @@ def TestFile( input,
     def GetConfiguration():
         compilers = [ Compiler.LoadFromModule(mod) for mod in DPA.EnumeratePlugins("DEVELOPMENT_ENVIRONMENT_COMPILERS") ]
         
-        for configuration, arg_info in CONFIGURATIONS.iteritems():
+        for configuration, arg_info in six.iteritems(CONFIGURATIONS):
             compiler_name = arg_info.standard_args[0]
 
             for potential_compiler in compilers:
@@ -325,7 +326,7 @@ def TestAll( input_dir,
     with StreamDecorator(sys.stdout).DoneManager( done_prefix="\n\nComposite Results: ",
                                                   line_prefix='',
                                                 ) as dm:
-        for index, configuration in enumerate(CONFIGURATIONS.iterkeys()):
+        for index, configuration in enumerate(six.iterkeys(CONFIGURATIONS)):
             dm.stream.write("Testing '{}' ({} of {})...".format( configuration,
                                                                  index + 1,
                                                                  len(CONFIGURATIONS),
@@ -387,7 +388,7 @@ def MatchAllTests( input_dir,
     with StreamDecorator(sys.stdout).DoneManager( done_prefix="\n\nComposite Results: ",
                                                   line_prefix='',
                                                 ) as dm:
-        for index, configuration in enumerate(CONFIGURATIONS.iterkeys()):
+        for index, configuration in enumerate(six.iterkeys(CONFIGURATIONS)):
             dm.stream.write("Matching '{}' ({} of {})...".format( configuration, 
                                                                   index + 1, 
                                                                   len(CONFIGURATIONS),
@@ -413,7 +414,7 @@ def CommandLineSuffix():
                                             Where <configuration> can be:
                                             {}
 
-                                            """).format('\n'.join([ "    - {}".format(config) for config in CONFIGURATIONS.iterkeys() ])),
+                                            """).format('\n'.join([ "    - {}".format(config) for config in six.iterkeys(CONFIGURATIONS) ])),
                                         4,
                                         skip_first_line=False,
                                       )

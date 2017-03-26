@@ -121,88 +121,90 @@ def ToPlural(s):
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 
-# On Windows, python2.7 has problem with long filenames. Mokeypatch some
-# of those methods to work around the most common problems. In all cases,
-# the decoration '\\?\' is considered an implementation detail and should
-# not be exposed to the caller.
-import platform
-
-# if...
-#       We are on Windows, and...
-#       The functionality hasn't been explicitly disabled, and...
-#       This isn't IronPython (which doesn't have this problem)...
-#
-if ( platform.uname()[0] == "Windows" and \
-     not os.getenv("DEVELOPMENT_ENVIRONMENT_NO_LONG_FILENAME_PATCH") and \
-     platform.python_implementation().lower().find("ironpython") == -1
-   ):
-    import __builtin__
-
-    # ----------------------------------------------------------------------
-    def DecorateFilename(filename):
-        if filename:
-            filename = os.path.realpath(os.path.normpath(filename))
-
-            if not filename.startswith("\\\\?\\"):
-                filename = ur"\\?\{}".format(filename)
-
-        return filename
-
-    # ----------------------------------------------------------------------
-    def Patch(original_method):
+if sys.version_info[0] == 2:
+    # On Windows, python2.7 has problem with long filenames. Mokeypatch some
+    # of those methods to work around the most common problems. In all cases,
+    # the decoration '\\?\' is considered an implementation detail and should
+    # not be exposed to the caller.
+    import platform
+    
+    # if...
+    #       We are on Windows, and...
+    #       The functionality hasn't been explicitly disabled, and...
+    #       This isn't IronPython (which doesn't have this problem)...
+    #
+    if ( platform.uname()[0] == "Windows" and \
+         not os.getenv("DEVELOPMENT_ENVIRONMENT_NO_LONG_FILENAME_PATCH") and \
+         platform.python_implementation().lower().find("ironpython") == -1
+       ):
+        import __builtin__
+    
         # ----------------------------------------------------------------------
-        def NewFunction(filename, *args, **kwargs):
-            return original_method(DecorateFilename(filename), *args, **kwargs)
-
+        def DecorateFilename(filename):
+            if filename:
+                filename = os.path.realpath(os.path.normpath(filename))
+    
+                if not filename.startswith("\\\\?\\"):
+                    filename = u"\\\\?\\{}".format(filename)
+    
+            return filename
+    
+        # ----------------------------------------------------------------------
+        def Patch(original_method):
+            # ----------------------------------------------------------------------
+            def NewFunction(filename, *args, **kwargs):
+                return original_method(DecorateFilename(filename), *args, **kwargs)
+    
+            # ----------------------------------------------------------------------
+            
+            return NewFunction
+    
+        # ----------------------------------------------------------------------
+        def WalkItems(module, these_items):
+            for item in these_items:
+                if isinstance(item, basestring):
+                    setattr(module, item, Patch(getattr(module, item)))
+                elif isinstance(item, dict):
+                    for k, v in item.iteritems():
+                        WalkItems(getattr(module, k), v)
+                else:
+                    assert False, type(item)
+    
         # ----------------------------------------------------------------------
         
-        return NewFunction
-
-    # ----------------------------------------------------------------------
-    def WalkItems(module, these_items):
-        for item in these_items:
-            if isinstance(item, basestring):
-                setattr(module, item, Patch(getattr(module, item)))
-            elif isinstance(item, dict):
-                for k, v in item.iteritems():
-                    WalkItems(getattr(module, k), v)
-            else:
-                assert False, type(item)
-
-    # ----------------------------------------------------------------------
-    
-    for module_name, these_items in { "__builtin__" : [ "open",
-                                                      ],
-                                      "os" : [ "makedirs",
-                                               "remove",
-                                               "stat",
-                                               { "path" : [ "exists",
-                                                            "getsize",
-                                                            "getmtime",
-                                                            "isdir",
-                                                            "isfile",
+        for module_name, these_items in { "__builtin__" : [ "open",
                                                           ],
-                                               }             
-                                             ],
-                                    }.iteritems():
-        assert module_name in sys.modules
-        module = sys.modules[module_name]
-
-        WalkItems(module, these_items)
-
-    # os.walk needs to be handled in a special way
-    _os_walk = os.walk
-
-    # ----------------------------------------------------------------------
-    def NewWalk(top, *args, **kwargs):
-        top = DecorateFilename(top)
-
-        for root, dirs, files in _os_walk(top, *args, **kwargs):
-            if root.startswith("\\\\?\\"):
-                root = root[len("\\\\?\\"):]
-
-            yield root, dirs, files
-
-    # ----------------------------------------------------------------------
+                                          "os" : [ "makedirs",
+                                                   "remove",
+                                                   "stat",
+                                                   { "path" : [ "exists",
+                                                                "getsize",
+                                                                "getmtime",
+                                                                "isdir",
+                                                                "isfile",
+                                                              ],
+                                                   }             
+                                                 ],
+                                        }.iteritems():
+            assert module_name in sys.modules
+            module = sys.modules[module_name]
     
-    os.walk = NewWalk
+            WalkItems(module, these_items)
+    
+        # os.walk needs to be handled in a special way
+        _os_walk = os.walk
+    
+        # ----------------------------------------------------------------------
+        def NewWalk(top, *args, **kwargs):
+            top = DecorateFilename(top)
+    
+            for root, dirs, files in _os_walk(top, *args, **kwargs):
+                if root.startswith("\\\\?\\"):
+                    root = root[len("\\\\?\\"):]
+    
+                yield root, dirs, files
+    
+        # ----------------------------------------------------------------------
+        
+        os.walk = NewWalk
+    

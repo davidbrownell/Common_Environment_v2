@@ -27,6 +27,8 @@ import sys
 import textwrap
 import time
 
+import six
+
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CommandLine
 from CommonEnvironment import FileSystem
@@ -42,7 +44,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 assert os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL")
 sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
 with CallOnExit(lambda: sys.path.pop(0)):
-    import SourceRepositoryTools
+    from SourceRepositoryTools import Constants
 
 # ---------------------------------------------------------------------------
 @CommandLine.EntryPoint(delete_days=CommandLine.EntryPoint.ArgumentInfo(description="Delete files that are older than the specified number of days"))
@@ -67,7 +69,7 @@ def EntryPoint( delete_days=7,
         file_info = []
 
         for temp_directory in environment.TempDirectories:
-            for filename in FileSystem.WalkFiles(temp_directory, include_file_extensions=[ SourceRepositoryTools.TEMPORARY_FILE_EXTENSION, ]):
+            for filename in FileSystem.WalkFiles(temp_directory, include_file_extensions=[ Constants.TEMPORARY_FILE_EXTENSION, ]):
                 name = os.path.splitext(os.path.basename(filename))[0].split('.')
                 
                 if len(name) == 1:
@@ -130,7 +132,7 @@ def EntryPoint( delete_days=7,
                                                                 ]),
                                                 total_size=FileSystem.GetSizeDisplay(total_size),
                                               ))
-        value = raw_input().strip()
+        value = six.moves.input().strip()
         if not value:
             value = 'N'
 

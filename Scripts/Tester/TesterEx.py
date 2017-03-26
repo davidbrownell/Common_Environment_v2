@@ -29,7 +29,8 @@ import textwrap
 import threading
 import traceback
 
-from StringIO import StringIO
+import six
+from six.moves import StringIO
 
 from xml.etree import ElementTree as ET
 
@@ -37,12 +38,13 @@ from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CommandLine
 from CommonEnvironment import Compiler
 from CommonEnvironment import FileSystem
-from CommonEnvironment import Package
 from CommonEnvironment.QuickObject import QuickObject
 from CommonEnvironment import Shell
 from CommonEnvironment.StreamDecorator import StreamDecorator
 from CommonEnvironment import TaskPool
 from CommonEnvironment.TimeDelta import TimeDelta
+
+from Impl.CompleteResults import CompleteResults
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -54,29 +56,22 @@ sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
 with CallOnExit(lambda: sys.path.pop(0)):
     from SourceRepositoryTools import DynamicPluginArchitecture as DPA
 
-with Package.NameInfo(__package__) as ni:
-    __package__ = ni.created
-
-    from .Impl.CompleteResults import CompleteResults
-
-    __package__ = ni.original
-
 pluralize = inflect.engine()
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
-TEST_IGNORE_FILENAME_TEMPLATE = "{}-ignore"
+TEST_IGNORE_FILENAME_TEMPLATE               = "{}-ignore"
 
-COMPILERS = [ Compiler.LoadFromModule(mod) for mod in DPA.EnumeratePlugins("DEVELOPMENT_ENVIRONMENT_COMPILERS") ]
-TEST_PARSERS = [ mod.TestParser for mod in DPA.EnumeratePlugins("DEVELOPMENT_ENVIRONMENT_TEST_PARSERS") ]
-CODE_COVERAGE_EXTRACTORS = [ mod.CodeCoverageExtractor for mod in DPA.EnumeratePlugins("DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_EXTRACTORS") ]
-CODE_COVERAGE_VALIDATORS = [ mod.CodeCoverageValidator for mod in DPA.EnumeratePlugins("DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_VALIDATORS") ]
+COMPILERS                                   = [ Compiler.LoadFromModule(mod) for mod in DPA.EnumeratePlugins("DEVELOPMENT_ENVIRONMENT_COMPILERS") ]
+TEST_PARSERS                                = [ mod.TestParser for mod in DPA.EnumeratePlugins("DEVELOPMENT_ENVIRONMENT_TEST_PARSERS") ]
+CODE_COVERAGE_EXTRACTORS                    = [ mod.CodeCoverageExtractor for mod in DPA.EnumeratePlugins("DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_EXTRACTORS") ]
+CODE_COVERAGE_VALIDATORS                    = [ mod.CodeCoverageValidator for mod in DPA.EnumeratePlugins("DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_VALIDATORS") ]
 
-_CompilerTypeInfo = CommandLine.EnumTypeInfo(values=[ compiler.Name for compiler in COMPILERS ] + [ str(i) for i in xrange(1, len(COMPILERS) + 1) ])
-_TestParserTypeInfo = CommandLine.EnumTypeInfo(values=[ test_parser.Name for test_parser in TEST_PARSERS ] + [ str(i) for i in xrange(1, len(TEST_PARSERS) + 1) ])
-_CodeCoverageExtractorTypeInfo = CommandLine.EnumTypeInfo(values=[ code_coverage_extractor.Name for code_coverage_extractor in CODE_COVERAGE_EXTRACTORS ] + [ str(i) for i in xrange(1, len(CODE_COVERAGE_EXTRACTORS) + 1) ])
-_CodeCoverageValidatorTypeInfo = CommandLine.EnumTypeInfo(values=[ code_coverage_validator.Name for code_coverage_validator in CODE_COVERAGE_VALIDATORS ] + [ str(i) for i in xrange(1, len(CODE_COVERAGE_VALIDATORS) + 1) ])
+_CompilerTypeInfo                           = CommandLine.EnumTypeInfo(values=[ compiler.Name for compiler in COMPILERS ] + [ str(i) for i in six.moves.range(1, len(COMPILERS) + 1) ])
+_TestParserTypeInfo                         = CommandLine.EnumTypeInfo(values=[ test_parser.Name for test_parser in TEST_PARSERS ] + [ str(i) for i in six.moves.range(1, len(TEST_PARSERS) + 1) ])
+_CodeCoverageExtractorTypeInfo              = CommandLine.EnumTypeInfo(values=[ code_coverage_extractor.Name for code_coverage_extractor in CODE_COVERAGE_EXTRACTORS ] + [ str(i) for i in six.moves.range(1, len(CODE_COVERAGE_EXTRACTORS) + 1) ])
+_CodeCoverageValidatorTypeInfo              = CommandLine.EnumTypeInfo(values=[ code_coverage_validator.Name for code_coverage_validator in CODE_COVERAGE_VALIDATORS ] + [ str(i) for i in six.moves.range(1, len(CODE_COVERAGE_VALIDATORS) + 1) ])
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
@@ -297,7 +292,7 @@ def Test( test_items,
 
     # ---------------------------------------------------------------------------
     def TestThreadProc(task_index, output_stream):
-        test_info = test_info_list[task_index / iterations]
+        test_info = test_info_list[int(task_index / iterations)]
 
         # Don't continue on error unless explicitly requested
         if ( not continue_iterations_on_error and 
@@ -407,7 +402,7 @@ def Test( test_items,
                                            should_continue=True,
                                          ))
 
-        for iteration in xrange(1, iterations + 1):
+        for iteration in six.moves.range(1, iterations + 1):
             additional_desc = ''
 
             if iterations > 1:

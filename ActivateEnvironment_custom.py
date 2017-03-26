@@ -21,6 +21,8 @@
 import os
 import sys
 
+import six
+
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import Shell
 
@@ -84,15 +86,18 @@ def CustomScriptExtractors(environment):
 
     # ---------------------------------------------------------------------------
     def PythonDocs(script_filename):
-        from CommonEnvironment.StreamDecorator import StreamDecorator
+        import six
 
+        from CommonEnvironment.StreamDecorator import StreamDecorator
+        
         try:
-            co = compile(open(script_filename).read(), script_filename, "exec")
-            if co and co.co_consts and isinstance(co.co_consts[0], basestring) and co.co_consts[0][0] != '_':
+            co = compile(open(script_filename, "rb").read(), script_filename, "exec")
+            
+            if co and co.co_consts and isinstance(co.co_consts[0], six.string_types) and co.co_consts[0][0] != '_':
                 return StreamDecorator.Wrap(co.co_consts[0], 100)
 
         except:
-            pass
+            raise
 
     # ---------------------------------------------------------------------------
     def PowershellScriptWrapper(script_filename):
