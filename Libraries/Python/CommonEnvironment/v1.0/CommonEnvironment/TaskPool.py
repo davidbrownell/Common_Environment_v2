@@ -24,7 +24,7 @@ import time
 import traceback
 
 from collections import OrderedDict
-from StringIO import StringIO
+from six.moves import StringIO
 
 from tqdm import tqdm
 
@@ -192,7 +192,7 @@ def Execute( tasks,
                         sink.write("{}\n".format(str(ex).rstrip()))
 
                 task.output = sink.getvalue()
-                task.time_delta_string = datetime.timedelta(seconds=(time.time() - start_time))
+                task.time_delta_string = str(datetime.timedelta(seconds=(time.time() - start_time)))
 
     # ---------------------------------------------------------------------------
     class ThreadSafeStreamDecorator(object):

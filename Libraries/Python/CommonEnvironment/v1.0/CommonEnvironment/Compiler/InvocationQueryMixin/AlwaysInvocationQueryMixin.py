@@ -19,7 +19,7 @@ import sys
 
 from CommonEnvironment import Package
 
-InvocationQueryMixin = Package.ImportInit().InvocationQueryMixin
+InvocationQueryMixin                        = Package.ImportInit().InvocationQueryMixin
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable

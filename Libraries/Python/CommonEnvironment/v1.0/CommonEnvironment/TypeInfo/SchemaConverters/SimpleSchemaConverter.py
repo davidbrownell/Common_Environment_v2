@@ -15,6 +15,10 @@
 import os
 import sys
 
+from collections import OrderedDict
+
+import six
+
 from CommonEnvironment.Interface import staticderived
 
 from . import SchemaConverter
@@ -70,9 +74,9 @@ class SimpleSchemaConveter(SchemaConverter):
             # ----------------------------------------------------------------------
             @staticmethod
             def OnEnum(type_info, *args, **kwargs):
-                return "enum", { "Values" : "values",
-                                 "FriendlyValues" : "friendly_values",
-                               }
+                return "enum", OrderedDict([ ( "Values", "values" ),
+                                             ( "FriendlyValues", "friendly_values" ),
+                                           ])
         
             # ----------------------------------------------------------------------
             @staticmethod
@@ -82,9 +86,9 @@ class SimpleSchemaConveter(SchemaConverter):
             # ----------------------------------------------------------------------
             @staticmethod
             def OnFloat(type_info, *args, **kwargs):
-                return "number", { "Min" : "min",
-                                   "Max" : "max",
-                                 }
+                return "number", OrderedDict([ ( "Min", "min" ),
+                                               ( "Max", "max" ),
+                                             ])
         
             # ----------------------------------------------------------------------
             @staticmethod
@@ -94,18 +98,18 @@ class SimpleSchemaConveter(SchemaConverter):
             # ----------------------------------------------------------------------
             @staticmethod
             def OnInt(type_info, *args, **kwargs):
-                return "integer", { "Min" : "min",
-                                    "Max" : "max",
-                                    "Bytes" : "bytes",
-                                  }
+                return "integer", OrderedDict([ ( "Min", "min" ),
+                                                ( "Max", "max" ),
+                                                ( "Bytes", "bytes" ),
+                                              ])
         
             # ----------------------------------------------------------------------
             @staticmethod
             def OnString(type_info, *args, **kwargs):
-                return "string", { "ValidationExpression" : "validation_expression",
-                                   "MinLength" : "min_length",
-                                   "MaxLength" : "max_length",
-                                 }
+                return "string", OrderedDict([ ( "ValidationExpression", "validation_expression" ),
+                                               ( "MinLength", "min_length" ),
+                                               ( "MaxLength", "max_length" ),
+                                             ])
         
             # ----------------------------------------------------------------------
             @staticmethod
@@ -127,7 +131,7 @@ class SimpleSchemaConveter(SchemaConverter):
 
             attributes = []
 
-            for attribute_name, simple_schema_name in dynamic_attributes.iteritems():
+            for attribute_name, simple_schema_name in six.iteritems(dynamic_attributes):
                 value = getattr(type_info, attribute_name, None)
                 if value != None:
                     if isinstance(value, list):
@@ -137,7 +141,7 @@ class SimpleSchemaConveter(SchemaConverter):
 
                     attributes.append("{}={}".format(simple_schema_name, value))
 
-            for simple_schema_name, value in static_attributes.iteritems():
+            for simple_schema_name, value in six.iteritems(static_attributes):
                 attributes.append("{}={}".format(simple_schema_name, value))
 
         else:

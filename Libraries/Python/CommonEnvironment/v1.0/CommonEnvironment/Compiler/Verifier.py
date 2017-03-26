@@ -19,7 +19,7 @@ import sys
 
 from CommonEnvironment import Package
 
-Compiler = Package.ImportInit()
+Compiler                                    = Package.ImportInit()
  
 from .InputProcessingMixin.IndividualInputProcessingMixin import IndividualInputProcessingMixin
 from .InvocationQueryMixin.AlwaysInvocationQueryMixin import AlwaysInvocationQueryMixin

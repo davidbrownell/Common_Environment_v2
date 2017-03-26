@@ -23,7 +23,9 @@ import textwrap
 from collections import OrderedDict
 from functools import wraps
 
-from QuickObject import QuickObject
+import six
+
+from .QuickObject import QuickObject
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -82,12 +84,12 @@ class Interface(object):
             # present and named correctly. We now need to validate static methods and
             # parameters.
         
-            instance = super(Interface, cls).__new__(cls, *args, **kwargs)
-        
+            instance = super(Interface, cls).__new__(cls)
+
             if cls in Interface._verified_types:
                 return instance
         
-            ( FunctionType, ClassFunctionType, MethodType, PropertyType ) = xrange(4)   # <Invalid name> pylint: disable = C0103
+            ( FunctionType, ClassFunctionType, MethodType, PropertyType ) = six.moves.range(4)   # <Invalid name> pylint: disable = C0103
         
             # ---------------------------------------------------------------------------
             def TypeToString(type_):
@@ -107,28 +109,21 @@ class Interface(object):
         
             # ---------------------------------------------------------------------------
             def GenerateInfo(item):
-                if inspect.isfunction(item):
-                    return QuickObject( type_=FunctionType,
-                                        func_code=item.func_code,
-                                        func_defaults=item.func_defaults,
-                                      )
-        
-                elif inspect.ismethod(item):
-                    # This is a bit strange, but static functions will have a __self__ value != None
-                    if item.__self__ != None:
-                        type_ = ClassFunctionType
-                    else:
-                        type_ = MethodType
-        
-                    return QuickObject( type_=type_,
-                                        func_code=item.im_func.func_code,
-                                        func_defaults=item.im_func.func_defaults,
-                                      )
-        
+                if IsStaticMethod(item):
+                    type_ = FunctionType
+                elif IsClassMethod(item):
+                    type_ = ClassFunctionType
+                elif IsStandardMethod(item):
+                    type_ = MethodType
                 else:
                     return QuickObject( type_=PropertyType,
                                       )
-        
+
+                return QuickObject( type_=type_,
+                                    func_code=item.__code__,
+                                    func_defaults=item.__defaults__,
+                                  )
+
             # ---------------------------------------------------------------------------
             def LocationString(info):
                 if hasattr(info, "func_code"):
@@ -168,7 +163,7 @@ class Interface(object):
                         Interface._verified_types.add(base)
                         base.AbstractItems = these_abstracts
         
-                extension_method_keys = extension_methods.keys()
+                extension_method_keys = list(six.iterkeys(extension_methods))
                 extension_method_keys.sort()
         
                 for emk in extension_method_keys:
@@ -177,8 +172,22 @@ class Interface(object):
                 # Verify that all abstracts exist
                 errors = []
         
-                for abstract_name, abstract_info in abstracts.iteritems():
-                    if not hasattr(cls, abstract_name):
+                # ----------------------------------------------------------------------
+                def HasItem(abstract_name, abstract_info):
+                    if abstract_info.type_ == MethodType:
+                        value = getattr(cls, abstract_name, None)
+                        if value == None:
+                            return False
+
+                        if six.get_function_code(value) == abstract_info.func_code:
+                            return False
+
+                    return hasattr(cls, abstract_name)
+
+                # ----------------------------------------------------------------------
+                
+                for abstract_name, abstract_info in six.iteritems(abstracts):
+                    if not HasItem(abstract_name, abstract_info):
                         errors.append("The abstract {type_} '{name}' is missing {location}".format( type_=TypeToString(abstract_info.type_),
                                                                                                     name=abstract_name,
                                                                                                     location=LocationString(abstract_info),
@@ -190,7 +199,7 @@ class Interface(object):
                 # Ensure that all abstracts are of the correct type
                 errors = []
         
-                for abstract_name, abstract_info in abstracts.iteritems():
+                for abstract_name, abstract_info in six.iteritems(abstracts):
                     concrete_value = getattr(cls, abstract_name)
                     concrete_info = GenerateInfo(concrete_value)
         
@@ -198,9 +207,7 @@ class Interface(object):
                     # to implement an abstract static/method with a standard method if the implementation
                     # requires state.
                     if not ( abstract_info.type_ == concrete_info.type_ or
-                             (abstract_info.type_ in [ FunctionType, ClassFunctionType, ] and concrete_info.type_ in [ FunctionType, ClassFunctionType, MethodType, ]) or
-                             (abstract_info.type_ in [ FunctionType, ] and concrete_info.type_ in [ FunctionType, ClassFunctionType, ]) or
-                             (abstract_info.type_ in [ PropertyType, ] and concrete_info.type_ in [ FunctionType, ClassFunctionType, MethodType, ])
+                             (abstract_info.type_ in [ FunctionType, ClassFunctionType, MethodType, ] and concrete_info.type_ in [ FunctionType, ClassFunctionType, MethodType, ])
                            ):
                         errors.append("'{name}' was expected to be a {abstract_type} but {concrete_type} was found ({abstract_location}, {concrete_location})".format( name=abstract_name,
                                                                                                                                                                        abstract_type=TypeToString(abstract_info.type_),
@@ -215,11 +222,12 @@ class Interface(object):
                 # the function to ensure that the value defined is the same as the abstract value.
                 errors = []
         
-                for abstract_name, abstract_info in [ (k, v) for k, v in abstracts.iteritems() if v.type_ in [ FunctionType, ClassFunctionType, ] ]:
+                for abstract_name, abstract_info in [ (k, v) for k, v in six.iteritems(abstracts) if v.type_ in [ FunctionType, ClassFunctionType, ] ]:
                     concrete_value = getattr(cls, abstract_name)
-        
-                    if ( concrete_value.func_code.co_filename == abstract_info.func_code.co_filename and 
-                         concrete_value.func_code.co_firstlineno == abstract_info.func_code.co_firstlineno
+                    concrete_value_func_code = six.get_function_code(concrete_value)
+
+                    if ( concrete_value_func_code.co_filename == abstract_info.func_code.co_filename and 
+                         concrete_value_func_code.co_firstlineno == abstract_info.func_code.co_firstlineno
                        ):
                         errors.append("The abstract {type_} '{name}' is missing {location}".format( type_=TypeToString(abstract_info.type_),
                                                                                                     name=abstract_name,
@@ -263,7 +271,7 @@ class Interface(object):
                     values = []
                     has_default_value = False
         
-                    for name, default_value in params.iteritems():
+                    for name, default_value in six.iteritems(params):
                         if default_value != NoDefault:
                             has_default_value = True
                             
@@ -286,7 +294,7 @@ class Interface(object):
         
                 errors = []
         
-                for abstract_name, abstract_info in [ (k, v) for k, v in abstracts.iteritems() if v.type_ != PropertyType ]:
+                for abstract_name, abstract_info in [ (k, v) for k, v in six.iteritems(abstracts) if v.type_ != PropertyType ]:
                     concrete_value = getattr(cls, abstract_name)
                     concrete_info = GenerateInfo(concrete_value)
                     concrete_params = GetParams(concrete_info)
@@ -313,11 +321,13 @@ class Interface(object):
                     if len(concrete_params) > len(abstract_params):
                         params_to_remove = min(len(concrete_params) - len(abstract_params), len(concrete_info.func_defaults or []))
                         
+                        keys = list(six.iterkeys(concrete_params))
+
                         for _ in range(params_to_remove):
-                            del concrete_params[concrete_params.keys()[-1]]
+                            del concrete_params[keys.pop()]
         
                     if ( (require_exact_match and len(concrete_params) != len(abstract_params)) or 
-                         not all(k in concrete_params and concrete_params[k] == v for k, v in abstract_params.iteritems())
+                         not all(k in concrete_params and concrete_params[k] == v for k, v in six.iteritems(abstract_params))
                        ):
                         errors.append((abstract_name, DisplayParams(abstract_params), LocationString(abstract_info), DisplayParams(concrete_params), LocationString(concrete_info)))
         
@@ -348,7 +358,7 @@ class Interface(object):
                     Can't instantiate class '{class_}' due to:
                         - {errors}
                     """).format( class_=cls.__name__,
-                                 errors="\n    - ".join(ex.args[0]),
+                                 errors="\n    - ".join(ex.args[0] if isinstance(ex.args[0], ( list, tuple )) else [ ex.args[0], ]),
                                ))
 
 # ---------------------------------------------------------------------------
@@ -563,7 +573,10 @@ def CreateCulledCallable(callable):
         culled_method(2, a=1, c=3) -> MyMethod(a=2)
     """
 
-    arg_spec = inspect.getargspec(callable)
+    if sys.version_info[0] == 2:
+        arg_spec = inspect.getargspec(callable)
+    else:
+        arg_spec = inspect.getfullargspec(callable)
     
     arg_names = { arg for arg in arg_spec.args }
     positional_arg_names = arg_spec.args[:len(arg_spec.args) - len(arg_spec.defaults or [])]
@@ -572,7 +585,7 @@ def CreateCulledCallable(callable):
     def Method(kwargs):
         potential_positional_args = []
 
-        for k in kwargs.keys():
+        for k in list(six.iterkeys(kwargs)):
             if k not in arg_names:
                 potential_positional_args.append(kwargs[k])
                 del kwargs[k]
@@ -587,3 +600,68 @@ def CreateCulledCallable(callable):
     # ----------------------------------------------------------------------
     
     return Method
+
+# ----------------------------------------------------------------------
+if sys.version_info[0] == 2:
+    # ----------------------------------------------------------------------
+    def IsStaticMethod(item):
+        return inspect.isfunction(item)
+
+    # ----------------------------------------------------------------------
+    def IsClassMethod(item):
+        if not inspect.ismethod(item):
+            return False
+
+        # This is a bit strange, but class functions will have a __self__ value != None
+        return item.__self__ != None and type(item.__self__) == type
+
+    # ----------------------------------------------------------------------
+    def IsStandardMethod(item):
+        if not inspect.ismethod(item):
+            return False
+
+        return item.__self__ == None or type(item.__self__) != type
+
+else:
+    # ----------------------------------------------------------------------
+    def IsStaticMethod(item):
+        if type(item).__name__ != "function":
+            return False
+    
+        # There should be a more definitive way to differentiate
+        # between static/class/standard methods. Things are more
+        # predictable if we have an item associated with an instance
+        # of an object, but not as clear when given a method associate
+        # with the class instance.
+        #
+        # This is a hack!
+        var_names = item.__code__.co_varnames
+        return not var_names or not _CheckVariableNameVariants(var_names[0], "self", "cls")
+    
+    # ----------------------------------------------------------------------
+    def IsClassMethod(item):
+        if type(item).__name__ not in [ "function", "method", ]:
+            return False
+    
+        # See notes in IsStaticMethod
+        var_names = item.__code__.co_varnames
+        return var_names and _CheckVariableNameVariants(var_names[0], "cls")
+    
+    # ----------------------------------------------------------------------
+    def IsStandardMethod(item):
+        if type(item).__name__ not in [ "function", "method", ]:
+            return False
+    
+        # See notes in IsStaticMethod
+        var_names = item.__code__.co_varnames
+        return var_names and _CheckVariableNameVariants(var_names[0], "self")
+
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+def _CheckVariableNameVariants(var, *variants):
+    for variant in variants:
+        if var.startswith(variant) or var.endswith(variant):
+            return True
+
+    return False

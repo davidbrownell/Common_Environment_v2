@@ -19,110 +19,40 @@ import sys
 import textwrap
 
 from collections import OrderedDict
-import cPickle as pickle
 
 import semantic_version as sv               # <Unable to import> pylint: disable = F0401
+import six
 import wrapt 
+
+from six.moves import cPickle as pickle
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ---------------------------------------------------------------------------
 
-DE_FUNDAMENTAL_ROOT_NAME                    = "DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"                     # Root of the fundamental repository
-DE_REPO_ROOT_NAME                           = "DEVELOPMENT_ENVIRONMENT_REPOSITORY"
-DE_REPO_CONFIGURATION_NAME                  = "DEVELOPMENT_ENVIRONMENT_REPOSITORY_CONFIGURATION"
-DE_REPO_GENERATED_NAME                      = "DEVELOPMENT_ENVIRONMENT_REPOSITORY_GENERATED"
-DE_REPO_DATA_NAME                           = "DEVELOPMENT_ENVIRONMENT_REPOSITORY_DATA"
-
-# DE_FUNDAMENTAL
-assert os.getenv(DE_FUNDAMENTAL_ROOT_NAME)
-
-DE_FUNDAMENTAL = os.getenv(DE_FUNDAMENTAL_ROOT_NAME)
-if DE_FUNDAMENTAL.endswith(os.path.sep):
-    DE_FUNDAMENTAL = DE_FUNDAMENTAL[:-len(os.path.sep)]
-
-assert os.path.isdir(DE_FUNDAMENTAL), DE_FUNDAMENTAL
-
-# PYTHON_BINARY
-assert os.getenv("PYTHON_BINARY")
-PYTHON_BINARY = os.getenv("PYTHON_BINARY")
-os.path.isfile(PYTHON_BINARY), PYTHON_BINARY
-
-# COMMON_ENVIRONMENT_PATH
-COMMON_ENVIRONMENT_PATH = os.path.join(DE_FUNDAMENTAL, "Libraries", "Python", "CommonEnvironment", "v1.0")
-assert os.path.isdir(COMMON_ENVIRONMENT_PATH), COMMON_ENVIRONMENT_PATH
-
-# Note that this code is potentially called very early during environment initialization,
-# meaning we can't rely on custom import functionality and have to manually set the path 
-# as a result.
-
-sys.path.insert(0, COMMON_ENVIRONMENT_PATH)
-from CommonEnvironment import Shell
-
-# Note that the following libraries aren't used by this module, but those in submodules. Because
-# this code is invoked so early in the initialization process, we don't want to sprinkle explicit 
-# includes all over the source. Nothing in this package or its subpackages should import from 
-# CommonEnironment outside of this code.
-import CommonEnvironment
-
-from CommonEnvironment import CommandLine
-from CommonEnvironment import FileSystem
-from CommonEnvironment import Interface
-from CommonEnvironment import Package
-from CommonEnvironment import RegularExpression
-from CommonEnvironment import SourceControlManagement
-
-from CommonEnvironment.CallOnExit import CallOnExit
-from CommonEnvironment.QuickObject import QuickObject
-from CommonEnvironment.StreamDecorator import StreamDecorator
-
-ModifiableValue = CommonEnvironment.ModifiableValue
-
+sys.path.insert(0, os.path.join(_script_dir, "Impl"))
+from CommonEnvironmentImports import Package
 del sys.path[0]
 
 with Package.NameInfo(__package__) as ni:
     __package__ = ni.created
 
-    from . import Impl
-    
     # The following items are logically part of this global interface, but defined
     # within Impl to support better encapsulation.
     from .Impl.ActivateEnvironment import IsToolRepository
     from .Impl.ActivateEnvironment import LoadOriginalEnvironment
     from .Impl.ActivateEnvironment import LoadRepoData
     
+    from . import Constants
+
+    from .Impl.CommonEnvironmentImports import *
+    
     from .Impl import GetRepositoryUniqueId
 
     __package__ = ni.original
 
-# ---------------------------------------------------------------------------
-# ---------------------------------------------------------------------------
-# ---------------------------------------------------------------------------
-TEMPORARY_FILE_EXTENSION                    = ".SourceRepositoryTools"
-
-SETUP_ENVIRONMENT_NAME                      = "SetupEnvironment"
-ACTIVATE_ENVIRONMENT_NAME                   = "ActivateEnvironment"
-
-SETUP_ENVIRONMENT_CUSTOMIZATION_FILENAME    = "{}_custom.py".format(SETUP_ENVIRONMENT_NAME)
-ACTIVATE_ENVIRONMENT_CUSTOMIZATION_FILENAME = "{}_custom.py".format(ACTIVATE_ENVIRONMENT_NAME)
-
-AGNOSTIC_OS_NAME                            = "Agnostic"
-LINUX_OS_NAME                               = "Linux"
-
-INSTALL_LOCATION_FILENAME                   = "InstallLocation.txt"
-INSTALL_BINARY_FILENAME                     = "binaries.tar.gz"
-
-GENERATED_DIRECTORY_NAME                    = "Generated"
-GENERATED_BOOTSTRAP_FILENAME                = "EnvironmentBootstrap.data"
-
-REPOSITORY_ID_FILENAME                      = "__RepositoryID__"
-
-LIBRARIES_SUBDIR                            = "Libraries"
-SCRIPTS_SUBDIR                              = "Scripts"
-TOOLS_SUBDIR                                = "Tools"
-
-IGNORE_DIRECTORY_AS_BOOTSTRAP_DEPENDENCY_SENTINEL_FILENAME = "IgnoreAsBootstrapDependency"
+Impl                                        = Package.ImportInit("Impl")
 
 # ---------------------------------------------------------------------------
 # |
@@ -301,14 +231,14 @@ def GetCustomizedPathImpl( path,
             
             if environment.Name in subdirs:
                 path = os.path.join(path, environment.Name)
-            elif isLinux and LINUX_OS_NAME in subdirs:
-                path = os.path.join(path, LINUX_OS_NAME)
-            elif AGNOSTIC_OS_NAME in subdirs:
-                path = os.path.join(path, AGNOSTIC_OS_NAME)
+            elif isLinux and Constants.LINUX_OS_NAME in subdirs:
+                path = os.path.join(path, Constants.LINUX_OS_NAME)
+            elif Constants.AGNOSTIC_OS_NAME in subdirs:
+                path = os.path.join(path, Constants.AGNOSTIC_OS_NAME)
             else:
                 return onError(path, "OS names were found in '{}', but no customization was found for '{}' (is {} missing?).".format( path, 
                                                                                                                                       environment.Name, 
-                                                                                                                                      ' or '.join([ "'{}'".format(name) for name in ([ LINUX_OS_NAME, ] if isLinux else []) + [ AGNOSTIC_OS_NAME, ] ]),
+                                                                                                                                      ' or '.join([ "'{}'".format(name) for name in ([ Constants.LINUX_OS_NAME, ] if isLinux else []) + [ Constants.AGNOSTIC_OS_NAME, ] ]),
                                                                                                                                     ))
                 
         elif Impl.IsOSVersionDirectory(path, environment):
@@ -348,7 +278,7 @@ def GetCustomizedPath(path, environment=None):
     # At this point, we are either looking at the actual path of the item or a directory
     # that contains the bits that have been installed to a different location. If there
     # is a pointer file, open it and redirect to the specified location.
-    potential_install_location_filename = os.path.join(path, INSTALL_LOCATION_FILENAME)
+    potential_install_location_filename = os.path.join(path, Constants.INSTALL_LOCATION_FILENAME)
     if os.path.isfile(potential_install_location_filename):
         path = open(potential_install_location_filename).read().strip()
         if not os.path.isdir(path):
@@ -391,10 +321,10 @@ def DelayExecuteWithPython(python_binary, method, *args, **kwargs):
     pickle_tempfile = environment.CreateTempFilename(".pickle")
 
     # Write the arguments
-    with open(pickle_tempfile, 'w') as f:
-        f.write(pickle.dumps((args, kwargs)))
+    with open(pickle_tempfile, 'wb') as f:
+        pickle.dump((args, kwargs), f)
 
-    file_path, file_name = os.path.split(method.func_code.co_filename)
+    file_path, file_name = os.path.split(six.get_function_code(method).co_filename)
     file_name = os.path.splitext(file_name)[0]
 
     python_code = textwrap.dedent(
@@ -402,8 +332,10 @@ def DelayExecuteWithPython(python_binary, method, *args, **kwargs):
         import os
         import sys
         
-        import cPickle as pickle
+        import six
 
+        import six.moves.cPickle as pickle
+        
         sys.path.insert(0, r"{common_environment_path}")
         from CommonEnvironment import Shell
         from CommonEnvironment.StreamDecorator import StreamDecorator
@@ -414,8 +346,8 @@ def DelayExecuteWithPython(python_binary, method, *args, **kwargs):
         del sys.path[0]
 
         # Read the arguments
-        with open(r"{pickle_tempfile}") as f:
-            args, kwargs = pickle.loads(f.read())
+        with open(r"{pickle_tempfile}", 'rb') as f:
+            args, kwargs = pickle.load(f)
 
         try:
             result = {method_name}(*args, **kwargs)
@@ -464,7 +396,7 @@ def DelayExecuteWithPython(python_binary, method, *args, **kwargs):
     with open(python_tempfile, 'w') as f:
         f.write(python_code)
 
-    return [ Shell.Comment("-- Delay executing '{}' in '{}'".format(method.__name__, method.func_code.co_filename)),
+    return [ Shell.Comment("-- Delay executing '{}' in '{}'".format(method.__name__, six.get_function_code(method).co_filename)),
              
              Shell.Execute('{} "{}"'.format(python_binary, python_tempfile)),
              Shell.ExitOnError(),

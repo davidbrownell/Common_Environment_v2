@@ -17,7 +17,6 @@
 """Recursively builds Build.py files."""
 
 import os
-import subprocess
 import sys
 
 import inflect
@@ -26,6 +25,7 @@ from CommonEnvironment.Build import CompleteConfiguration as Configuration
 
 from CommonEnvironment import CommandLine
 from CommonEnvironment import FileSystem
+from CommonEnvironment import Process
 from CommonEnvironment.QuickObject import QuickObject
 from CommonEnvironment.StreamDecorator import StreamDecorator
 
@@ -142,15 +142,8 @@ def Execute( code_dir,
                                             output_dir=' "{}"'.format(build_output_dir) if config.RequiresOutputDir else '',
                                         )
 
-                        result = subprocess.Popen( command_line,
-                                                   shell=True,
-                                                   stdout=subprocess.PIPE,
-                                                   stderr=subprocess.STDOUT,
-                                                 )
-                        output = result.stdout.read()
-
-                        build_si.result = result.wait() or 0
-
+                        build_si.result, output = Process.Execute(command_line)
+                        
                         # It is possible that the cleaning process may deleted the directory. Recreate it if necessary.
                         if mode == "clean" and not os.path.isdir(build_output_dir):
                             os.makedirs(build_output_dir)

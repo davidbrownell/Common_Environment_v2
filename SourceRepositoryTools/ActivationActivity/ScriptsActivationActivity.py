@@ -23,7 +23,10 @@ import sys
 import textwrap
 
 from collections import OrderedDict
-import cPickle as pickle
+
+import six
+
+import six.moves.cPickle as pickle
 
 from CommonEnvironment import FileSystem
 from CommonEnvironment.Interface import staticderived
@@ -111,7 +114,7 @@ class ScriptsActivationActivity(IActivationActivity):
                 else:
                     these_extractors = result
 
-                for k, v in these_extractors.iteritems():
+                for k, v in six.iteritems(these_extractors):
                     if k in extractors:
                         raise Exception(textwrap.dedent(
                             """\
@@ -250,30 +253,21 @@ class ScriptsActivationActivity(IActivationActivity):
             desc = wi.extractor.CreateDocumentation(wi.script_filename)
 
             # Create the wrapper data
-            with open("{}.data".format(output_filename), 'w') as f:
-                f.write(pickle.dumps({ "original_script" : wi.script_filename,
-                                       "repository" : wi.repository,
-                                       "desc" : desc,
-                                     }))
+            with open("{}.data".format(output_filename), 'wb') as f:
+                pickle.dump( { "original_script" : wi.script_filename,
+                               "repository" : wi.repository,
+                               "desc" : desc,
+                             },
+                             f,
+                           )
 
             wrapped_info_items.append(QuickObject( name="{}{}".format(os.path.splitext(os.path.basename(output_filename))[0], environment.ScriptExtension),
                                                    desc=desc,
                                                    wrapped_info=wi,
                                                  ))
 
-        # ---------------------------------------------------------------------------
-        def CustomCompare(a, b):
-            # Initially compare by repo root
-            result = cmp(a.wrapped_info.repository.root, b.wrapped_info.repository.root)
-            if result != 0:
-                return result
-        
-            # Compare by script filename
-            return cmp(a.name.lower(), b.name.lower())
-        
-        # ---------------------------------------------------------------------------
-        
-        wrapped_info_items.sort(CustomCompare)
+        # Compare by repository, then by name
+        wrapped_info_items.sort(key=lambda item: (item.wrapped_info.repository.root, item.name.lower()))
         
         # Write the index file
         filename = os.path.join(dest_dir, environment.CreateScriptName(cls.IndexScriptFilename))
@@ -338,6 +332,8 @@ class ScriptsActivationActivity(IActivationActivity):
 
         max_length = max(*[ len(line) for line in lines ])
 
+        centered_template = "|  {{:^{}}}  |".format(max_length)
+
         commands.append(environment.Message(textwrap.dedent(
             """\
 
@@ -348,7 +344,7 @@ class ScriptsActivationActivity(IActivationActivity):
             {line}
             """).format( line='-' * (max_length + 6),
                          whitespace=' ' * max_length,
-                         content='\n'.join([ "|  {}  |".format(string.center(line, max_length)) for line in lines ]),
+                         content='\n'.join([ centered_template.format(line) for line in lines ]),
                        )))
 
         return commands

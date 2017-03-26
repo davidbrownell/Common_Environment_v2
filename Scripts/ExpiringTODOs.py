@@ -26,6 +26,7 @@ from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CommandLine
 from CommonEnvironment import FileSystem
 from CommonEnvironment.QuickObject import QuickObject
+from CommonEnvironment import six_plus
 from CommonEnvironment.StreamDecorator import StreamDecorator
 from CommonEnvironment import TaskPool
 
@@ -130,7 +131,7 @@ def EntryPoint( code_dir,
                                            
                             return -1
                             
-            except IOError:
+            except (IOError, UnicodeDecodeError):
                 pass
                 
         # ---------------------------------------------------------------------------

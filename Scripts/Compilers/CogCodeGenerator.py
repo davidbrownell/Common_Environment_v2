@@ -15,11 +15,11 @@
 # |  
 # ---------------------------------------------------------------------------
 import os
-import subprocess
 import sys
 
 from CommonEnvironment import CommandLine
 from CommonEnvironment import Interface
+from CommonEnvironment import Process
 from CommonEnvironment import Shell
 from CommonEnvironment.StreamDecorator import StreamDecorator
 
@@ -81,15 +81,8 @@ class CodeGenerator( IndividualInputProcessingMixin,
         # performed in place.
         output_stream.write("Restoring '{}'...".format(context.output_filename))
         with StreamDecorator(status_stream).DoneManager() as dm:
-            result = subprocess.Popen( cls._CreateCommandLine(context, is_clean=True),
-                                       stdout=subprocess.PIPE,
-                                       stderr=subprocess.STDOUT,
-                                       shell=True,
-                                     )
-
-            content = result.stdout.read()
-            dm.result = result.wait() or 0
-
+            dm.result, content = Process.Execute(cls._CreateCommandLine(context, is_clean=True))
+            
             if dm.result != 1:
                 dm.stream.write(content)
             else:

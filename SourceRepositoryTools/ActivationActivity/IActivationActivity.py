@@ -19,14 +19,16 @@ from __future__ import absolute_import
 import inspect
 import os
 import copy
-import subprocess
 import sys
+
+import six
 
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment.Interface import Interface, abstractmethod, abstractproperty
 from CommonEnvironment import Package
+from CommonEnvironment import Process
 
-SourceRepositoryTools = Package.ImportInit("SourceRepositoryTools")
+SourceRepositoryTools                       = Package.ImportInit("..")
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -134,25 +136,7 @@ class IActivationActivity(Interface):
         with CallOnExit(lambda: os.remove(temp_filename)):
             environment.MakeFileExecutable(temp_filename)
 
-            result = subprocess.Popen( temp_filename,
-                                       shell=True,
-                                       stdout=subprocess.PIPE,
-                                       stderr=subprocess.STDOUT,
-                                     )
-
-            if process_lines:
-                read_func = result.stdout.readline
-            else:
-                read_func = lambda: result.stdout.read(1)
-
-            while True:
-                content = read_func()
-                if not content:
-                    break
-
-                output_stream.write(content)
-
-            return result.wait() or 0
+            return Process.Execute(temp_filename, output_stream.write)
 
     # ---------------------------------------------------------------------------
     @staticmethod
@@ -162,10 +146,12 @@ class IActivationActivity(Interface):
         if not result.args and result.keywords:
             args = copy.deepcopy(kwargs)
         else:
-            arg_names = method.func_code.co_varnames[:method.func_code.co_argcount]
+            func_code = six.get_function_code(method)
+
+            arg_names = func_code.co_varnames[:func_code.co_argcount]
 
             new_args = {}
-            for k, v in kwargs.iteritems():
+            for k, v in six.iteritems(kwargs):
                 if k in arg_names or (len(arg_names) == 1 and arg_names[0] == "kwargs"):
                     new_args[k] = v
 

@@ -18,6 +18,8 @@ import textwrap
 
 from collections import OrderedDict
 
+import six
+
 from CommonEnvironment.Interface import staticderived
 from CommonEnvironment import RegularExpression
 
@@ -116,7 +118,7 @@ class XmlSchemaConverter(SchemaConverter):
                     <xs:restriction base="xs:decimal">
                     {}
                     </xs:restriction>
-                    """).format('\n'.join([ '  <xs:{k} value="{v}" />'.format(k=k, v=v) for k, v in restrictions.iteritems() ]))
+                    """).format('\n'.join([ '  <xs:{k} value="{v}" />'.format(k=k, v=v) for k, v in six.iteritems(restrictions) ]))
             
             # ----------------------------------------------------------------------
             @staticmethod
@@ -169,7 +171,7 @@ class XmlSchemaConverter(SchemaConverter):
                     <xs:restrictions base="xs:{}">
                     {}
                     </xs:restrictions>
-                    """).format(type_, '\n'.join([ '  <xs:{k} value="{v}" />'.format(k=k, v=v) for k, v in restrictions.iteritems() ]))
+                    """).format(type_, '\n'.join([ '  <xs:{k} value="{v}" />'.format(k=k, v=v) for k, v in six.iteritems(restrictions) ]))
 
             # ----------------------------------------------------------------------
             @staticmethod
@@ -194,7 +196,7 @@ class XmlSchemaConverter(SchemaConverter):
                     <xs:restriction base="xs:string">
                     {}
                     </xs:restriction>
-                    """).format('\n'.join([ '  <xs:{k} value="{v}" />'.format(k=k, v=v) for k, v in restrictions.iteritems() ]))
+                    """).format('\n'.join([ '  <xs:{k} value="{v}" />'.format(k=k, v=v) for k, v in six.iteritems(restrictions) ]))
             
             # ----------------------------------------------------------------------
             @staticmethod

@@ -14,19 +14,23 @@
 # ----------------------------------------------------------------------
 import os
 import shutil
-import subprocess
 import sys
 import textwrap
 import traceback
 
 from collections import OrderedDict
-import cPickle as pickle
+
+import six
+
+import six.moves.cPickle as pickle
 
 from CommonEnvironment import ModifiableValue
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import FileSystem
 from CommonEnvironment.Interface import CreateCulledCallable
+from CommonEnvironment import Process
 from CommonEnvironment.QuickObject import QuickObject
+from CommonEnvironment import six_plus
 from CommonEnvironment import Shell
 from CommonEnvironment.StreamDecorator import StreamDecorator
 
@@ -35,6 +39,7 @@ _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
+import Constants
 import SourceRepositoryTools
 
 # ----------------------------------------------------------------------
@@ -48,7 +53,10 @@ def ActivateLibraries( name,
                        repositories,
                        version_specs,
                        generated_dir,
+                       library_version_dirs=None,       # { ( <potential_version_dir>, ) : <dir_to_use>, }
                      ):
+    library_version_dirs = library_version_dirs or {}
+
     version_info = version_specs.Libraries.get(name, [])
     create_commands_func = CreateCulledCallable(create_commands_func)
 
@@ -63,9 +71,35 @@ def ActivateLibraries( name,
         return repository.name
 
     # ----------------------------------------------------------------------
+    def AugmentLibraryDir(fullpath):
+        while True:
+            prev_fullpath = fullpath
+
+            dirs = [ item for item in os.listdir(fullpath) if os.path.isdir(os.path.join(fullpath, item)) ]
+
+            for library_versions, this_version in library_version_dirs.iteritems():
+                found = True
+
+                for library_version in library_versions:
+                    if library_version not in dirs:
+                        found = False
+                        break
+
+                if found:
+                    assert this_version in library_versions, this_version
+                    fullpath = os.path.join(fullpath, this_version)
+
+                    break
+
+            if prev_fullpath == fullpath:
+                break
+
+        return fullpath
+
+    # ----------------------------------------------------------------------
     
     for repository in repositories:
-        potential_library_dir = os.path.join(repository.root, SourceRepositoryTools.LIBRARIES_SUBDIR, name)
+        potential_library_dir = os.path.join(repository.root, Constants.LIBRARIES_SUBDIR, name)
         if not os.path.isdir(potential_library_dir):
             continue
 
@@ -89,6 +123,9 @@ def ActivateLibraries( name,
             fullpath = os.path.join(potential_library_dir, item)
             assert os.path.isdir(fullpath), fullpath
 
+            fullpath = AugmentLibraryDir(fullpath)
+            assert os.path.isdir(fullpath), fullpath
+
             fullpath, version = SourceRepositoryTools.GetVersionedDirectoryEx(version_info, fullpath)
             fullpath = SourceRepositoryTools.GetCustomizedPath(fullpath)
 
@@ -101,7 +138,7 @@ def ActivateLibraries( name,
     # be supressed in most cases. Instead of executing the content directly, execute it
     # ourselves.
     display_sentinel = "__DISPLAY__??!! "
-
+    
     commands = create_commands_func(OrderedDict([ ( "libraries", libraries ),
                                                   ( "create_message_statement_func", lambda message: environment.Message("{}{}".format(display_sentinel, message)) ),
                                                   ( "display_sentinel", display_sentinel ),
@@ -116,37 +153,36 @@ def ActivateLibraries( name,
         with CallOnExit(lambda: os.remove(temp_filename)):
             environment.MakeFileExecutable(temp_filename)
 
-            result = subprocess.Popen( temp_filename,
-                                       shell=True,
-                                       stdout=subprocess.PIPE,
-                                       stderr=subprocess.STDOUT,
-                                     )
-
             content = []
-            while True:
-                line = result.stdout.readline()
-                if not line:
-                    break
 
+            # ----------------------------------------------------------------------
+            def OnLine(line):
                 content.append(line)
 
                 if line.startswith(display_sentinel):
                     sys.stdout.write("{}".format(line[len(display_sentinel):]))
 
-            result = result.wait() or 0
-
+            # ----------------------------------------------------------------------
+            
+            result = Process.Execute( temp_filename, 
+                                      OnLine,
+                                      line_delimited_output=True,
+                                    )
+            
             if result != 0:
+                content = ''.join(content)
+
                 raise Exception(textwrap.dedent(
                     """\
                     Error generating links ({code}):
                         {error}
                     """).format( code=result,
-                                 error=StreamDecorator.LeftJustify(''.join(content), 4),
+                                 error=StreamDecorator.LeftJustify(content, 4),
                                ))
 
     # Write the link file
     with open(os.path.join(generated_dir, "{}.txt".format(name)), 'w') as f:
-        library_keys = libraries.keys()
+        library_keys = list(six.iterkeys(libraries))
         library_keys.sort(key=lambda name: name.lower())
 
         f.write(textwrap.dedent(
@@ -169,8 +205,8 @@ def ActivateLibraries( name,
                           ]))
 
     # Write the pickle file
-    with open(os.path.join(generated_dir, "{}.pickle".format(name)), 'w') as f:
-        f.write(pickle.dumps(libraries))
+    with open(os.path.join(generated_dir, "{}.pickle".format(name)), 'wb') as f:
+        pickle.dump(libraries, f)
 
 # ----------------------------------------------------------------------
 def ActivateLibraryScripts( dest_dir,
@@ -182,7 +218,7 @@ def ActivateLibraryScripts( dest_dir,
 
     all_scripts = OrderedDict()
 
-    for name, info in libraries.iteritems():
+    for name, info in six.iteritems(libraries):
         potential_dir = os.path.join(info.fullpath, library_script_dir_name)
         if not os.path.isdir(potential_dir):
             continue
@@ -229,7 +265,7 @@ def ActivateLibraryScripts( dest_dir,
     if all_scripts:
         os.makedirs(dest_dir)
 
-        for script_name, script_info in all_scripts.iteritems():
+        for script_name, script_info in six.iteritems(all_scripts):
             if script_info == None:
                 continue
 
@@ -412,7 +448,7 @@ def CopyNewLibraryContent( type_name,
                         if not version.startswith("v"):
                             version = "v{}".format(version)
 
-                        potential_dest_dir = os.path.join(os.getenv("DEVELOPMENT_ENVIRONMENT_REPOSITORY"), SourceRepositoryTools.LIBRARIES_SUBDIR, type_name, library_name, version)
+                        potential_dest_dir = os.path.join(os.getenv("DEVELOPMENT_ENVIRONMENT_REPOSITORY"), Constants.LIBRARIES_SUBDIR, type_name, library_name, version)
 
                         if os.path.isdir(potential_dest_dir):
                             this_dm.result = -1
@@ -428,7 +464,7 @@ def CopyNewLibraryContent( type_name,
                         
                         libraries[library_name] = dest_dir.value
                     
-                    except Exception, ex:
+                    except Exception as ex:
                         this_dm.result = -1
                         this_dm.stream.write("ERROR: {}\n".format(StreamDecorator.LeftJustify( str(ex), # traceback.format_exc(),
                                                                                                len("ERROR: "),
@@ -480,7 +516,7 @@ def CopyNewLibraryContent( type_name,
 
                         move_func(script_fullpath, dest_fullpath.value)
 
-                    except Exception, ex:
+                    except Exception as ex:
                         this_dm.result = -1
                         this_dm.stream.write("ERROR: {}\n".format(StreamDecorator.LeftJustify( str(ex), # traceback.format_exc(),
                                                                                                len("ERROR: "),
@@ -519,7 +555,7 @@ def ResetLibraryContent(library_name, output_stream):
 
                 {}
 
-            """).format(Shell.GetEnvironment().CreateScriptName(SourceRepositoryTools.ACTIVATE_ENVIRONMENT_NAME)))
+            """).format(Shell.GetEnvironment().CreateScriptName(Constants.ACTIVATE_ENVIRONMENT_NAME)))
 
     return 0
                          

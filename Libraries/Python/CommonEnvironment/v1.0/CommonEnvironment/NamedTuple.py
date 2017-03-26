@@ -22,6 +22,8 @@ import sys
 
 from collections import namedtuple
 
+import six
+
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
@@ -43,7 +45,7 @@ def NamedTuple(name, *args, **kwargs):
         kwargs = args[0]
         args = []
 
-    T = namedtuple(name, list(args) + kwargs.keys())
+    T = namedtuple(name, list(args) + list(six.iterkeys(kwargs)))
     T.__new__.__defaults__ = tuple(kwargs.values())
 
     return T

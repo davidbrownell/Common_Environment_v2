@@ -487,7 +487,7 @@ def ParseFactory( string_serialization=None,
             elif symbol.type in [ _Parser.DOUBLE_QUOTE_STRING, _Parser.SINGLE_QUOTE_STRING, ]:
                 try:
                     value = string_serialization.DeserializeItem(type_info, symbol.text[1:-1])    
-                except Exception, ex:
+                except Exception as ex:
                     raise AntlrException.Create(symbol, str(ex))
             
             elif symbol.type == _Parser.TODAY:
@@ -566,7 +566,7 @@ def ParseFactory( string_serialization=None,
                 self.stack.append(value)
 
                 return
-            except Exception, ex:
+            except Exception as ex:
                 raise AntlrException.Create(symbol, str(ex))
 
     # ----------------------------------------------------------------------

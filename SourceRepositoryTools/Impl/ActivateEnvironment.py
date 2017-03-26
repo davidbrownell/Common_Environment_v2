@@ -20,34 +20,34 @@ import os
 import sys
 import textwrap
 
-import cPickle as pickle
+import six
 
-import __init__ as Impl
+import six.moves.cPickle as pickle
+
+import CommonEnvironmentImports
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ---------------------------------------------------------------------------
 
-SourceRepositoryTools                       = Impl.SourceRepositoryTools
-
-CallOnExit                                  = Impl.CallOnExit
-CommandLine                                 = Impl.CommandLine
-ModifiableValue                             = Impl.ModifiableValue
-Package                                     = Impl.Package
-QuickObject                                 = Impl.QuickObject
-Shell                                       = Impl.Shell
-StreamDecorator                             = Impl.StreamDecorator
-
-with Package.NameInfo(__package__) as ni:
+with CommonEnvironmentImports.Package.NameInfo(__package__) as ni:
     __package__ = ni.created
-    
-    from ..ActivationActivity.IActivationActivity import IActivationActivity, Constants
+
+    from .. import Constants
+
+    from ..ActivationActivity.IActivationActivity import IActivationActivity, Constants as ConstantsObject
     from ..ActivationActivity.PythonActivationActivity import PythonActivationActivity
     from ..ActivationActivity.ScriptsActivationActivity import ScriptsActivationActivity
     from ..ActivationActivity.ToolsActivationActivity import ToolsActivationActivity
-    
+
     __package__ = ni.original
+
+Impl                                        = CommonEnvironmentImports.Package.ImportInit()
+
+# ----------------------------------------------------------------------
+Shell                                       = CommonEnvironmentImports.Shell
+StreamDecorator                             = CommonEnvironmentImports.StreamDecorator
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
@@ -63,40 +63,40 @@ CUSTOM_ACTIONS_METHOD_NAME                  = "CustomActions"
 # |
 # ---------------------------------------------------------------------------
 def LoadOriginalEnvironment():
-    generated_dir = os.getenv(SourceRepositoryTools.DE_REPO_GENERATED_NAME)
+    generated_dir = os.getenv(Constants.DE_REPO_GENERATED_NAME)
     assert os.path.isdir(generated_dir), generated_dir
 
     filename = os.path.join(generated_dir, GENERATED_ORIGINAL_ENVIRONMENT_FILENAME)
     assert os.path.isfile(filename), filename
 
-    with open(filename) as f:
-        return pickle.loads(f.read())
+    with open(filename, 'rb') as f:
+        return pickle.load(f)
 
 # ---------------------------------------------------------------------------
 def LoadRepoData():
-    filename = os.getenv(SourceRepositoryTools.DE_REPO_DATA_NAME)
+    filename = os.getenv(Constants.DE_REPO_DATA_NAME)
     assert os.path.isfile(filename), filename
 
-    with open(filename) as f:
-        content = pickle.loads(f.read())
+    with open(filename, 'rb') as f:
+        content = pickle.load(f)
 
-        return QuickObject( prioritized_repositories=content["prioritized_repositories"],
-                            version_specs=content["version_specs"],
-                          )
+        return CommonEnvironmentImports.QuickObject( prioritized_repositories=content["prioritized_repositories"],
+                                                     version_specs=content["version_specs"],
+                                                   )
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
-@CommandLine.EntryPoint( output_filename_or_stdout=CommandLine.EntryPoint.ArgumentInfo(description="Created file containing the generated content or stdout of the value is 'stdout'"),
-                         repository_root=CommandLine.EntryPoint.ArgumentInfo(description="Root of the repository"),
-                         configuration=CommandLine.EntryPoint.ArgumentInfo(description="Configuration value to setup; all configurations will be setup if no configurations are provided"),
-                         debug=CommandLine.EntryPoint.ArgumentInfo(description="Displays additional debug information if provided"),
-                         set_dependency_environment_flag=CommandLine.EntryPoint.ArgumentInfo(description="If provided, will set the dependency flag within the environment"),
-                       )
-@CommandLine.FunctionConstraints( output_filename_or_stdout=CommandLine.StringTypeInfo(),
-                                  repository_root=CommandLine.DirectoryTypeInfo(),
-                                  configuration=CommandLine.StringTypeInfo(),
-                                )
+@CommonEnvironmentImports.CommandLine.EntryPoint( output_filename_or_stdout=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo(description="Created file containing the generated content or stdout of the value is 'stdout'"),
+                                                  repository_root=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo(description="Root of the repository"),
+                                                  configuration=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo(description="Configuration value to setup; all configurations will be setup if no configurations are provided"),
+                                                  debug=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo(description="Displays additional debug information if provided"),
+                                                  set_dependency_environment_flag=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo(description="If provided, will set the dependency flag within the environment"),
+                                                )
+@CommonEnvironmentImports.CommandLine.FunctionConstraints( output_filename_or_stdout=CommonEnvironmentImports.CommandLine.StringTypeInfo(),
+                                                           repository_root=CommonEnvironmentImports.CommandLine.DirectoryTypeInfo(),
+                                                           configuration=CommonEnvironmentImports.CommandLine.StringTypeInfo(),
+                                                         )
 def Activate( output_filename_or_stdout,
               repository_root,
               configuration,
@@ -109,7 +109,7 @@ def Activate( output_filename_or_stdout,
 
     # ---------------------------------------------------------------------------
     def Execute():
-        if not os.getenv(SourceRepositoryTools.DE_REPO_DATA_NAME):
+        if not os.getenv(Constants.DE_REPO_DATA_NAME):
             dependency_info = Impl.TraverseDependencies(repository_root, configuration)
             
             # Check the fingerprints
@@ -139,15 +139,15 @@ def Activate( output_filename_or_stdout,
 
                     ********************************************************************************
                     ********************************************************************************
-                    """).format( setup="{}{}".format(SourceRepositoryTools.SETUP_ENVIRONMENT_NAME, environment.ScriptExtension),
+                    """).format( setup="{}{}".format(Constants.SETUP_ENVIRONMENT_NAME, environment.ScriptExtension),
                                  status=StreamDecorator.LeftJustify('\n'.join(status_lines), 4),
                                )), ]
 
-            generated_dir = os.path.join(repository_root, SourceRepositoryTools.GENERATED_DIRECTORY_NAME, environment.CategoryName, configuration or "Default")
+            generated_dir = os.path.join(repository_root, Constants.GENERATED_DIRECTORY_NAME, environment.CategoryName, configuration or "Default")
             
         else:
             dependency_info = LoadRepoData()
-            generated_dir = os.getenv(SourceRepositoryTools.DE_REPO_GENERATED_NAME)
+            generated_dir = os.getenv(Constants.DE_REPO_GENERATED_NAME)
             
         if not os.path.isdir(generated_dir):
             os.makedirs(generated_dir)
@@ -186,11 +186,11 @@ def Activate( output_filename_or_stdout,
                         _ActivateMasterRepoData,
                       ] + methods
 
-        args = { "constants" : Constants( SourceRepositoryTools.LIBRARIES_SUBDIR,
-                                          SourceRepositoryTools.SCRIPTS_SUBDIR,
-                                          SourceRepositoryTools.TOOLS_SUBDIR,
-                                          SourceRepositoryTools.ACTIVATE_ENVIRONMENT_CUSTOMIZATION_FILENAME,
-                                        ),
+        args = { "constants" : ConstantsObject( Constants.LIBRARIES_SUBDIR,
+                                                Constants.SCRIPTS_SUBDIR,
+                                                Constants.TOOLS_SUBDIR,
+                                                Constants.ACTIVATE_ENVIRONMENT_CUSTOMIZATION_FILENAME,
+                                              ),
                  "environment" : environment,
                  "configuration" : configuration,
                  "repositories" : dependency_info.prioritized_repositories,
@@ -226,12 +226,12 @@ def Activate( output_filename_or_stdout,
 # ---------------------------------------------------------------------------
 _ListConfiguration_DisplayFormats = [ "standard", "indented", ]
 
-@CommandLine.EntryPoint( repository_root=CommandLine.EntryPoint.ArgumentInfo(description="Root of the repository"),
-                         display_format=CommandLine.EntryPoint.ArgumentInfo(description="Controls how the output is displayed"),
-                       )
-@CommandLine.FunctionConstraints( repository_root=CommandLine.DirectoryTypeInfo(),
-                                  display_format=CommandLine.EnumTypeInfo(_ListConfiguration_DisplayFormats),
-                                )
+@CommonEnvironmentImports.CommandLine.EntryPoint( repository_root=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo(description="Root of the repository"),
+                                                  display_format=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo(description="Controls how the output is displayed"),
+                                                )
+@CommonEnvironmentImports.CommandLine.FunctionConstraints( repository_root=CommonEnvironmentImports.CommandLine.DirectoryTypeInfo(),
+                                                           display_format=CommonEnvironmentImports.CommandLine.EnumTypeInfo(_ListConfiguration_DisplayFormats),
+                                                         )
 def ListConfigurations( repository_root, 
                         display_format=_ListConfiguration_DisplayFormats[0],
                       ):
@@ -257,8 +257,8 @@ def ListConfigurations( repository_root,
         assert False, display_format
 
 # ---------------------------------------------------------------------------
-@CommandLine.EntryPoint(repository_root=CommandLine.EntryPoint.ArgumentInfo(description="Root of the repository"))
-@CommandLine.FunctionConstraints(repository_root=CommandLine.DirectoryTypeInfo())
+@CommonEnvironmentImports.CommandLine.EntryPoint(repository_root=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo(description="Root of the repository"))
+@CommonEnvironmentImports.CommandLine.FunctionConstraints(repository_root=CommonEnvironmentImports.CommandLine.DirectoryTypeInfo())
 def IsToolRepository(repository_root):
     repo_info = Impl.RepositoryInformation.Load(repository_root)
     result = repo_info.is_tool_repository
@@ -282,23 +282,23 @@ def _ActivateOriginalEnvironment(generated_dir):
                 d.pop(k)
                 break
 
-    with open(os.path.join(generated_dir, GENERATED_ORIGINAL_ENVIRONMENT_FILENAME), 'w') as f:
-        f.write(pickle.dumps(d))
+    with open(os.path.join(generated_dir, GENERATED_ORIGINAL_ENVIRONMENT_FILENAME), 'wb') as f:
+        pickle.dump(d, f)
         
 # ---------------------------------------------------------------------------
 def _ActivateMasterRepoData(configuration, generated_dir):
-    commands = [ Shell.Set( SourceRepositoryTools.DE_REPO_ROOT_NAME,
+    commands = [ Shell.Set( Constants.DE_REPO_ROOT_NAME,
                             os.path.realpath(os.path.join(generated_dir, "..", "..", "..")),
                             preserve_original=False,
                           ),
-                 Shell.Set( SourceRepositoryTools.DE_REPO_GENERATED_NAME,
+                 Shell.Set( Constants.DE_REPO_GENERATED_NAME,
                             generated_dir,
                             preserve_original=False,
                           ),
                ]
 
     if configuration:
-        commands.append(Shell.Set( SourceRepositoryTools.DE_REPO_CONFIGURATION_NAME,
+        commands.append(Shell.Set( Constants.DE_REPO_CONFIGURATION_NAME,
                                    configuration,
                                    preserve_original=False,
                                  ))
@@ -312,15 +312,17 @@ def _ActivateMasterRepoData(configuration, generated_dir):
 def _ActivateRepoData(environment, repositories, version_specs):
     commands = []
 
-    filename = os.getenv(SourceRepositoryTools.DE_REPO_DATA_NAME)
+    filename = os.getenv(Constants.DE_REPO_DATA_NAME)
     if not filename:
-        filename = environment.CreateTempFilename(".RepoData{}".format(SourceRepositoryTools.TEMPORARY_FILE_EXTENSION))
-        commands.append(environment.Set(SourceRepositoryTools.DE_REPO_DATA_NAME, filename, preserve_original=False))
+        filename = environment.CreateTempFilename(".RepoData{}".format(Constants.TEMPORARY_FILE_EXTENSION))
+        commands.append(environment.Set(Constants.DE_REPO_DATA_NAME, filename, preserve_original=False))
 
-    with open(filename, 'w') as f:
-        f.write(pickle.dumps({ "prioritized_repositories" : repositories,
-                               "version_specs" : version_specs,
-                             }))
+    with open(filename, 'wb') as f:
+        pickle.dump( { "prioritized_repositories" : repositories,
+                       "version_specs" : version_specs,
+                     },
+                     f,
+                   )
 
     return commands
 
@@ -336,7 +338,7 @@ def _ActivateNames(repositories):
         names.append("'{}{}'".format(repository.name, " ({})".format(repository.configuration) if repository.configuration else ''))
         max_name_length = max(max_name_length, len(names[-1]))
 
-    for repository, name in itertools.izip(repositories, names):
+    for repository, name in six.moves.zip(repositories, names):
         commands.append(Shell.Message("Activating {name:<{max_name_length}} <{id:<20}> [{root}]...".format( name=name,
                                                                                                             max_name_length=max_name_length,
                                                                                                             id=repository.id,
@@ -387,7 +389,7 @@ def _ActivateCustom(**kwargs):
     commands = []
 
     for repository in repositories:
-        result = IActivationActivity.CallCustomMethod( os.path.join(repository.root, SourceRepositoryTools.ACTIVATE_ENVIRONMENT_CUSTOMIZATION_FILENAME),
+        result = IActivationActivity.CallCustomMethod( os.path.join(repository.root, Constants.ACTIVATE_ENVIRONMENT_CUSTOMIZATION_FILENAME),
                                                        CUSTOM_ACTIONS_METHOD_NAME,
                                                        **kwargs
                                                      )
@@ -398,9 +400,9 @@ def _ActivateCustom(**kwargs):
 
 # ---------------------------------------------------------------------------
 def _ActivatePrompt(repositories, configuration, is_tool_repository):
-    if is_tool_repository and os.getenv(SourceRepositoryTools.DE_REPO_CONFIGURATION_NAME):
+    if is_tool_repository and os.getenv(Constants.DE_REPO_CONFIGURATION_NAME):
         assert configuration == None, configuration
-        configuration = os.getenv(SourceRepositoryTools.DE_REPO_CONFIGURATION_NAME)
+        configuration = os.getenv(Constants.DE_REPO_CONFIGURATION_NAME)
     
     tool_names = []
 
@@ -422,5 +424,5 @@ def _ActivatePrompt(repositories, configuration, is_tool_repository):
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    try: sys.exit(CommandLine.Main())
+    try: sys.exit(CommonEnvironmentImports.CommandLine.Main())
     except KeyboardInterrupt: pass

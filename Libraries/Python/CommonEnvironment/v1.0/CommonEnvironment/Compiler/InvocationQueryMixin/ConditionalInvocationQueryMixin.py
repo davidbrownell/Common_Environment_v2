@@ -21,13 +21,13 @@ import stat
 import sys
 import textwrap
 
-import cPickle as pickle
+from six.moves import cPickle as pickle
 
 from CommonEnvironment.Interface import *
 from CommonEnvironment import Package
 from CommonEnvironment import RegularExpression
 
-InvocationQueryMixin = Package.ImportInit().InvocationQueryMixin
+InvocationQueryMixin                        = Package.ImportInit().InvocationQueryMixin
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable

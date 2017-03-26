@@ -16,7 +16,7 @@ import inspect
 import os
 import sys
 
-from CommonEnvironment.Interface import staticderived
+from CommonEnvironment import Interface
 
 from . import TypeInfo
 from .Impl.ObjectLikeTypeInfo import ObjectLikeTypeInfo
@@ -55,20 +55,20 @@ class _MethodTypeInfo(TypeInfo):
 # ----------------------------------------------------------------------
 class MethodTypeInfo(_MethodTypeInfo):
     Desc                                    = "Method"
-    ExpectedType                            = staticmethod(lambda item: inspect.ismethod(item) and item.__self__ == None)
+    ExpectedType                            = staticmethod(Interface.IsStandardMethod)
 
 # ----------------------------------------------------------------------
 class ClassMethodTypeInfo(_MethodTypeInfo):
     Desc                                    = "Class Method"
-    ExpectedType                            = staticmethod(lambda item: inspect.ismethod(item) and item.__self__ != None)
+    ExpectedType                            = staticmethod(Interface.IsClassMethod)
 
 # ----------------------------------------------------------------------
 class StaticMethodTypeInfo(_MethodTypeInfo):
     Desc                                    = "Static Method"
-    ExpectedType                            = staticmethod(inspect.isfunction)
+    ExpectedType                            = staticmethod(Interface.IsStaticMethod)
 
 # ----------------------------------------------------------------------
-@staticderived
+@Interface.staticderived
 class ClassTypeInfo(ObjectLikeTypeInfo):
 
     Desc                                    = "Class"
