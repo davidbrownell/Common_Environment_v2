@@ -12,7 +12,7 @@
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 # |  
 # ----------------------------------------------------------------------
-"""\Enhancements for the six library"""
+"""Enhancements for the six library"""
 
 import base64
 import os
@@ -24,6 +24,10 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 if sys.version_info[0] == 2:
+
+    # <Unused argument> pylint: disable = W0613
+    # <Invalid argument name> pylint: disable = C0103
+    
     # ----------------------------------------------------------------------
     def BytesToString(b, encode=False):
         return b
