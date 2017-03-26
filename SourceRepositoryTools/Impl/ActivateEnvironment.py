@@ -170,6 +170,18 @@ def Activate( output_filename_or_stdout,
                 tool_repository.is_tool_repository = True
 
                 dependency_info.prioritized_repositories.append(tool_repository)
+            
+            if len(dependency_info.prioritized_repositories) == 1:
+                return 1, [ Shell.Message(textwrap.dedent(
+                    """\
+                    ********************************************************************************
+                    ********************************************************************************
+                    A tool repository may not be activated in isolation. Please activate a standard
+                    repository and then activate this one.
+
+                    ********************************************************************************
+                    ********************************************************************************
+                    """)), ]
                 
         # Create the methods to invoke
         methods = [ _ActivateRepoData,
