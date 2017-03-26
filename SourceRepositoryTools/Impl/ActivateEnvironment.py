@@ -275,7 +275,7 @@ def IsToolRepository( repository_root,
                       json=False,
                     ):
     repo_info = Impl.RepositoryInformation.Load(repository_root)
-
+    
     if json:
         import json as json_mod
 
@@ -283,7 +283,7 @@ def IsToolRepository( repository_root,
                        sys.stdout,
                      )
     else:
-        sys.stdout.write(repo_info.is_tool_repository)
+        sys.stdout.write(str(repo_info.is_tool_repository))
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
