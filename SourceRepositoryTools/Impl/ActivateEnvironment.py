@@ -271,11 +271,19 @@ def ListConfigurations( repository_root,
 # ---------------------------------------------------------------------------
 @CommonEnvironmentImports.CommandLine.EntryPoint(repository_root=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo(description="Root of the repository"))
 @CommonEnvironmentImports.CommandLine.FunctionConstraints(repository_root=CommonEnvironmentImports.CommandLine.DirectoryTypeInfo())
-def IsToolRepository(repository_root):
+def IsToolRepository( repository_root,
+                      json=False,
+                    ):
     repo_info = Impl.RepositoryInformation.Load(repository_root)
-    result = repo_info.is_tool_repository
+    
+    if json:
+        import json as json_mod
 
-    sys.stdout.write("{}\n".format(result))
+        json_mod.dump( repo_info.ToJsonObj(),
+                       sys.stdout,
+                     )
+    else:
+        sys.stdout.write(str(repo_info.is_tool_repository))
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------

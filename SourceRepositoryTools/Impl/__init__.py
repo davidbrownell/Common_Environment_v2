@@ -234,6 +234,14 @@ class RepositoryInformation(object):
                                                              configurations=CommonEnvironmentImports.six_plus.BytesToString(pickle.dumps(configurations), encode=True),
                                                            ))
 
+    # ----------------------------------------------------------------------
+    def ToJsonObj(self):
+        return { "python_binary" : self.python_binary,
+                 "fundamental_development_root" : self.fundamental_development_root,
+                 "is_tool_repository" : self.is_tool_repository,
+                 "is_configurable_repository" : self.IsConfigurable,
+               }
+
     # ---------------------------------------------------------------------------
     # Note that this format is designed to be easily parsed by batch/script files;
     # it is not formatted to look pretty.
