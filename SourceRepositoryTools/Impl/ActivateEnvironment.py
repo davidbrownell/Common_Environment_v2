@@ -170,6 +170,18 @@ def Activate( output_filename_or_stdout,
                 tool_repository.is_tool_repository = True
 
                 dependency_info.prioritized_repositories.append(tool_repository)
+            
+            if len(dependency_info.prioritized_repositories) == 1:
+                return 1, [ Shell.Message(textwrap.dedent(
+                    """\
+                    ********************************************************************************
+                    ********************************************************************************
+                    A tool repository may not be activated in isolation. Please activate a standard
+                    repository and then activate this one.
+
+                    ********************************************************************************
+                    ********************************************************************************
+                    """)), ]
                 
         # Create the methods to invoke
         methods = [ _ActivateRepoData,
@@ -259,11 +271,19 @@ def ListConfigurations( repository_root,
 # ---------------------------------------------------------------------------
 @CommonEnvironmentImports.CommandLine.EntryPoint(repository_root=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo(description="Root of the repository"))
 @CommonEnvironmentImports.CommandLine.FunctionConstraints(repository_root=CommonEnvironmentImports.CommandLine.DirectoryTypeInfo())
-def IsToolRepository(repository_root):
+def IsToolRepository( repository_root,
+                      json=False,
+                    ):
     repo_info = Impl.RepositoryInformation.Load(repository_root)
-    result = repo_info.is_tool_repository
+    
+    if json:
+        import json as json_mod
 
-    sys.stdout.write("{}\n".format(result))
+        json_mod.dump( repo_info.ToJsonObj(),
+                       sys.stdout,
+                     )
+    else:
+        sys.stdout.write(str(repo_info.is_tool_repository))
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------

@@ -448,7 +448,7 @@ def _SetupBootstrap( environment,
                                                                                     ) }),
                      values=StreamDecorator.LeftJustify( '\n'.join([ display_template.format( name=v.name,
                                                                                                 guid=k,
-                                                                                                data=', '.join(sorted([ dc for dc in v.dependent_configurations if dc ])),
+                                                                                                data=', '.join(sorted([ dc for dc in v.dependent_configurations if dc ], key=lambda item: item.lower())),
                                                                                               )
                                                                        for k, v in six.iteritems(id_lookup)
                                                                      ]),
