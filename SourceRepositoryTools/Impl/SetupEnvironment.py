@@ -447,11 +447,11 @@ def _SetupBootstrap( environment,
                                                                                       [ '-' * col_size for col_size in col_sizes ],
                                                                                     ) }),
                      values=StreamDecorator.LeftJustify( '\n'.join([ display_template.format( name=v.name,
-                                                                                                guid=k,
-                                                                                                data=', '.join(sorted([ dc for dc in v.dependent_configurations if dc ], key=lambda item: item.lower())),
-                                                                                              )
-                                                                       for k, v in six.iteritems(id_lookup)
-                                                                     ]),
+                                                                                              guid=k,
+                                                                                              data=', '.join(sorted([ dc for dc in v.dependent_configurations if dc ], key=lambda item: item.lower())),
+                                                                                            )
+                                                                     for k, v in six.iteritems(id_lookup)
+                                                                   ]),
                                                            4,
                                                          ),
                      configurations=StreamDecorator.LeftJustify( '' if not has_configurations else textwrap.dedent(
