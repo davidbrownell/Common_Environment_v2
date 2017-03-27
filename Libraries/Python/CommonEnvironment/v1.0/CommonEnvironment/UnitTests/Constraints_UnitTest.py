@@ -22,6 +22,8 @@ import os
 import sys
 import unittest
 
+import six
+
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import Decorator
 
@@ -117,12 +119,12 @@ class Tests(unittest.TestCase):
         self.assertEqual(Func(5, 10, 15), 30)
     
         counter= 0
-        for constraint, (expected_constraint, num_preconditions, num_postconditions) in itertools.izip( Decorator.EnumDecorators(Func),
-                                                                                                        [ ( FunctionConstraint, 3, 0 ),
-                                                                                                          ( FunctionConstraint, 0, 1 ),
-                                                                                                          ( FunctionConstraint, 3, 0 ),
-                                                                                                        ],
-                                                                                                      ):
+        for constraint, (expected_constraint, num_preconditions, num_postconditions) in six.moves.zip( Decorator.EnumDecorators(Func),
+                                                                                                       [ ( FunctionConstraint, 3, 0 ),
+                                                                                                         ( FunctionConstraint, 0, 1 ),
+                                                                                                         ( FunctionConstraint, 3, 0 ),
+                                                                                                       ],
+                                                                                                     ):
             self.assertEqual(type(constraint), expected_constraint)
             self.assertEqual(len(constraint.Preconditions), num_preconditions)
             self.assertEqual(len(constraint.Postconditions), num_postconditions)

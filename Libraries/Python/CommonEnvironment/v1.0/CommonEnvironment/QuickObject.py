@@ -18,7 +18,9 @@
 import os
 import sys
 
-from StreamDecorator import StreamDecorator
+import six
+
+from .StreamDecorator import StreamDecorator
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -48,7 +50,7 @@ class QuickObject(object):
     def __str__(self):
         output = [ "QuickObject", ]
 
-        for key, value in self.__dict__.iteritems():
+        for key, value in six.iteritems(self.__dict__):
             if isinstance(value, QuickObject):
                 value = StreamDecorator.LeftJustify(str(value), 24)
 

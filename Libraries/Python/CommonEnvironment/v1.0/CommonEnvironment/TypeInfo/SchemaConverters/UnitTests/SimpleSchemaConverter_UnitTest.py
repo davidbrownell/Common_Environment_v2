@@ -69,22 +69,22 @@ class UnitTest(unittest.TestCase):
     # ----------------------------------------------------------------------
     def test_Enum(self):
         self.assertEqual(SimpleSchemaConveter.Convert(EnumTypeInfo([ "one", "two", "three", ])), '<enum values=[ "one", "two", "three" ]>')
-        self.assertEqual(SimpleSchemaConveter.Convert(EnumTypeInfo([ "one", "two", "three", ], friendly_values=[ "1", "2", "3", ])), '<enum friendly_values=[ "1", "2", "3" ] values=[ "one", "two", "three" ]>')
+        self.assertEqual(SimpleSchemaConveter.Convert(EnumTypeInfo([ "one", "two", "three", ], friendly_values=[ "1", "2", "3", ])), '<enum values=[ "one", "two", "three" ] friendly_values=[ "1", "2", "3" ]>')
 
     # ----------------------------------------------------------------------
     def test_Float(self):
         self.assertEqual(SimpleSchemaConveter.Convert(FloatTypeInfo()), '<number>')
         self.assertEqual(SimpleSchemaConveter.Convert(FloatTypeInfo(min=2.0)), '<number min="2.0">')
         self.assertEqual(SimpleSchemaConveter.Convert(FloatTypeInfo(max=10.5)), '<number max="10.5">')
-        self.assertEqual(SimpleSchemaConveter.Convert(FloatTypeInfo(min=2.0, max=10.5)), '<number max="10.5" min="2.0">')
+        self.assertEqual(SimpleSchemaConveter.Convert(FloatTypeInfo(min=2.0, max=10.5)), '<number min="2.0" max="10.5">')
 
     # ----------------------------------------------------------------------
     def test_Int(self):
         self.assertEqual(SimpleSchemaConveter.Convert(IntTypeInfo()), '<integer>')
         self.assertEqual(SimpleSchemaConveter.Convert(IntTypeInfo(min=2)), '<integer min="2">')
         self.assertEqual(SimpleSchemaConveter.Convert(IntTypeInfo(max=10)), '<integer max="10">')
-        self.assertEqual(SimpleSchemaConveter.Convert(IntTypeInfo(min=2, max=10)), '<integer max="10" min="2">')
-        self.assertEqual(SimpleSchemaConveter.Convert(IntTypeInfo(bytes=4)), '<integer max="2147483647" bytes="4" min="-2147483648">')
+        self.assertEqual(SimpleSchemaConveter.Convert(IntTypeInfo(min=2, max=10)), '<integer min="2" max="10">')
+        self.assertEqual(SimpleSchemaConveter.Convert(IntTypeInfo(bytes=4)), '<integer min="-2147483648" max="2147483647" bytes="4">')
         
     # ----------------------------------------------------------------------
     def test_String(self):

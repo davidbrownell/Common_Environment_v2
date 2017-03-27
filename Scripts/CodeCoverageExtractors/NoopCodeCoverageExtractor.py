@@ -19,11 +19,11 @@
 """
 
 import os
-import subprocess
 import sys
 
 from CommonEnvironment import CodeCoverageExtractor as CodeCoverageExtractorMod
 from CommonEnvironment import Interface
+from CommonEnvironment import Process
 from CommonEnvironment.TimeDelta import TimeDelta
 
 # ---------------------------------------------------------------------------
@@ -63,14 +63,8 @@ class CodeCoverageExtractor(CodeCoverageExtractorMod.CodeCoverageExtractor):
 
         results = CodeCoverageExtractorMod.Results()
 
-        result = subprocess.Popen( command_line,
-                                   shell=True,
-                                   stdout=subprocess.PIPE,
-                                   stderr=subprocess.STDOUT,
-                                 )
-
-        results.test_output = result.stdout.read()
-        results.test_result = result.wait() or 0
+        results.test_result, results.test_output = Process.Execute(command_line)
+        
         results.test_duration = start_time.CalculateDelta(as_string=True)
 
         return results

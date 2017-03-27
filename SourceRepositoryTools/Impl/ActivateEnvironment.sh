@@ -123,7 +123,7 @@ fi
 # Indicate if this is a tool repository if requested
 if [ "$1" == "IsToolRepository" ];
 then
-    $PYTHON_BINARY "$DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL/SourceRepositoryTools/Impl/ActivateEnvironment.py" IsToolRepository "`pwd`"
+    $PYTHON_BINARY "$DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL/SourceRepositoryTools/Impl/ActivateEnvironment.py" IsToolRepository "`pwd`" $cla2
     should_continue=0
 fi
 

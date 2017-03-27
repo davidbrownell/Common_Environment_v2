@@ -18,7 +18,6 @@
 """
 
 import os
-import subprocess
 import sys
 
 from CommonEnvironment import CommandLine

@@ -40,6 +40,7 @@ assert os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL")
 sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
 with CallOnExit(lambda: sys.path.pop(0)):
     import SourceRepositoryTools
+    from SourceRepositoryTools import Constants
 
 # ---------------------------------------------------------------------------
 def NormalizeRepoTemplates(code_root, *repo_templates_params):
@@ -100,7 +101,7 @@ def NormalizeRepoTemplates(code_root, *repo_templates_params):
         assert uri in dependency_map, uri
         repo_root = dependency_map[uri].root
 
-        repo_enlist_all = os.path.join(repo_root, SourceRepositoryTools.SCRIPTS_SUBDIR, "EnlistAll.py")
+        repo_enlist_all = os.path.join(repo_root, Constants.SCRIPTS_SUBDIR, "EnlistAll.py")
         assert os.path.isfile(repo_enlist_all), repo_enlist_all
 
         result = subprocess.Popen( 'python "{}" List /verbose /no_populate'.format(repo_enlist_all),
@@ -414,7 +415,7 @@ def SetupFunctionFactory( repo_templates,
         if not diff.matches:
             return 
 
-        setup_environment_script = Shell.GetEnvironment().CreateScriptName(SourceRepositoryTools.SETUP_ENVIRONMENT_NAME)
+        setup_environment_script = Shell.GetEnvironment().CreateScriptName(Constants.SETUP_ENVIRONMENT_NAME)
                 
         with StreamDecorator(output_stream).DoneManager( line_prefix='', 
                                                          done_prefix='\n\nComposite Results: ', 

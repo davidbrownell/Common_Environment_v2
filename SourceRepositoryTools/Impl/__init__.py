@@ -22,29 +22,30 @@ import sys
 import textwrap
 
 from collections import OrderedDict
-import cPickle as pickle
-from StringIO import StringIO
+
+import six
+from six.moves import cPickle as pickle
+from six.moves import StringIO
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ---------------------------------------------------------------------------
 
-sys.path.insert(0, os.path.join(_script_dir, "..", ".."))
-import SourceRepositoryTools
-del sys.path[0]
+import CommonEnvironmentImports
 
-CommonEnvironment                           = SourceRepositoryTools.CommonEnvironment
-CallOnExit                                  = SourceRepositoryTools.CallOnExit
-CommandLine                                 = SourceRepositoryTools.CommandLine
-FileSystem                                  = SourceRepositoryTools.FileSystem
-ModifiableValue                             = SourceRepositoryTools.ModifiableValue
-Package                                     = SourceRepositoryTools.Package
-QuickObject                                 = SourceRepositoryTools.QuickObject
-RegularExpression                           = SourceRepositoryTools.RegularExpression
-Shell                                       = SourceRepositoryTools.Shell
-SourceControlManagement                     = SourceRepositoryTools.SourceControlManagement
-StreamDecorator                             = SourceRepositoryTools.StreamDecorator
+with CommonEnvironmentImports.Package.NameInfo(__package__) as ni:
+    __package__ = ni.created
+
+    from .. import Constants
+
+    __package__ = ni.original
+
+SourceRepositoryTools                       = CommonEnvironmentImports.Package.ImportInit("..")
+
+# ----------------------------------------------------------------------
+Shell                                       = CommonEnvironmentImports.Shell
+StreamDecorator                             = CommonEnvironmentImports.StreamDecorator
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
@@ -75,19 +76,19 @@ class RepositoryInformation(object):
     def Load(cls, repository_root):
         environment = Shell.GetEnvironment()
 
-        filename = os.path.join(repository_root, SourceRepositoryTools.GENERATED_DIRECTORY_NAME, environment.CategoryName, SourceRepositoryTools.GENERATED_BOOTSTRAP_FILENAME)
+        filename = os.path.join(repository_root, Constants.GENERATED_DIRECTORY_NAME, environment.CategoryName, Constants.GENERATED_BOOTSTRAP_FILENAME)
         if not os.path.isfile(filename):
-            raise Exception("The filename '{}' does not exist; please run '{}' and try again.".format(filename, os.path.join(repository_root, "{}{}".format(SourceRepositoryTools.SETUP_ENVIRONMENT_NAME, environment.ScriptExtension))))
+            raise Exception("The filename '{}' does not exist; please run '{}' and try again.".format(filename, os.path.join(repository_root, "{}{}".format(Constants.SETUP_ENVIRONMENT_NAME, environment.ScriptExtension))))
 
         if cls._Load_regex == None:
-            cls._Load_regex = RegularExpression.TemplateStringToRegex(cls._BOOTSTRAP_CONTENT_TEMPLATE)
+            cls._Load_regex = CommonEnvironmentImports.RegularExpression.TemplateStringToRegex(cls._BOOTSTRAP_CONTENT_TEMPLATE)
 
         match = cls._Load_regex.match(open(filename).read())
         if not match:
             raise Exception("The content in '{}' appears to be corrupt.".format(filename))
 
-        python_binary = FileSystem.Normalize(os.path.join(repository_root, match.group("python_binary")))
-        fundamental_development_root = FileSystem.Normalize(os.path.join(repository_root, match.group("fundamental_development_root")))
+        python_binary = CommonEnvironmentImports.FileSystem.Normalize(os.path.join(repository_root, match.group("python_binary")))
+        fundamental_development_root = CommonEnvironmentImports.FileSystem.Normalize(os.path.join(repository_root, match.group("fundamental_development_root")))
         is_tool_repository = match.group("is_tool_repository") == '1'
         is_configurable_repository = match.group("is_configurable_repository") == '1'
 
@@ -96,7 +97,7 @@ class RepositoryInformation(object):
         if "SetupEnvironment" not in sys.modules:
             global __package__
             
-            with Package.NameInfo(__package__) as ni:
+            with CommonEnvironmentImports.Package.NameInfo(__package__) as ni:
                 __package__ = ni.created
             
                 from . import SetupEnvironment
@@ -117,8 +118,8 @@ class RepositoryInformation(object):
 
             # ---------------------------------------------------------------------------
 
-        with CallOnExit(SetupEnvironmentCleanup):
-            configurations = pickle.loads(match.group("configurations")) or {}
+        with CommonEnvironmentImports.CallOnExit(SetupEnvironmentCleanup):
+            configurations = pickle.loads(CommonEnvironmentImports.six_plus.BytesFromString(match.group("configurations"), decode=True)) or {}
 
         for configuration in configurations.values():
             for dependency in configuration.Dependencies:
@@ -127,12 +128,12 @@ class RepositoryInformation(object):
                 if not dependency.Configuration:
                     dependency.Configuration = None
 
-                dependency.RepositoryRoot = FileSystem.Normalize(os.path.join(repository_root, dependency.RepositoryRoot))
+                dependency.RepositoryRoot = CommonEnvironmentImports.FileSystem.Normalize(os.path.join(repository_root, dependency.RepositoryRoot))
 
             new_fingerprint = OrderedDict()
 
-            for k, v in configuration.Fingerprint.iteritems():
-                new_fingerprint[FileSystem.Normalize(os.path.join(repository_root, k))] = v
+            for k, v in six.iteritems(configuration.Fingerprint):
+                new_fingerprint[CommonEnvironmentImports.FileSystem.Normalize(os.path.join(repository_root, k))] = v
 
             configuration.Fingerprint = new_fingerprint
             
@@ -140,7 +141,7 @@ class RepositoryInformation(object):
                     fundamental_development_root,
                     is_tool_repository,
                     configurations,
-                    repository_root=FileSystem.Normalize(repository_root),
+                    repository_root=CommonEnvironmentImports.FileSystem.Normalize(repository_root),
                   )
 
     # ---------------------------------------------------------------------------
@@ -151,7 +152,7 @@ class RepositoryInformation(object):
         for repository_dir in repository_dirs:
             md5 = hashlib.md5()
 
-            filename = os.path.join(repository_dir, "{}.py".format(SourceRepositoryTools.SETUP_ENVIRONMENT_NAME))
+            filename = os.path.join(repository_dir, "{}.py".format(Constants.SETUP_ENVIRONMENT_NAME))
             if os.path.isfile(filename):
                 with open(filename) as f:
                     in_file_header = True
@@ -165,7 +166,7 @@ class RepositoryInformation(object):
                         md5.update(line)
 
             if relative_root:
-                repository_dir = FileSystem.GetRelativePath(relative_root, repository_dir)
+                repository_dir = CommonEnvironmentImports.FileSystem.GetRelativePath(relative_root, repository_dir)
 
             results[repository_dir] = md5.hexdigest()
 
@@ -208,20 +209,20 @@ class RepositoryInformation(object):
 
     # ---------------------------------------------------------------------------
     def Save(self, repository_root):
-        generated_dir = os.path.join(repository_root, SourceRepositoryTools.GENERATED_DIRECTORY_NAME)
+        generated_dir = os.path.join(repository_root, Constants.GENERATED_DIRECTORY_NAME)
         if not os.path.isdir(generated_dir):
             os.makedirs(generated_dir)
 
         # Ensure that we save everything as a relative path
-        python_binary = FileSystem.GetRelativePath(repository_root, self.python_binary)
-        fundamental_development_root = FileSystem.GetRelativePath(repository_root, self.fundamental_development_root)
+        python_binary = CommonEnvironmentImports.FileSystem.GetRelativePath(repository_root, self.python_binary)
+        fundamental_development_root = CommonEnvironmentImports.FileSystem.GetRelativePath(repository_root, self.fundamental_development_root)
 
         configurations = copy.deepcopy(self.configurations)
         for configuration in configurations.values():
             for dependency in configuration.Dependencies:
-                dependency.RepositoryRoot = FileSystem.GetRelativePath(repository_root, dependency.RepositoryRoot)
+                dependency.RepositoryRoot = CommonEnvironmentImports.FileSystem.GetRelativePath(repository_root, dependency.RepositoryRoot)
 
-        filename = os.path.join(generated_dir, Shell.GetEnvironment().CategoryName, SourceRepositoryTools.GENERATED_BOOTSTRAP_FILENAME)
+        filename = os.path.join(generated_dir, Shell.GetEnvironment().CategoryName, Constants.GENERATED_BOOTSTRAP_FILENAME)
         if not os.path.isdir(os.path.dirname(filename)):
             os.makedirs(os.path.dirname(filename))
             
@@ -230,8 +231,16 @@ class RepositoryInformation(object):
                                                              fundamental_development_root=fundamental_development_root,
                                                              is_tool_repository="1" if self.IsToolRepository else "0",
                                                              is_configurable_repository="1" if self.IsConfigurable else "0",
-                                                             configurations=pickle.dumps(configurations),
+                                                             configurations=CommonEnvironmentImports.six_plus.BytesToString(pickle.dumps(configurations), encode=True),
                                                            ))
+
+    # ----------------------------------------------------------------------
+    def ToJsonObj(self):
+        return { "python_binary" : self.python_binary,
+                 "fundamental_development_root" : self.fundamental_development_root,
+                 "is_tool_repository" : self.is_tool_repository,
+                 "is_configurable_repository" : self.IsConfigurable,
+               }
 
     # ---------------------------------------------------------------------------
     # Note that this format is designed to be easily parsed by batch/script files;
@@ -261,9 +270,9 @@ def GetRepositoryUniqueId( repository_root,
     global _GetRepositoryUniqueId_regex
 
     if _GetRepositoryUniqueId_regex == None:
-        _GetRepositoryUniqueId_regex = RegularExpression.TemplateStringToRegex(REPOSITORY_ID_CONTENT_TEMPLATE)
+        _GetRepositoryUniqueId_regex = CommonEnvironmentImports.RegularExpression.TemplateStringToRegex(REPOSITORY_ID_CONTENT_TEMPLATE)
 
-    filename = os.path.join(repository_root, SourceRepositoryTools.REPOSITORY_ID_FILENAME)
+    filename = os.path.join(repository_root, Constants.REPOSITORY_ID_FILENAME)
     if os.path.isfile(filename):
         match = _GetRepositoryUniqueId_regex.match(open(filename).read())
         if not match:
@@ -273,7 +282,7 @@ def GetRepositoryUniqueId( repository_root,
         unique_id = match.group("guid").upper()
     else:
         if scm == None:
-            scm or SourceControlManagement.GetSCM(repository_root, throw_on_error=False)
+            scm or CommonEnvironmentImports.SourceControlManagement.GetSCM(repository_root, throw_on_error=False)
             if scm == None:
                 if throw_on_error:
                     raise Exception("Id information was not found nor could SCM information be extracted from '{}'".format(repository_root))
@@ -289,8 +298,8 @@ def GetRepositoryUniqueId( repository_root,
 def IsOSNameDirectory(path, subdirs=None):
     potential_os_names = { env.Name for env in Shell.GetPotentialEnvironments() }
 
-    for os_name in [ SourceRepositoryTools.AGNOSTIC_OS_NAME,
-                     SourceRepositoryTools.LINUX_OS_NAME,
+    for os_name in [ Constants.AGNOSTIC_OS_NAME,
+                     Constants.LINUX_OS_NAME,
                      "src",
                    ]:
         potential_os_names.add(os_name)
@@ -350,7 +359,7 @@ def GenerateCommands( functor,              # def Func() -> []
 
 # ---------------------------------------------------------------------------
 def TraverseDependencies(repository_root, configuration):
-    repository_root = FileSystem.Normalize(repository_root)
+    repository_root = CommonEnvironmentImports.FileSystem.Normalize(repository_root)
     assert os.path.isdir(repository_root), repository_root
 
     repositories = OrderedDict()
@@ -363,17 +372,17 @@ def TraverseDependencies(repository_root, configuration):
     def CreateContext(root, configuration=None):
         name, id = GetRepositoryUniqueId(root)
 
-        return QuickObject( id=id,
-                            name=name,
-                            root=root,
-                            configuration=configuration,
-                          )
+        return CommonEnvironmentImports.QuickObject( id=id,
+                                                     name=name,
+                                                     root=root,
+                                                     configuration=configuration,
+                                                   )
 
     # ---------------------------------------------------------------------------
     def CreateVersionInfo(version, context):
-        return QuickObject( version=version,
-                            context=context,
-                          )
+        return CommonEnvironmentImports.QuickObject( version=version,
+                                                     context=context,
+                                                   )
 
     # ---------------------------------------------------------------------------
     def Walk( referencing_context,
@@ -503,7 +512,7 @@ def TraverseDependencies(repository_root, configuration):
         # ---------------------------------------------------------------------------
         
         for version_info in repo_info.configurations[context.configuration].VersionSpecs.Tools:
-            existing_version_info = CommonEnvironment.Get(tool_version_info, lambda tvi: tvi.Name == version_info.Name)
+            existing_version_info = CommonEnvironmentImports.CommonEnvironment.Get(tool_version_info, lambda tvi: tvi.Name == version_info.Name)
             
             if existing_version_info == None:
                 tool_version_info.append(version_info)
@@ -512,9 +521,9 @@ def TraverseDependencies(repository_root, configuration):
             elif version_info.Version != existing_version_info.Version:
                 OnVersionMismatch("Tools", version_info, existing_version_info)
 
-        for library_language, version_info_items in repo_info.configurations[context.configuration].VersionSpecs.Libraries.iteritems():
+        for library_language, version_info_items in six.iteritems(repo_info.configurations[context.configuration].VersionSpecs.Libraries):
             for version_info in version_info_items:
-                existing_version_info = CommonEnvironment.Get(library_version_info.get(library_language, []), lambda lvi: lvi.Name == version_info.Name)
+                existing_version_info = CommonEnvironmentImports.CommonEnvironment.Get(library_version_info.get(library_language, []), lambda lvi: lvi.Name == version_info.Name)
 
                 if existing_version_info == None:
                     library_version_info.setdefault(library_language, []).append(version_info)
@@ -535,25 +544,25 @@ def TraverseDependencies(repository_root, configuration):
     
     # Order the results from the most frequently requested to the least frequently 
     # requests.
-    priority_values = [ (id, info.priority_modifier) for id, info in repositories.iteritems() ]
+    priority_values = [ (id, info.priority_modifier) for id, info in six.iteritems(repositories) ]
     priority_values.sort(key=lambda x: x[1], reverse=True)
 
     # Calculate fingerprints
     this_repository = repositories[priority_values[-1][0]]
     this_configuration = this_repository.configurations[configuration]
 
-    return QuickObject( prioritized_repositories=[ QuickObject( id=id,
-                                                                name=repositories[id].context.name,
-                                                                root=repositories[id].context.root,
-                                                                configuration=repositories[id].context.configuration,
-                                                                is_tool_repository=False,
-                                                              )
-                                                   for id, _ in priority_values
-                                                 ],
-                        version_specs=SourceRepositoryTools.VersionSpecs(tool_version_info, library_version_info),
-                        fingerprint=this_configuration.Fingerprint,
-                        calculated_fingerprint=RepositoryInformation.CalculateFingerprint([ this_repository.repository_root, ] + [ dependency.RepositoryRoot for dependency in this_configuration.Dependencies ])
-                      )
+    return CommonEnvironmentImports.QuickObject( prioritized_repositories=[ CommonEnvironmentImports.QuickObject( id=id,
+                                                                                                                  name=repositories[id].context.name,
+                                                                                                                  root=repositories[id].context.root,
+                                                                                                                  configuration=repositories[id].context.configuration,
+                                                                                                                  is_tool_repository=False,
+                                                                                                                )
+                                                                            for id, _ in priority_values
+                                                                          ],
+                                                 version_specs=SourceRepositoryTools.VersionSpecs(tool_version_info, library_version_info),
+                                                 fingerprint=this_configuration.Fingerprint,
+                                                 calculated_fingerprint=RepositoryInformation.CalculateFingerprint([ this_repository.repository_root, ] + [ dependency.RepositoryRoot for dependency in this_configuration.Dependencies ])
+                                               )
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------

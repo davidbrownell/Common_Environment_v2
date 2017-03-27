@@ -43,7 +43,9 @@ from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import Package
 from CommonEnvironment import Shell
 
-SourceRepositoryTools = Package.ImportInit()
+import Constants 
+
+SourceRepositoryTools                       = Package.ImportInit()
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -108,7 +110,7 @@ def _DelayInit(environment_beacon_name, filenames):
 
     source_filename = os.getenv(environment_beacon_name)
     if not source_filename:
-        source_filename = Shell.GetEnvironment().CreateTempFilename(".DPA{}".format(SourceRepositoryTools.TEMPORARY_FILE_EXTENSION))
+        source_filename = Shell.GetEnvironment().CreateTempFilename(".DPA{}".format(Constants.TEMPORARY_FILE_EXTENSION))
 
         commands.append(Shell.Set(environment_beacon_name, source_filename, preserve_original=False))
         os.environ[environment_beacon_name] = source_filename

@@ -18,9 +18,10 @@ import sys
 
 from collections import OrderedDict
 
-from CommonEnvironment.Interface import *
+import six
 
 from .. import TypeInfo
+from ...Interface import *
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -52,7 +53,7 @@ class ObjectLikeTypeInfo(TypeInfo):
         self.Items                          = items or OrderedDict()
         self.RequireExactMatchDefault       = require_exact_match
 
-        for k, v in kwargs.iteritems():
+        for k, v in six.iteritems(kwargs):
             assert k not in self.Items, k
             self.Items[k] = v
 
@@ -64,7 +65,7 @@ class ObjectLikeTypeInfo(TypeInfo):
 
         return "Value must contain the {} {}" \
                     .format( Plural.plural("attribute", len(self.Items)),
-                             ', '.join([ "'{}'".format(name) for name in self.Items.iterkeys() ]),
+                             ', '.join([ "'{}'".format(name) for name in six.iterkeys(self.Items) ]),
                            )
 
     @property
@@ -72,7 +73,7 @@ class ObjectLikeTypeInfo(TypeInfo):
         return "{}({}, items={}, require_exact_match={})" \
                     .format( self.__class__.__name__,
                              self._PythonDefinitionStringContents,
-                             "{{ {} }}".format(', '.join([ '"{}" : {}'.format(k, v.PythonDefinitionString) for k, v in self.Items.iteritems() ])),
+                             "{{ {} }}".format(', '.join([ '"{}" : {}'.format(k, v.PythonDefinitionString) for k, v in six.iteritems(self.Items) ])),
                              self.RequireExactMatchDefault,
                            )
 
@@ -96,7 +97,7 @@ class ObjectLikeTypeInfo(TypeInfo):
 
         attributes = { a for a in attributes if not a.startswith('__') }
     
-        for attribute_name, type_info in self.Items.iteritems():
+        for attribute_name, type_info in six.iteritems(self.Items):
             if attribute_name not in attributes:
                 if type_info.Arity.Min == 0:
                     continue

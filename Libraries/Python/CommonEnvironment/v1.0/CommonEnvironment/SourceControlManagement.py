@@ -548,7 +548,7 @@ def EnumSCMDirectories(root):
     assert os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL")
     sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
     with CallOnExit(lambda: sys.path.pop(0)):
-        import SourceRepositoryTools
+        from SourceRepositoryTools import Constants
 
     scms = GetPotentialSCMs()
 
@@ -559,5 +559,5 @@ def EnumSCMDirectories(root):
                 directories[:] = []
                 continue
 
-        if SourceRepositoryTools.GENERATED_DIRECTORY_NAME in directories:
-            directories.erase(SourceRepositoryTools.GENERATED_DIRECTORY_NAME)
+        if Constants.GENERATED_DIRECTORY_NAME in directories:
+            directories.erase(Constants.GENERATED_DIRECTORY_NAME)

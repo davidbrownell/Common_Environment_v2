@@ -18,17 +18,17 @@
 """
 
 import os
-import subprocess
 import sys
 import textwrap
 import zipfile
 
-from StringIO import StringIO
+from six.moves import StringIO
 
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CommandLine
 from CommonEnvironment import FileSystem
 from CommonEnvironment import Interface
+from CommonEnvironment import Process
 from CommonEnvironment import Shell
 from CommonEnvironment.StreamDecorator import StreamDecorator
 
@@ -206,25 +206,12 @@ class Compiler( AtomicInputProcessingMixin,
                                              output_filename=context.output_filename,
                                            )
 
-                result = subprocess.Popen( command_line,
-                                           shell=True,
-                                           stdout=subprocess.PIPE,
-                                           stderr=subprocess.STDOUT,
-                                         )
-
                 sink = StringIO()
-                immediate_output_stream = StreamDecorator([ sink, this_verbose_stream, ])
+                dm.result = Process.Execute(command_line, StreamDecorator([ sink, this_verbose_stream, ]))
+                sink = sink.getvalue()
 
-                while True:
-                    line = result.stdout.readline()
-                    if not line:
-                        break
-
-                    immediate_output_stream.write(line)
-
-                dm.result = result.wait() or 0
                 if dm.result != 0 and not verbose:
-                    status_stream.write(sink.getvalue())
+                    status_stream.write(sink)
 
                 return dm.result
 
