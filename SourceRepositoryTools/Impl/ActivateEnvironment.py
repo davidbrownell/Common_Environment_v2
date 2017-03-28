@@ -348,25 +348,45 @@ def _ActivateRepoData(environment, repositories, version_specs):
 
 # ---------------------------------------------------------------------------
 def _ActivateNames(repositories):
-    commands = [ Shell.Message("\n"),
-               ]
-
+    col_sizes = [ 40, 32, 100, ]
     names = []
-    max_name_length = 0
+    max_length = 0
 
-    for repository in repositories:
-        names.append("'{}{}'".format(repository.name, " ({})".format(repository.configuration) if repository.configuration else ''))
-        max_name_length = max(max_name_length, len(names[-1]))
+    for repo in repositories:
+        names.append("{}{}".format( repo.name,
+                                    '' if not repo.configuration else " ({})".format(repo.configuration),
+                                  ))
+        max_length = max(max_length, len(names[-1]))
 
-    for repository, name in six.moves.zip(repositories, names):
-        commands.append(Shell.Message("Activating {name:<{max_name_length}} <{id:<20}> [{root}]...".format( name=name,
-                                                                                                            max_name_length=max_name_length,
-                                                                                                            id=repository.id,
-                                                                                                            root=repository.root,
-                                                                                                          )))
-    commands.append(Shell.Message("\n"))
+    col_sizes[0] = max(col_sizes[0], max_length)
+    
+    display_template = "{{name:<{0}}}  {{guid:<{1}}}  {{data:<{2}}}".format(*col_sizes)
 
-    return commands
+    return [ Shell.Message(textwrap.dedent(
+        """\
+        
+        Activating these repositories:
+
+            {header}
+            {sep}
+            {values}
+
+        """).format( header=display_template.format( name="Repository Name",
+                                                     guid="Id",
+                                                     data="Location",
+                                                   ),
+                     sep=display_template.format(**{ k : v for k, v in six.moves.zip( [ "name", "guid", "data", ],
+                                                                                      [ '-' * col_size for col_size in col_sizes ],
+                                                                                    ) }),
+                     values=StreamDecorator.LeftJustify( '\n'.join([ display_template.format( name=name,
+                                                                                              guid=repo.id,
+                                                                                              data=repo.root,
+                                                                                            )
+                                                                     for repo, name in six.moves.zip(repositories, names)
+                                                                   ]),
+                                                          4,
+                                                       ),
+                   )), ]
 
 # ---------------------------------------------------------------------------
 def _ActivatePython(constants, environment, configuration, repositories, version_specs, generated_dir):
