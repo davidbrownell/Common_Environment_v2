@@ -492,7 +492,7 @@ class DistributedSourceControlManagementBase(SourceControlManagementBase):
     # ---------------------------------------------------------------------------
     @staticmethod
     @abstractmethod
-    def Push(repo_root):
+    def Push(repo_root, create_remote_branch=False):
         raise Exception("Abstract method")
 
     # ---------------------------------------------------------------------------
@@ -508,9 +508,11 @@ class DistributedSourceControlManagementBase(SourceControlManagementBase):
 # ---------------------------------------------------------------------------
 def GetPotentialSCMs():
     from .Impl.SourceControlManagement.MercurialSourceControlManagement import MercurialSourceControlManagement
+    from .Impl.SourceControlManagement.GitSourceControlManagement import GitSourceControlManagement
     from .Impl.SourceControlManagement.PerforceSourceControlManagement import PerforceSourceControlManagement
-
+    
     return [ MercurialSourceControlManagement,
+             GitSourceControlManagement,
              PerforceSourceControlManagement,
            ]
 
