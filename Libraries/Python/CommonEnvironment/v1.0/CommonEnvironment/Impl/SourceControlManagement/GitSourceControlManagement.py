@@ -118,7 +118,7 @@ class GitSourceControlManagement(DistributedSourceControlManagementBase):
     # ---------------------------------------------------------------------------
     @staticmethod
     def IsRootDir(repo_dir):
-        return os.path.isdir(os.path.join(root_dir, ".git"))
+        return os.path.isdir(os.path.join(repo_dir, ".git"))
 
     # ---------------------------------------------------------------------------
     @classmethod
