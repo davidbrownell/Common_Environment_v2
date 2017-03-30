@@ -500,7 +500,7 @@ def GetChangedFiles( revision=None,
 
 # ---------------------------------------------------------------------------
 @CommandLine.EntryPoint
-@CommandLine.FunctionConstraints( filename=CommandLine.FilenameTypeInfo(),
+@CommandLine.FunctionConstraints( filename=CommandLine.FilenameTypeInfo(ensure_exists=False),
                                   scm=_SCMOptionalTypeInfo,
                                   directory=CommandLine.DirectoryTypeInfo(arity='?'),
                                   output_stream=None,
@@ -631,7 +631,8 @@ def GetRemoteChanges( scm=None,
                                   directory=CommandLine.DirectoryTypeInfo(arity='?'),
                                   output_stream=None,
                                 )
-def Push( scm=None,
+def Push( create_remote_branch=False,
+          scm=None,
           directory=None,
           output_stream=sys.stdout,
         ):
@@ -640,7 +641,7 @@ def Push( scm=None,
         output_stream.write("'{}' is not a distributed source control management system, which is a requirement for this functionality.\n".format(scm.Name))
         return -1
 
-    return CommandLine.DisplayOutput(*scm.Push(directory), output_stream=output_stream)
+    return CommandLine.DisplayOutput(*scm.Push(directory, create_remote_branch=create_remote_branch), output_stream=output_stream)
 
 # ---------------------------------------------------------------------------
 @CommandLine.EntryPoint
