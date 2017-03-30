@@ -227,14 +227,14 @@ def Execute( tasks,
     # ---------------------------------------------------------------------------
     def InternalThreadProc(thread_info, core_index):
         while True:
+            with thread_info.index_lock:
+                if thread_info.current_index == thread_info.executor.NumTasks:
+                    return
+            
+                task_index = thread_info.current_index
+                thread_info.current_index += 1
+            
             with CallOnExit(thread_info.progress_bar_update_func):
-                with thread_info.index_lock:
-                    if thread_info.current_index == thread_info.executor.NumTasks:
-                        return
-                
-                    task_index = thread_info.current_index
-                    thread_info.current_index += 1
-                
                 thread_info.executor.Execute( thread_info.tasks[task_index],
                                               core_index,
                                               task_index,
