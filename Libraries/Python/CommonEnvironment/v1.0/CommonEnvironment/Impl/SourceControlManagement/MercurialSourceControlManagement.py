@@ -150,23 +150,21 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
         if not hasattr(cls, "_cached_roots"):
             setattr(cls, "_cached_roots", set())
 
-        cached_roots = getattr(cls, "_cached_roots", set())
+        cached_roots = getattr(cls, "_cached_roots")
         
-        value = None
         for k in cached_roots:
             if repo_dir.startswith(k):
-                value = k
-                break
+                return k
 
-        if not value:
-            result, output = cls.Execute(repo_dir, "hg root")
-            assert result == 0, (result, output)
-            
-            value = output.strip()
+        result, output = cls.Execute( repo_dir, 
+                                      "hg root",
+                                      append_newline_to_output=False,
+                                    )
+        assert result == 0, (result, output)
+        
+        cached_roots.add(output)
 
-            cached_roots.add(value)
-
-        return value
+        return output
 
     # ---------------------------------------------------------------------------
     @classmethod
@@ -423,6 +421,8 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
         return filenames
 
     # ---------------------------------------------------------------------------
+    _EnumBlameInfo_regex                    = re.compile(r'^\s*(?P<revision>\d+):\s*(?P<line>.*)$')
+
     @classmethod
     def EnumBlameInfo(cls, repo_root, filename):
         result, output = cls.Execute(repo_root, 'hg blame "{}"'.format(filename))
@@ -435,13 +435,11 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
 
             assert result == 0, (result, output)
 
-        regex = re.compile(r'^\s*(?P<revision>\d+):\s*(?P<line>.*)$')
-
         for index, line in enumerate(output.split('\n')):
             if not line:
                 continue
 
-            match = regex.match(line)
+            match = cls._EnumBlameInfo_regex.match(line)
             if not match:
                 # Don't produce an error on a failure to enumerate binary files
                 if line.endswith("binary file"):
@@ -543,8 +541,8 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
 
     # ---------------------------------------------------------------------------
     @classmethod
-    def Push(cls, repo_root):
-        return cls.Execute(repo_root, "hg push")
+    def Push(cls, repo_root, create_remote_branch=False):
+        return cls.Execute(repo_root, "hg push{}".format(" --new-branch" if create_remote_branch else ''))
 
     # ---------------------------------------------------------------------------
     @classmethod
