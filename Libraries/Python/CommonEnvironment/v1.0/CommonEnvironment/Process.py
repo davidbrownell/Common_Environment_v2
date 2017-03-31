@@ -38,7 +38,6 @@ def Execute( command_line,
                          convert_newlines=convert_newlines,
                          environment=environment,
                          optional_output_stream_or_functor=optional_output_stream_or_functor,
-                         using_colorama=False,
                          line_delimited_output=line_delimited_output,
                        )
 
@@ -58,7 +57,6 @@ def ExecuteWithColorama( command_line,
                              convert_newlines=convert_newlines,
                              environment=environment,
                              optional_output_stream_or_functor=sys.stdout,
-                             using_colorama=True,
                              line_delimited_output=line_delimited_output,
                            )
 
@@ -69,12 +67,12 @@ def _ExecuteImpl( command_line,
                   convert_newlines,
                   environment,
                   optional_output_stream_or_functor,
-                  using_colorama,
                   line_delimited_output,
                 ):
     assert command_line
     
     sink = None
+    output = None
 
     if optional_output_stream_or_functor == None:
         sink = StringIO()
@@ -85,7 +83,7 @@ def _ExecuteImpl( command_line,
 
         # ----------------------------------------------------------------------
         
-        optional_output_stream_or_functor = SinkOutputFunctor
+        output = SinkOutputFunctor
 
     elif hasattr(optional_output_stream_or_functor, "write"):
         output_stream = optional_output_stream_or_functor
@@ -96,19 +94,35 @@ def _ExecuteImpl( command_line,
 
         # ----------------------------------------------------------------------
         
-        optional_output_stream_or_functor = StreamOutputFunctor
+        output = StreamOutputFunctor
         
+    else:
+        output = optional_output_stream_or_functor
+
+    if convert_newlines:
+
+        original_output = output
+
+        # ----------------------------------------------------------------------
+        def ConvertNewlines(content):
+            content = content.replace('\r\n', '\n')
+            original_output(content)
+
+        # ----------------------------------------------------------------------
+        
+        output = ConvertNewlines
+
     if line_delimited_output:
         internal_content = []
 
-        prev_optional_output_stream_or_functor = optional_output_stream_or_functor
-
+        original_output = output
+        
         # ----------------------------------------------------------------------
         def OutputFunctor(c):
             if '\n' in c:
                 assert c.endswith('\n'), c
                 
-                prev_optional_output_stream_or_functor("{}{}".format(''.join(internal_content), c))
+                original_output("{}{}".format(''.join(internal_content), c))
                 internal_content[:] = []
 
             else:
@@ -117,12 +131,12 @@ def _ExecuteImpl( command_line,
         # ----------------------------------------------------------------------
         def Flush():
             if internal_content:
-                prev_optional_output_stream_or_functor(''.join(internal_content))
+                original_output(''.join(internal_content))
                 internal_content[:] = []
 
         # ----------------------------------------------------------------------
         
-        optional_output_stream_or_functor = OutputFunctor
+        output = OutputFunctor
 
     else:
         # ----------------------------------------------------------------------
@@ -130,7 +144,7 @@ def _ExecuteImpl( command_line,
             pass
 
         # ----------------------------------------------------------------------
-        
+    
     args = [ command_line, ]
     kwargs = { "shell" : True,
                "stdout" : subprocess.PIPE,
@@ -145,60 +159,82 @@ def _ExecuteImpl( command_line,
 
     with CallOnExit(Flush):
         try:
-            escape_sequence = []
-            newline_sequence = []
-        
+            # <Invalid variable name> pylint: disable = C0103
+            ( CharacterStack_Escape, 
+              CharacterStack_LineReset, 
+              CharacterStack_Buffered,
+            ) = range(3)
+
+            character_stack = []
+            character_stack_type = None
+
+            hard_stop = False
+
             while True:
-                c = result.stdout.read(1)
-                if not c:
-                    break
-        
-                # Process special chars
-                value = ord(c)
-                
-                # Escape sequences need to be sent to colorama as an atomic string
-                if value == 27:     # ASCII ESC
-                    assert not escape_sequence
-                    escape_sequence.append(c)
-                    continue
-        
-                if value == 13:     # ASCII '\r'
-                    newline_sequence.append(c)
-                    continue
-        
-                # Process sequences
+                if character_stack_type == CharacterStack_Buffered:
+                    c = character_stack.pop()
+
+                    assert not character_stack
+                    character_stack_type = None
+
+                else:
+                    c = result.stdout.read(1)
+                    if not c:
+                        break
+
                 content = None
-        
-                if escape_sequence:
-                    escape_sequence.append(c)
-        
+
+                if character_stack_type == CharacterStack_Escape:
+                    character_stack.append(c)
+
                     if c not in string.ascii_letters:
                         continue
-        
-                    content = ''.join(escape_sequence)
-                    escape_sequence = []
-        
-                    if not using_colorama:
+
+                    content = ''.join(character_stack)
+                    
+                    character_stack = []
+                    character_stack_type = None
+                
+                elif character_stack_type == CharacterStack_LineReset:
+                    if c in [ '\r', '\n', ]:
+                        character_stack.append(c)
                         continue
-        
-                elif newline_sequence:
-                    newline_sequence.append(c)
-        
-                    content = ''.join(newline_sequence)
-                    newline_sequence = []
-        
-                    if convert_newlines and content == '\r\n':
-                        content = '\n'
-        
+
+                    content = ''.join(character_stack)
+                    
+                    character_stack = [ c, ]
+                    character_stack_type = CharacterStack_Buffered
+                
                 else:
+                    assert character_stack_type == None, character_stack_type
+
+                    value = ord(c)
+
+                    if value == 27: # Esc
+                        character_stack.append(c)
+                        character_stack_type = CharacterStack_Escape
+
+                        continue
+
+                    if value == 13: # \r
+                        character_stack.append(c)
+                        character_stack_type = CharacterStack_LineReset
+
+                        continue
+
                     content = c
-        
-                assert content
-                if optional_output_stream_or_functor(content) == False:
+
+                assert content != None
+
+                if output(content) == False:
+                    hard_stop = True
                     break
-        
+                
+            if not hard_stop and character_stack:
+                output(''.join(character_stack))
+
             result = result.wait() or 0
-        
+
         except IOError:
             result = -1
 

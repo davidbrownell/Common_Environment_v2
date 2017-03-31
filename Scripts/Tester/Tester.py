@@ -146,6 +146,7 @@ def Test( configuration,
           verbose=False,
           quiet=False,
           xml_output=False,
+          no_status=False,
         ):
     assert configuration
     assert os.path.exists(filename_or_dir), filename_or_dir
@@ -195,9 +196,10 @@ def Test( configuration,
     if iterations > 1:                      command_line.append("/iterations={}".format(iterations))
     if debug_on_error:                      command_line.append("/debug_on_error")
     if continue_iterations_on_error:        command_line.append("/continue_iterations_on_error")
+    if no_status:                           command_line.append("/no_status")
 
     command_line.append("/preserve_ansi_escape_sequences")
-
+    
     return Process.ExecuteWithColorama("python {}".format(' '.join([ '"{}"'.format(arg) for arg in command_line ])))
     
 # ---------------------------------------------------------------------------
@@ -217,6 +219,7 @@ def TestFile( input,
               verbose=False,
               quiet=False,
               xml_output=False,
+              no_status=False,
             ):
     """Determines the configuration of the provided file and then runs its test."""
     
@@ -258,6 +261,7 @@ def TestFile( input,
                  verbose=verbose,
                  quiet=quiet,
                  xml_output=xml_output,
+                 no_status=no_status,
                )
 
 # ---------------------------------------------------------------------------
@@ -281,6 +285,7 @@ def TestType( configuration,
               verbose=False,
               quiet=False,
               xml_output=False,
+              no_status=False,
             ):
     """Runs tests of the specific type based on the subdir name provided."""
     
@@ -299,6 +304,7 @@ def TestType( configuration,
                  verbose=verbose,
                  quiet=quiet,
                  xml_output=xml_output,
+                 no_status=no_status,
                )
 
 # ----------------------------------------------------------------------
@@ -320,6 +326,7 @@ def TestAll( input_dir,
              verbose=False,
              quiet=False,
              xml_output=False,
+             no_status=False,
            ):
     colorama.init(autoreset=False)
 
@@ -348,6 +355,7 @@ def TestAll( input_dir,
                                            verbose=verbose,
                                            quiet=quiet,
                                            xml_output=xml_output,
+                                           no_status=no_status,
                                          )
 
                 sys.stdout = original_stdout
