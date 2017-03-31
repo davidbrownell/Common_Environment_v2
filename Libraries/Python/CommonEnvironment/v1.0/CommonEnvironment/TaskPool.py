@@ -80,6 +80,7 @@ def Execute( tasks,
              verbose=False,
              silent=False,
              progress_bar=False,
+             progress_bar_cols=120,
              raise_on_error=False,
              display_exception_callstack=True,
            ):
@@ -192,50 +193,6 @@ def Execute( tasks,
             # Check for exceptions
             for future in futures:
                 future.result()
-            
-        # Calculate the final result
-        sink = StringIO()
-
-        # ----------------------------------------------------------------------
-        def Output(stream, task):
-            stream.write(textwrap.dedent(
-                """\
-
-                # ----------------------------------------------------------------------
-                # |  
-                # |  {name} ({result}, {time})
-                # |  
-                # ----------------------------------------------------------------------
-                {output}
-
-                """).format( name=task.Name,
-                             result=task.result,
-                             time=task.time_delta_string,
-                             output=task.output,
-                           ))
-
-        # ----------------------------------------------------------------------
-        
-        result = 0
-
-        for task in tasks:
-            if task.result != 0:
-                Output(sink, task)
-                result = result or task.result
-
-        sink = sink.getvalue()
-        if result != 0:
-            if raise_on_error:
-                raise Exception(sink or result)
-            else:
-                output_stream.write(sink)
-
-        if verbose and result == 0:
-            for task in tasks:
-                if task.output:
-                    Output(output_stream, task)
-
-        return result
 
     # ----------------------------------------------------------------------
     prev_statuses = []
@@ -280,8 +237,7 @@ def Execute( tasks,
     if progress_bar:
         with tqdm( total=len(tasks),
                    file=output_stream,
-                   ncols=None,
-                   dynamic_ncols=True,
+                   ncols=progress_bar_cols,
                    unit=" items",
                  ) as progress_bar:
             # ----------------------------------------------------------------------
@@ -313,11 +269,11 @@ def Execute( tasks,
             # ----------------------------------------------------------------------
             
             with CallOnExit(lambda: PBWriteStatuses([])):
-                return Invoke( OnInit,
-                               UpdateStatus,
-                               output_stream, 
-                               clear_status_when_complete=True,
-                             )
+                Invoke( OnInit,
+                        UpdateStatus,
+                        output_stream, 
+                        clear_status_when_complete=True,
+                      )
     else:
         
         # ----------------------------------------------------------------------
@@ -338,7 +294,8 @@ def Execute( tasks,
                                                             )
 
             if update_type in [ StatusUpdate.Status, StatusUpdate.Stop, ]:
-                UpdateStatuses(futures, tasks)
+                with output_lock:
+                    UpdateStatuses(futures, tasks)
                 
         # ----------------------------------------------------------------------
         def OnInit(futures, tasks):
@@ -347,10 +304,54 @@ def Execute( tasks,
         # ----------------------------------------------------------------------
         
         with CallOnExit(lambda: WriteStatuses([])):
-            return Invoke( OnInit,
-                           UpdateStatus,
-                           output_stream,
-                         )
+            Invoke( OnInit,
+                    UpdateStatus,
+                    output_stream,
+                  )
+
+    # Calculate the final result
+    sink = StringIO()
+
+    # ----------------------------------------------------------------------
+    def Output(stream, task):
+        stream.write(textwrap.dedent(
+            """\
+
+            # ----------------------------------------------------------------------
+            # |  
+            # |  {name} ({result}, {time})
+            # |  
+            # ----------------------------------------------------------------------
+            {output}
+
+            """).format( name=task.Name,
+                         result=task.result,
+                         time=task.time_delta_string,
+                         output=task.output,
+                       ))
+
+    # ----------------------------------------------------------------------
+    
+    result = 0
+
+    for task in tasks:
+        if task.result != 0:
+            Output(sink, task)
+            result = result or task.result
+
+    sink = sink.getvalue()
+    if result != 0:
+        if raise_on_error:
+            raise Exception(sink or result)
+        else:
+            output_stream.write(sink)
+
+    if verbose and result == 0:
+        for task in tasks:
+            if task.output:
+                Output(output_stream, task)
+
+    return result
         
 # ----------------------------------------------------------------------
 def Transform( items, 
