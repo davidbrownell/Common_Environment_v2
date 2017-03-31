@@ -210,11 +210,8 @@ def GenerateClusteredStrings( items,
 
     distances = OrderedDict()
 
-    desc = "Calculating distances..."
-    
-    output_stream.write(desc)
-    with output_stream.DoneManager( done_prefix="\033[1A{}DONE! ".format(desc),
-                                  ) as dm:
+    # ----------------------------------------------------------------------
+    def Func(dm):
         len_items = len(items)
 
         comparisons = []
@@ -236,6 +233,12 @@ def GenerateClusteredStrings( items,
 
         for k, v in six.moves.zip(comparisons, results):
             distances[k] = v
+
+    # ----------------------------------------------------------------------
+    
+    output_stream.SingleLineDoneManager( "Calculating distances...",
+                                         Func,
+                                       )
 
     # ----------------------------------------------------------------------
     def Impl(x, y):

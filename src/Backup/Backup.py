@@ -28,6 +28,7 @@ from collections import OrderedDict
 import cPickle as pickle
 
 import inflect
+import six
 
 from CommonEnvironment import Any
 from CommonEnvironment.CallOnExit import CallOnExit
@@ -343,68 +344,62 @@ def Mirror( destination,
                 os.makedirs(destination)
         
             if to_copy:
-                desc = "Copying {}...".format(inflect_engine.no("file", len(to_copy)))
+                # ----------------------------------------------------------------------
+                def Execute(task_index, task_output):
+                    try:
+                        k = to_copy.keys()[task_index]
+                        v = to_copy[k]
             
-                dm.stream.write(desc)
-                with dm.stream.DoneManager( done_prefix="\033[1A{}DONE! ".format(desc),
-                                          ) as this_dm:
-                    # ----------------------------------------------------------------------
-                    def Execute(task_index, task_output):
-                        try:
-                            k = to_copy.keys()[task_index]
-                            v = to_copy[k]
+                        dest_dir = os.path.dirname(v)
+                        if not os.path.isdir(dest_dir):
+                            os.makedirs(dest_dir)
             
-                            dest_dir = os.path.dirname(v)
-                            if not os.path.isdir(dest_dir):
-                                os.makedirs(dest_dir)
+                        shutil.copyfile(k, v)
+                    except Exception, ex:
+                        task_output.write(str(ex))
+                        return -1
             
-                            shutil.copyfile(k, v)
-                        except Exception, ex:
-                            task_output.write(str(ex))
-                            return -1
-            
-                    # ----------------------------------------------------------------------
-                    
-                    this_dm.result = TaskPool.Execute( [ TaskPool.Task( "Copy '{}' to '{}'".format(k, v),
-                                                                        "Copying '{}' to '{}'".format(k, v),
-                                                                        Execute,
-                                                                      )
-                                                         for k, v in to_copy.iteritems()
-                                                       ],
-                                                       num_concurrent_tasks=1,
-                                                       output_stream=this_dm.stream,
-                                                       progress_bar=True,
-                                                     )
+                # ----------------------------------------------------------------------
+
+                dm.stream.SingleLineDoneManager( "Copying {}...".format(inflect_engine.no("file", len(to_copy))),
+                                                 lambda this_dm: TaskPool.Execute( [ TaskPool.Task( "Copy '{}' to '{}'".format(k, v),
+                                                                                                    "Copying '{}' to '{}'".format(k, v),
+                                                                                                    Execute,
+                                                                                                  )
+                                                                                     for k, v in six.iteritems(to_copy)
+                                                                                   ],
+                                                                                   num_concurrent_tasks=1,
+                                                                                   output_stream=this_dm.stream,
+                                                                                   progress_bar=True,
+                                                                                 ),
+                                               )
             
             if to_remove:
-                desc = "Removing {}...".format(inflect_engine.no("file", len(to_remove)))
+                # ----------------------------------------------------------------------
+                def Execute(task_index, task_output):
+                    try:
+                        value = to_remove[task_index]
             
-                dm.stream.write(desc)
-                with dm.stream.DoneManager( done_prefix="\033[1A{}DONE! ".format(desc),
-                                          ) as this_dm:
-                    # ----------------------------------------------------------------------
-                    def Execute(task_index, task_output):
-                        try:
-                            value = to_remove[task_index]
+                        os.remove(value)
+                    except Exception, ex:
+                        task_output.write(str(ex))
+                        return -1
             
-                            os.remove(value)
-                        except Exception, ex:
-                            task_output.write(str(ex))
-                            return -1
-            
-                    # ----------------------------------------------------------------------
-                    
-                    this_dm.result = TaskPool.Execute( [ TaskPool.Task( "Remove '{}'".format(value),
-                                                                        "Removing '{}'".format(value),
-                                                                        Execute,
-                                                                      )
-                                                         for value in to_remove
-                                                       ],
-                                                       num_concurrent_tasks=1,
-                                                       output_stream=this_dm.stream,
-                                                       progress_bar=True,
-                                                     )
-
+                # ----------------------------------------------------------------------
+                
+                dm.stream.SingleLineDoneManager( "Removing {}...".format(inflect_engine.no("file", len(to_remove))),
+                                                 lambda this_dm: TaskPool.Execute( [ TaskPool.Task( "Remove '{}'".format(value),
+                                                                                                    "Removing '{}'".format(value),
+                                                                                                    Execute,
+                                                                                                  )
+                                                                                     for value in to_remove
+                                                                                   ],
+                                                                                   num_concurrent_tasks=1,
+                                                                                   output_stream=this_dm.stream,
+                                                                                   progress_bar=True,
+                                                                                 ),
+                                               )
+                           
         return dm.result or (1 if not (to_copy or to_remove) else 0)
 
 # ----------------------------------------------------------------------
@@ -502,9 +497,8 @@ def _GetFileInfo( desc,
         # ----------------------------------------------------------------------
         
         if input_files:
-            dm.stream.write("Calculating hashes...")
-            with dm.stream.DoneManager( done_prefix="\033[1A  Calculating hashes...DONE! ",
-                                      ) as this_dm:
+            # ----------------------------------------------------------------------
+            def Execute(this_dm):
                 for k, v in itertools.izip( input_files,
                                             TaskPool.Transform( input_files,
                                                                 CalculateHash,
@@ -512,6 +506,12 @@ def _GetFileInfo( desc,
                                                               ),
                                           ):
                     file_info.setdefault(os.path.splitdrive(k)[0], OrderedDict())[k] = v
+
+            # ----------------------------------------------------------------------
+            
+            dm.stream.SingleLineDoneManager( "Calculating hashes...",
+                                             Execute,
+                                           )
 
         return file_info
 
