@@ -77,7 +77,7 @@ def ActivateLibraries( name,
 
             dirs = [ item for item in os.listdir(fullpath) if os.path.isdir(os.path.join(fullpath, item)) ]
 
-            for library_versions, this_version in library_version_dirs.iteritems():
+            for library_versions, this_version in six.iteritems(library_version_dirs):
                 found = True
 
                 for library_version in library_versions:

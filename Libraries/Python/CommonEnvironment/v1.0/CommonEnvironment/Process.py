@@ -101,12 +101,12 @@ def _ExecuteImpl( command_line,
 
     if convert_newlines:
 
-        original_output = output
+        newlines_original_output = output
 
         # ----------------------------------------------------------------------
         def ConvertNewlines(content):
             content = content.replace('\r\n', '\n')
-            original_output(content)
+            newlines_original_output(content)
 
         # ----------------------------------------------------------------------
         
@@ -115,14 +115,14 @@ def _ExecuteImpl( command_line,
     if line_delimited_output:
         internal_content = []
 
-        original_output = output
+        line_delimited_original_output = output
         
         # ----------------------------------------------------------------------
         def OutputFunctor(c):
             if '\n' in c:
                 assert c.endswith('\n'), c
                 
-                original_output("{}{}".format(''.join(internal_content), c))
+                line_delimited_original_output("{}{}".format(''.join(internal_content), c))
                 internal_content[:] = []
 
             else:
@@ -131,7 +131,7 @@ def _ExecuteImpl( command_line,
         # ----------------------------------------------------------------------
         def Flush():
             if internal_content:
-                original_output(''.join(internal_content))
+                line_delimited_original_output(''.join(internal_content))
                 internal_content[:] = []
 
         # ----------------------------------------------------------------------

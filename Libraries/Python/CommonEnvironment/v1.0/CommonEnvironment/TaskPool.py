@@ -375,9 +375,9 @@ def Transform( items,
     transformed_items = [ None, ] * len(items)
 
     # ----------------------------------------------------------------------
-    def Impl(task_index, on_status_functor):
+    def Impl(task_index, on_status_update):
         transformed_items[task_index] = functor(OrderedDict([ ( "item", items[task_index] ),
-                                                              ( "on_status_functor", on_status_functor ),
+                                                              ( "on_status_update", on_status_update ),
                                                             ]))
 
     # ----------------------------------------------------------------------
