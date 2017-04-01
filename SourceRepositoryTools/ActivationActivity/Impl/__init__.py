@@ -159,8 +159,8 @@ def ActivateLibraries( name,
             def OnLine(line):
                 content.append(line)
 
-                if line.startswith(display_sentinel):
-                    sys.stdout.write("{}".format(line[len(display_sentinel):]))
+                if line.startswith("{}".format(display_sentinel)):
+                    sys.stdout.write("{}\n".format(line[len(display_sentinel):].rstrip()))
 
             # ----------------------------------------------------------------------
             
