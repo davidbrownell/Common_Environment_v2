@@ -997,16 +997,12 @@ def _AllImpl( directory,
         if not tasks:
             return 0
 
-        desc = "Processing {}...".format(inflect_engine.no("repository", len(tasks)))
-        si.stream.write(desc)
-
-        with si.stream.DoneManager( done_prefix="\033[1A{}DONE! ".format(desc),
-                                    done_suffix='\n',
-                                  ) as this_dm:
-            this_dm.result = TaskPool.Execute( tasks, 
-                                               output_stream=this_dm.stream, 
-                                               progress_bar=True,     
-                                             )
+        si.stream.SingleLineDoneManager( "Processing {}...".format(inflect_engine.no("repository", len(tasks))),
+                                         lambda this_dm: TaskPool.Execute( tasks,
+                                                                           output_stream=this_dm.stream,
+                                                                           progress_bar=True,
+                                                                         ),
+                                       )
 
         action_items = [ data for data in output if data != None and data.result ]
         

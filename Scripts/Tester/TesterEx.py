@@ -298,20 +298,17 @@ def Test( test_items,
                                             BuildThreadProc,
                                           ))
 
-    desc = "Building..."
-    
-    output_stream.write(desc)
-    with output_stream.DoneManager( done_prefix="\033[1A\r{}DONE! ".format(desc),
-                                    done_suffix_functor=lambda: pluralize.no("build failure", build_failures.value),
-                                  ) as dm:
-        # If the compiler operates on individual files, we can execute them in parallel. If
-        # the compiler doesn't operate on files, we have to execute them one at a time, as we
-        # can't make assumptions about what the compiler is doing or the files that it modifies.
-        TaskPool.Execute( tasks=debug_tasks + release_tasks,
-                          num_concurrent_tasks=max_num_concurrent_tasks if compiler.Type == compiler.TypeValue.File else 1,
-                          output_stream=dm.stream,
-                          progress_bar=True,
-                        )
+    output_stream.SingleLineDoneManager( "Building...",
+                                         # If the compiler operates on individual files, we can execute them in parallel. If
+                                         # the compiler doesn't operate on files, we have to execute them one at a time, as we
+                                         # can't make assumptions about what the compiler is doing or the files that it modifies.
+                                         lambda dm: TaskPool.Execute( tasks=debug_tasks + release_tasks,
+                                                                      num_concurrent_tasks=max_num_concurrent_tasks if compiler.Type == compiler.TypeValue.File else 1,
+                                                                      output_stream=dm.stream,
+                                                                      progress_bar=True,
+                                                                    ),
+                                         done_suffix_functor=lambda: pluralize.no("build failure", build_failures.value),
+                                       )
 
     # ---------------------------------------------------------------------------
     # |  Execute
@@ -459,18 +456,15 @@ def Test( test_items,
         EnqueueTestIfNecessary(result.complete_results.release, "Release", result.complete_results.Item, result.output_base_name)
 
     if test_tasks:
-        desc = "Executing..."
-        output_stream.write(desc)
-
-        with output_stream.DoneManager( done_prefix="\033[1A{}DONE! ".format(desc),
-                                        done_suffix_functor=lambda: pluralize.no("test failure", test_failures.value),
-                                        done_suffix='\n',
-                                      ) as dm:
-            TaskPool.Execute( tasks=test_tasks,
-                              num_concurrent_tasks=max_num_concurrent_tasks if execute_in_parallel else 1,
-                              output_stream=dm.stream,
-                              progress_bar=True,
-                            )
+        output_stream.SingleLineDoneManager( "Executing...",
+                                             lambda dm: TaskPool.Execute( tasks=test_tasks,
+                                                                          num_concurrent_tasks=max_num_concurrent_tasks if execute_in_parallel else 1,
+                                                                          output_stream=dm.stream,
+                                                                          progress_bar=True,
+                                                                        ),
+                                             done_suffix_functor=lambda: pluralize.no("test failure", test_failures.value),
+                                             done_suffix='\n',
+                                           )
 
     return [ result.complete_results for result in results ]
 

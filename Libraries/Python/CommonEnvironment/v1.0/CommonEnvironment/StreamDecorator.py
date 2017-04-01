@@ -251,7 +251,7 @@ class StreamDecorator(object):
 
             if not isinstance(done_prefix[0], six.string_types):
                 done_prefix[0] = done_prefix[0]()
-            
+
             if not isinstance(done_suffix[0], six.string_types):
                 done_suffix[0] = done_suffix[0]()
 
@@ -335,6 +335,44 @@ class StreamDecorator(object):
 
                 if not suppress_exceptions:
                     raise
+
+    # ----------------------------------------------------------------------
+    def SingleLineDoneManager( self, 
+                               status,
+                               functor,          # def Func(done_manager) -> result
+                               *done_manager_args,
+                               **done_manager_kwargs
+                             ):
+        """\
+        Useful when displaying a status message along with
+        a progress bar (or other content) that should disappear
+        once the activity is complete.
+        """
+
+        has_errors = ModifiableValue(False)
+
+        # ----------------------------------------------------------------------
+        def DonePrefix():
+            if has_errors.value:
+                # Don't eliminate any data that was displayed
+                # as part of the error.
+                return "DONE! "
+            
+            # Move up a line and display the original status message
+            # along with the done notification.
+            return "\033[1A\r{}DONE! ".format(status)
+
+        # ----------------------------------------------------------------------
+        
+        self.write(status)
+        with self.DoneManager( done_prefix=DonePrefix,
+                               *done_manager_args,
+                               **done_manager_kwargs
+                             ) as dm:
+            dm.result = functor(dm)
+            has_errors.value = dm.result != 0
+
+            return dm.result
 
     # ---------------------------------------------------------------------------
     @classmethod
