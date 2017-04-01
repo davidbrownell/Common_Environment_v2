@@ -17,6 +17,7 @@
 from __future__ import absolute_import 
 
 import os
+import re
 import shutil
 import string
 import sys
@@ -215,6 +216,7 @@ class ScriptsActivationActivity(IActivationActivity):
         wrapped_info.reverse()
         
         wrapped_info_items = []
+        conflict_regex = re.compile(r"Original Script: (?P<filename>[^\n]+)")
 
         for wi in wrapped_info:
             these_commands = wi.extractor.CreateCommands(wi.script_filename)
@@ -224,22 +226,35 @@ class ScriptsActivationActivity(IActivationActivity):
             # Create a unique name for this wrapper
             base_output_name = wi.extractor.ScriptNameDecorator(os.path.splitext(os.path.basename(wi.script_filename))[0])
 
-            suffix = 1
+            conflicts = []
+            
             while True:
                 potential_filename = os.path.join(dest_dir, "{name}{suffix}{ext}".format( name=base_output_name,
-                                                                                          suffix=suffix if suffix > 1 else '',
+                                                                                          suffix=len(conflicts) + 1 if conflicts else '',
                                                                                           ext=environment.ScriptExtension,
                                                                                         ))
                 if not os.path.isfile(potential_filename):
                     output_filename = potential_filename
 
-                    if suffix > 1:
-                        commands.append(environment.Message("Script References: To avoid naming conflicts, the wrapper script for '{original_name}' has been renamed '{name}'.".format( original_name=wi.script_filename,
-                                                                                                                                                                                        name=os.path.splitext(os.path.basename(output_filename))[0],
-                                                                                                                                                                                      )))
-                    break
+                    if conflicts:
+                        commands.append(environment.Message(StreamDecorator.LeftJustify( textwrap.dedent(
+                                                                                            """\
+                                                                                            The wrapper script for '{original_name}' has been renamed '{name}' to avoid naming conflicts with:
+                                                                                            {conflicts}
+                                                                                            """).format( original_name=wi.script_filename,
+                                                                                                         name=os.path.splitext(os.path.basename(output_filename))[0],
+                                                                                                         conflicts='\n'.join([ "    - {}".format(conflict) for conflict in conflicts ]),
+                                                                                                       ),
+                                                                                         4,
+                                                                                         skip_first_line=False,
+                                                                                       )))
+                    break    
+                    
+                with open(potential_filename) as f:
+                    match = conflict_regex.search(f.read())
+                    assert match
 
-                suffix += 1
+                    conflicts.append(match.group("filename").strip())
 
             # Create the invoke wrapper
             with open(output_filename, 'w') as f:
