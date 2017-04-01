@@ -59,6 +59,7 @@ class Task(object):
                                             #           task_index
                                             #           core_index          # Technically speaking, this isn't the core index but can be used to simulate thread local storage
                                             #           output_stream
+                                            #           on_status_functor   # def Func(content)
                 ):
         assert name
         assert action_description
@@ -66,167 +67,137 @@ class Task(object):
 
         self.Name                           = name
         self.ActionDescription              = action_description
-        self.Functor                        = Interface.CreateCulledCallable(functor)
-
-        # Working data
-        self.output                         = ''
-        self.result                         = 0
-        self.time_delta_string              = ''
-
-        self.status                         = None
-        self.status_lock                    = threading.Lock()
+        self.Functor                        = functor
 
 # ---------------------------------------------------------------------------
 # |
 # |  Public Methods
 # |
 # ---------------------------------------------------------------------------
-def ExecuteEx( tasks,
-               num_concurrent_tasks=None,
-               output_stream=sys.stdout,
-               verbose=False,
-               silent=False,
-               progress_bar=False,
-               raise_on_error=False,
-               display_exception_callstack=True,
-             ):
+def Execute( tasks,
+             num_concurrent_tasks=None,
+             output_stream=sys.stdout,
+             verbose=False,
+             silent=False,
+             progress_bar=False,
+             progress_bar_cols=120,
+             raise_on_error=False,
+             display_exception_callstack=True,
+           ):
     assert tasks
 
-    StatusUpdate = Enum.Create( "Enter",
+    tasks = [ _InternalTask(task) for task in tasks ]
+
+    StatusUpdate = Enum.Create( "Start",
                                 "Status",
-                                "Exit",
+                                "Stop",
                               )
 
     num_concurrent_tasks = num_concurrent_tasks or (multiprocessing.cpu_count() * 5)
     output_stream = StreamDecorator(None if silent else output_stream)
 
-    tls = threading.local()
-    
-    thread_index = ModifiableValue(0)
-    thread_index_mutex = threading.Lock()
-
-    prev_statuses = []
-
     # ----------------------------------------------------------------------
-    def Invoke(update_functor, output_stream):
+    def Invoke( on_initialized_functor,                 # def Func(futures, tasks)
+                update_status_functor,                  # def Func(futures, tasks, future, task, update_type, optional_content)
+                output_stream, 
+                clear_status_when_complete=False,
+              ):
+        on_initialized_functor = on_initialized_functor or (lambda futures: None)
+
+        tls = threading.local()
+    
+        thread_index = ModifiableValue(0)
+        thread_index_mutex = threading.Lock()
+
         futures = []
-        initialized = threading.Event()
         
+        initialized = threading.Event()
+
         # ----------------------------------------------------------------------
-        def Func(update_functor, task, task_index):
-            index = getattr(tls, "index", None)
-            if index == None:
+        def Func(task, task_index):
+            this_thread_index = getattr(tls, "index", None)
+            if this_thread_index == None:
                 with thread_index_mutex:
-                    index = thread_index.value
+                    this_thread_index = thread_index.value
                     thread_index.value += 1
                     
-                setattr(tls, "index", index)
-                
+                setattr(tls, "index", this_thread_index)
+
             initialized.wait()
             
-            update_functor(thread_index, futures, task, StatusUpdate.Enter)
-            with CallOnExit(lambda: update_functor(thread_index, futures, task, StatusUpdate.Exit)):
-                start_time = time.time()
-                sink = StringIO()
+            start_time = time.time()
+            future = futures[task_index]
+
+            sink = StringIO()
+            
+            # ----------------------------------------------------------------------
+            def OnStatusUpdate(content):
+                update_status_functor(futures, tasks, future, task, StatusUpdate.Status, content)
+            
+            # ----------------------------------------------------------------------
+            
+            try:
+                result = task.Functor(OrderedDict([ ( "task_index", task_index ),
+                                                    ( "output_stream", sink ),
+                                                    ( "core_index", this_thread_index ),
+                                                    ( "on_status_update", OnStatusUpdate ),
+                                                  ]))
+                if result == None:
+                    task.result = 0
+            
+                elif isinstance(result, six.string_types):
+                    task.result = 0
+                    sink.write(result)
+            
+                elif isinstance(result, tuple):
+                    task.result = result[0]
+                    sink.write(result[1])
+            
+                else:
+                    task.result = result
+            
+            except:
+                task.result = -1
+            
+                message = str(sys.exc_info()[1]).rstrip()
                 
-                # ----------------------------------------------------------------------
-                def OnStatusUpdate(content):
-                    with task.status_lock:
-                        task.status = content
-
-                    update_functor(thread_index, futures, task, StatusUpdate.Status)
-
-                # ----------------------------------------------------------------------
+                OnStatusUpdate("ERROR: {}".format(message))
                 
-                try:
-                    result = task.Functor(OrderedDict([ ( "task_index", task_index ),
-                                                        ( "output_stream", sink ),
-                                                        ( "core_index", thread_index ),
-                                                        ( "on_status_update", OnStatusUpdate ),
-                                                      ]))
-                    if result == None:
-                        task.result = 0
+                if display_exception_callstack:
+                    sink.write(traceback.format_exc())
+                else:
+                    sink.write("{}\n".format(message))
+            
+            if clear_status_when_complete:
+                OnStatusUpdate(None)
+            
+            task.output = sink.getvalue()
+            task.time_delta_string = str(datetime.timedelta(seconds=(time.time() - start_time)))
 
-                    elif isinstance(result, six.string_types):
-                        task.result = 0
-                        sink.write(result)
-
-                    elif isinstance(result, tuple):
-                        task.result = result[0]
-                        sink.write(result[1])
-
-                    else:
-                        task.result = result
-
-                except:
-                    task.result = -1
-
-                    message = str(sys.exc_info()[1]).rstrip()
-                    
-                    OnStatusUpdate("ERROR: {}".format(message))
-                    
-                    if display_exception_callstack:
-                        sink.write(traceback.format_exc())
-                    else:
-                        sink.write("{}\n".format(message))
-
-                task.output = sink.getvalue()
-                task.time_delta_string = str(datetime.timedelta(seconds=(time.time() - start_time)))
+            task.complete.set()
 
         # ----------------------------------------------------------------------
         
         with ThreadPoolExecutor(num_concurrent_tasks) as executor:
-            futures = [ executor.submit(Func, update_functor, task, index) for index, task in enumerate(tasks) ]
+            futures += [ executor.submit(Func, task, index) for index, task in enumerate(tasks) ]
+
+            # We can't combine this loop with the comprehension above, as the
+            # update status functor expects a full set of futures.
+            for future, task in six.moves.zip(futures, tasks):
+                update_status_functor(futures, tasks, future, task, StatusUpdate.Start, None)
+                future.add_done_callback(lambda ignore, future=future, task=task: update_status_functor(futures, tasks, future, task, StatusUpdate.Stop, None))
+
+            on_initialized_functor(futures, tasks)
             initialized.set()
             
-            wait(futures)
-            
-        # Calculate the final result
-        sink = StringIO()
-
-        # ----------------------------------------------------------------------
-        def Output(stream, task):
-            stream.write(textwrap.dedent(
-                """\
-
-                # ----------------------------------------------------------------------
-                # |  
-                # |  {name} ({result}, {time})
-                # |  
-                # ----------------------------------------------------------------------
-                {output}
-
-                """).format( name=task.Name,
-                             result=task.result,
-                             time=task.time_delta_string,
-                             output=task.output,
-                           ))
-
-        # ----------------------------------------------------------------------
-        
-        result = 0
-
-        for task in tasks:
-            if task.result != 0:
-                Output(sink, task)
-                result = result or task.result
-
-        sink = sink.getvalue()
-        if result != 0:
-            if raise_on_error:
-                raise Exception(sink or result)
-            else:
-                output_stream.write(sink)
-
-        if verbose and result == 0:
-            for task in tasks:
-                if task.output:
-                    Output(output_stream, task)
-
-        return result
+            # Check for exceptions
+            for future in futures:
+                future.result()
 
     # ----------------------------------------------------------------------
-    def WriteStatuses(output_stream, statuses):
+    prev_statuses = []
+
+    def WriteStatuses(statuses):
         original_statuses = list(statuses)
 
         for index, status in enumerate(statuses):
@@ -249,16 +220,26 @@ def ExecuteEx( tasks,
         prev_statuses[:] = original_statuses
 
     # ---------------------------------------------------------------------------
-            
+    def UpdateStatuses(futures, tasks, write_functor=WriteStatuses):
+        statuses = []
+
+        for task in tasks:
+            with task.status_lock:
+                if task.status:
+                    statuses.append(task.status)
+
+        write_functor(statuses)
+
+    # ----------------------------------------------------------------------
+    
+    output_lock = threading.Lock()
+
     if progress_bar:
         with tqdm( total=len(tasks),
-          file=output_stream,
-          ncols=None,
-          dynamic_ncols=True,
-          unit=" items",
-        ) as progress_bar:
-            progress_bar_lock = threading.Lock()
-
+                   file=output_stream,
+                   ncols=progress_bar_cols,
+                   unit=" items",
+                 ) as progress_bar:
             # ----------------------------------------------------------------------
             def PBWriteStatuses(*args, **kwargs):
                 output_stream.write("\033[1B") # Move down one line to compensate for the progress bar
@@ -266,352 +247,119 @@ def ExecuteEx( tasks,
                 output_stream.write("\033[1A\r") # Move up one line to compensate for the progress bar
 
             # ----------------------------------------------------------------------
-            def ProgressBarUpdate(thread_index, futures, task, update_type):
-                with progress_bar_lock:
-                    if update_type == StatusUpdate.Exit:
-                        progress_bar.update()
-                    
-                    statuses = []
+            def PBUpdateStatuses(futures, tasks):
+                UpdateStatuses(futures, tasks, PBWriteStatuses)
 
-                    for task in tasks:
-                        with task.status_lock:
-                            if task.status:
-                                statuses.append("    {}: {}".format(task.Name, task.status))
-
-                    PBWriteStatuses(output_stream, statuses)
-                    
             # ---------------------------------------------------------------------------
+            def UpdateStatus(futures, tasks, future, task, update_type, optional_content):
+                with task.status_lock:
+                    task.status = optional_content if not optional_content else "    {}: {}".format(task.Name, optional_content)
 
-            with CallOnExit(lambda: PBWriteStatuses(output_stream, [])):
-                return Invoke(ProgressBarUpdate, output_stream)
+                if update_type in [ StatusUpdate.Status, StatusUpdate.Stop, ]:
+                    with output_lock:
+                        if update_type == StatusUpdate.Stop:
+                            progress_bar.update()
+
+                        PBUpdateStatuses(futures, tasks)
+
+            # ----------------------------------------------------------------------
+            def OnInit(futures, tasks):
+                PBUpdateStatuses(futures, tasks)
+
+            # ----------------------------------------------------------------------
+            
+            with CallOnExit(lambda: PBWriteStatuses([])):
+                Invoke( OnInit,
+                        UpdateStatus,
+                        output_stream, 
+                        clear_status_when_complete=True,
+                      )
     else:
-        with output_stream.DoneManager( line_prefix='',
-                                        done_prefix="Task pool ",
-                                      ) as si:
-            output_lock = threading.Lock()
-
-            # ----------------------------------------------------------------------
-            def Update(thread_index, futures, task, update_type):
-                statuses = []
-
-                for future, task in six.moves.zip(futures, tasks):
-                    if future.running():
-                        status = "Running"
-                    elif future.done():
-                        status = "DONE! ({}, {})".format(task.result, task.time_delta_string)
-                    else:
-                        status = "Queued"
-
-                    detail = ''
-                    with task.status_lock:
-                        if task.status:
-                            detail = " [{}]".format(task.status)
-
-                    statuses.append("{name:<70} {status}{detail}".format( name="{}:".format(task.Name),
-                                                                          status=status,
-                                                                          detail=detail,
-                                                                        ))
-
-                with output_lock:
-                    WriteStatuses(si.stream, statuses)
-
-            # ----------------------------------------------------------------------
-            
-            with CallOnExit(lambda: WriteStatuses(si.stream, [])):
-                return Invoke(Update, si.stream)
-
-# ----------------------------------------------------------------------
-def Execute( tasks,
-             num_concurrent_tasks=multiprocessing.cpu_count(),
-             output_stream=sys.stdout,
-             verbose=False,
-             silent=False,
-             progress_bar=False,
-             raise_on_error=False,
-             display_exception_callstack=True,
-           ):
-    assert tasks
-    assert num_concurrent_tasks
-
-    num_concurrent_tasks = min(num_concurrent_tasks, len(tasks))
-    output_stream = StreamDecorator(None if silent else output_stream)
-    
-    # ---------------------------------------------------------------------------
-    class Executor(object):
-        # ---------------------------------------------------------------------------
-        def __init__( self,
-                      num_tasks,
-                      is_multithreaded,
-                    ):
-            self._done_lock                 = threading.Lock()
-
-            self._num_invocations           = 0
-            self._ticks                     = 0
-
-            self._remaining                 = num_tasks
-            self._num_tasks                 = num_tasks
-            self._is_multithreaded          = is_multithreaded
-
-        # ---------------------------------------------------------------------------
-        @property
-        def NumTasks(self):
-            return self._num_tasks
-
-        # ---------------------------------------------------------------------------
-        def Execute( self,
-                     task,
-                     core_index,
-                     task_index,
-                     output_stream,
-                   ):
-            assert task
-            assert output_stream
-
-            start_time = time.time()
-            
-            # ---------------------------------------------------------------------------
-            def GeneratePrefix():
-                return "[{index:<{adjust}} of {total}]: ".format( adjust=len(str(self._num_tasks)),
-                                                                  index=task_index + 1,
-                                                                  total=self._num_tasks,
-                                                                )
-
-            # ---------------------------------------------------------------------------
-            def DoneStatement():
-                with self._done_lock:
-                    # Get the num remaining
-                    self._remaining -= 1
-                    remaining = self._remaining
-
-                    # Get the num of invocations
-                    self._num_invocations += 1
-                    num_invocations = self._num_invocations
-
-                    # Get the time remaining
-                    self._ticks += (time.time() - start_time)
-                    ticks = self._ticks
-
-                # ---------------------------------------------------------------------------
-                def TimeEstimate(modifier):
-                    return str(datetime.timedelta(seconds=(((float(ticks) / num_invocations) * modifier) / num_concurrent_tasks)))
-
-                # ---------------------------------------------------------------------------
-                
-                output_stream.write("{prefix}DONE! ({result:<4} {time:>16}) [{remaining} left, ETA ~{eta}, Total ~{total}]\n".format( prefix=GeneratePrefix() if self._is_multithreaded else '',
-                                                                                                                                      result="{},".format(task.result),
-                                                                                                                                      time=task.time_delta_string,
-                                                                                                                                      remaining=remaining,
-                                                                                                                                      eta=TimeEstimate(remaining),
-                                                                                                                                      total=TimeEstimate(self._num_tasks),
-                                                                                                                                    ))
-
-            # ---------------------------------------------------------------------------
-            
-            output_stream.write("{0:<107}".format("{}{}...".format(GeneratePrefix(), task.ActionDescription)))
-            with CallOnExit(DoneStatement):
-                sink = StringIO()
-
-                try:
-                    result = task.Functor(OrderedDict([ ( "task_index", task_index ), 
-                                                        ( "output_stream", sink ),
-                                                        ( "core_index", core_index ),
-                                                      ]))
-                    if result == None:
-                        task.result = 0
-
-                    elif isinstance(result, str):
-                        task.result = 0
-                        sink.write(result)
-
-                    elif isinstance(result, tuple):
-                        task.result = result[0]
-                        sink.write(result[1])
-
-                    else:
-                        task.result = result
-
-                except:
-                    task.result = -1
-
-                    if display_exception_callstack:
-                        sink.write(traceback.format_exc())
-                    else:
-                        ex = sys.exc_info()[1]
-                        sink.write("{}\n".format(str(ex).rstrip()))
-
-                task.output = sink.getvalue()
-                task.time_delta_string = str(datetime.timedelta(seconds=(time.time() - start_time)))
-
-    # ---------------------------------------------------------------------------
-    class ThreadSafeStreamDecorator(object):
-        # ---------------------------------------------------------------------------
-        def __init__( self,
-                      thread_info,
-                      core_index,
-                      num_cores,
-                      task_index,
-                    ):
-            self._thread_info               = thread_info
-            self._core_index                = core_index
-            self._num_cores                 = num_cores
-            self._task_index                = task_index
-
-        # ---------------------------------------------------------------------------
-        def write(self, content):
-            with self._thread_info.output_lock:
-                output_stream.write("[Core {0:>{1}}] {2}".format( self._core_index, 
-                                                                  len(str(self._num_cores - 1)),
-                                                                  content,
-                                                                ))
-
-                if content and content[-1] != '\n':
-                    output_stream.write("\n")
-
-        # ---------------------------------------------------------------------------
-        def flush(self):
-            with self._thread_info.output_lock:
-                output_stream.flush()
-
-    # ---------------------------------------------------------------------------
-    def InternalThreadProc(thread_info, core_index):
-        while True:
-            with thread_info.index_lock:
-                if thread_info.current_index == thread_info.executor.NumTasks:
-                    return
-            
-                task_index = thread_info.current_index
-                thread_info.current_index += 1
-            
-            with CallOnExit(thread_info.progress_bar_update_func):
-                thread_info.executor.Execute( thread_info.tasks[task_index],
-                                              core_index,
-                                              task_index,
-                                              StreamDecorator(None) if progress_bar else ThreadSafeStreamDecorator( thread_info, 
-                                                                                                                    core_index, 
-                                                                                                                    num_concurrent_tasks,
-                                                                                                                    task_index,
-                                                                                                                  ),
-                                            )
-
-    # ---------------------------------------------------------------------------
-    def Invoke(update_functor, output_stream):
-        executor = Executor(len(tasks), num_concurrent_tasks != 1)
-
-        if num_concurrent_tasks == 1:
-            status_output_stream = StreamDecorator(None) if progress_bar else output_stream
-
-            for index, task in enumerate(tasks):
-                executor.Execute(task, 0, index, status_output_stream)
-                update_functor()
-        else:
-            thread_info = QuickObject( executor=executor,
         
-                                       current_index=0,
-        
-                                       index_lock=threading.Lock(),
-                                       output_lock=threading.Lock(),
-                                       progress_bar_update_func=update_functor,
-                                       
-                                       tasks=tasks,
-                                       output_stream=output_stream,
-                                     )
-        
-            # Create the threads
-            threads = []
-        
-            while True:
-                if len(threads) == num_concurrent_tasks:
-                    break
-        
-                # ---------------------------------------------------------------------------
-                def ThreadProc(index=len(threads)): 
-                    InternalThreadProc(thread_info, index)
-        
-                # ---------------------------------------------------------------------------
-                
-                threads.append(threading.Thread(target=ThreadProc))
-                threads[-1].start()
-        
-            # Wait for all threads to complete
-            for thread in threads:
-                thread.join()
-
-        # Calculate the final result
-
-        sink = StringIO()
-
         # ----------------------------------------------------------------------
-        def Output(stream, task):
-            stream.write(textwrap.dedent(
-                """\
-
-                # ----------------------------------------------------------------------
-                # |  
-                # |  {name} ({result}, {time})
-                # |  
-                # ----------------------------------------------------------------------
-                {output}
-
-                """).format( name=task.Name,
-                             result=task.result,
-                             time=task.time_delta_string,
-                             output=task.output,
-                           ))
-
-        # ----------------------------------------------------------------------
-        
-        result = 0
-
-        for task in tasks:
-            if task.result != 0:
-                Output(sink, task)
-                result = result or task.result
-
-        sink = sink.getvalue()
-        if result != 0:
-            if raise_on_error:
-                raise Exception(sink or result)
+        def UpdateStatus(futures, tasks, future, task, update_type, optional_content):
+            if task.complete.is_set():
+                suffix = "DONE! ({}, {})".format(task.result, task.time_delta_string)
+            elif future.running():
+                suffix = "Running"
             else:
-                output_stream.write(sink)
+                suffix = "Queued"
 
-        if verbose and result == 0:
-            for task in tasks:
-                if task.output:
-                    Output(output_stream, task)
+            if optional_content:
+                suffix += " [{}]".format(optional_content)
 
-        return result
+            with task.status_lock:
+                task.status = "  {name:<70} {suffix}".format( name="{}:".format(task.Name),
+                                                              suffix=suffix,
+                                                            )
+
+            if update_type in [ StatusUpdate.Status, StatusUpdate.Stop, ]:
+                with output_lock:
+                    UpdateStatuses(futures, tasks)
+                
+        # ----------------------------------------------------------------------
+        def OnInit(futures, tasks):
+            UpdateStatuses(futures, tasks)
+
+        # ----------------------------------------------------------------------
+        
+        with CallOnExit(lambda: WriteStatuses([])):
+            Invoke( OnInit,
+                    UpdateStatus,
+                    output_stream,
+                  )
+
+    # Calculate the final result
+    sink = StringIO()
+
+    # ----------------------------------------------------------------------
+    def Output(stream, task):
+        stream.write(textwrap.dedent(
+            """\
+
+            # ----------------------------------------------------------------------
+            # |  
+            # |  {name} ({result}, {time})
+            # |  
+            # ----------------------------------------------------------------------
+            {output}
+
+            """).format( name=task.Name,
+                         result=task.result,
+                         time=task.time_delta_string,
+                         output=task.output,
+                       ))
 
     # ----------------------------------------------------------------------
     
-    if progress_bar:
-        with tqdm( total=len(tasks),
-                   file=output_stream,
-                   ncols=None,
-                   dynamic_ncols=True,
-                   unit=" items",
-                 ) as progress_bar:
-            progress_bar_lock = threading.Lock()
+    result = 0
 
-            # ---------------------------------------------------------------------------
-            def ProgressBarUpdate():
-                with progress_bar_lock:
-                    progress_bar.update()
-                    
-            # ---------------------------------------------------------------------------
+    for task in tasks:
+        if task.result != 0:
+            Output(sink, task)
+            result = result or task.result
 
-            return Invoke(ProgressBarUpdate, output_stream)
-    else:
-        with output_stream.DoneManager( line_prefix='',
-                                        done_prefix="\nTask pool ",
-                                      ) as si:
-            return Invoke(lambda: None, si.stream)
+    sink = sink.getvalue()
+    if result != 0:
+        if raise_on_error:
+            raise Exception(sink or result)
+        else:
+            output_stream.write(sink)
+
+    if verbose and result == 0:
+        for task in tasks:
+            if task.output:
+                Output(output_stream, task)
+
+    return result
         
 # ----------------------------------------------------------------------
 def Transform( items, 
-               functor,                     # def Func(item) -> transformed item
-               optional_output_stream,      # Will display a progress bar if not None
+               functor,                                                     # def Func(item) -> transformed item
+               optional_output_stream,                                      # Will display a progress bar if not None
                display_exception_callstack=False,
                num_concurrent_tasks=multiprocessing.cpu_count(),
+               name_functor=None,                                           # def Func(index, item) -> string
              ):
     """\
     Applies the functor to each item in the item list, returning a list of 
@@ -621,15 +369,20 @@ def Transform( items,
     assert items
     assert functor
 
+    functor = Interface.CreateCulledCallable(functor)
+    name_functor = name_functor or (lambda index, item: "Results from Index {} ({})".format(index, str(item)))
+
     transformed_items = [ None, ] * len(items)
 
     # ----------------------------------------------------------------------
-    def Impl(task_index):
-        transformed_items[task_index] = functor(items[task_index])
+    def Impl(task_index, on_status_update):
+        transformed_items[task_index] = functor(OrderedDict([ ( "item", items[task_index] ),
+                                                              ( "on_status_update", on_status_update ),
+                                                            ]))
 
     # ----------------------------------------------------------------------
     
-    Execute( [ Task( "Results from Index {} ({})".format(index, str(item)),
+    Execute( [ Task( name_functor(index, item),
                      str(index),
                      Impl,
                    )
@@ -643,3 +396,24 @@ def Transform( items,
            )
 
     return transformed_items
+
+# ----------------------------------------------------------------------
+# |  
+# |  Internal Types
+# |  
+# ----------------------------------------------------------------------
+class _InternalTask(Task):
+
+    # ----------------------------------------------------------------------
+    def __init__(self, task):
+        super(_InternalTask, self).__init__(task.Name, task.ActionDescription, Interface.CreateCulledCallable(task.Functor))
+
+        # Working data
+        self.output                         = ''
+        self.result                         = 0
+        self.time_delta_string              = ''
+
+        self.status                         = None
+        self.status_lock                    = threading.Lock()
+
+        self.complete                       = threading.Event()

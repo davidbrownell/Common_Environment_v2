@@ -34,6 +34,7 @@ from six.moves import StringIO
 
 from xml.etree import ElementTree as ET
 
+from CommonEnvironment import ModifiableValue
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CommandLine
 from CommonEnvironment import Compiler
@@ -90,6 +91,8 @@ def Test( test_items,
           output_stream=sys.stdout,
           debug_only=False,
           release_only=False,
+          preserve_ansi_escape_sequences=False,
+          no_status=False,
         ):
     assert test_items
     assert output_dir
@@ -100,6 +103,16 @@ def Test( test_items,
     assert iterations > 0, iterations
     assert max_num_concurrent_tasks > 0, max_num_concurrent_tasks
     assert output_stream
+
+    if preserve_ansi_escape_sequences:
+        colorama.init( autoreset=True,
+                       strip=(not preserve_ansi_escape_sequences),
+                       convert=(not preserve_ansi_escape_sequences),
+                     )
+
+        output_stream = sys.stdout
+
+    output_stream = StreamDecorator(output_stream)
 
     # Check for congruent plugins
     result = compiler.ValidateEnvironment()
@@ -212,8 +225,14 @@ def Test( test_items,
         if not debug_only and compiler.IsCompiler:
             PopulateResults(result.complete_results.release, "Release", False)
     
+    build_failures = ModifiableValue(0)
+    build_failures_lock = threading.Lock()
+
     # ---------------------------------------------------------------------------
-    def BuildThreadProc(task_index, output_stream):
+    def BuildThreadProc(task_index, output_stream, on_status_update):
+        if not no_status:
+            on_status_update("Building")
+
         result = results[task_index % len(results)]
 
         with result.execution_lock:
@@ -254,6 +273,10 @@ def Test( test_items,
             with open(flavor_results.compile_log, 'w') as f:
                 f.write(compile_output.replace('\r\n', '\n'))
 
+            if compile_result != 0:
+                with build_failures_lock:
+                    build_failures.value += 1
+
             return compile_result
 
     # ---------------------------------------------------------------------------
@@ -275,23 +298,32 @@ def Test( test_items,
                                             BuildThreadProc,
                                           ))
 
-    # If the compiler operates on individual files, we can execute them in parallel. If
-    # the compiler doesn't operate on files, we have to execute them one at a time, as we
-    # can't make assumptions about what the compiler is doing or the files that it modifies.
-    TaskPool.Execute( tasks=debug_tasks + release_tasks,
-                      num_concurrent_tasks=max_num_concurrent_tasks if compiler.Type == compiler.TypeValue.File else 1,
-                      output_stream=output_stream,
-                    )
+    output_stream.SingleLineDoneManager( "Building...",
+                                         # If the compiler operates on individual files, we can execute them in parallel. If
+                                         # the compiler doesn't operate on files, we have to execute them one at a time, as we
+                                         # can't make assumptions about what the compiler is doing or the files that it modifies.
+                                         lambda dm: TaskPool.Execute( tasks=debug_tasks + release_tasks,
+                                                                      num_concurrent_tasks=max_num_concurrent_tasks if compiler.Type == compiler.TypeValue.File else 1,
+                                                                      output_stream=dm.stream,
+                                                                      progress_bar=True,
+                                                                    ),
+                                         done_suffix_functor=lambda: pluralize.no("build failure", build_failures.value),
+                                       )
 
     # ---------------------------------------------------------------------------
     # |  Execute
+    test_failures = ModifiableValue(0)
+    test_failures_lock = threading.Lock()
 
     # Calculate the tests to run
     test_info_list = []
     test_tasks = []
 
     # ---------------------------------------------------------------------------
-    def TestThreadProc(task_index, output_stream):
+    def TestThreadProc(task_index, output_stream, on_status_update):
+        if not no_status:
+            on_status_update("Executing")
+
         test_info = test_info_list[int(task_index / iterations)]
 
         # Don't continue on error unless explicitly requested
@@ -384,6 +416,10 @@ def Test( test_items,
             test_info.result.test_parse_time = test_parse_time
             final_result = final_result or test_info.result.test_parse_result
             
+        if final_result != 0:
+            with test_failures_lock:
+                test_failures.value += 1
+
         return final_result
 
     # ---------------------------------------------------------------------------
@@ -420,12 +456,15 @@ def Test( test_items,
         EnqueueTestIfNecessary(result.complete_results.release, "Release", result.complete_results.Item, result.output_base_name)
 
     if test_tasks:
-        output_stream.write('\n')
-
-        TaskPool.Execute( tasks=test_tasks,
-                          num_concurrent_tasks=max_num_concurrent_tasks if execute_in_parallel else 1,
-                          output_stream=output_stream,
-                        )
+        output_stream.SingleLineDoneManager( "Executing...",
+                                             lambda dm: TaskPool.Execute( tasks=test_tasks,
+                                                                          num_concurrent_tasks=max_num_concurrent_tasks if execute_in_parallel else 1,
+                                                                          output_stream=dm.stream,
+                                                                          progress_bar=True,
+                                                                        ),
+                                             done_suffix_functor=lambda: pluralize.no("test failure", test_failures.value),
+                                             done_suffix='\n',
+                                           )
 
     return [ result.complete_results for result in results ]
 
@@ -636,6 +675,7 @@ def Execute( input,
              output_stream=sys.stdout,
              verbose=False,
              preserve_ansi_escape_sequences=False,
+             no_status=False,
            ):
     """\
     Executes a specific test.
@@ -662,6 +702,8 @@ def Execute( input,
                              output_stream=output_stream,
                              debug_only=debug_only,
                              release_only=release_only,
+                             preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
+                             no_status=no_status,
                           )
 
     if not complete_results:
@@ -730,6 +772,7 @@ def ExecuteTree( input_dir,
                  verbose=False,
                  quiet=False,
                  preserve_ansi_escape_sequences=False,
+                 no_status=False,
                ):
     """\
     Executes tests found found within 'test_type' subdirectories.
@@ -745,8 +788,8 @@ def ExecuteTree( input_dir,
 
     start_time = TimeDelta()
 
-    output_stream.write("Parsing '{}'...".format(input_dir))
-    with StreamDecorator(output_stream).DoneManager(done_suffix='\n') as parse_manager:
+    output_stream.write("\nParsing '{}'...".format(input_dir))
+    with StreamDecorator(output_stream).DoneManager() as parse_manager:
         test_items = ExtractTestItems( input_dir,
                                        test_type,
                                        compiler,
@@ -770,6 +813,8 @@ def ExecuteTree( input_dir,
                              output_stream=output_stream,
                              debug_only=debug_only,
                              release_only=release_only,
+                             preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
+                             no_status=no_status,
                            )
 
     if not complete_results:

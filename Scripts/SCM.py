@@ -974,7 +974,9 @@ def _AllImpl( directory,
         output = []
 
         # ---------------------------------------------------------------------------
-        def QueryProcess(scm, directory, task_index, task_output_stream):
+        def QueryProcess(scm, directory, task_index, task_output_stream, on_status_update):
+            on_status_update("Querying")
+
             if not require_distributed or scm.IsDistributed:
                 output[task_index] = QuickObject( scm=scm,
                                                   directory=directory,
@@ -989,18 +991,18 @@ def _AllImpl( directory,
             output.append(None)
             tasks.append(TaskPool.Task( "{} [{}] <Query>".format(directory, scm.Name),
                                         "Querying '{}'".format(directory),
-                                        lambda task_index, task_output_stream, scm=scm, directory=directory: QueryProcess(scm, directory, task_index, task_output_stream),
+                                        lambda task_index, task_output_stream, on_status_update, scm=scm, directory=directory: QueryProcess(scm, directory, task_index, task_output_stream, on_status_update),
                                       ))
 
         if not tasks:
             return 0
 
-        si.stream.write("Processing {}...".format(inflect_engine.no("repository", len(tasks))))
-        with si.stream.DoneManager( done_suffix='\n',
-                                  ) as this_dm:
-            this_dm.result = TaskPool.Execute( tasks, 
-                                               output_stream=this_dm.stream, 
-                                             )
+        si.stream.SingleLineDoneManager( "Processing {}...".format(inflect_engine.no("repository", len(tasks))),
+                                         lambda this_dm: TaskPool.Execute( tasks,
+                                                                           output_stream=this_dm.stream,
+                                                                           progress_bar=True,
+                                                                         ),
+                                       )
 
         action_items = [ data for data in output if data != None and data.result ]
         
