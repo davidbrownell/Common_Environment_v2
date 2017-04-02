@@ -22,12 +22,14 @@ import os
 import re
 import sys
 import textwrap
+import threading
 
 from collections import OrderedDict
 from six.moves import StringIO
 
 import inflect
 
+from CommonEnvironment import ModifiableValue
 from CommonEnvironment import CommandLine
 from CommonEnvironment import FileSystem
 from CommonEnvironment.QuickObject import QuickObject
@@ -964,71 +966,81 @@ def _AllImpl( directory,
     directory = directory or os.getcwd()
 
     with StreamDecorator(output_stream).DoneManager( line_prefix='',
-                                                     done_prefix="Composite Results: ",
+                                                     done_prefix="\nComposite Results: ",
                                                    ) as si:
-        si.stream.write("Searching for repositories in '{}'...".format(directory))
-        with si.stream.DoneManager( done_suffix='\n',
-                                  ):
+        si.stream.write("\nSearching for repositories in '{}'...".format(directory))
+        with si.stream.DoneManager():
             items = list(_GetSCMAndDirs(directory))
 
-        output = []
+        if not items:
+            return 0
+
+        output = [ None, ] * len(items)
+
+        to_process = ModifiableValue(0)
+        to_process_lock = threading.Lock()
 
         # ---------------------------------------------------------------------------
         def QueryProcess(scm, directory, task_index, task_output_stream, on_status_update):
             on_status_update("Querying")
 
             if not require_distributed or scm.IsDistributed:
+                result = query_func(scm, directory)
+
+                if result:
+                    with to_process_lock:
+                        to_process.value += 1
+
                 output[task_index] = QuickObject( scm=scm,
                                                   directory=directory,
-                                                  result=query_func(scm, directory),
+                                                  result=result,
                                                 )
 
         # ---------------------------------------------------------------------------
         
-        tasks = []
-
-        for scm, directory in items:
-            output.append(None)
-            tasks.append(TaskPool.Task( "{} [{}] <Query>".format(directory, scm.Name),
-                                        "Querying '{}'".format(directory),
-                                        lambda task_index, task_output_stream, on_status_update, scm=scm, directory=directory: QueryProcess(scm, directory, task_index, task_output_stream, on_status_update),
-                                      ))
-
-        if not tasks:
-            return 0
-
-        si.stream.SingleLineDoneManager( "Processing {}...".format(inflect_engine.no("repository", len(tasks))),
-                                         lambda this_dm: TaskPool.Execute( tasks,
+        si.stream.SingleLineDoneManager( "Processing {}...".format(inflect_engine.no("repository", len(items))),
+                                         lambda this_dm: TaskPool.Execute( [ TaskPool.Task(  "{} [{}] <Query>".format(directory, scm.Name),
+                                                                                             "Querying '{}'".format(directory),
+                                                                                             lambda task_index, task_output_stream, on_status_update, scm=scm, directory=directory: QueryProcess(scm, directory, task_index, task_output_stream, on_status_update),
+                                                                                          )
+                                                                             for scm, directory in items
+                                                                           ],
                                                                            output_stream=this_dm.stream,
                                                                            progress_bar=True,
                                                                          ),
+                                         done_suffix_functor=None if not action_func else (lambda: "{} to execute".format(inflect_engine.no("repository", to_process.value))),
                                        )
 
-        action_items = [ data for data in output if data != None and data.result ]
+        action_items = [ data for data in output if data.result ]
         
-        if action_func:
-            if not action_items:
-                output_stream.write("There are no repositories to process.\n")
-            else:
-                tasks = []
-                
-                for action_item in action_items:
-                    template_args = { "dir" : action_item.directory,
-                                      "scm" : action_item.scm.Name,
-                                    }
-                
-                    tasks.append(TaskPool.Task( action_name_template.format(**template_args),
-                                                action_status_template.format(**template_args),
-                                                lambda task_index, output_stream, action_item=action_item: action_func(action_item.scm, action_item.directory),
-                                              ))
-                
-                task_pool_result = TaskPool.Execute( tasks, 
-                                                     progress_bar=True,
-                                                     output_stream=output_stream,
-                                                     verbose=True,
-                                                   )
+        if action_func and action_items:
+            # ----------------------------------------------------------------------
+            def Invoke(action_item, task_index, output_stream, on_status_update):
+                on_status_update("Executing")
 
-                si.result = si.result or task_pool_result
+                action_func(action_item.scm, action_item.directory)
+
+            # ----------------------------------------------------------------------
+            
+            tasks = []
+            
+            for action_item in action_items:
+                template_args = { "dir" : action_item.directory,
+                                  "scm" : action_item.scm.Name,
+                                }
+            
+                tasks.append(TaskPool.Task( action_name_template.format(**template_args),
+                                            action_status_template.format(**template_args),
+                                            lambda task_index, output_stream, on_status_update, action_item=action_item: Invoke(action_item, task_index, output_stream, on_status_update),
+                                          ))
+            
+            task_pool_result = TaskPool.Execute( tasks, 
+                                                 output_stream=output_stream,
+                                                 progress_bar=True,
+                                                 verbose=True,
+                                               )
+
+            si.result = si.result or task_pool_result
 
         return si.result
 
