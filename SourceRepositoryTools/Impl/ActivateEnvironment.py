@@ -92,18 +92,24 @@ def LoadRepoData():
                                                   configuration=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo(description="Configuration value to setup; all configurations will be setup if no configurations are provided"),
                                                   debug=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo(description="Displays additional debug information if provided"),
                                                   set_dependency_environment_flag=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo(description="If provided, will set the dependency flag within the environment"),
+                                                  version_spec=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo(description="Overrides version specifications for tools and/or libraries. Example: '/version_spec=Tools/Python:v3.6.0'."),
                                                 )
 @CommonEnvironmentImports.CommandLine.FunctionConstraints( output_filename_or_stdout=CommonEnvironmentImports.CommandLine.StringTypeInfo(),
                                                            repository_root=CommonEnvironmentImports.CommandLine.DirectoryTypeInfo(),
                                                            configuration=CommonEnvironmentImports.CommandLine.StringTypeInfo(),
+                                                           version_spec=CommonEnvironmentImports.CommandLine.DictTypeInfo( arity='?',
+                                                                                                                           require_exact_match=False,
+                                                                                                                         ),
                                                          )
 def Activate( output_filename_or_stdout,
               repository_root,
               configuration,
               debug=False,
               set_dependency_environment_flag=False,
+              version_spec=None,
             ):
     configuration = configuration if configuration.lower() != "none" else None
+    cl_version_specs = version_spec or {}
 
     environment = Shell.GetEnvironment()
 
@@ -152,6 +158,39 @@ def Activate( output_filename_or_stdout,
         if not os.path.isdir(generated_dir):
             os.makedirs(generated_dir)
         
+        # Augment the version specs with those provided on the command line.
+        for k, v in six.iteritems(cl_version_specs):
+            keys = k.split('/')
+
+            if keys[0] == Constants.TOOLS_SUBDIR:
+                if len(keys) != 2:
+                    raise Exception("'{}' is not a valid tool version spec; expected '{}/<Tool Name>'.".format(k, Constants.TOOLS_SUBIDR))
+
+                name = keys[1]
+                version_infos = dependency_info.version_specs.Tools
+
+            elif keys[0] == Constants.LIBRARIES_SUBDIR:
+                if len(keys) != 3:
+                    raise Exception("'{}' is not a valid libraries version spec; expected '{}/<Language>/<Libary Name>'.".format(k, Constants.LIBRARIES_SUBDIR))
+
+                name = keys[2]
+                version_infos = dependency_info.version_specs.Libraries.setdefault(keys[1], [])
+
+            else:
+                raise Exception("'{}' is not a valid version spec prefix".format(keys[0]))
+
+            found = False
+            for vi in version_infos:
+                if vi.Name == name:
+                    vi.Version = v
+                    found = True
+                    break
+
+            if not found:
+                version_infos.append(CommonEnvironmentImports.QuickObject( Name=name, 
+                                                                           Version=v,
+                                                                         ))
+
         # Are we activating a tool repository
         is_tool_repository = Impl.RepositoryInformation.Load(repository_root).is_tool_repository
         
@@ -398,8 +437,6 @@ def _ActivatePython(constants, environment, configuration, repositories, version
                                                         generated_dir,
                                                       )
 
-    commands.append(Shell.AugmentSet("PYTHONUNBUFFERED", "1"))
-
     return commands
 
 # ---------------------------------------------------------------------------
@@ -464,5 +501,6 @@ def _ActivatePrompt(repositories, configuration, is_tool_repository):
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    try: sys.exit(CommonEnvironmentImports.CommandLine.Main())
+    try: sys.exit(CommonEnvironmentImports.CommandLine.Main( command_line_keyword_separator='_EQ_',
+                                                           ))
     except KeyboardInterrupt: pass
