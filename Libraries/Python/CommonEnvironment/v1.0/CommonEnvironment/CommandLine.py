@@ -808,9 +808,13 @@ class UsageException(Exception):
 # |
 # ---------------------------------------------------------------------------
 def Main( allow_exceptions=False,
+          *executor_args,
+          **executor_kwargs
         ):
-    return Executor().Invoke( allow_exceptions=allow_exceptions,
-                            )
+    return Executor( *executor_args,
+                     **executor_kwargs
+                   ).Invoke( allow_exceptions=allow_exceptions,
+                           )
 
 # ---------------------------------------------------------------------------
 def DisplayOutput( result_code,
