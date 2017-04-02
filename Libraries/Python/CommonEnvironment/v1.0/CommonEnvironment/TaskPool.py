@@ -97,13 +97,12 @@ def Execute( tasks,
     output_stream = StreamDecorator(None if silent else output_stream)
 
     # ----------------------------------------------------------------------
-    def Invoke( on_initialized_functor,                 # def Func(futures, tasks)
-                update_status_functor,                  # def Func(futures, tasks, future, task, update_type, optional_content)
+    def Invoke( get_status_functor,                     # def Func(future, task, update_type, optional_content)
+                write_statuses_functor,                 # def Func(statuses)
                 output_stream, 
                 clear_status_when_complete=False,
+                display_status_update_frequency=0.25,   # seconds
               ):
-        on_initialized_functor = on_initialized_functor or (lambda futures: None)
-
         tls = threading.local()
     
         thread_index = ModifiableValue(0)
@@ -111,7 +110,36 @@ def Execute( tasks,
 
         futures = []
         
-        initialized = threading.Event()
+        initialized_event = threading.Event()
+        terminate_event = threading.Event()
+
+        # ----------------------------------------------------------------------
+        def UpdateStatus(future, task, update_type, optional_content):
+            with task.status_lock:
+                task.status = get_status_functor(future, task, update_type, optional_content)
+
+        # ----------------------------------------------------------------------
+        def DisplayStatusesThreadProc():
+            prev_statuses = None
+
+            while True:
+                statuses = []
+
+                for task in tasks:
+                    with task.status_lock:
+                        if task.status:
+                            statuses.append(task.status)
+
+                if statuses != prev_statuses:
+                    write_statuses_functor(statuses)
+                    prev_statuses = statuses
+                
+                initialized_event.set()
+
+                if terminate_event.wait(display_status_update_frequency):
+                    break
+
+            write_statuses_functor([])
 
         # ----------------------------------------------------------------------
         def Func(task, task_index):
@@ -123,7 +151,7 @@ def Execute( tasks,
                     
                 setattr(tls, "index", this_thread_index)
 
-            initialized.wait()
+            initialized_event.wait()
             
             start_time = time.time()
             future = futures[task_index]
@@ -132,8 +160,8 @@ def Execute( tasks,
             
             # ----------------------------------------------------------------------
             def OnStatusUpdate(content):
-                update_status_functor(futures, tasks, future, task, StatusUpdate.Status, content)
-            
+                UpdateStatus(future, task, StatusUpdate.Status, content)
+                
             # ----------------------------------------------------------------------
             
             try:
@@ -184,15 +212,18 @@ def Execute( tasks,
             # We can't combine this loop with the comprehension above, as the
             # update status functor expects a full set of futures.
             for future, task in six.moves.zip(futures, tasks):
-                update_status_functor(futures, tasks, future, task, StatusUpdate.Start, None)
-                future.add_done_callback(lambda ignore, future=future, task=task: update_status_functor(futures, tasks, future, task, StatusUpdate.Stop, None))
+                UpdateStatus(future, task, StatusUpdate.Start, None)
+                future.add_done_callback(lambda ignore, future=future, task=task: UpdateStatus(future, task, StatusUpdate.Stop, None))
 
-            on_initialized_functor(futures, tasks)
-            initialized.set()
-            
+            display_thread = threading.Thread(target=DisplayStatusesThreadProc)
+            display_thread.start()
+
             # Check for exceptions
             for future in futures:
                 future.result()
+
+            terminate_event.set()
+            display_thread.join()
 
     # ----------------------------------------------------------------------
     prev_statuses = []
@@ -214,70 +245,53 @@ def Execute( tasks,
                 statuses.append(' ' * len(prev_statuses[index]))
 
         if statuses:
-            output_stream.write('\n'.join([ "\r{}".format(status) for status in statuses ]))    # Write the content...
+            output_stream.write('\n'.join([ "\r{}".format(status) for status in statuses ]))    # Write the content
             output_stream.write("\033[{}A\r".format(len(statuses) - 1))                         # Move back to the original line
         
         prev_statuses[:] = original_statuses
 
-    # ---------------------------------------------------------------------------
-    def UpdateStatuses(futures, tasks, write_functor=WriteStatuses):
-        statuses = []
-
-        for task in tasks:
-            with task.status_lock:
-                if task.status:
-                    statuses.append(task.status)
-
-        write_functor(statuses)
-
     # ----------------------------------------------------------------------
     
-    output_lock = threading.Lock()
-
     if progress_bar:
+        progress_bar_lock = threading.Lock()
+
         with tqdm( total=len(tasks),
                    file=output_stream,
                    ncols=progress_bar_cols,
                    unit=" items",
                  ) as progress_bar:
             # ----------------------------------------------------------------------
-            def PBWriteStatuses(*args, **kwargs):
-                output_stream.write("\033[1B") # Move down one line to compensate for the progress bar
-                WriteStatuses(*args, **kwargs)
-                output_stream.write("\033[1A\r") # Move up one line to compensate for the progress bar
-
-            # ----------------------------------------------------------------------
-            def PBUpdateStatuses(futures, tasks):
-                UpdateStatuses(futures, tasks, PBWriteStatuses)
+            def PBWriteStatuses(statuses):
+                with progress_bar_lock:
+                    output_stream.write("\033[1B") # Move down one line to compensate for the progress bar
+                    WriteStatuses(statuses)
+                    output_stream.write("\033[1A\r") # Move up one line to compensate for the progress bar
 
             # ---------------------------------------------------------------------------
-            def UpdateStatus(futures, tasks, future, task, update_type, optional_content):
-                with task.status_lock:
-                    task.status = optional_content if not optional_content else "    {}: {}".format(task.Name, optional_content)
+            def GetStatus(future, task, update_type, optional_content):
+                if update_type == StatusUpdate.Stop:
+                    with progress_bar_lock:
+                        progress_bar.update()
 
-                if update_type in [ StatusUpdate.Status, StatusUpdate.Stop, ]:
-                    with output_lock:
-                        if update_type == StatusUpdate.Stop:
-                            progress_bar.update()
+                if not optional_content:
+                    return optional_content
 
-                        PBUpdateStatuses(futures, tasks)
-
-            # ----------------------------------------------------------------------
-            def OnInit(futures, tasks):
-                PBUpdateStatuses(futures, tasks)
+                return "    {}: {}".format(task.Name, optional_content)
 
             # ----------------------------------------------------------------------
             
-            with CallOnExit(lambda: PBWriteStatuses([])):
-                Invoke( OnInit,
-                        UpdateStatus,
-                        output_stream, 
-                        clear_status_when_complete=True,
-                      )
+            Invoke( GetStatus,
+                    PBWriteStatuses,
+                    output_stream, 
+                    clear_status_when_complete=True,
+                  )
     else:
+        max_name_length = max(50, *[ len(task.Name) for task in tasks ])
         
+        status_template = "  {{name:<{}}} {{suffix}}".format(max_name_length + 1)
+
         # ----------------------------------------------------------------------
-        def UpdateStatus(futures, tasks, future, task, update_type, optional_content):
+        def GetStatus(future, task, update_type, optional_content):
             if task.complete.is_set():
                 suffix = "DONE! ({}, {})".format(task.result, task.time_delta_string)
             elif future.running():
@@ -288,26 +302,16 @@ def Execute( tasks,
             if optional_content:
                 suffix += " [{}]".format(optional_content)
 
-            with task.status_lock:
-                task.status = "  {name:<70} {suffix}".format( name="{}:".format(task.Name),
-                                                              suffix=suffix,
-                                                            )
-
-            if update_type in [ StatusUpdate.Status, StatusUpdate.Stop, ]:
-                with output_lock:
-                    UpdateStatuses(futures, tasks)
-                
-        # ----------------------------------------------------------------------
-        def OnInit(futures, tasks):
-            UpdateStatuses(futures, tasks)
+            return status_template.format( name="{}:".format(task.Name),
+                                           suffix=suffix,
+                                         )
 
         # ----------------------------------------------------------------------
         
-        with CallOnExit(lambda: WriteStatuses([])):
-            Invoke( OnInit,
-                    UpdateStatus,
-                    output_stream,
-                  )
+        Invoke( GetStatus,
+                WriteStatuses,
+                output_stream,
+              )
 
     # Calculate the final result
     sink = StringIO()
