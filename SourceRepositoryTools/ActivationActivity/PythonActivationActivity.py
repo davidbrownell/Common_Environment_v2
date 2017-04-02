@@ -234,6 +234,9 @@ class PythonActivationActivity(IActivationActivity):
                          "python_version_short" : '.'.join(version.split('.')[0:2]),
                        }
         
+            if version.split('.')[0] == '2':
+                global_actions.append(Shell.AugmentSet("PYTHONUNBUFFERED", "1"))
+
             # Create the actions
             local_actions.append(Shell.Message("{}    Cleaning previous links...".format(display_sentinel)))
             local_actions += [ environment.Raw(statement) for statement in CreateCleanSymLinkStatements(environment, dest_dir) ]
