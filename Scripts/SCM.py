@@ -1018,7 +1018,7 @@ def _AllImpl( directory,
             def Invoke(action_item, task_index, output_stream, on_status_update):
                 on_status_update("Executing")
 
-                action_func(action_item.scm, action_item.directory)
+                return action_func(action_item.scm, action_item.directory)
 
             # ----------------------------------------------------------------------
             
