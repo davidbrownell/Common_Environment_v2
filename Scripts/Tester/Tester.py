@@ -349,7 +349,7 @@ def TestAll( input_dir,
                                                       )
             dm.stream.write("{}\n{}\n".format(desc, '-' * len(desc)))
             with dm.stream.DoneManager( line_prefix='',
-                                        done_suffix='\n',
+                                        done_prefix="\n{} Results: ".format(configuration),
                                       ) as this_dm:
                 this_dm.result = TestType( configuration,
                                            input_dir,

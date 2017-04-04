@@ -49,14 +49,8 @@ def ExecuteWithColorama( command_line,
                          output_stream=sys.stdout,
                        ):
     import colorama
-    from colorama.initialise import wrap_stream
-
-    output_stream = wrap_stream( output_stream,
-                                 strip=True,
-                                 convert=True,
-                                 autoreset=False,
-                                 wrap=True,
-                               )
+    
+    output_stream = StreamDecorator.InitAnsiSequenceStream(output_stream)
 
     with CallOnExit(lambda: output_stream.write(colorama.Style.RESET_ALL)):
         result = _ExecuteImpl( command_line,

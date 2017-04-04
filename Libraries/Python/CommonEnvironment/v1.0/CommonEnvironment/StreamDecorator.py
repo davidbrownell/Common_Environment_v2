@@ -453,6 +453,21 @@ class StreamDecorator(object):
         return '\n\n'.join(paragraphs)
         
     # ----------------------------------------------------------------------
+    @staticmethod
+    def InitAnsiSequenceStream( stream, 
+                                preserve_ansi_escape_sequences=False, 
+                                autoreset=False,
+                              ):
+        from colorama.initialise import wrap_stream
+
+        return wrap_stream( stream,
+                            convert=(not preserve_ansi_escape_sequences),
+                            strip=(not preserve_ansi_escape_sequences),
+                            autoreset=autoreset,
+                            wrap=True,
+                          )
+
+    # ----------------------------------------------------------------------
     # |  Private Data
     _eol_regex = re.compile(r"(?P<eol>\r?\n)")
     

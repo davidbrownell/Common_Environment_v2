@@ -104,16 +104,10 @@ def Test( test_items,
     assert max_num_concurrent_tasks > 0, max_num_concurrent_tasks
     assert output_stream
 
-    from colorama.initialise import wrap_stream
-
-    output_stream = wrap_stream( output_stream,
-                                 convert=(not preserve_ansi_escape_sequences),
-                                 strip=(not preserve_ansi_escape_sequences),
-                                 autoreset=True,
-                                 wrap=True,
-                               )
-
-    output_stream = StreamDecorator(output_stream)
+    output_stream = StreamDecorator(StreamDecorator.InitAnsiSequenceStream( output_stream, 
+                                                                            preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
+                                                                            autoreset=True,
+                                                                          ))
 
     # Check for congruent plugins
     result = compiler.ValidateEnvironment()
@@ -531,14 +525,10 @@ def PrettyPrint( complete_results,
     pretty_print = _ShouldPrettyPrint(output_stream)
 
     if pretty_print:
-        from colorama.initialise import wrap_stream
-
-        output_stream = wrap_stream( output_stream,
-                                     convert=(not preserve_ansi_escape_sequences),
-                                     strip=(not preserve_ansi_escape_sequences),
-                                     autoreset=True,
-                                     wrap=True,
-                                   )
+        output_stream = StreamDecorator.InitAnsiSequenceStream( output_stream,
+                                                                preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
+                                                                autoreset=True,
+                                                              )
 
         result_re = re.compile(r"(?P<prefix>(?P<header>.*?)Result:\s+)(?P<value>.+)")
 
@@ -840,14 +830,10 @@ def ExecuteTree( input_dir,
     failures = [ 0, ]
 
     if _ShouldPrettyPrint(output_stream):
-        from colorama.initialise import wrap_stream
-
-        output_stream = wrap_stream( output_stream,
-                                     convert=(not preserve_ansi_escape_sequences),
-                                     strip=(not preserve_ansi_escape_sequences),
-                                     autoreset=True,
-                                     wrap=True,
-                                   )
+        output_stream = StreamDecorator.InitAnsiSequenceStream( output_stream,
+                                                                preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
+                                                                autoreset=True,
+                                                              )
 
         # ---------------------------------------------------------------------------
         def Print(content):

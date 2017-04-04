@@ -47,6 +47,13 @@ _SCMOptionalTypeInfo = CommandLine.EnumTypeInfo(_SCMTypeInfo.Values, arity='?')
 
 inflect_engine = inflect.engine()
 
+# ----------------------------------------------------------------------
+# This code looks benign, but will initialize sys.stdout so that it can process
+# ansi escape sequences.
+import colorama
+
+colorama.init()
+
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
