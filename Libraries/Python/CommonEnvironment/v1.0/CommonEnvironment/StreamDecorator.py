@@ -214,20 +214,7 @@ class StreamDecorator(object):
         done_prefix = [ done_prefix, ]
         done_suffix = [ done_suffix, ]
 
-        # ----------------------------------------------------------------------
-        class Info(object):
-            def __init__(self, stream, result=0):
-                self.stream                 = stream
-                self.result                 = result
-
-                self.stream._parent_info = self         # <Access to a protected member of a client class> pylint: disable = W0212
-
-        # ----------------------------------------------------------------------
-        
-        info = Info(StreamDecorator( self,
-                                     one_time_prefix='\n' if line_prefix else '',
-                                     line_prefix=line_prefix,
-                                   ))
+        info = self._DoneManagerInfo(self, line_prefix)
 
         # ----------------------------------------------------------------------
         def Cleanup():
@@ -279,14 +266,14 @@ class StreamDecorator(object):
 
             # Propagate the result
             if info.result != 0:
-                stream = self
+                for index, dm in enumerate(info.Enumerate()):
+                    if index == 0:
+                        continue
 
-                while hasattr(stream, "_parent_info"):
-                    if stream._parent_info.result != 0:                     # <Access to a protected member of a client class> pylint: disable = W0212, E1101
+                    if dm.result != 0:
                         break
-
-                    stream._parent_info.result = info.result                # <Access to a protected member of a client class> pylint: disable = W0212, E1101
-                    stream = stream._parent_info.stream                     # <Access to a protected member of a client class> pylint: disable = W0212, E1101
+                
+                    dm.result = info.result
 
         # ----------------------------------------------------------------------
         
@@ -350,6 +337,7 @@ class StreamDecorator(object):
         """
 
         has_errors = ModifiableValue(False)
+        dm_ref = ModifiableValue(None)
 
         # ----------------------------------------------------------------------
         def DonePrefix():
@@ -360,7 +348,21 @@ class StreamDecorator(object):
             
             # Move up a line and display the original status message
             # along with the done notification.
-            return "\033[1A\r{}DONE! ".format(status)
+
+            # Try to get the whitespace associated with all parents (if any).
+            whitespace_prefix_stack = []
+
+            for index, dm in enumerate(dm_ref.value.Enumerate()):
+                if index == 0:
+                    continue
+
+                whitespace_prefix_stack.append(dm.stream._line_prefix)
+
+            whitespace_prefix = ''
+            while whitespace_prefix_stack:
+                whitespace_prefix += whitespace_prefix_stack.pop()(len(whitespace_prefix))
+
+            return "\033[1A\r{}{}DONE! ".format(whitespace_prefix, status)
 
         # ----------------------------------------------------------------------
         
@@ -369,8 +371,10 @@ class StreamDecorator(object):
                                *done_manager_args,
                                **done_manager_kwargs
                              ) as dm:
+            dm_ref.value = dm
+
             dm.result = functor(dm)
-            has_errors.value = dm.result != 0
+            has_errors.value = dm.result not in [ 0, None, ]
 
             return dm.result
 
@@ -452,3 +456,33 @@ class StreamDecorator(object):
     # |  Private Data
     _eol_regex = re.compile(r"(?P<eol>\r?\n)")
     
+    # ----------------------------------------------------------------------
+    # |  Private Types
+    class _DoneManagerInfo(object):
+
+        # ----------------------------------------------------------------------
+        def __init__(self, stream_decorator, line_prefix, result=0):
+            self.stream                     = StreamDecorator( stream_decorator,
+                                                               one_time_prefix='\n' if line_prefix else '',
+                                                               line_prefix=line_prefix,
+                                                             )
+            self.result                     = result
+
+            self.stream._done_manager       = self
+
+        # ----------------------------------------------------------------------
+        def Enumerate(self):
+            # ----------------------------------------------------------------------
+            def Impl(decorator):
+                for stream in decorator._streams:
+                    if hasattr(stream, "_done_manager"):
+                        yield stream._done_manager
+
+                        for dm in Impl(stream._done_manager.stream):
+                            yield dm
+
+            # ----------------------------------------------------------------------
+            
+            yield self
+            for dm in Impl(self.stream):
+                yield dm
