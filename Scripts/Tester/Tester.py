@@ -18,7 +18,6 @@
 Convience wrapper for TesterEx.
 """
 
-import colorama
 import os
 import re
 import string
@@ -132,6 +131,7 @@ _UNIVERSAL_CODE_COVERAGE_FLAGS = [ "/code_coverage_validator=Standard", ]
                                   test_type=CommandLine.StringTypeInfo(min_length=0),
                                   output_dir=CommandLine.StringTypeInfo(min_length=0),
                                   iterations=CommandLine.IntTypeInfo(min=1),
+                                  output_stream=None,
                                 )
 def Test( configuration,
           filename_or_dir,
@@ -147,6 +147,7 @@ def Test( configuration,
           quiet=False,
           xml_output=False,
           no_status=False,
+          output_stream=sys.stdout,
         ):
     assert configuration
     assert os.path.exists(filename_or_dir), filename_or_dir
@@ -200,13 +201,16 @@ def Test( configuration,
 
     command_line.append("/preserve_ansi_escape_sequences")
     
-    return Process.ExecuteWithColorama("python {}".format(' '.join([ '"{}"'.format(arg) for arg in command_line ])))
+    return Process.ExecuteWithColorama( "python {}".format(' '.join([ '"{}"'.format(arg) for arg in command_line ])),
+                                        output_stream=output_stream,
+                                      )
     
 # ---------------------------------------------------------------------------
 @CommandLine.EntryPoint
 @CommandLine.FunctionConstraints( input=CommandLine.FilenameTypeInfo(),
                                   output_dir=CommandLine.StringTypeInfo(min_length=0),
                                   iterations=CommandLine.IntTypeInfo(min=1),
+                                  output_stream=None,
                                 )
 def TestFile( input,
               output_dir='',
@@ -220,6 +224,7 @@ def TestFile( input,
               quiet=False,
               xml_output=False,
               no_status=False,
+              output_stream=sys.stdout,
             ):
     """Determines the configuration of the provided file and then runs its test."""
     
@@ -262,6 +267,7 @@ def TestFile( input,
                  quiet=quiet,
                  xml_output=xml_output,
                  no_status=no_status,
+                 output_stream=output_stream,
                )
 
 # ---------------------------------------------------------------------------
@@ -271,6 +277,7 @@ def TestFile( input,
                                   test_type=CommandLine.StringTypeInfo(),
                                   output_dir=CommandLine.StringTypeInfo(),
                                   iterations=CommandLine.IntTypeInfo(min=1),
+                                  output_stream=None,
                                 )
 def TestType( configuration,
               input_dir,
@@ -286,6 +293,7 @@ def TestType( configuration,
               quiet=False,
               xml_output=False,
               no_status=False,
+              output_stream=sys.stdout,
             ):
     """Runs tests of the specific type based on the subdir name provided."""
     
@@ -305,6 +313,7 @@ def TestType( configuration,
                  quiet=quiet,
                  xml_output=xml_output,
                  no_status=no_status,
+                 output_stream=output_stream,
                )
 
 # ----------------------------------------------------------------------
@@ -313,6 +322,7 @@ def TestType( configuration,
                                   test_type=CommandLine.StringTypeInfo(),
                                   output_dir=CommandLine.FilenameTypeInfo(ensure_exists=False),
                                   iterations=CommandLine.IntTypeInfo(min=1),
+                                  output_stream=None,
                                 )
 def TestAll( input_dir,
              test_type,
@@ -327,21 +337,20 @@ def TestAll( input_dir,
              quiet=False,
              xml_output=False,
              no_status=False,
+             output_stream=sys.stdout,
            ):
-    colorama.init(autoreset=False)
-
-    with StreamDecorator(sys.stdout).DoneManager( done_prefix="\n\nComposite Results: ",
-                                                  line_prefix='',
-                                                ) as dm:
+    with StreamDecorator(output_stream).DoneManager( done_prefix="\n\nComposite Results: ",
+                                                     line_prefix='',
+                                                   ) as dm:
         for index, configuration in enumerate(six.iterkeys(CONFIGURATIONS)):
-            dm.stream.write("Testing '{}' ({} of {})...".format( configuration,
-                                                                 index + 1,
-                                                                 len(CONFIGURATIONS),
-                                                               ))
-            with dm.stream.DoneManager(line_prefix="    ") as this_dm:
-                original_stdout = sys.stdout
-                sys.stdout = this_dm.stream
-
+            desc = "Testing '{}' ({} of {})...".format( configuration,
+                                                        index + 1,
+                                                        len(CONFIGURATIONS),
+                                                      )
+            dm.stream.write("{}\n{}\n".format(desc, '-' * len(desc)))
+            with dm.stream.DoneManager( line_prefix='',
+                                        done_suffix='\n',
+                                      ) as this_dm:
                 this_dm.result = TestType( configuration,
                                            input_dir,
                                            test_type,
@@ -356,9 +365,8 @@ def TestAll( input_dir,
                                            quiet=quiet,
                                            xml_output=xml_output,
                                            no_status=no_status,
+                                           output_stream=this_dm.stream,
                                          )
-
-                sys.stdout = original_stdout
 
             return dm.result
 
@@ -367,10 +375,12 @@ def TestAll( input_dir,
 @CommandLine.FunctionConstraints( configuration=CommandLine.EnumTypeInfo(values=CONFIGURATIONS.keys()),
                                   input_dir=CommandLine.DirectoryTypeInfo(),
                                   test_type=CommandLine.StringTypeInfo(),
+                                  output_stream=None,
                                 )
 def MatchTests( configuration,
                 input_dir,
                 test_type,
+                output_stream=sys.stdout,
                 verbose=False,
               ):
     return Process.ExecuteWithColorama( 'python "{script}" MatchTests "{dir}" "{test_type}" {compiler}{verbose}' \
@@ -380,38 +390,35 @@ def MatchTests( configuration,
                                                      compiler=CONFIGURATIONS[configuration].standard_args[0],
                                                      verbose='' if not verbose else " /verbose",
                                                    ),
+                                        output_stream=output_stream,
                                       )
-
+    
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint
 @CommandLine.FunctionConstraints( input_dir=CommandLine.DirectoryTypeInfo(),
                                   test_type=CommandLine.StringTypeInfo(),
+                                  output_stream=None,
                                 )
 def MatchAllTests( input_dir,
                    test_type,
+                   output_stream=sys.stdout,
                    verbose=False,
                  ):
-    colorama.init(autoreset=False)
-
-    with StreamDecorator(sys.stdout).DoneManager( done_prefix="\n\nComposite Results: ",
-                                                  line_prefix='',
-                                                ) as dm:
+    with StreamDecorator(output_stream).DoneManager( done_prefix="\n\nComposite Results: ",
+                                                     line_prefix='',
+                                                   ) as dm:
         for index, configuration in enumerate(six.iterkeys(CONFIGURATIONS)):
             dm.stream.write("Matching '{}' ({} of {})...".format( configuration, 
                                                                   index + 1, 
                                                                   len(CONFIGURATIONS),
                                                                 ))
             with dm.stream.DoneManager(line_prefix="    ") as this_dm:
-                original_stdout = sys.stdout
-                sys.stdout = this_dm.stream
-
                 this_dm.result = MatchTests( configuration,
                                              input_dir,
                                              test_type,
                                              verbose,
+                                             output_stream=this_dm.stream,
                                            )
-
-                sys.stdout = original_stdout
 
         return dm.result
 

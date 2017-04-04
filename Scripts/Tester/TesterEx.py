@@ -104,13 +104,14 @@ def Test( test_items,
     assert max_num_concurrent_tasks > 0, max_num_concurrent_tasks
     assert output_stream
 
-    if preserve_ansi_escape_sequences:
-        colorama.init( autoreset=True,
-                       strip=(not preserve_ansi_escape_sequences),
-                       convert=(not preserve_ansi_escape_sequences),
-                     )
+    from colorama.initialise import wrap_stream
 
-        output_stream = sys.stdout
+    output_stream = wrap_stream( output_stream,
+                                 convert=(not preserve_ansi_escape_sequences),
+                                 strip=(not preserve_ansi_escape_sequences),
+                                 autoreset=True,
+                                 wrap=True,
+                               )
 
     output_stream = StreamDecorator(output_stream)
 
@@ -530,12 +531,14 @@ def PrettyPrint( complete_results,
     pretty_print = _ShouldPrettyPrint(output_stream)
 
     if pretty_print:
-        colorama.init( autoreset=True,
-                       strip=(not preserve_ansi_escape_sequences),
-                       convert=(not preserve_ansi_escape_sequences),
-                     )
+        from colorama.initialise import wrap_stream
 
-        output_stream = sys.stdout
+        output_stream = wrap_stream( output_stream,
+                                     convert=(not preserve_ansi_escape_sequences),
+                                     strip=(not preserve_ansi_escape_sequences),
+                                     autoreset=True,
+                                     wrap=True,
+                                   )
 
         result_re = re.compile(r"(?P<prefix>(?P<header>.*?)Result:\s+)(?P<value>.+)")
 
@@ -821,7 +824,7 @@ def ExecuteTree( input_dir,
         return
 
     if quiet:
-        sys.stdout.write("\n")
+        output_stream.write("\n")
     else:
         PrettyPrint( complete_results,
                      compiler,
@@ -837,7 +840,14 @@ def ExecuteTree( input_dir,
     failures = [ 0, ]
 
     if _ShouldPrettyPrint(output_stream):
-        output_stream = sys.stdout
+        from colorama.initialise import wrap_stream
+
+        output_stream = wrap_stream( output_stream,
+                                     convert=(not preserve_ansi_escape_sequences),
+                                     strip=(not preserve_ansi_escape_sequences),
+                                     autoreset=True,
+                                     wrap=True,
+                                   )
 
         # ---------------------------------------------------------------------------
         def Print(content):

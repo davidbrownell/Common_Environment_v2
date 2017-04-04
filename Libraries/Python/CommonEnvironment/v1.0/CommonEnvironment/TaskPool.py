@@ -29,8 +29,6 @@ from concurrent.futures import ThreadPoolExecutor, wait
 import six
 from six.moves import StringIO
 
-from tqdm import tqdm
-
 from CommonEnvironment import ModifiableValue
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import Enum
@@ -101,7 +99,7 @@ def Execute( tasks,
                 write_statuses_functor,                 # def Func(statuses)
                 output_stream, 
                 clear_status_when_complete=False,
-                display_status_update_frequency=0.25,   # seconds
+                display_status_update_frequency=0.5,   # seconds
               ):
         tls = threading.local()
     
@@ -253,6 +251,8 @@ def Execute( tasks,
     # ----------------------------------------------------------------------
     
     if progress_bar:
+        from tqdm import tqdm
+
         progress_bar_lock = threading.Lock()
 
         with tqdm( total=len(tasks),
