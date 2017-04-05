@@ -24,8 +24,8 @@ from six import StringIO
 
 from contextlib import contextmanager
 
-from . import ModifiableValue, Any
-from .TimeDelta import TimeDelta
+from CommonEnvironment import ModifiableValue, Any
+from CommonEnvironment.TimeDelta import TimeDelta
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -454,18 +454,79 @@ class StreamDecorator(object):
         
     # ----------------------------------------------------------------------
     @staticmethod
-    def InitAnsiSequenceStream( stream, 
-                                preserve_ansi_escape_sequences=False, 
-                                autoreset=False,
-                              ):
-        from colorama.initialise import wrap_stream
+    def GenerateAnsiSequenceStream( stream, 
+                                    preserve_ansi_escape_sequences=False, 
+                                    autoreset=False,
+                                    do_not_modify_std_streams=False,
+                                  ):
+        # ----------------------------------------------------------------------
+        @contextmanager
+        def Func():
+            # When colorama was initialized, sys.stdout and sys.stderr were
+            # configured to strip and convert ansi escape sequences. However,
+            # we may want to preserve those sequences. Assume that the stream 
+            # ultimately resolves to sys.stdout and/or sys.stderr when
+            # preserve_ansi_escape_sequence is True.
+            if not preserve_ansi_escape_sequences:
+                yield stream
+                return
 
-        return wrap_stream( stream,
-                            convert=(not preserve_ansi_escape_sequences),
-                            strip=(not preserve_ansi_escape_sequences),
-                            autoreset=autoreset,
-                            wrap=True,
-                          )
+            import colorama.initialise as cinit
+            from colorama.ansitowin32 import AnsiToWin32
+
+            from CommonEnvironment.CallOnExit import CallOnExit
+
+            restore_functors = []
+
+            if do_not_modify_std_streams:
+                restore_functors.append(lambda: None) # Necessary because CallOnExit requires at least one functor
+            else:
+                # ----------------------------------------------------------------------
+                def CreateConvertor(stream):
+                    convertor = AnsiToWin32( stream,
+                                             strip=False,
+                                             convert=False,
+                                             autoreset=autoreset,
+                                           )
+                    convertor._modified = True
+                    
+                    return convertor 
+
+                # ----------------------------------------------------------------------
+                def RestoreConvertor(wrapped_stream, original_convertor):
+                    wrapped_stream._StreamWrapper__convertor = original_convertor
+
+                # ----------------------------------------------------------------------
+
+                for wrapped_stream, original_stream in [ ( cinit.wrapped_stdout, cinit.orig_stdout ),
+                                                         ( cinit.wrapped_stderr, cinit.orig_stderr ),
+                                                       ]:
+                    original_convertor = wrapped_stream._StreamWrapper__convertor
+
+                    if not getattr(original_convertor, "_modified", False):
+                        wrapped_stream._StreamWrapper__convertor = CreateConvertor(original_stream)
+                        restore_functors.append(lambda wrapped_stream=wrapped_stream, original_convertor=original_convertor: RestoreConvertor(wrapped_stream, original_convertor))
+
+                if restore_functors:
+                    cinit.reinit()
+                    restore_functors.append(cinit.reinit)
+                
+            with CallOnExit(*restore_functors):
+                if getattr(stream, "_StreamWrapper__wrapped", None) == cinit.orig_stdout:
+                    this_stream = cinit.wrapped_stdout
+                else:
+                    this_stream = stream
+
+                yield cinit.wrap_stream( this_stream,
+                                         convert=False,
+                                         strip=False,
+                                         autoreset=autoreset,
+                                         wrap=True,
+                                       )
+
+        # ----------------------------------------------------------------------
+        
+        return Func()
 
     # ----------------------------------------------------------------------
     # |  Private Data

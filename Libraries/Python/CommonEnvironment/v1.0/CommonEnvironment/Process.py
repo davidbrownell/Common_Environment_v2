@@ -50,8 +50,6 @@ def ExecuteWithColorama( command_line,
                        ):
     import colorama
     
-    output_stream = StreamDecorator.InitAnsiSequenceStream(output_stream)
-
     with CallOnExit(lambda: output_stream.write(colorama.Style.RESET_ALL)):
         result = _ExecuteImpl( command_line,
                                convert_newlines=convert_newlines,

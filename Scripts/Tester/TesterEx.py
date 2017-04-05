@@ -104,364 +104,365 @@ def Test( test_items,
     assert max_num_concurrent_tasks > 0, max_num_concurrent_tasks
     assert output_stream
 
-    output_stream = StreamDecorator(StreamDecorator.InitAnsiSequenceStream( output_stream, 
-                                                                            preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
-                                                                            autoreset=True,
-                                                                          ))
-
-    # Check for congruent plugins
-    result = compiler.ValidateEnvironment()
-    if result:
-        output_stream.write("ERROR: The current environment is not supported by the compiler '{}': {}.\n".format(compiler.Name, result))
-        return []
-
-    result = code_coverage_extractor.ValidateEnvironment()
-    if result:
-        output_stream.write("ERROR: The current environment is not supported by the code coverage extractor '{}': {}.\n".format(code_coverage_extractor.Name, result))
-        return []
-
-    if not test_parser.IsSupportedCompiler(compiler):
-        raise Exception("The test parser '{}' does not support the compiler '{}'".format(test_parser.Name, compiler.Name))
-
-    if not code_coverage_extractor.IsSupportedCompiler(compiler):
-        raise Exception("The code coverage extractor '{}' does not support the compiler '{}'".format(code_coverage_extractor.Name, compiler.Name))
-
-    # Prepare the environment
-    if not os.path.isdir(output_dir):
-        os.makedirs(output_dir)
-
-    # Ensure that we only build debug with code coverage
-    is_valid_code_coverage_extractor = (code_coverage_extractor.Name != "Noop")
-    if is_valid_code_coverage_extractor:
-        execute_in_parallel = False
-
-        if compiler.IsCompiler:
-            debug_only = True
-            release_only = False
-
-    # ---------------------------------------------------------------------------
-    # |  Prepare the results
-    results = []
-
-    if len(test_items) == 1:
-        common_prefix = FileSystem.GetCommonPath(test_items[0], os.path.abspath(os.getcwd()))
-    else:
-        common_prefix = FileSystem.GetCommonPath(*test_items)
-
-    for test_item in test_items:
-        if not compiler.IsSupported(test_item):
-            continue
-
-        # The base name used for all output for this particular test is based on the name
-        # of the test itself.
-        base_output_name = test_item
-        if common_prefix:
-            assert base_output_name.startswith(common_prefix), (base_output_name, common_prefix)
-            base_output_name = base_output_name[len(common_prefix):]
-
-        for bad_char in [ '\\', '/', ':', '*', '?', '"', '<', '>', '|', ]:
-            base_output_name = base_output_name.replace(bad_char, '_')
-
-        # Trim output names that are larger, as this will cause problems on Windows systems
-        if Shell.GetEnvironment().Name == "Windows":
-            while len(base_output_name) > 150:
-                # The logic here assumes that the differentiating parts of the filename appear
-                # at the end of the filename, meaning we should remove content towards the
-                # start of the name. This may cause collisions.
-                base_output_name = "{}...{}".format(base_output_name[:15], base_output_name[45:])
-
-        final_output_name = os.path.join(output_dir, base_output_name)
-
-        results.append(QuickObject( complete_results=CompleteResults(test_item),
-                                    output_base_name=final_output_name,
-                                    execution_lock=threading.Lock(),
-                                  ))
-
-    # ---------------------------------------------------------------------------
-    # |  Compile
-    for result in results:
-        # Note that some compilers rely on COM, which has zany threading perversions which require
-        # that dependent code run on specific threads. Therefore, we are creating context here in the 
-        # main thread rather than delaying the creation to the thread which is closer to the location
-        # in which the context is actually used.
-
-        # ---------------------------------------------------------------------------
-        def PopulateResults(results, flavor, is_debug):
-            output_dir = os.path.join(result.output_base_name, flavor)
-            if not os.path.isdir(output_dir):
-                os.makedirs(output_dir)
-
-            if compiler.IsVerifier:
-                results.compiler_binary = result.complete_results.Item
-            else:
-                results.compile_binary = os.path.join(output_dir, "test")
-                ext = getattr(compiler, "BinaryExtension", None)
-                if ext:
-                    results.compile_binary += ext
-
-            results.compile_log = os.path.join(output_dir, "compile.txt")
-
-            results.context = compiler.GenerateContextItem( result.complete_results.Item,
-                                                            is_debug=is_debug,
-                                                            is_profile=is_valid_code_coverage_extractor,
-                                                            output_filename=results.compile_binary,
-                                                            force=True,
-                                                          )
-
-            # Context mey be None if it has been disabled for this specific environment
-            if results.context == None:
-                results.compile_binary = None
-
-        # ---------------------------------------------------------------------------
-        
-        if not release_only or not compiler.IsCompiler: 
-            PopulateResults(result.complete_results.debug, "Debug", True)
-
-        if not debug_only and compiler.IsCompiler:
-            PopulateResults(result.complete_results.release, "Release", False)
+    with StreamDecorator.GenerateAnsiSequenceStream( output_stream,
+                                                     preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
+                                                     autoreset=True,
+                                                   ) as output_stream:
+        output_stream = StreamDecorator(output_stream)
     
-    build_failures = ModifiableValue(0)
-    build_failures_lock = threading.Lock()
-
-    # ---------------------------------------------------------------------------
-    def BuildThreadProc(task_index, output_stream, on_status_update):
-        if not no_status:
-            on_status_update("Building")
-
-        result = results[task_index % len(results)]
-
-        with result.execution_lock:
-            flavor_results = result.complete_results.release if task_index >= len(results) else result.complete_results.debug
-
-            if flavor_results.context == None:
-                return
-
-            start_time = TimeDelta()
-
-            try:
-                sink = StringIO()
-
-                if compiler.IsCompiler:
-                    compile_result = compiler.Compile(flavor_results.context, sink)
-                    compiler.RemoveTemporaryArtifacts(flavor_results.context)
-                elif compiler.IsCodeGenerator:
-                    compile_result = compiler.Generate(flavor_results.context, sink)
-                elif compiler.IsVerifier:
-                    compile_result = compiler.Verify(flavor_results.context, sink)
+        # Check for congruent plugins
+        result = compiler.ValidateEnvironment()
+        if result:
+            output_stream.write("ERROR: The current environment is not supported by the compiler '{}': {}.\n".format(compiler.Name, result))
+            return []
+        
+        result = code_coverage_extractor.ValidateEnvironment()
+        if result:
+            output_stream.write("ERROR: The current environment is not supported by the code coverage extractor '{}': {}.\n".format(code_coverage_extractor.Name, result))
+            return []
+        
+        if not test_parser.IsSupportedCompiler(compiler):
+            raise Exception("The test parser '{}' does not support the compiler '{}'".format(test_parser.Name, compiler.Name))
+        
+        if not code_coverage_extractor.IsSupportedCompiler(compiler):
+            raise Exception("The code coverage extractor '{}' does not support the compiler '{}'".format(code_coverage_extractor.Name, compiler.Name))
+        
+        # Prepare the environment
+        if not os.path.isdir(output_dir):
+            os.makedirs(output_dir)
+        
+        # Ensure that we only build debug with code coverage
+        is_valid_code_coverage_extractor = (code_coverage_extractor.Name != "Noop")
+        if is_valid_code_coverage_extractor:
+            execute_in_parallel = False
+        
+            if compiler.IsCompiler:
+                debug_only = True
+                release_only = False
+        
+        # ---------------------------------------------------------------------------
+        # |  Prepare the results
+        results = []
+        
+        if len(test_items) == 1:
+            common_prefix = FileSystem.GetCommonPath(test_items[0], os.path.abspath(os.getcwd()))
+        else:
+            common_prefix = FileSystem.GetCommonPath(*test_items)
+        
+        for test_item in test_items:
+            if not compiler.IsSupported(test_item):
+                continue
+        
+            # The base name used for all output for this particular test is based on the name
+            # of the test itself.
+            base_output_name = test_item
+            if common_prefix:
+                assert base_output_name.startswith(common_prefix), (base_output_name, common_prefix)
+                base_output_name = base_output_name[len(common_prefix):]
+        
+            for bad_char in [ '\\', '/', ':', '*', '?', '"', '<', '>', '|', ]:
+                base_output_name = base_output_name.replace(bad_char, '_')
+        
+            # Trim output names that are larger, as this will cause problems on Windows systems
+            if Shell.GetEnvironment().Name == "Windows":
+                while len(base_output_name) > 150:
+                    # The logic here assumes that the differentiating parts of the filename appear
+                    # at the end of the filename, meaning we should remove content towards the
+                    # start of the name. This may cause collisions.
+                    base_output_name = "{}...{}".format(base_output_name[:15], base_output_name[45:])
+        
+            final_output_name = os.path.join(output_dir, base_output_name)
+        
+            results.append(QuickObject( complete_results=CompleteResults(test_item),
+                                        output_base_name=final_output_name,
+                                        execution_lock=threading.Lock(),
+                                      ))
+        
+        # ---------------------------------------------------------------------------
+        # |  Compile
+        for result in results:
+            # Note that some compilers rely on COM, which has zany threading perversions which require
+            # that dependent code run on specific threads. Therefore, we are creating context here in the 
+            # main thread rather than delaying the creation to the thread which is closer to the location
+            # in which the context is actually used.
+        
+            # ---------------------------------------------------------------------------
+            def PopulateResults(results, flavor, is_debug):
+                output_dir = os.path.join(result.output_base_name, flavor)
+                if not os.path.isdir(output_dir):
+                    os.makedirs(output_dir)
+        
+                if compiler.IsVerifier:
+                    results.compiler_binary = result.complete_results.Item
                 else:
-                    assert False, compiler.Name
-
-                compile_output = sink.getvalue()
-
-                if compile_result != 0:
-                    output_stream.write(compile_output)
-
-            except:
-                compile_result = -1
-                compile_output = traceback.format_exc()
-
-                raise
-
-            flavor_results.compile_result = compile_result
-            flavor_results.compile_time = start_time.CalculateDelta(as_string=True)
-
-            with open(flavor_results.compile_log, 'w') as f:
-                f.write(compile_output.replace('\r\n', '\n'))
-
-            if compile_result != 0:
-                with build_failures_lock:
-                    build_failures.value += 1
-
-            return compile_result
-
-    # ---------------------------------------------------------------------------
-    
-    debug_tasks = []
-    release_tasks = []
-
-    for result in results:
-        # Rather than add the tasks back-to-back, add all of the debug tasks followed
-        # by all the release tasks. This will help avoid potential build issues
-        # associated with building the same app with slightly different output.
-        debug_tasks.append(TaskPool.Task( result.complete_results.Item,
-                                          "Building '{}' [Debug]".format(result.complete_results.Item),
-                                          BuildThreadProc,
-                                        ))
-
-        release_tasks.append(TaskPool.Task( result.complete_results.Item,
-                                            "Building '{}' [Release]".format(result.complete_results.Item),
-                                            BuildThreadProc,
-                                          ))
-
-    output_stream.SingleLineDoneManager( "Building...",
-                                         # If the compiler operates on individual files, we can execute them in parallel. If
-                                         # the compiler doesn't operate on files, we have to execute them one at a time, as we
-                                         # can't make assumptions about what the compiler is doing or the files that it modifies.
-                                         lambda dm: TaskPool.Execute( tasks=debug_tasks + release_tasks,
-                                                                      num_concurrent_tasks=max_num_concurrent_tasks if compiler.Type == compiler.TypeValue.File else 1,
-                                                                      output_stream=dm.stream,
-                                                                      progress_bar=True,
-                                                                    ),
-                                         done_suffix_functor=lambda: pluralize.no("build failure", build_failures.value),
-                                       )
-
-    # ---------------------------------------------------------------------------
-    # |  Execute
-    test_failures = ModifiableValue(0)
-    test_failures_lock = threading.Lock()
-
-    # Calculate the tests to run
-    test_info_list = []
-    test_tasks = []
-
-    # ---------------------------------------------------------------------------
-    def TestThreadProc(task_index, output_stream, on_status_update):
-        if not no_status:
-            on_status_update("Executing")
-
-        test_info = test_info_list[int(task_index / iterations)]
-
-        # Don't continue on error unless explicitly requested
-        if ( not continue_iterations_on_error and 
-             test_info.result.test_parse_result != None and 
-             test_info.result.test_parse_result != 0
-           ):
-            return
-
-        iteration = (task_index % iterations) + 1
-
+                    results.compile_binary = os.path.join(output_dir, "test")
+                    ext = getattr(compiler, "BinaryExtension", None)
+                    if ext:
+                        results.compile_binary += ext
+        
+                results.compile_log = os.path.join(output_dir, "compile.txt")
+        
+                results.context = compiler.GenerateContextItem( result.complete_results.Item,
+                                                                is_debug=is_debug,
+                                                                is_profile=is_valid_code_coverage_extractor,
+                                                                output_filename=results.compile_binary,
+                                                                force=True,
+                                                              )
+        
+                # Context mey be None if it has been disabled for this specific environment
+                if results.context == None:
+                    results.compile_binary = None
+        
+            # ---------------------------------------------------------------------------
+            
+            if not release_only or not compiler.IsCompiler: 
+                PopulateResults(result.complete_results.debug, "Debug", True)
+        
+            if not debug_only and compiler.IsCompiler:
+                PopulateResults(result.complete_results.release, "Release", False)
+        
+        build_failures = ModifiableValue(0)
+        build_failures_lock = threading.Lock()
+        
         # ---------------------------------------------------------------------------
-        def WriteLog(log_name, content):
-            if content == None:
-                return
-
-            log_filename = os.path.join( test_info.output_base_name,
-                                         test_info.flavor,
-                                         "{0}.{1:06d}.txt".format(log_name, iteration),
-                                       )
-
-            with open(log_filename, 'w') as f:
-                f.write(content.replace('\r\n', '\n'))
-
-            return log_filename
-
+        def BuildThreadProc(task_index, output_stream, on_status_update):
+            if not no_status:
+                on_status_update("Building")
+        
+            result = results[task_index % len(results)]
+        
+            with result.execution_lock:
+                flavor_results = result.complete_results.release if task_index >= len(results) else result.complete_results.debug
+        
+                if flavor_results.context == None:
+                    return
+        
+                start_time = TimeDelta()
+        
+                try:
+                    sink = StringIO()
+        
+                    if compiler.IsCompiler:
+                        compile_result = compiler.Compile(flavor_results.context, sink)
+                        compiler.RemoveTemporaryArtifacts(flavor_results.context)
+                    elif compiler.IsCodeGenerator:
+                        compile_result = compiler.Generate(flavor_results.context, sink)
+                    elif compiler.IsVerifier:
+                        compile_result = compiler.Verify(flavor_results.context, sink)
+                    else:
+                        assert False, compiler.Name
+        
+                    compile_output = sink.getvalue()
+        
+                    if compile_result != 0:
+                        output_stream.write(compile_output)
+        
+                except:
+                    compile_result = -1
+                    compile_output = traceback.format_exc()
+        
+                    raise
+        
+                flavor_results.compile_result = compile_result
+                flavor_results.compile_time = start_time.CalculateDelta(as_string=True)
+        
+                with open(flavor_results.compile_log, 'w') as f:
+                    f.write(compile_output.replace('\r\n', '\n'))
+        
+                if compile_result != 0:
+                    with build_failures_lock:
+                        build_failures.value += 1
+        
+                return compile_result
+        
         # ---------------------------------------------------------------------------
         
-        final_result = 0
-
-        try:
-            execute_command_line = test_parser.CreateInvokeCommandLine(test_info.result.context, debug_on_error)
-            
-            execute_result = code_coverage_extractor.Execute( compiler, 
-                                                              test_info.result.context,
-                                                              execute_command_line, 
-                                                            )
-
-            # Copy the test results
-            test_info.result.test_result = execute_result.test_result
-            test_info.result.test_time = execute_result.test_duration
-            test_info.result.test_log = WriteLog("test", execute_result.test_output)
-
-            final_result = final_result or test_info.result.test_result
-
-        except:
-            output = traceback.format_exc()
-
-            test_info.result.test_result = -1
-            test_info.result.test_log = WriteLog("test", output)
-
-            output_stream.write(output)
-
-            return -1
-
-        # Copy the code coverage information
-        test_info.result.coverage_data = execute_result.data
-        test_info.result.coverage_result = execute_result.coverage_result
-        test_info.result.coverage_log = WriteLog("code_coverage_extractor", execute_result.coverage_output)
-        test_info.result.coverage_time = execute_result.coverage_duration
-        test_info.result.coverage_percentage = execute_result.total_percentage
-        test_info.result.coverage_percentages = execute_result.individual_percentages
-
-        final_result = final_result or test_info.result.coverage_result
-
-        # Code coverage validation information
-        if test_info.result.coverage_result != None:
-            try:
-                coverage_result = code_coverage_validator.Validate(test_info.test_item, test_info.result.coverage_percentage)
-
-                test_info.result.coverage_validation_result = coverage_result[0]
-                test_info.result.coverage_validation_min = coverage_result[1]
-
-            except:
-                test_info.result.coverage_validation_result = -1
-
-            final_result = final_result or test_info.result.coverage_validation_result
-
-        # Parse test results
-        start_time = TimeDelta()
-
-        test_parse_result = test_parser.Parse(execute_result.test_output)
-        test_parse_time = start_time.CalculateDelta(as_string=True)
-
-        if test_parse_result != 0:
-            output_stream.write(execute_result.test_output)
-
-        if test_info.result.test_parse_result == None or test_info.result.test_parse_result == 0:
-            test_info.result.test_parse_result = test_parse_result
-            test_info.result.test_parse_time = test_parse_time
-            final_result = final_result or test_info.result.test_parse_result
-            
-        if final_result != 0:
-            with test_failures_lock:
-                test_failures.value += 1
-
-        return final_result
-
-    # ---------------------------------------------------------------------------
-    def EnqueueTestIfNecessary( result,
-                                flavor,
-                                test_item,
-                                output_base_name,
-                              ):
-        if result.context == None or result.compile_result != 0:
-            return
-
-        test_info_list.append(QuickObject( result=result,
-                                           flavor=flavor,
-                                           test_item=test_item,
-                                           output_base_name=output_base_name,
-                                           should_continue=True,
-                                         ))
-
-        for iteration in six.moves.range(1, iterations + 1):
-            additional_desc = ''
-
-            if iterations > 1:
-                additional_desc = " - Iteration {} of {}".format(iteration, iterations)
-
-            test_tasks.append(TaskPool.Task( test_item,
-                                             "Executing '{}' [{}]{}".format(result.compile_binary or test_item, flavor, additional_desc),
-                                             TestThreadProc,
-                                           ))
-
-    # ---------------------------------------------------------------------------
-    
-    for result in results:
-        EnqueueTestIfNecessary(result.complete_results.debug, "Debug", result.complete_results.Item, result.output_base_name)
-        EnqueueTestIfNecessary(result.complete_results.release, "Release", result.complete_results.Item, result.output_base_name)
-
-    if test_tasks:
-        output_stream.SingleLineDoneManager( "Executing...",
-                                             lambda dm: TaskPool.Execute( tasks=test_tasks,
-                                                                          num_concurrent_tasks=max_num_concurrent_tasks if execute_in_parallel else 1,
+        debug_tasks = []
+        release_tasks = []
+        
+        for result in results:
+            # Rather than add the tasks back-to-back, add all of the debug tasks followed
+            # by all the release tasks. This will help avoid potential build issues
+            # associated with building the same app with slightly different output.
+            debug_tasks.append(TaskPool.Task( result.complete_results.Item,
+                                              "Building '{}' [Debug]".format(result.complete_results.Item),
+                                              BuildThreadProc,
+                                            ))
+        
+            release_tasks.append(TaskPool.Task( result.complete_results.Item,
+                                                "Building '{}' [Release]".format(result.complete_results.Item),
+                                                BuildThreadProc,
+                                              ))
+        
+        output_stream.SingleLineDoneManager( "Building...",
+                                             # If the compiler operates on individual files, we can execute them in parallel. If
+                                             # the compiler doesn't operate on files, we have to execute them one at a time, as we
+                                             # can't make assumptions about what the compiler is doing or the files that it modifies.
+                                             lambda dm: TaskPool.Execute( tasks=debug_tasks + release_tasks,
+                                                                          num_concurrent_tasks=max_num_concurrent_tasks if compiler.Type == compiler.TypeValue.File else 1,
                                                                           output_stream=dm.stream,
                                                                           progress_bar=True,
                                                                         ),
-                                             done_suffix_functor=lambda: pluralize.no("test failure", test_failures.value),
-                                             done_suffix='\n',
+                                             done_suffix_functor=lambda: pluralize.no("build failure", build_failures.value),
                                            )
-
-    return [ result.complete_results for result in results ]
+        
+        # ---------------------------------------------------------------------------
+        # |  Execute
+        test_failures = ModifiableValue(0)
+        test_failures_lock = threading.Lock()
+        
+        # Calculate the tests to run
+        test_info_list = []
+        test_tasks = []
+        
+        # ---------------------------------------------------------------------------
+        def TestThreadProc(task_index, output_stream, on_status_update):
+            if not no_status:
+                on_status_update("Executing")
+        
+            test_info = test_info_list[int(task_index / iterations)]
+        
+            # Don't continue on error unless explicitly requested
+            if ( not continue_iterations_on_error and 
+                 test_info.result.test_parse_result != None and 
+                 test_info.result.test_parse_result != 0
+               ):
+                return
+        
+            iteration = (task_index % iterations) + 1
+        
+            # ---------------------------------------------------------------------------
+            def WriteLog(log_name, content):
+                if content == None:
+                    return
+        
+                log_filename = os.path.join( test_info.output_base_name,
+                                             test_info.flavor,
+                                             "{0}.{1:06d}.txt".format(log_name, iteration),
+                                           )
+        
+                with open(log_filename, 'w') as f:
+                    f.write(content.replace('\r\n', '\n'))
+        
+                return log_filename
+        
+            # ---------------------------------------------------------------------------
+            
+            final_result = 0
+        
+            try:
+                execute_command_line = test_parser.CreateInvokeCommandLine(test_info.result.context, debug_on_error)
+                
+                execute_result = code_coverage_extractor.Execute( compiler, 
+                                                                  test_info.result.context,
+                                                                  execute_command_line, 
+                                                                )
+        
+                # Copy the test results
+                test_info.result.test_result = execute_result.test_result
+                test_info.result.test_time = execute_result.test_duration
+                test_info.result.test_log = WriteLog("test", execute_result.test_output)
+        
+                final_result = final_result or test_info.result.test_result
+        
+            except:
+                output = traceback.format_exc()
+        
+                test_info.result.test_result = -1
+                test_info.result.test_log = WriteLog("test", output)
+        
+                output_stream.write(output)
+        
+                return -1
+        
+            # Copy the code coverage information
+            test_info.result.coverage_data = execute_result.data
+            test_info.result.coverage_result = execute_result.coverage_result
+            test_info.result.coverage_log = WriteLog("code_coverage_extractor", execute_result.coverage_output)
+            test_info.result.coverage_time = execute_result.coverage_duration
+            test_info.result.coverage_percentage = execute_result.total_percentage
+            test_info.result.coverage_percentages = execute_result.individual_percentages
+        
+            final_result = final_result or test_info.result.coverage_result
+        
+            # Code coverage validation information
+            if test_info.result.coverage_result != None:
+                try:
+                    coverage_result = code_coverage_validator.Validate(test_info.test_item, test_info.result.coverage_percentage)
+        
+                    test_info.result.coverage_validation_result = coverage_result[0]
+                    test_info.result.coverage_validation_min = coverage_result[1]
+        
+                except:
+                    test_info.result.coverage_validation_result = -1
+        
+                final_result = final_result or test_info.result.coverage_validation_result
+        
+            # Parse test results
+            start_time = TimeDelta()
+        
+            test_parse_result = test_parser.Parse(execute_result.test_output)
+            test_parse_time = start_time.CalculateDelta(as_string=True)
+        
+            if test_parse_result != 0:
+                output_stream.write(execute_result.test_output)
+        
+            if test_info.result.test_parse_result == None or test_info.result.test_parse_result == 0:
+                test_info.result.test_parse_result = test_parse_result
+                test_info.result.test_parse_time = test_parse_time
+                final_result = final_result or test_info.result.test_parse_result
+                
+            if final_result != 0:
+                with test_failures_lock:
+                    test_failures.value += 1
+        
+            return final_result
+        
+        # ---------------------------------------------------------------------------
+        def EnqueueTestIfNecessary( result,
+                                    flavor,
+                                    test_item,
+                                    output_base_name,
+                                  ):
+            if result.context == None or result.compile_result != 0:
+                return
+        
+            test_info_list.append(QuickObject( result=result,
+                                               flavor=flavor,
+                                               test_item=test_item,
+                                               output_base_name=output_base_name,
+                                               should_continue=True,
+                                             ))
+        
+            for iteration in six.moves.range(1, iterations + 1):
+                additional_desc = ''
+        
+                if iterations > 1:
+                    additional_desc = " - Iteration {} of {}".format(iteration, iterations)
+        
+                test_tasks.append(TaskPool.Task( test_item,
+                                                 "Executing '{}' [{}]{}".format(result.compile_binary or test_item, flavor, additional_desc),
+                                                 TestThreadProc,
+                                               ))
+        
+        # ---------------------------------------------------------------------------
+        
+        for result in results:
+            EnqueueTestIfNecessary(result.complete_results.debug, "Debug", result.complete_results.Item, result.output_base_name)
+            EnqueueTestIfNecessary(result.complete_results.release, "Release", result.complete_results.Item, result.output_base_name)
+        
+        if test_tasks:
+            output_stream.SingleLineDoneManager( "Executing...",
+                                                 lambda dm: TaskPool.Execute( tasks=test_tasks,
+                                                                              num_concurrent_tasks=max_num_concurrent_tasks if execute_in_parallel else 1,
+                                                                              output_stream=dm.stream,
+                                                                              progress_bar=True,
+                                                                            ),
+                                                 done_suffix_functor=lambda: pluralize.no("test failure", test_failures.value),
+                                                 done_suffix='\n',
+                                               )
+        
+        return [ result.complete_results for result in results ]
 
 # ---------------------------------------------------------------------------
 def ExtractTestItems( input_dir,
@@ -524,105 +525,104 @@ def PrettyPrint( complete_results,
                ):
     pretty_print = _ShouldPrettyPrint(output_stream)
 
-    if pretty_print:
-        output_stream = StreamDecorator.InitAnsiSequenceStream( output_stream,
-                                                                preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
-                                                                autoreset=True,
-                                                              )
-
-        result_re = re.compile(r"(?P<prefix>(?P<header>.*?)Result:\s+)(?P<value>.+)")
-
-    # ---------------------------------------------------------------------------
-    def WriteVerboseResults(name, results):
+    with StreamDecorator.GenerateAnsiSequenceStream( output_stream,
+                                                     preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
+                                                     autoreset=True,
+                                                   ) as output_stream:
+        if pretty_print:
+            result_re = re.compile(r"(?P<prefix>(?P<header>.*?)Result:\s+)(?P<value>.+)")
         
-        if results == None:
-            return
-
         # ---------------------------------------------------------------------------
-        def WriteContent(header, filename):
-            if filename == None or not os.path.isfile(filename):
+        def WriteVerboseResults(name, results):
+            
+            if results == None:
                 return
-
-            output_stream.write(textwrap.dedent(
-                """\
-
-                --------------------------------------------------------------------------------
-                | {name:<77}|
-                --------------------------------------------------------------------------------
-                {content}
-                """).format( name="{} <{}>".format(name, header),
-                             content=open(filename).read().strip(),
-                           ))
-
+        
+            # ---------------------------------------------------------------------------
+            def WriteContent(header, filename):
+                if filename == None or not os.path.isfile(filename):
+                    return
+        
+                output_stream.write(textwrap.dedent(
+                    """\
+        
+                    --------------------------------------------------------------------------------
+                    | {name:<77}|
+                    --------------------------------------------------------------------------------
+                    {content}
+                    """).format( name="{} <{}>".format(name, header),
+                                 content=open(filename).read().strip(),
+                               ))
+        
+            # ---------------------------------------------------------------------------
+            
+            WriteContent("Compile Log", results.compile_log)
+            WriteContent("Execution Log", results.test_log)
+            WriteContent("Code Coverage Log", results.coverage_log)
+        
+        # ---------------------------------------------------------------------------
+        def ToColorString(value):
+            value = value.lower()
+        
+            if value.startswith("succeeded"):
+                color = colorama.Fore.GREEN
+            elif value.startswith("failed"):
+                color = colorama.Fore.RED
+            elif value.startswith("unknown"):
+                color = colorama.Fore.YELLOW
+            elif value.startswith("n/a"):
+                color = colorama.Fore.WHITE
+            else:
+                color = ''
+        
+            if color:
+                color += colorama.Style.BRIGHT
+        
+            return color
+        
         # ---------------------------------------------------------------------------
         
-        WriteContent("Compile Log", results.compile_log)
-        WriteContent("Execution Log", results.test_log)
-        WriteContent("Code Coverage Log", results.coverage_log)
-
-    # ---------------------------------------------------------------------------
-    def ToColorString(value):
-        value = value.lower()
-
-        if value.startswith("succeeded"):
-            color = colorama.Fore.GREEN
-        elif value.startswith("failed"):
-            color = colorama.Fore.RED
-        elif value.startswith("unknown"):
-            color = colorama.Fore.YELLOW
-        elif value.startswith("n/a"):
-            color = colorama.Fore.WHITE
-        else:
-            color = ''
-
-        if color:
-            color += colorama.Style.BRIGHT
-
-        return color
-
-    # ---------------------------------------------------------------------------
-    
-    for complete_result in complete_results:
-        result_data = complete_result.ToString( compiler,
-                                                test_parser,
-                                                code_coverage_extractor,
-                                                code_coverage_validator,
-                                              )
-
-        if not pretty_print:
-            output_stream.write("\n{}".format(result_data))
-            continue
-    
-        for line in result_data.split('\n'):
-            line = "{}\n".format(line)
-
-            if ( line.startswith("==") or 
-                 line.startswith("--") or 
-                 (len(line) >= 3 and line[0] == '|' and line[-2] == '|')
-               ):
-                output_stream.write(colorama.Fore.WHITE + colorama.Style.BRIGHT + line)
+        for complete_result in complete_results:
+            result_data = complete_result.ToString( compiler,
+                                                    test_parser,
+                                                    code_coverage_extractor,
+                                                    code_coverage_validator,
+                                                  )
+        
+            if not pretty_print:
+                output_stream.write("\n{}".format(result_data))
                 continue
-
-            match = result_re.match(line)
-            if not match:
-                output_stream.write(colorama.Fore.WHITE + colorama.Style.NORMAL + line)
-                continue
-
-            prefix = match.group("prefix")
-            value = match.group("value")
-
-            color_string = ToColorString(value)
-
-            if not match.group("header").strip():
-                output_stream.write("{}{}".format(color_string, prefix))
-            else:
-                output_stream.write(prefix)
-
-            output_stream.write("{}{}\n".format(color_string, value))
-
-        if verbose:
-            WriteVerboseResults("Debug", complete_result.debug)
-            WriteVerboseResults("Release", complete_result.release)
+        
+            for line in result_data.split('\n'):
+                line = "{}\n".format(line)
+        
+                if ( line.startswith("==") or 
+                     line.startswith("--") or 
+                     (len(line) >= 3 and line[0] == '|' and line[-2] == '|')
+                   ):
+                    output_stream.write(colorama.Fore.WHITE + colorama.Style.BRIGHT + line)
+                    continue
+        
+                match = result_re.match(line)
+                if not match:
+                    output_stream.write(colorama.Fore.WHITE + colorama.Style.NORMAL + line)
+                    continue
+        
+                prefix = match.group("prefix")
+                value = match.group("value")
+        
+                color_string = ToColorString(value)
+        
+                if not match.group("header").strip():
+                    output_stream.write("{}{}".format(color_string, prefix))
+                else:
+                    output_stream.write(prefix)
+        
+                output_stream.write("{}{}\n".format(color_string, value))
+        
+            if verbose:
+                WriteVerboseResults("Debug", complete_result.debug)
+                WriteVerboseResults("Release", complete_result.release)
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
@@ -829,64 +829,63 @@ def ExecuteTree( input_dir,
     tests = [ 0, ]
     failures = [ 0, ]
 
-    if _ShouldPrettyPrint(output_stream):
-        output_stream = StreamDecorator.InitAnsiSequenceStream( output_stream,
-                                                                preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
-                                                                autoreset=True,
-                                                              )
-
+    with StreamDecorator.GenerateAnsiSequenceStream( output_stream,
+                                                     preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
+                                                     autoreset=True,
+                                                   ) as output_stream:
+        if _ShouldPrettyPrint(output_stream):
+            # ---------------------------------------------------------------------------
+            def Print(content):
+                if content.startswith("Succeeded"):
+                    output_stream.write("{}{}{}".format(colorama.Fore.GREEN, colorama.Style.BRIGHT, content))
+                elif content.startswith("Failed"):
+                    output_stream.write("{}{}{}".format(colorama.Fore.RED, colorama.Style.BRIGHT, content))
+                else:
+                    output_stream.write("{}{}{}".format(colorama.Fore.WHITE, colorama.Style.BRIGHT, content))
+        
+            # ---------------------------------------------------------------------------
+        else:
+            # ---------------------------------------------------------------------------
+            def Print(content):
+                output_stream.write(content)
+        
+            # ---------------------------------------------------------------------------
+            
         # ---------------------------------------------------------------------------
-        def Print(content):
-            if content.startswith("Succeeded"):
-                output_stream.write("{}{}{}".format(colorama.Fore.GREEN, colorama.Style.BRIGHT, content))
-            elif content.startswith("Failed"):
-                output_stream.write("{}{}{}".format(colorama.Fore.RED, colorama.Style.BRIGHT, content))
-            else:
-                output_stream.write("{}{}{}".format(colorama.Fore.WHITE, colorama.Style.BRIGHT, content))
-
-        # ---------------------------------------------------------------------------
-    else:
-        # ---------------------------------------------------------------------------
-        def Print(content):
-            output_stream.write(content)
-
+        def Output(test_item, result_type, results):
+            result = results.CompositeResult()
+            if result == None:
+                return
+        
+            Print("{result} {item}, {result_type}, {time}\n".format( result="Succeeded:" if result == 0 else "Failed:   ",
+                                                                     item=test_item,
+                                                                     result_type=result_type,
+                                                                     time=results.TotalTime(),
+                                                                   ))
+        
+            tests[0] += 1
+            if result != 0:
+                failures[0] += 1
+        
         # ---------------------------------------------------------------------------
         
-    # ---------------------------------------------------------------------------
-    def Output(test_item, result_type, results):
-        result = results.CompositeResult()
-        if result == None:
-            return
-
-        Print("{result} {item}, {result_type}, {time}\n".format( result="Succeeded:" if result == 0 else "Failed:   ",
-                                                                 item=test_item,
-                                                                 result_type=result_type,
-                                                                 time=results.TotalTime(),
-                                                               ))
-
-        tests[0] += 1
-        if result != 0:
-            failures[0] += 1
-
-    # ---------------------------------------------------------------------------
-    
-    for complete_result in complete_results:
-        Output(complete_result.Item, "Debug", complete_result.debug)
-        Output(complete_result.Item, "Release", complete_result.release)
-
-    Print("\n{percentage:.02f}% - {total} built and run with {failures} (Total execution time: {time}).\n".format( percentage=((float(tests[0]) - failures[0]) / tests[0]) * 100,
-                                                                                                                   total=pluralize.no("test", tests[0]),
-                                                                                                                   failures=pluralize.no("failure", failures[0]),
-                                                                                                                   time=start_time.CalculateDelta(as_string=True),
-                                                                                                                 ))
-
-    result = 0
-    for complete_result in complete_results:
-        result = complete_result.CompositeResult()
-        if result != 0:
-            break
-
-    return result
+        for complete_result in complete_results:
+            Output(complete_result.Item, "Debug", complete_result.debug)
+            Output(complete_result.Item, "Release", complete_result.release)
+        
+        Print("\n{percentage:.02f}% - {total} built and run with {failures} (Total execution time: {time}).\n".format( percentage=((float(tests[0]) - failures[0]) / tests[0]) * 100,
+                                                                                                                       total=pluralize.no("test", tests[0]),
+                                                                                                                       failures=pluralize.no("failure", failures[0]),
+                                                                                                                       time=start_time.CalculateDelta(as_string=True),
+                                                                                                                     ))
+        
+        result = 0
+        for complete_result in complete_results:
+            result = complete_result.CompositeResult()
+            if result != 0:
+                break
+        
+        return result
     
 # ---------------------------------------------------------------------------
 @CommandLine.EntryPoint( input_dir=CommandLine.EntryPoint.ArgumentInfo(description="Root directory used to search for potential test files."),

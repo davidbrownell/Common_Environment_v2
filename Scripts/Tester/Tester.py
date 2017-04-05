@@ -46,6 +46,12 @@ sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
 with CallOnExit(lambda: sys.path.pop(0)):
     from SourceRepositoryTools import DynamicPluginArchitecture as DPA
 
+# This code looks benign, but will prepare sys.stdout and sys.stderr for use with
+# ansi escape codes.
+import colorama
+
+colorama.init()
+
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
@@ -148,6 +154,7 @@ def Test( configuration,
           xml_output=False,
           no_status=False,
           output_stream=sys.stdout,
+          print_command_line=False,
         ):
     assert configuration
     assert os.path.exists(filename_or_dir), filename_or_dir
@@ -201,7 +208,12 @@ def Test( configuration,
 
     command_line.append("/preserve_ansi_escape_sequences")
     
-    return Process.ExecuteWithColorama( "python {}".format(' '.join([ '"{}"'.format(arg) for arg in command_line ])),
+    command_line = "python {}".format(' '.join([ '"{}"'.format(arg) for arg in command_line ]))
+
+    if print_command_line:
+        output_stream.write("Command Line:\n{}\n\n".format(command_line))
+
+    return Process.ExecuteWithColorama( command_line,
                                         output_stream=output_stream,
                                       )
     
@@ -225,6 +237,7 @@ def TestFile( input,
               xml_output=False,
               no_status=False,
               output_stream=sys.stdout,
+              print_command_line=False,
             ):
     """Determines the configuration of the provided file and then runs its test."""
     
@@ -268,6 +281,7 @@ def TestFile( input,
                  xml_output=xml_output,
                  no_status=no_status,
                  output_stream=output_stream,
+                 print_command_line=print_command_line,
                )
 
 # ---------------------------------------------------------------------------
@@ -294,6 +308,7 @@ def TestType( configuration,
               xml_output=False,
               no_status=False,
               output_stream=sys.stdout,
+              print_command_line=False,
             ):
     """Runs tests of the specific type based on the subdir name provided."""
     
@@ -314,6 +329,7 @@ def TestType( configuration,
                  xml_output=xml_output,
                  no_status=no_status,
                  output_stream=output_stream,
+                 print_command_line=print_command_line,
                )
 
 # ----------------------------------------------------------------------
@@ -338,6 +354,7 @@ def TestAll( input_dir,
              xml_output=False,
              no_status=False,
              output_stream=sys.stdout,
+             print_command_line=False,
            ):
     with StreamDecorator(output_stream).DoneManager( done_prefix="\n\nComposite Results: ",
                                                      line_prefix='',
@@ -366,6 +383,7 @@ def TestAll( input_dir,
                                            xml_output=xml_output,
                                            no_status=no_status,
                                            output_stream=this_dm.stream,
+                                           print_command_line=print_command_line,
                                          )
 
             return dm.result
