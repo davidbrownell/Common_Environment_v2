@@ -42,11 +42,7 @@ _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ---------------------------------------------------------------------------
 
-# This code looks benign, but will prepare sys.stdout and sys.stderr for use with
-# ansi escape codes.
-import colorama
-
-colorama.init()
+StreamDecorator.InitAnsiSequenceStreams()
 
 # ---------------------------------------------------------------------------
 # |
