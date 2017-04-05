@@ -34,17 +34,11 @@ then
     # should not be duplicated in other SetupEnvironment.cmd files.
     # 
     # *** Python is hard-coded; this file will need to be updated should the python version change ***
+
     export DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL="$(cd "$(dirname "$0")" && pwd)"
-    export PYTHON_BINARY=/usr/bin/python
-    
-    $PYTHON_BINARY $DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL/SourceRepositoryTools/Impl/SetupEnvironment_LinuxPreinstall.py
-    error_bit=$?
-    if [ $error_bit != 0 ];
-    then
-        echo
-        echo "ERROR: Linux preinstall activities were not successfully completed."
-        echo
-    fi
+
+    linux_distro=`python -c "import platform; print platform.linux_distribution()[0]"`
+    export PYTHON_BINARY=$DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL/Tools/Python/v2.7.10/$linux_distro/bin/python
     # Common_Environment END
     
     if [ "$DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL" = "" ];
