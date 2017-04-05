@@ -386,7 +386,7 @@ def TestAll( input_dir,
                                            print_command_line=print_command_line,
                                          )
 
-            return dm.result
+        return dm.result
 
 # ---------------------------------------------------------------------------
 @CommandLine.EntryPoint
