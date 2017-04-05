@@ -434,8 +434,8 @@ def MatchAllTests( input_dir,
                 this_dm.result = MatchTests( configuration,
                                              input_dir,
                                              test_type,
-                                             verbose,
                                              output_stream=this_dm.stream,
+                                             verbose=verbose,
                                            )
 
         return dm.result
