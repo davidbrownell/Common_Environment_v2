@@ -46,19 +46,19 @@ def ExecuteWithColorama( command_line,
                          convert_newlines=True,
                          line_delimited_output=False,
                          environment=None,
+                         output_stream=sys.stdout,
                        ):
     import colorama
+    
+    with CallOnExit(lambda: output_stream.write(colorama.Style.RESET_ALL)):
+        result = _ExecuteImpl( command_line,
+                               convert_newlines=convert_newlines,
+                               environment=environment,
+                               optional_output_stream_or_functor=output_stream,
+                               line_delimited_output=line_delimited_output,
+                             )
 
-    if not isinstance(sys.stdout, StreamDecorator) and not hasattr(sys.stdout, "_StreamWrapper__wrapped"):
-        colorama.init(autoreset=False)
-        
-    with CallOnExit(lambda: sys.stdout.write(colorama.Style.RESET_ALL)):
-        return _ExecuteImpl( command_line,
-                             convert_newlines=convert_newlines,
-                             environment=environment,
-                             optional_output_stream_or_functor=sys.stdout,
-                             line_delimited_output=line_delimited_output,
-                           )
+    return result
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------

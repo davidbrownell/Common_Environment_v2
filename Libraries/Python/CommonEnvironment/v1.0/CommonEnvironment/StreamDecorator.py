@@ -24,8 +24,8 @@ from six import StringIO
 
 from contextlib import contextmanager
 
-from . import ModifiableValue, Any
-from .TimeDelta import TimeDelta
+from CommonEnvironment import ModifiableValue, Any
+from CommonEnvironment.TimeDelta import TimeDelta
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -214,20 +214,7 @@ class StreamDecorator(object):
         done_prefix = [ done_prefix, ]
         done_suffix = [ done_suffix, ]
 
-        # ----------------------------------------------------------------------
-        class Info(object):
-            def __init__(self, stream, result=0):
-                self.stream                 = stream
-                self.result                 = result
-
-                self.stream._parent_info = self         # <Access to a protected member of a client class> pylint: disable = W0212
-
-        # ----------------------------------------------------------------------
-        
-        info = Info(StreamDecorator( self,
-                                     one_time_prefix='\n' if line_prefix else '',
-                                     line_prefix=line_prefix,
-                                   ))
+        info = self._DoneManagerInfo(self, line_prefix)
 
         # ----------------------------------------------------------------------
         def Cleanup():
@@ -279,14 +266,14 @@ class StreamDecorator(object):
 
             # Propagate the result
             if info.result != 0:
-                stream = self
+                for index, dm in enumerate(info.Enumerate()):
+                    if index == 0:
+                        continue
 
-                while hasattr(stream, "_parent_info"):
-                    if stream._parent_info.result != 0:                     # <Access to a protected member of a client class> pylint: disable = W0212, E1101
+                    if dm.result != 0:
                         break
-
-                    stream._parent_info.result = info.result                # <Access to a protected member of a client class> pylint: disable = W0212, E1101
-                    stream = stream._parent_info.stream                     # <Access to a protected member of a client class> pylint: disable = W0212, E1101
+                
+                    dm.result = info.result
 
         # ----------------------------------------------------------------------
         
@@ -350,6 +337,7 @@ class StreamDecorator(object):
         """
 
         has_errors = ModifiableValue(False)
+        dm_ref = ModifiableValue(None)
 
         # ----------------------------------------------------------------------
         def DonePrefix():
@@ -360,7 +348,21 @@ class StreamDecorator(object):
             
             # Move up a line and display the original status message
             # along with the done notification.
-            return "\033[1A\r{}DONE! ".format(status)
+
+            # Try to get the whitespace associated with all parents (if any).
+            whitespace_prefix_stack = []
+
+            for index, dm in enumerate(dm_ref.value.Enumerate()):
+                if index == 0:
+                    continue
+
+                whitespace_prefix_stack.append(dm.stream._line_prefix)
+
+            whitespace_prefix = ''
+            while whitespace_prefix_stack:
+                whitespace_prefix += whitespace_prefix_stack.pop()(len(whitespace_prefix))
+
+            return "\033[1A\r{}{}DONE! ".format(whitespace_prefix, status)
 
         # ----------------------------------------------------------------------
         
@@ -369,8 +371,10 @@ class StreamDecorator(object):
                                *done_manager_args,
                                **done_manager_kwargs
                              ) as dm:
+            dm_ref.value = dm
+
             dm.result = functor(dm)
-            has_errors.value = dm.result != 0
+            has_errors.value = dm.result not in [ 0, None, ]
 
             return dm.result
 
@@ -449,6 +453,112 @@ class StreamDecorator(object):
         return '\n\n'.join(paragraphs)
         
     # ----------------------------------------------------------------------
+    @staticmethod
+    def GenerateAnsiSequenceStream( stream, 
+                                    preserve_ansi_escape_sequences=False, 
+                                    autoreset=False,
+                                    do_not_modify_std_streams=False,
+                                  ):
+        # ----------------------------------------------------------------------
+        @contextmanager
+        def Func():
+            # When colorama was initialized, sys.stdout and sys.stderr were
+            # configured to strip and convert ansi escape sequences. However,
+            # we may want to preserve those sequences. Assume that the stream 
+            # ultimately resolves to sys.stdout and/or sys.stderr when
+            # preserve_ansi_escape_sequence is True.
+            if not preserve_ansi_escape_sequences:
+                yield stream
+                return
+
+            import colorama.initialise as cinit
+            from colorama.ansitowin32 import AnsiToWin32
+
+            from CommonEnvironment.CallOnExit import CallOnExit
+
+            restore_functors = []
+
+            if do_not_modify_std_streams:
+                restore_functors.append(lambda: None) # Necessary because CallOnExit requires at least one functor
+            else:
+                # ----------------------------------------------------------------------
+                def CreateConvertor(stream):
+                    convertor = AnsiToWin32( stream,
+                                             strip=False,
+                                             convert=False,
+                                             autoreset=autoreset,
+                                           )
+                    convertor._modified = True
+                    
+                    return convertor 
+
+                # ----------------------------------------------------------------------
+                def RestoreConvertor(wrapped_stream, original_convertor):
+                    wrapped_stream._StreamWrapper__convertor = original_convertor
+
+                # ----------------------------------------------------------------------
+
+                for wrapped_stream, original_stream in [ ( cinit.wrapped_stdout, cinit.orig_stdout ),
+                                                         ( cinit.wrapped_stderr, cinit.orig_stderr ),
+                                                       ]:
+                    original_convertor = wrapped_stream._StreamWrapper__convertor
+
+                    if not getattr(original_convertor, "_modified", False):
+                        wrapped_stream._StreamWrapper__convertor = CreateConvertor(original_stream)
+                        restore_functors.append(lambda wrapped_stream=wrapped_stream, original_convertor=original_convertor: RestoreConvertor(wrapped_stream, original_convertor))
+
+                if restore_functors:
+                    cinit.reinit()
+                    restore_functors.append(cinit.reinit)
+                
+            with CallOnExit(*restore_functors):
+                if getattr(stream, "_StreamWrapper__wrapped", None) == cinit.orig_stdout:
+                    this_stream = cinit.wrapped_stdout
+                else:
+                    this_stream = stream
+
+                yield cinit.wrap_stream( this_stream,
+                                         convert=False,
+                                         strip=False,
+                                         autoreset=autoreset,
+                                         wrap=True,
+                                       )
+
+        # ----------------------------------------------------------------------
+        
+        return Func()
+
+    # ----------------------------------------------------------------------
     # |  Private Data
     _eol_regex = re.compile(r"(?P<eol>\r?\n)")
     
+    # ----------------------------------------------------------------------
+    # |  Private Types
+    class _DoneManagerInfo(object):
+
+        # ----------------------------------------------------------------------
+        def __init__(self, stream_decorator, line_prefix, result=0):
+            self.stream                     = StreamDecorator( stream_decorator,
+                                                               one_time_prefix='\n' if line_prefix else '',
+                                                               line_prefix=line_prefix,
+                                                             )
+            self.result                     = result
+
+            self.stream._done_manager       = self
+
+        # ----------------------------------------------------------------------
+        def Enumerate(self):
+            # ----------------------------------------------------------------------
+            def Impl(decorator):
+                for stream in decorator._streams:
+                    if hasattr(stream, "_done_manager"):
+                        yield stream._done_manager
+
+                        for dm in Impl(stream._done_manager.stream):
+                            yield dm
+
+            # ----------------------------------------------------------------------
+            
+            yield self
+            for dm in Impl(self.stream):
+                yield dm
