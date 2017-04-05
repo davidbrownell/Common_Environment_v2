@@ -341,12 +341,11 @@ class StreamDecorator(object):
         once the activity is complete.
         """
 
-        has_errors = ModifiableValue(False)
         dm_ref = ModifiableValue(None)
 
         # ----------------------------------------------------------------------
         def DonePrefix():
-            if has_errors.value:
+            if dm_ref.value.result not in [ None, 0, ]:
                 # Don't eliminate any data that was displayed
                 # as part of the error.
                 return "DONE! "
@@ -378,8 +377,11 @@ class StreamDecorator(object):
                              ) as dm:
             dm_ref.value = dm
 
-            dm.result = functor(dm)
-            has_errors.value = dm.result not in [ 0, None, ]
+            try:
+                dm.result = functor(dm)
+            except:
+                dm.result = -1
+                raise
 
             return dm.result
 
