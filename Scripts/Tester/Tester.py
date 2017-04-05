@@ -46,11 +46,8 @@ sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
 with CallOnExit(lambda: sys.path.pop(0)):
     from SourceRepositoryTools import DynamicPluginArchitecture as DPA
 
-# This code looks benign, but will prepare sys.stdout and sys.stderr for use with
-# ansi escape codes.
-import colorama
-
-colorama.init()
+# ----------------------------------------------------------------------
+StreamDecorator.InitAnsiSequenceStreams()
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
