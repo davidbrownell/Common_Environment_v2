@@ -46,6 +46,7 @@ def TemplateStringToRegex( content,
                            optional_tags=None,          # []
                            tag_regex=None,              # TemplateStringTagRegex
                            as_string=False,
+                           match_whole_string=True,
                          ):
     newline_tag = "__<<!!??Newline??!!>>__"
     whitespace_tag = "__<<!!??Whitespace??!!>>__"
@@ -102,7 +103,11 @@ def TemplateStringToRegex( content,
         prev_index = match.end()
 
     output.append(re.escape(content[prev_index :]))
-    output = "^{}$".format(''.join(output))
+    
+    output = ''.join(output)
+    
+    if match_whole_string:
+        output = "^{}$".format(output)
 
     # Repace newlines and whitespace
     for tag, replacement in [ ( newline_tag, r"\r?\n" ),
