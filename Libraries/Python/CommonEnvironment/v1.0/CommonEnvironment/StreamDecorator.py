@@ -79,7 +79,8 @@ class StreamDecorator(object):
         self._column                        = 0
         self._indent_stack                  = []
         self._flush_after_write             = flush_after_write
-        
+        self._wrote_content                 = False
+
         self.IsSet                          = Any(self._streams, lambda stream: stream and getattr(stream, "IsSet", True))
         self.IsAssociatedStream             = is_associated_stream or Any(self._streams, lambda stream: stream and getattr(stream, "IsAssociatedStream", False))
 
@@ -131,6 +132,8 @@ class StreamDecorator(object):
 
         if content:
             Impl(content)
+
+        self._wrote_content = True
 
         return self
 
@@ -349,13 +352,14 @@ class StreamDecorator(object):
         once the activity is complete.
         """
 
+        # <Has no instance of 'member'> pylint: disable = E1101
         dm_ref = ModifiableValue(None)
+        wrote_content = ModifiableValue(False)
 
         # ----------------------------------------------------------------------
         def DonePrefix():
-            if dm_ref.value.result not in [ None, 0, ]:
+            if wrote_content.value:
                 # Don't eliminate any data that was displayed
-                # as part of the error.
                 return "DONE! "
             
             # Move up a line and display the original status message
@@ -384,6 +388,20 @@ class StreamDecorator(object):
                                **done_manager_kwargs
                              ) as dm:
             dm_ref.value = dm
+
+            # ----------------------------------------------------------------------
+            def Write(content, prefix):
+                message = "{}: {}\n".format(prefix, content.strip())
+
+                dm.stream.write(message)
+                wrote_content.value = True
+
+            # ----------------------------------------------------------------------
+            
+            dm.stream.write_verbose = lambda content: Write(content, "VERBOSE")
+            dm.stream.write_info = lambda content: Write(content, "INFO")
+            dm.stream.write_warning = lambda content: Write(content, "WARNING")
+            dm.stream.write_error = lambda content: Write(content, "ERROR")
 
             try:
                 dm.result = functor(dm)
