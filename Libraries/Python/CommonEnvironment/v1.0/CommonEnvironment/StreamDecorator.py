@@ -340,9 +340,9 @@ class StreamDecorator(object):
                     raise
 
     # ----------------------------------------------------------------------
+    @contextmanager
     def SingleLineDoneManager( self, 
                                status,
-                               functor,          # def Func(done_manager) -> result
                                *done_manager_args,
                                **done_manager_kwargs
                              ):
@@ -350,6 +350,15 @@ class StreamDecorator(object):
         Useful when displaying a status message along with
         a progress bar (or other content) that should disappear
         once the activity is complete.
+
+        Only output written via:
+            
+            - write_verbose
+            - write_info
+            - write_warning
+            - write_error
+
+        will be preserved.
         """
 
         # <Has no instance of 'member'> pylint: disable = E1101
@@ -403,13 +412,7 @@ class StreamDecorator(object):
             dm.stream.write_warning = lambda content: Write(content, "WARNING")
             dm.stream.write_error = lambda content: Write(content, "ERROR")
 
-            try:
-                dm.result = functor(dm)
-            except:
-                dm.result = -1
-                raise
-
-            return dm.result
+            yield dm
 
     # ---------------------------------------------------------------------------
     @classmethod
