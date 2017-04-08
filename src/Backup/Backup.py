@@ -361,18 +361,18 @@ def Mirror( destination,
             
                 # ----------------------------------------------------------------------
 
-                dm.stream.SingleLineDoneManager( "Copying {}...".format(inflect_engine.no("file", len(to_copy))),
-                                                 lambda this_dm: TaskPool.Execute( [ TaskPool.Task( "Copy '{}' to '{}'".format(k, v),
-                                                                                                    "Copying '{}' to '{}'".format(k, v),
-                                                                                                    Execute,
-                                                                                                  )
-                                                                                     for k, v in six.iteritems(to_copy)
-                                                                                   ],
-                                                                                   num_concurrent_tasks=1,
-                                                                                   output_stream=this_dm.stream,
-                                                                                   progress_bar=True,
-                                                                                 ),
-                                               )
+            with dm.stream.SingleLineDoneManager( "Copying {}...".format(inflect_engine.no("file", len(to_copy))),
+                                                ) as this_dm:
+                   TaskPool.Execute( [ TaskPool.Task( "Copy '{}' to '{}'".format(k, v),
+                                                      "Copying '{}' to '{}'".format(k, v),
+                                                      Execute,
+                                                    )
+                                       for k, v in six.iteritems(to_copy)
+                                     ],
+                                     num_concurrent_tasks=1,
+                                     output_stream=this_dm.stream,
+                                     progress_bar=True,
+                                   )
             
             if to_remove:
                 # ----------------------------------------------------------------------
@@ -387,18 +387,18 @@ def Mirror( destination,
             
                 # ----------------------------------------------------------------------
                 
-                dm.stream.SingleLineDoneManager( "Removing {}...".format(inflect_engine.no("file", len(to_remove))),
-                                                 lambda this_dm: TaskPool.Execute( [ TaskPool.Task( "Remove '{}'".format(value),
-                                                                                                    "Removing '{}'".format(value),
-                                                                                                    Execute,
-                                                                                                  )
-                                                                                     for value in to_remove
-                                                                                   ],
-                                                                                   num_concurrent_tasks=1,
-                                                                                   output_stream=this_dm.stream,
-                                                                                   progress_bar=True,
-                                                                                 ),
-                                               )
+                with dm.stream.SingleLineDoneManager( "Removing {}...".format(inflect_engine.no("file", len(to_remove))),
+                                                    ) as this_dm:
+                    TaskPool.Execute( [ TaskPool.Task( "Remove '{}'".format(value),
+                                                       "Removing '{}'".format(value),
+                                                       Execute,
+                                                     )
+                                        for value in to_remove
+                                      ],
+                                      num_concurrent_tasks=1,
+                                      output_stream=this_dm.stream,
+                                      progress_bar=True,
+                                    )
                            
         return dm.result or (1 if not (to_copy or to_remove) else 0)
 
@@ -497,8 +497,8 @@ def _GetFileInfo( desc,
         # ----------------------------------------------------------------------
         
         if input_files:
-            # ----------------------------------------------------------------------
-            def Execute(this_dm):
+            with dm.stream.SingleLineDoneManager( "Calculating hashes...",
+                                                ) as this_dm:
                 for k, v in itertools.izip( input_files,
                                             TaskPool.Transform( input_files,
                                                                 CalculateHash,
@@ -506,12 +506,6 @@ def _GetFileInfo( desc,
                                                               ),
                                           ):
                     file_info.setdefault(os.path.splitdrive(k)[0], OrderedDict())[k] = v
-
-            # ----------------------------------------------------------------------
-            
-            dm.stream.SingleLineDoneManager( "Calculating hashes...",
-                                             Execute,
-                                           )
 
         return file_info
 

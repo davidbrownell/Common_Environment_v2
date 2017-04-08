@@ -998,18 +998,18 @@ def _AllImpl( directory,
 
         # ---------------------------------------------------------------------------
         
-        si.stream.SingleLineDoneManager( "Processing {}...".format(inflect_engine.no("repository", len(items))),
-                                         lambda this_dm: TaskPool.Execute( [ TaskPool.Task(  "{} [{}] <Query>".format(directory, scm.Name),
-                                                                                             "Querying '{}'".format(directory),
-                                                                                             lambda task_index, task_output_stream, on_status_update, scm=scm, directory=directory: QueryProcess(scm, directory, task_index, task_output_stream, on_status_update),
-                                                                                          )
-                                                                             for scm, directory in items
-                                                                           ],
-                                                                           output_stream=this_dm.stream,
-                                                                           progress_bar=True,
-                                                                         ),
-                                         done_suffix_functor=None if not action_func else (lambda: "{} to execute".format(inflect_engine.no("repository", to_process.value))),
-                                       )
+        with si.stream.SingleLineDoneManager( "Processing {}...".format(inflect_engine.no("repository", len(items))),
+                                              done_suffix_functor=None if not action_func else (lambda: "{} to execute".format(inflect_engine.no("repository", to_process.value))),
+                                            ) as this_dm:
+            TaskPool.Execute( [ TaskPool.Task(  "{} [{}] <Query>".format(directory, scm.Name),
+                                                "Querying '{}'".format(directory),
+                                                lambda task_index, task_output_stream, on_status_update, scm=scm, directory=directory: QueryProcess(scm, directory, task_index, task_output_stream, on_status_update),
+                                             )
+                                for scm, directory in items
+                              ],
+                              output_stream=this_dm.stream,
+                              progress_bar=True,
+                            )
 
         action_items = [ data for data in output if data.result ]
         
