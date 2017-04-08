@@ -158,6 +158,9 @@ class PythonActivationActivity(IActivationActivity):
                 if os.path.isfile(fullpath) and os.path.splitext(fullpath)[1] in [ ".pyc", ".pyo", ]:
                     continue
 
+                if os.path.isdir(fullpath) and os.path.basename(fullpath) in [ "__pycache__", ]:
+                    continue
+
                 output_stream.write(template.format( name=item,
                                                      type="Directory" if os.path.isdir(fullpath) else "File",
                                                      fullpath=fullpath,
