@@ -890,6 +890,13 @@ class Response(object):
             http_error_msg = u'%s Server Error: %s for url: %s' % (self.status_code, reason, self.url)
 
         if http_error_msg:
+            text = self.text.strip()
+
+            if text:
+                http_error_msg = "{}\n\n{}\n".format( http_error_msg.strip(),
+                                                      text,
+                                                    )
+            
             raise HTTPError(http_error_msg, response=self)
 
     def close(self):

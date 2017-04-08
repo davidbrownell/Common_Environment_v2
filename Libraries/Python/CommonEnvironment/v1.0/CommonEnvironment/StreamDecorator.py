@@ -60,6 +60,7 @@ class StreamDecorator(object):
                   tab_length=4,
                   skip_first_line_prefix=False,
                   is_associated_stream=False,
+                  flush_after_write=False,
                 ):
         self._streams                       = stream_or_streams if isinstance(stream_or_streams, list) else [ stream_or_streams, ] if stream_or_streams != None else []
         self._line_prefix                   = line_prefix if callable(line_prefix) else lambda column: line_prefix
@@ -77,6 +78,8 @@ class StreamDecorator(object):
 
         self._column                        = 0
         self._indent_stack                  = []
+        self._flush_after_write             = flush_after_write
+        self._wrote_content                 = False
 
         self.IsSet                          = Any(self._streams, lambda stream: stream and getattr(stream, "IsSet", True))
         self.IsAssociatedStream             = is_associated_stream or Any(self._streams, lambda stream: stream and getattr(stream, "IsAssociatedStream", False))
@@ -105,6 +108,9 @@ class StreamDecorator(object):
                 self.write_raw(eol)
 
                 self._column = 0
+                
+            if self._flush_after_write:
+                self.flush()
 
         # ---------------------------------------------------------------------------
         
@@ -127,6 +133,8 @@ class StreamDecorator(object):
         if content:
             Impl(content)
 
+        self._wrote_content = True
+
         return self
 
     # ---------------------------------------------------------------------------
@@ -138,26 +146,29 @@ class StreamDecorator(object):
 
     # ---------------------------------------------------------------------------
     def flush(self, force_suffix=False):
-        if not self._streams:
-            return self
-
-        if force_suffix or self._column != 0:
-            suffix = self._line_suffix(self._column)
-
+        if self._streams:
+            if force_suffix:
+                line_suffix = self._line_suffix(self._column)
+                suffix = self._suffix(self._column)
+                
+                if self._displayed_one_time_suffix:
+                    one_time_suffix = ''
+                else:
+                    one_time_suffix = self._one_time_suffix(self._column)
+                    
+                for stream in self._streams:
+                    stream.write(line_suffix)
+                    stream.write(suffix)
+                    stream.write(one_time_suffix)
+                
+                self._displayed_one_time_suffix = True
+                
+                self._displayed_prefix = False
+                self._column = 0
+                
             for stream in self._streams:
-                stream.write(suffix)
-                stream.write(self._suffix(self._column))
-
-            self._displayed_prefix = False
-        
-        if not self._displayed_one_time_suffix:
-            for stream in self._streams:
-                stream.write(self._one_time_suffix(self._column))
-
-            self._displayed_one_time_suffix = True
-
-        self._column = 0
-            
+                stream.flush()
+                
         return self
 
     # ----------------------------------------------------------------------
@@ -341,14 +352,14 @@ class StreamDecorator(object):
         once the activity is complete.
         """
 
-        has_errors = ModifiableValue(False)
+        # <Has no instance of 'member'> pylint: disable = E1101
         dm_ref = ModifiableValue(None)
+        wrote_content = ModifiableValue(False)
 
         # ----------------------------------------------------------------------
         def DonePrefix():
-            if has_errors.value:
+            if wrote_content.value:
                 # Don't eliminate any data that was displayed
-                # as part of the error.
                 return "DONE! "
             
             # Move up a line and display the original status message
@@ -378,8 +389,25 @@ class StreamDecorator(object):
                              ) as dm:
             dm_ref.value = dm
 
-            dm.result = functor(dm)
-            has_errors.value = dm.result not in [ 0, None, ]
+            # ----------------------------------------------------------------------
+            def Write(content, prefix):
+                message = "{}: {}\n".format(prefix, content.strip())
+
+                dm.stream.write(message)
+                wrote_content.value = True
+
+            # ----------------------------------------------------------------------
+            
+            dm.stream.write_verbose = lambda content: Write(content, "VERBOSE")
+            dm.stream.write_info = lambda content: Write(content, "INFO")
+            dm.stream.write_warning = lambda content: Write(content, "WARNING")
+            dm.stream.write_error = lambda content: Write(content, "ERROR")
+
+            try:
+                dm.result = functor(dm)
+            except:
+                dm.result = -1
+                raise
 
             return dm.result
 
@@ -425,14 +453,14 @@ class StreamDecorator(object):
                                       # one : two
                                       # foo - bar
                                       # a _ b
-                                      re.compile(r"^\S.*?[_\:\-]\s*\S.*$"),
+                                      re.compile(r"^\S.*?\s*[_\:\-]\s*\S.*$"),
                                     ]
 
         paragraphs = []
         for paragraph in content.split('\n\n'):
             lines = paragraph.split('\n')
 
-            # Look for a collection of lines that look like a list ("look like a list" is subjective, but 
+            # Look for a collection of lines that look like a list ("looks like a list" is subjective, but 
             # give it our best shot).
             is_a_list = True
             
@@ -476,6 +504,7 @@ class StreamDecorator(object):
             self.stream                     = StreamDecorator( stream_decorator,
                                                                one_time_prefix='\n' if line_prefix else '',
                                                                line_prefix=line_prefix,
+                                                               flush_after_write=True,
                                                              )
             self.result                     = result
 

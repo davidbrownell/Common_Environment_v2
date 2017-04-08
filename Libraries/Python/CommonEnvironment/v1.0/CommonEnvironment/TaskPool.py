@@ -364,7 +364,7 @@ def Transform( items,
                functor,                                                     # def Func(item) -> transformed item
                optional_output_stream,                                      # Will display a progress bar if not None
                display_exception_callstack=False,
-               num_concurrent_tasks=multiprocessing.cpu_count(),
+               num_concurrent_tasks=None,
                name_functor=None,                                           # def Func(index, item) -> string
              ):
     """\
