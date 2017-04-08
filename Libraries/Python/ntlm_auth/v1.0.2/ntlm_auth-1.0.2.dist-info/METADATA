@@ -1,0 +1,27 @@
+Metadata-Version: 2.0
+Name: ntlm-auth
+Version: 1.0.2
+Summary: Creates NTLM authentication structures
+Home-page: https://github.com/jborean93/ntlm-auth
+Author: Jordan Borean
+Author-email: jborean93@gmail.com
+License: GNU Lesser GPL
+Keywords: authentication auth microsoft ntlm lm
+Platform: UNKNOWN
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)
+Classifier: Programming Language :: Python :: 2
+Classifier: Programming Language :: Python :: 2.6
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.3
+Classifier: Programming Language :: Python :: 3.4
+Classifier: Programming Language :: Python :: 3.5
+Requires-Dist: six
+Requires-Dist: ordereddict
+
+This package can create and parse NTLM authorisation tokens
+with all the latest standards such as NTLMv2, Extended Protection
+(CBT), message integrity and confidentiality (signing and sealing).
+
+
