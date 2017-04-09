@@ -501,6 +501,6 @@ def _ActivatePrompt(repositories, configuration, is_tool_repository):
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    try: sys.exit(CommonEnvironmentImports.CommandLine.Main( command_line_keyword_separator='_EQ_',
+    try: sys.exit(CommonEnvironmentImports.CommandLine.Main( command_line_keyword_separator='_EQ_' if Shell.GetEnvironment().Name == "Windows" else '=',
                                                            ))
     except KeyboardInterrupt: pass
