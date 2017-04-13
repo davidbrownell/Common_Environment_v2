@@ -28,18 +28,18 @@ class GenerateTest(unittest.TestCase):
         results = list(Generate(re.compile(r"[A-Z]"), "One Two Three"))
         self.assertEqual(len(results), 3)
 
-        self.assertEqual(results[0], { "__data__" : "ne ", })
-        self.assertEqual(results[1], { "__data__" : "wo ", })
-        self.assertEqual(results[2], { "__data__" : "hree", })
+        self.assertEqual(results[0], { "_data_" : "ne ", })
+        self.assertEqual(results[1], { "_data_" : "wo ", })
+        self.assertEqual(results[2], { "_data_" : "hree", })
 
     # ----------------------------------------------------------------------
     def test_MatchesWithPrefix(self):
         results = list(Generate(r"\s", "One Two Three", yield_prefix=True))
         self.assertEqual(len(results), 3)
 
-        self.assertEqual(results[0], { "__data__" : "One", })
-        self.assertEqual(results[1], { "__data__" : "Two", })
-        self.assertEqual(results[2], { "__data__" : "Three", })
+        self.assertEqual(results[0], { "_data_" : "One", })
+        self.assertEqual(results[1], { "_data_" : "Two", })
+        self.assertEqual(results[2], { "_data_" : "Three", })
 
     # ----------------------------------------------------------------------
     def test_NoMatchesWithCapture(self):
@@ -51,9 +51,9 @@ class GenerateTest(unittest.TestCase):
         results = list(Generate(r"(?P<c>[A-Z][a-z])", "One Two Three"))
         self.assertEqual(len(results), 3)
 
-        self.assertEqual(results[0], { "__data__" : "e ", "c" : "On", })
-        self.assertEqual(results[1], { "__data__" : "o ", "c" : "Tw", })
-        self.assertEqual(results[2], { "__data__" : "ree", "c" : "Th", })
+        self.assertEqual(results[0], { "_data_" : "e ", "c" : "On", })
+        self.assertEqual(results[1], { "_data_" : "o ", "c" : "Tw", })
+        self.assertEqual(results[2], { "_data_" : "ree", "c" : "Th", })
 
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":

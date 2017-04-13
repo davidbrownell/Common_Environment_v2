@@ -17,6 +17,8 @@
 
 from __future__ import print_function
 
+import sys
+
 from .util import fullyflatten
 
 
@@ -60,16 +62,16 @@ class Cluster(object):
             else:
                 yield item
 
-    def display(self, depth=0):
+    def display(self, depth=0, stream=sys.stdout):
         """
         Pretty-prints this cluster. Useful for debuging.
         """
-        print(depth * "    " + "[level %s]" % self.level)
+        stream.write(depth * "    " + "[level %s]\n" % self.level)
         for item in self.items:
             if isinstance(item, Cluster):
-                item.display(depth + 1)
+                item.display(depth + 1, stream=stream)
             else:
-                print(depth * "    " + "%s" % item)
+                stream.write(depth * "    {}\n".format(item))
 
     def topology(self):
         """

@@ -170,7 +170,7 @@ def Generate( regex_or_regex_string,
         # Ignore the initial item, as that will be everything that comes before
         # the first match (or None if the match is at the beginning of the content).
         if yield_prefix:
-            yield { "__data__" : items[0] or '', }
+            yield { "_data_" : items[0] or '', }
 
         items = items[1:]
 
@@ -186,83 +186,11 @@ def Generate( regex_or_regex_string,
                 data = items[index + 1]
 
                 result = { k : v for k, v in six.moves.zip(six.iterkeys(regex.groupindex), match) }
-                result["__data__"] = data
+                result["_data_"] = data
 
                 yield result
 
         else:
             for item in items:
-                yield { "__data__" : item,
+                yield { "_data_" : item,
                       }
-
-# ----------------------------------------------------------------------
-def GenerateClusteredStrings( items,
-                              optional_output_stream=None,
-                            ):
-    from collections import OrderedDict
-
-    import cluster
-    from cluster.linkage import single, complete, average, uclus
-    import editdistance
-
-    from CommonEnvironment.StreamDecorator import StreamDecorator
-    from CommonEnvironment import TaskPool
-
-    output_stream = StreamDecorator(optional_output_stream)
-
-    # Calculate distances
-    items = list({ item for item in items })
-
-    distances = OrderedDict()
-
-    with output_stream.SingleLineDoneManager( "Calculating distances...",
-                                            ) as dm:
-        len_items = len(items)
-
-        comparisons = []
-
-        for index in xrange(len_items):
-            for i in xrange(index + 1, len_items):
-                comparisons.append((items[index], items[i]))
-
-        # ----------------------------------------------------------------------
-        def Evaluate(t):
-            return editdistance.eval(t[0], t[1])
-
-        # ----------------------------------------------------------------------
-        
-        results = TaskPool.Transform( comparisons,
-                                      Evaluate,
-                                      dm.stream,
-                                    )
-
-        for k, v in six.moves.zip(comparisons, results):
-            distances[k] = v
-
-    # ----------------------------------------------------------------------
-    def Impl(x, y):
-        for key in [ (x, y),
-                     (y, x),
-                   ]:
-            if key in distances:
-                return distances[key]
-
-        assert False
-
-    # ----------------------------------------------------------------------
-    
-    cl = cluster.HierarchicalClustering(items, Impl, linkage=uclus)
-
-    level = 0
-    while True:
-        results = cl.getlevel(level)
-
-        for index, result_level in enumerate(results):
-            results[index] = sorted(result_level)
-
-        yield results
-
-        if len(results) == 1:
-            break
-
-        level += 1
