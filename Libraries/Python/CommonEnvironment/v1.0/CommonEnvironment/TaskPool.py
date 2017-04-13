@@ -24,17 +24,13 @@ import time
 import traceback
 
 from collections import OrderedDict
-from concurrent.futures import ThreadPoolExecutor, wait
-
+from concurrent.futures import ThreadPoolExecutor
 import six
 from six.moves import StringIO
 
 from CommonEnvironment import ModifiableValue
-from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import Enum
 from CommonEnvironment import Interface
-from CommonEnvironment import Package
-from CommonEnvironment.QuickObject import QuickObject
 from CommonEnvironment.StreamDecorator import StreamDecorator
 
 # ---------------------------------------------------------------------------
@@ -76,9 +72,8 @@ class Task(object):
 # ---------------------------------------------------------------------------
 def Execute( tasks,
              num_concurrent_tasks=None,
-             output_stream=sys.stdout,
+             output_stream=sys.stdout,      # optional
              verbose=False,
-             silent=False,
              progress_bar=False,
              progress_bar_cols=120,
              raise_on_error=False,
@@ -87,19 +82,18 @@ def Execute( tasks,
     assert tasks
 
     tasks = [ _InternalTask(task) for task in tasks ]
+    num_concurrent_tasks = num_concurrent_tasks or (multiprocessing.cpu_count() * 5)
+    output_stream = output_stream or StreamDecorator(None)
 
+    # ----------------------------------------------------------------------
     StatusUpdate = Enum.Create( "Start",
                                 "Status",
                                 "Stop",
                               )
 
-    num_concurrent_tasks = num_concurrent_tasks or (multiprocessing.cpu_count() * 5)
-    output_stream = StreamDecorator(None if silent else output_stream)
-
     # ----------------------------------------------------------------------
-    def Invoke( get_status_functor,                     # def Func(future, task, update_type, optional_content)
+    def Invoke( get_status_functor,                     # def Func(future, task, update_type, optional_content) -> string
                 write_statuses_functor,                 # def Func(statuses)
-                output_stream, 
                 clear_status_when_complete=False,
                 display_status_update_frequency=0.5,   # seconds
               ):
@@ -284,7 +278,6 @@ def Execute( tasks,
             
             Invoke( GetStatus,
                     PBWriteStatuses,
-                    output_stream, 
                     clear_status_when_complete=True,
                   )
     else:
@@ -310,10 +303,7 @@ def Execute( tasks,
 
         # ----------------------------------------------------------------------
         
-        Invoke( GetStatus,
-                WriteStatuses,
-                output_stream,
-              )
+        Invoke(GetStatus, WriteStatuses)
 
     # Calculate the final result
     sink = StringIO()
@@ -346,16 +336,30 @@ def Execute( tasks,
             result = result or task.result
 
     sink = sink.getvalue()
+
     if result != 0:
         if raise_on_error:
             raise Exception(sink or result)
+        elif hasattr(output_stream, "write_error"):
+            for line in sink.split('\n'):
+                output_stream.write_error(line)         # <Has no 'write_error' member> pylint: disable = E1101
         else:
             output_stream.write(sink)
 
     if verbose and result == 0:
+        sink = StringIO()
+
         for task in tasks:
             if task.output:
-                Output(output_stream, task)
+                Output(sink, task)
+
+        sink = sink.getvalue()
+
+        if hasattr(output_stream, "write_verbose"):
+            for line in sink.split('\n'):
+                output_stream.write_verbose(line)       # <Has no 'write_verbose' member> pylint: disable = E1101
+        else:
+            output_stream.write(sink)
 
     return result
         
@@ -394,7 +398,7 @@ def Transform( items,
                    )
                for index, item in enumerate(items)
              ],
-             output_stream=optional_output_stream if bool(optional_output_stream) else StreamDecorator(None),
+             output_stream=optional_output_stream,
              progress_bar=bool(optional_output_stream),
              raise_on_error=True,
              display_exception_callstack=display_exception_callstack,
