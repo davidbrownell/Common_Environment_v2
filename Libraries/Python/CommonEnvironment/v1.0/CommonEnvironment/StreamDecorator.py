@@ -363,11 +363,11 @@ class StreamDecorator(object):
 
         # <Has no instance of 'member'> pylint: disable = E1101
         dm_ref = ModifiableValue(None)
-        wrote_content = ModifiableValue(False)
+        reset_line = ModifiableValue(True)
 
         # ----------------------------------------------------------------------
         def DonePrefix():
-            if wrote_content.value:
+            if not reset_line.value:
                 # Don't eliminate any data that was displayed
                 return "DONE! "
             
@@ -397,13 +397,18 @@ class StreamDecorator(object):
                                **done_manager_kwargs
                              ) as dm:
             dm_ref.value = dm
+            first_write = ModifiableValue(True)
 
             # ----------------------------------------------------------------------
             def Write(content, prefix):
                 message = "{}: {}\n".format(prefix, content.strip())
 
+                if first_write.value:
+                    message = "{}{}".format(dm.stream._line_prefix(0), message)
+                    first_write.value = False
+
                 dm.stream.write(message)
-                wrote_content.value = True
+                reset_line.value = False
 
             # ----------------------------------------------------------------------
             
@@ -412,7 +417,11 @@ class StreamDecorator(object):
             dm.stream.write_warning = lambda content: Write(content, "WARNING")
             dm.stream.write_error = lambda content: Write(content, "ERROR")
 
-            yield dm
+            try:
+                yield dm
+            except:
+                reset_line.value = False
+                raise
 
     # ---------------------------------------------------------------------------
     @classmethod
@@ -564,74 +573,71 @@ def __InitAnsiSequenceStreamsImpl():
         __InitAnsiSequenceStreamsImpl_initialized.value = True
 
 # ----------------------------------------------------------------------
+@contextmanager
 def __GenerateAnsiSequenceStreamImpl( stream, 
                                       preserve_ansi_escape_sequences=False,
                                       autoreset=False,
                                       do_not_modify_std_streams=False,
                                     ):
-    # ----------------------------------------------------------------------
-    @contextmanager
-    def Func():
-        # When colorama was initialized, sys.stdout and sys.stderr were
-        # configured to strip and convert ansi escape sequences. However,
-        # we may want to preserve those sequences. Assume that the stream 
-        # ultimately resolves to sys.stdout and/or sys.stderr when
-        # preserve_ansi_escape_sequence is True.
-        if not preserve_ansi_escape_sequences:
-            yield stream
-            return
+    # When colorama was initialized, sys.stdout and sys.stderr were
+    # configured to strip and convert ansi escape sequences. However,
+    # we may want to preserve those sequences. Assume that the stream 
+    # ultimately resolves to sys.stdout and/or sys.stderr when
+    # preserve_ansi_escape_sequence is True.
+    if not preserve_ansi_escape_sequences:
+        if not isinstance(stream, StreamDecorator):
+            stream = StreamDecorator(stream)
 
-        import colorama.initialise as cinit
-        from colorama.ansitowin32 import AnsiToWin32
+        yield stream
+        return
 
-        from CommonEnvironment.CallOnExit import CallOnExit
+    import colorama.initialise as cinit
+    from colorama.ansitowin32 import AnsiToWin32
 
-        restore_functors = []
+    from CommonEnvironment.CallOnExit import CallOnExit
 
-        if do_not_modify_std_streams:
-            restore_functors.append(lambda: None) # Necessary because CallOnExit requires at least one functor
+    restore_functors = []
+
+    if do_not_modify_std_streams:
+        restore_functors.append(lambda: None) # Necessary because CallOnExit requires at least one functor
+    else:
+        # ----------------------------------------------------------------------
+        def RestoreConvertor(wrapped_stream, original_convertor):
+            wrapped_stream._StreamWrapper__convertor = original_convertor
+
+        # ----------------------------------------------------------------------
+
+        for wrapped_stream, original_stream in [ ( cinit.wrapped_stdout, cinit.orig_stdout ),
+                                                 ( cinit.wrapped_stderr, cinit.orig_stderr ),
+                                               ]:
+            original_convertor = wrapped_stream._StreamWrapper__convertor
+
+            if not getattr(original_convertor, "_modified", False):
+                convertor = AnsiToWin32( original_stream,
+                                         strip=False,
+                                         convert=False,
+                                         autoreset=autoreset,
+                                       )
+                convertor._modified = True
+
+                wrapped_stream._StreamWrapper__convertor = convertor
+
+                restore_functors.append(lambda wrapped_stream=wrapped_stream, original_convertor=original_convertor: RestoreConvertor(wrapped_stream, original_convertor))
+
+        if restore_functors:
+            cinit.reinit()
+            restore_functors.append(cinit.reinit)
+        
+    with CallOnExit(*restore_functors):
+        if getattr(stream, "_StreamWrapper__wrapped", None) == cinit.orig_stdout:
+            this_stream = cinit.wrapped_stdout
         else:
-            # ----------------------------------------------------------------------
-            def RestoreConvertor(wrapped_stream, original_convertor):
-                wrapped_stream._StreamWrapper__convertor = original_convertor
+            this_stream = stream
 
-            # ----------------------------------------------------------------------
-
-            for wrapped_stream, original_stream in [ ( cinit.wrapped_stdout, cinit.orig_stdout ),
-                                                     ( cinit.wrapped_stderr, cinit.orig_stderr ),
-                                                   ]:
-                original_convertor = wrapped_stream._StreamWrapper__convertor
-
-                if not getattr(original_convertor, "_modified", False):
-                    convertor = AnsiToWin32( original_stream,
-                                             strip=False,
-                                             convert=False,
-                                             autoreset=autoreset,
-                                           )
-                    convertor._modified = True
-
-                    wrapped_stream._StreamWrapper__convertor = convertor
-
-                    restore_functors.append(lambda wrapped_stream=wrapped_stream, original_convertor=original_convertor: RestoreConvertor(wrapped_stream, original_convertor))
-
-            if restore_functors:
-                cinit.reinit()
-                restore_functors.append(cinit.reinit)
-            
-        with CallOnExit(*restore_functors):
-            if getattr(stream, "_StreamWrapper__wrapped", None) == cinit.orig_stdout:
-                this_stream = cinit.wrapped_stdout
-            else:
-                this_stream = stream
-
-            yield cinit.wrap_stream( this_stream,
-                                     convert=False,
-                                     strip=False,
-                                     autoreset=autoreset,
-                                     wrap=True,
-                                   )
-
-    # ----------------------------------------------------------------------
-    
-    return Func()
+        yield StreamDecorator(cinit.wrap_stream( this_stream,
+                                                 convert=False,
+                                                 strip=False,
+                                                 autoreset=autoreset,
+                                                 wrap=True,
+                                               ))
                     
