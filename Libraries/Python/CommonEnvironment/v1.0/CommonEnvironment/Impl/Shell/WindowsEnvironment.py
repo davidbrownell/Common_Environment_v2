@@ -67,8 +67,11 @@ class WindowsEnvironment(Environment):
         import unicodedata
         
         homedir = shell.SHGetFolderPath(0, shellcon.CSIDL_APPDATA, 0, 0)
-        homedir = unicodedata.normalize("NFKD", homedir).encode("ascii", "ignore")
+        homedir = unicodedata.normalize("NFKD", homedir)
         
+        if sys.version_info[0] == 2:
+            homedir = homedir.encode("ascii", "ignore")
+            
         self._user_directory = homedir
         assert os.path.isdir(self._user_directory), self._user_directory
         
