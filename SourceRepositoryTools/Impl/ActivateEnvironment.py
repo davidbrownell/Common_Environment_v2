@@ -93,6 +93,7 @@ def LoadRepoData():
                                                   debug=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo(description="Displays additional debug information if provided"),
                                                   set_dependency_environment_flag=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo(description="If provided, will set the dependency flag within the environment"),
                                                   version_spec=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo(description="Overrides version specifications for tools and/or libraries. Example: '/version_spec=Tools/Python:v3.6.0'."),
+                                                  no_python_libraries=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo(description="Disables the import of python libraries, which can be useful when pip installing python libraries for Library inclusion."),
                                                 )
 @CommonEnvironmentImports.CommandLine.FunctionConstraints( output_filename_or_stdout=CommonEnvironmentImports.CommandLine.StringTypeInfo(),
                                                            repository_root=CommonEnvironmentImports.CommandLine.DirectoryTypeInfo(),
@@ -107,6 +108,7 @@ def Activate( output_filename_or_stdout,
               debug=False,
               set_dependency_environment_flag=False,
               version_spec=None,
+              no_python_libraries=False,
             ):
     configuration = configuration if configuration.lower() != "none" else None
     cl_version_specs = version_spec or {}
@@ -249,6 +251,7 @@ def Activate( output_filename_or_stdout,
                  "generated_dir" : generated_dir,
                  "debug" : debug,
                  "is_tool_repository" : is_tool_repository,
+                 "no_python_libraries" : no_python_libraries,
                }
 
         commands = []
@@ -428,13 +431,16 @@ def _ActivateNames(repositories):
                    )), ]
 
 # ---------------------------------------------------------------------------
-def _ActivatePython(constants, environment, configuration, repositories, version_specs, generated_dir):
+def _ActivatePython(constants, environment, configuration, repositories, version_specs, generated_dir, no_python_libraries):
     commands = PythonActivationActivity.CreateCommands( constants,
                                                         environment,
                                                         configuration,
                                                         repositories,
                                                         version_specs,
                                                         generated_dir,
+                                                        # Context is required because we are delay executing the commands
+                                                        context={ "ProcessLibraries" : not no_python_libraries, 
+                                                                },
                                                       )
 
     return commands

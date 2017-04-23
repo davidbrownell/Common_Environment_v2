@@ -261,10 +261,9 @@ def ActivateLibraryScripts( dest_dir,
                                            )
 
     FileSystem.RemoveTree(dest_dir)
+    os.makedirs(dest_dir)
 
     if all_scripts:
-        os.makedirs(dest_dir)
-
         for script_name, script_info in six.iteritems(all_scripts):
             if script_info == None:
                 continue
