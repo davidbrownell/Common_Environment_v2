@@ -58,6 +58,7 @@ class PythonActivationActivity(IActivationActivity):
     # ---------------------------------------------------------------------------
     Name                                    = "Python"
     DelayExecute                            = True
+    ProcessLibraries                        = True
 
     LibrarySubdirs                          = None      # Initialized in __clsinit__
     ScriptSubdirs                           = None      # Initialized in __clsinit__
@@ -217,6 +218,13 @@ class PythonActivationActivity(IActivationActivity):
 
         # ----------------------------------------------------------------------
         def PythonCallback(libraries, display_sentinel):
+            if not cls.ProcessLibraries:
+                library_keys = list(six.iterkeys(libraries))
+
+                for library_key in list(six.iterkeys(libraries)):
+                    if library_key != "CommonEnvironment":
+                        del libraries[library_key]
+
             local_actions = []
         
             # Get the python version
