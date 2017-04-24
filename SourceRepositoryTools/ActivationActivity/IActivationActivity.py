@@ -86,6 +86,7 @@ class IActivationActivity(Interface):
                         repositories,
                         version_specs,
                         generated_dir,
+                        context=None,
                       ):
         commands = [ environment.Message("Activating '{}'...".format(cls.Name)),
                    ]
@@ -99,8 +100,11 @@ class IActivationActivity(Interface):
                                                             repositories,
                                                             version_specs,
                                                             generated_dir,
+                                                            context,
                                                           )
         else: 
+            assert context == None, "Context is not necessary when DelayExecute is set to False, as information can be associated with the cls object"
+
             commands += cls._CreateCommandsImpl( constants,
                                                  environment,
                                                  configuration,
@@ -220,7 +224,11 @@ def _DeferedCallback( cls,
                       repositories,
                       version_specs,
                       generated_dir,
+                      context,
                     ):
+    for k, v in (context or {}).iteritems():
+        setattr(cls, k, v)
+
     # <Access to a protected member> pylint: disable = W0212
     return cls._CreateCommandsImpl( constants,
                                     environment,
