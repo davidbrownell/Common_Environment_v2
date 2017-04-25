@@ -127,7 +127,11 @@ def ActivateLibraries( name,
             assert os.path.isdir(fullpath), fullpath
 
             fullpath, version = SourceRepositoryTools.GetVersionedDirectoryEx(version_info, fullpath)
+            
             fullpath = SourceRepositoryTools.GetCustomizedPath(fullpath)
+
+            fullpath = AugmentLibraryDir(fullpath)
+            assert os.path.isdir(fullpath), fullpath
 
             libraries[item] = QuickObject( repository=repository,
                                            fullpath=fullpath,

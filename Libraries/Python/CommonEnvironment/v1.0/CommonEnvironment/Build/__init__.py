@@ -28,6 +28,8 @@ import re
 import sys
 import textwrap
 
+import six
+
 from ..CallOnExit import CallOnExit
 from .. import CommandLine
 from .. import FileSystem
@@ -322,8 +324,8 @@ def _RedirectEntryPoint(function_name, entry_point, config):
     if config.RequiresOutputDir:
         required_arguments.append("output_dir")
 
-    num_required_args = entry_point.Func.func_code.co_argcount - (len(entry_point.Func.func_defaults or []))
-    arguments = entry_point.Func.func_code.co_varnames[:num_required_args]
+    num_required_args = six.get_function_code(entry_point.Func).co_argcount - (len(six.get_function_defaults(entry_point.Func) or []))
+    arguments = six.get_function_code(entry_point.Func).co_varnames[:num_required_args]
     
     if required_arguments and list(arguments[:len(required_arguments) + 1]) != required_arguments:
         raise Exception("The entry point '{}' should begin with the arguments '{}' ('{}' were found)".format( function_name, 

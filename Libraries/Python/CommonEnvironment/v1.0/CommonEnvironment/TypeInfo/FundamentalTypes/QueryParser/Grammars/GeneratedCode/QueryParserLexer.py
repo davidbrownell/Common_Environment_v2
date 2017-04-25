@@ -1,13 +1,14 @@
-# Generated from C:\Temp\QueryParser\Grammars\BuildEnvironment\..\QueryParser.g4 by ANTLR 4.6
+# Generated from C:\Temp\QueryParser\Grammars\BuildEnvironment\..\QueryParser.g4 by ANTLR 4.7
 # encoding: utf-8
 from __future__ import print_function
 from antlr4 import *
 from io import StringIO
+import sys
 
 
 def serializedATN():
     with StringIO() as buf:
-        buf.write(u"\3\u0430\ud6d1\u8206\uad2d\u4417\uaef1\u8d80\uaadd\2")
+        buf.write(u"\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\2")
         buf.write(u"\35\u00c6\b\1\4\2\t\2\4\3\t\3\4\4\t\4\4\5\t\5\4\6\t\6")
         buf.write(u"\4\7\t\7\4\b\t\b\4\t\t\t\4\n\t\n\4\13\t\13\4\f\t\f\4")
         buf.write(u"\r\t\r\4\16\t\16\4\17\t\17\4\20\t\20\4\21\t\21\4\22\t")
@@ -31,18 +32,18 @@ def serializedATN():
         buf.write(u"\7\5\t\6\13\7\r\b\17\t\21\n\23\13\25\f\27\r\31\16\33")
         buf.write(u"\17\35\20\37\21!\22#\23%\24\'\25)\26+\27-\30/\31\61\32")
         buf.write(u"\63\33\65\34\67\35\3\2\7\4\2\13\13\"\"\3\2\62;\5\2C\\")
-        buf.write(u"aac|\7\2/\60\62;C\\aac|\t\2FFOOYY[[jjoouu\u00d3\2\3\3")
-        buf.write(u"\2\2\2\2\5\3\2\2\2\2\7\3\2\2\2\2\t\3\2\2\2\2\13\3\2\2")
-        buf.write(u"\2\2\r\3\2\2\2\2\17\3\2\2\2\2\21\3\2\2\2\2\23\3\2\2\2")
-        buf.write(u"\2\25\3\2\2\2\2\27\3\2\2\2\2\31\3\2\2\2\2\33\3\2\2\2")
-        buf.write(u"\2\35\3\2\2\2\2\37\3\2\2\2\2!\3\2\2\2\2#\3\2\2\2\2%\3")
-        buf.write(u"\2\2\2\2\'\3\2\2\2\2)\3\2\2\2\2+\3\2\2\2\2-\3\2\2\2\2")
-        buf.write(u"/\3\2\2\2\2\61\3\2\2\2\2\63\3\2\2\2\2\65\3\2\2\2\2\67")
-        buf.write(u"\3\2\2\2\39\3\2\2\2\5;\3\2\2\2\7=\3\2\2\2\tA\3\2\2\2")
-        buf.write(u"\13C\3\2\2\2\rE\3\2\2\2\17I\3\2\2\2\21L\3\2\2\2\23O\3")
-        buf.write(u"\2\2\2\25R\3\2\2\2\27T\3\2\2\2\31W\3\2\2\2\33Y\3\2\2")
-        buf.write(u"\2\35\\\3\2\2\2\37^\3\2\2\2!d\3\2\2\2#g\3\2\2\2%n\3\2")
-        buf.write(u"\2\2\'s\3\2\2\2)\u0082\3\2\2\2+\u0089\3\2\2\2-\u0090")
+        buf.write(u"aac|\7\2/\60\62;C\\aac|\t\2FFOOYY[[jjoouu\2\u00d3\2\3")
+        buf.write(u"\3\2\2\2\2\5\3\2\2\2\2\7\3\2\2\2\2\t\3\2\2\2\2\13\3\2")
+        buf.write(u"\2\2\2\r\3\2\2\2\2\17\3\2\2\2\2\21\3\2\2\2\2\23\3\2\2")
+        buf.write(u"\2\2\25\3\2\2\2\2\27\3\2\2\2\2\31\3\2\2\2\2\33\3\2\2")
+        buf.write(u"\2\2\35\3\2\2\2\2\37\3\2\2\2\2!\3\2\2\2\2#\3\2\2\2\2")
+        buf.write(u"%\3\2\2\2\2\'\3\2\2\2\2)\3\2\2\2\2+\3\2\2\2\2-\3\2\2")
+        buf.write(u"\2\2/\3\2\2\2\2\61\3\2\2\2\2\63\3\2\2\2\2\65\3\2\2\2")
+        buf.write(u"\2\67\3\2\2\2\39\3\2\2\2\5;\3\2\2\2\7=\3\2\2\2\tA\3\2")
+        buf.write(u"\2\2\13C\3\2\2\2\rE\3\2\2\2\17I\3\2\2\2\21L\3\2\2\2\23")
+        buf.write(u"O\3\2\2\2\25R\3\2\2\2\27T\3\2\2\2\31W\3\2\2\2\33Y\3\2")
+        buf.write(u"\2\2\35\\\3\2\2\2\37^\3\2\2\2!d\3\2\2\2#g\3\2\2\2%n\3")
+        buf.write(u"\2\2\2\'s\3\2\2\2)\u0082\3\2\2\2+\u0089\3\2\2\2-\u0090")
         buf.write(u"\3\2\2\2/\u0097\3\2\2\2\61\u009c\3\2\2\2\63\u00a3\3\2")
         buf.write(u"\2\2\65\u00ac\3\2\2\2\67\u00b9\3\2\2\29:\7-\2\2:\4\3")
         buf.write(u"\2\2\2;<\7/\2\2<\6\3\2\2\2=>\t\2\2\2>?\3\2\2\2?@\b\4")
@@ -99,7 +100,6 @@ class QueryParserLexer(Lexer):
 
     decisionsToDFA = [ DFA(ds, i) for i, ds in enumerate(atn.decisionToState) ]
 
-
     T__0 = 1
     T__1 = 2
     WS = 3
@@ -128,6 +128,8 @@ class QueryParserLexer(Lexer):
     DOUBLE_QUOTE_STRING = 26
     SINGLE_QUOTE_STRING = 27
 
+    channelNames = [ u"DEFAULT_TOKEN_CHANNEL", u"HIDDEN" ]
+
     modeNames = [ u"DEFAULT_MODE" ]
 
     literalNames = [ u"<INVALID>",
@@ -149,9 +151,9 @@ class QueryParserLexer(Lexer):
 
     grammarFileName = u"QueryParser.g4"
 
-    def __init__(self, input=None):
-        super(QueryParserLexer, self).__init__(input)
-        self.checkVersion("4.6")
+    def __init__(self, input=None, output=sys.stdout):
+        super(QueryParserLexer, self).__init__(input, output=output)
+        self.checkVersion("4.7")
         self._interp = LexerATNSimulator(self, self.atn, self.decisionsToDFA, PredictionContextCache())
         self._actions = None
         self._predicates = None

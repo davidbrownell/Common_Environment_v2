@@ -18,10 +18,27 @@ import base64
 import os
 import sys
 
+from CommonEnvironment import Package
+
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
+
+# <Redefinig built-in type> pylint: disable = W0622
+# <Unable to import> pylint: disable = E0401
+# <Using variable before assignment> pylint: disable = E0601
+# <No name in module> pylint: disable = E0611
+
+with Package.NameInfo(__package__) as ni:
+    __package__ = ni.created
+    
+    if sys.version_info[0] == 2:
+        from .Impl.six_plus.v2 import *     
+    else:
+        from .Impl.six_plus.v3 import *
+    
+    __package__ = ni.original
 
 if sys.version_info[0] == 2:
 
@@ -45,6 +62,8 @@ if sys.version_info[0] == 2:
         return b
 
 else:
+    # <Invalid argument name> pylint: disable = C0103
+
     # ----------------------------------------------------------------------
     def BytesToString(b, encode=False):
         if encode:
