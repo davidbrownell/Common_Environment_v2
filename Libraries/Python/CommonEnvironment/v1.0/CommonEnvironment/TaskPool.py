@@ -78,6 +78,7 @@ def Execute( tasks,
              progress_bar_cols=120,
              raise_on_error=False,
              display_exception_callstack=True,
+             display_errors=True,
            ):
     assert tasks
 
@@ -337,7 +338,7 @@ def Execute( tasks,
 
     sink = sink.getvalue()
 
-    if result != 0:
+    if display_errors and result != 0:
         if raise_on_error:
             raise Exception(sink or result)
         elif hasattr(output_stream, "write_error"):
@@ -368,6 +369,7 @@ def Transform( items,
                functor,                                                     # def Func(item) -> transformed item
                optional_output_stream,                                      # Will display a progress bar if not None
                display_exception_callstack=False,
+               display_errors=True,
                num_concurrent_tasks=None,
                name_functor=None,                                           # def Func(index, item) -> string
              ):
@@ -402,6 +404,7 @@ def Transform( items,
              progress_bar=bool(optional_output_stream),
              raise_on_error=True,
              display_exception_callstack=display_exception_callstack,
+             display_errors=display_errors,
              num_concurrent_tasks=num_concurrent_tasks,
            )
 

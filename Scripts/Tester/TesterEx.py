@@ -294,11 +294,8 @@ def Test( test_items,
                                                 BuildThreadProc,
                                               ))
         
-        has_errors = ModifiableValue(False)
-
         with output_stream.SingleLineDoneManager( "Building...",
                                                   done_suffix_functor=lambda: pluralize.no("build failure", build_failures.value),
-                                                  done_suffix=lambda: '\n' if has_errors.value else '',
                                                 ) as this_dm:
             # If the compiler operates on individual files, we can execute them in parallel. If
             # the compiler doesn't operate on files, we have to execute them one at a time, as we
@@ -307,8 +304,8 @@ def Test( test_items,
                                        num_concurrent_tasks=max_num_concurrent_tasks if compiler.Type == compiler.TypeValue.File else 1,
                                        output_stream=this_dm.stream,
                                        progress_bar=True,
+                                       display_errors=False,
                                      )
-            has_errors.value = result != 0
         
         # ---------------------------------------------------------------------------
         # |  Execute
@@ -464,6 +461,7 @@ def Test( test_items,
                                   num_concurrent_tasks=max_num_concurrent_tasks if execute_in_parallel else 1,
                                   output_stream=this_dm.stream,
                                   progress_bar=True,
+                                  display_errors=False,
                                 )
         
         return [ result.complete_results for result in results ]
