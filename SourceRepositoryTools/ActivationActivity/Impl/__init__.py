@@ -123,7 +123,11 @@ def ActivateLibraries( name,
             fullpath = os.path.join(potential_library_dir, item)
             assert os.path.isdir(fullpath), fullpath
 
+            fullpath = AugmentLibraryDir(fullpath)
+            assert os.path.isdir(fullpath), fullpath
+
             fullpath, version = SourceRepositoryTools.GetVersionedDirectoryEx(version_info, fullpath)
+            
             fullpath = SourceRepositoryTools.GetCustomizedPath(fullpath)
 
             fullpath = AugmentLibraryDir(fullpath)
