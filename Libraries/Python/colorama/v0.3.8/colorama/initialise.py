@@ -28,8 +28,10 @@ def init(autoreset=False, convert=None, strip=None, wrap=True):
     global wrapped_stdout, wrapped_stderr
     global orig_stdout, orig_stderr
 
-    orig_stdout = sys.stdout
-    orig_stderr = sys.stderr
+    if orig_stdout == None:
+        orig_stdout = sys.stdout
+    if orig_stderr == None:
+        orig_stderr = sys.stderr
 
     if sys.stdout is None:
         wrapped_stdout = None
