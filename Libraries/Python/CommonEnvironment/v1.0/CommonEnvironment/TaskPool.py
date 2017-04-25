@@ -45,7 +45,9 @@ StreamDecorator.InitAnsiSequenceStreams()
 # |  Public Types
 # |
 # ---------------------------------------------------------------------------
+# <Too few public methods> pylint: disable = R0903
 class Task(object):
+    # ----------------------------------------------------------------------
     def __init__( self,
                   name,                     # "Foo"
                   action_description,       # "Building Foo"
@@ -70,6 +72,7 @@ class Task(object):
 # |  Public Methods
 # |
 # ---------------------------------------------------------------------------
+# <Too many local variables> pylint: disable = R0914
 def Execute( tasks,
              num_concurrent_tasks=None,
              output_stream=sys.stdout,      # optional
@@ -250,25 +253,25 @@ def Execute( tasks,
     if progress_bar:
         from tqdm import tqdm
 
-        progress_bar_lock = threading.Lock()
+        pb_lock = threading.Lock()
 
         with tqdm( total=len(tasks),
                    file=output_stream,
                    ncols=progress_bar_cols,
                    unit=" items",
-                 ) as progress_bar:
+                 ) as pb:
             # ----------------------------------------------------------------------
             def PBWriteStatuses(statuses):
-                with progress_bar_lock:
+                with pb_lock:
                     output_stream.write("\033[1B") # Move down one line to compensate for the progress bar
                     WriteStatuses(statuses)
                     output_stream.write("\033[1A\r") # Move up one line to compensate for the progress bar
 
             # ---------------------------------------------------------------------------
-            def GetStatus(future, task, update_type, optional_content):
+            def GetStatus(_, task, update_type, optional_content):
                 if update_type == StatusUpdate.Stop:
-                    with progress_bar_lock:
-                        progress_bar.update()
+                    with pb_lock:
+                        pb.update()
 
                 if not optional_content:
                     return optional_content
@@ -287,6 +290,7 @@ def Execute( tasks,
         status_template = "  {{name:<{}}} {{suffix}}".format(max_name_length + 1)
 
         # ----------------------------------------------------------------------
+        # <Unused argument> pylint: disable = W0613
         def GetStatus(future, task, update_type, optional_content):
             if task.complete.is_set():
                 suffix = "DONE! ({}, {})".format(task.result, task.time_delta_string)
@@ -415,6 +419,7 @@ def Transform( items,
 # |  Internal Types
 # |  
 # ----------------------------------------------------------------------
+# <Too few public methods> pylint: disable = R0903
 class _InternalTask(Task):
 
     # ----------------------------------------------------------------------
