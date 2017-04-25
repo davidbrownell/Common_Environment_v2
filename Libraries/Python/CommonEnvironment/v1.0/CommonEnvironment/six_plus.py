@@ -18,10 +18,22 @@ import base64
 import os
 import sys
 
+from CommonEnvironment import Package
+
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
+
+with Package.NameInfo(__package__) as ni:
+    __package__ = ni.created
+    
+    if sys.version_info[0] == 2:
+        from .Impl.six_plus.v2 import *
+    else:
+        from .Impl.six_plus.v3 import *
+    
+    __package__ = ni.original
 
 if sys.version_info[0] == 2:
 
