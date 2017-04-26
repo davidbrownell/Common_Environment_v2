@@ -579,6 +579,8 @@ def __GenerateAnsiSequenceStreamImpl( stream,
                                       autoreset=False,
                                       do_not_modify_std_streams=False,
                                     ):
+    assert __InitAnsiSequenceStreamsImpl_initialized.value, "InitAnsiSequenceStreams() must be called before invoking this method"
+
     # When colorama was initialized, sys.stdout and sys.stderr were
     # configured to strip and convert ansi escape sequences. However,
     # we may want to preserve those sequences. Assume that the stream 
