@@ -1009,6 +1009,7 @@ def _AllImpl( directory,
                               ],
                               output_stream=this_dm.stream,
                               progress_bar=True,
+                              # num_concurrent_tasks=1,
                             )
 
         action_items = [ data for data in output if data.result ]
