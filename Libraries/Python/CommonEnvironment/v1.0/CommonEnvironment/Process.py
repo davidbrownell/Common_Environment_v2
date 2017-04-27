@@ -20,8 +20,6 @@ import sys
 from six.moves import StringIO
 
 from CommonEnvironment.CallOnExit import CallOnExit
-from CommonEnvironment import six_plus
-from CommonEnvironment.StreamDecorator import StreamDecorator
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -71,6 +69,8 @@ def _ExecuteImpl( command_line,
                   line_delimited_output,
                 ):
     assert command_line
+
+    # <Invalid variable name> pylint: disable = C0103
     
     sink = None
     output = None
@@ -146,23 +146,8 @@ def _ExecuteImpl( command_line,
 
         # ----------------------------------------------------------------------
     
-    # ----------------------------------------------------------------------
-    def IsAsciiLetter(value):
-        if value >= ord('a') and value <= ord('z'):
-            return True
-
-        if value >= ord('A') and value <= ord('Z'):
-            return True
-
-        return False
-
-    # ----------------------------------------------------------------------
-    def ToAsciiString(content):
-        return bytearray(content).decode("ascii")
-
-    # ----------------------------------------------------------------------
-    
     args = [ command_line, ]
+
     kwargs = { "shell" : True,
                "stdout" : subprocess.PIPE,
                "stderr" : subprocess.STDOUT,
@@ -171,18 +156,49 @@ def _ExecuteImpl( command_line,
 
     result = subprocess.Popen(*args, **kwargs)
 
-    ESC = 27
-    NEWLINE = 10
-    LINEFEED = 13
+    ( CharacterStack_Escape, 
+      CharacterStack_LineReset, 
+      CharacterStack_Buffered,
+    ) = range(3)
+        
+    # Handle differences between bytes and strings in Python 3
+    if sys.version_info[0] == 2:
+        CharToValue = lambda c: c
+        IsAsciiLetter = lambda c: c in string.ascii_letters
+        IsNewLine = lambda c: c in [ '\r', '\n', ]
+        IsEsc = lambda c: c == '\033'
+        ToAsciiString = lambda c: ''.join(c)
+    else:
+        # ----------------------------------------------------------------------
+        def CharToValue(c):
+            return ord(c)
+
+        # ----------------------------------------------------------------------
+        def IsAsciiLetter(c):
+            if c >= ord('a') and c <= ord('z'):
+                return True
+
+            if c >= ord('A') and c <= ord('Z'):
+                return True
+
+            return False
+
+        # ----------------------------------------------------------------------
+        def IsNewLine(c):
+            return c in [ 10, 13, ]         # '\r', '\n'
+
+        # ----------------------------------------------------------------------
+        def IsEsc(c):
+            return c == 27                  # '\033'
+
+        # ----------------------------------------------------------------------
+        def ToAsciiString(c):
+            return bytearray(c).decode("ansi")
+
+        # ----------------------------------------------------------------------
 
     with CallOnExit(Flush):
         try:
-            # <Invalid variable name> pylint: disable = C0103
-            ( CharacterStack_Escape, 
-              CharacterStack_LineReset, 
-              CharacterStack_Buffered,
-            ) = range(3)
-
             character_stack = []
             character_stack_type = None
 
@@ -200,7 +216,7 @@ def _ExecuteImpl( command_line,
                     if not c:
                         break
 
-                    value = ord(c)
+                    value = CharToValue(c)
 
                 content = None
 
@@ -214,27 +230,27 @@ def _ExecuteImpl( command_line,
 
                     character_stack = []
                     character_stack_type = None
-                
+
                 elif character_stack_type == CharacterStack_LineReset:
-                    if c in [ NEWLINE, LINEFEED, ]:
+                    if IsNewLine(value):
                         character_stack.append(value)
                         continue
 
                     content = character_stack
-                    
+
                     character_stack = [ value, ]
                     character_stack_type = CharacterStack_Buffered
-                
+
                 else:
                     assert character_stack_type == None, character_stack_type
 
-                    if value == ESC:
+                    if IsEsc(value):
                         character_stack.append(value)
                         character_stack_type = CharacterStack_Escape
 
                         continue
 
-                    if value in [ NEWLINE, LINEFEED, ]:
+                    elif IsNewLine(value):
                         character_stack.append(value)
                         character_stack_type = CharacterStack_LineReset
 
@@ -243,11 +259,11 @@ def _ExecuteImpl( command_line,
                     content = [ value, ]
 
                 assert content
-                
+
                 if output(ToAsciiString(content)) == False:
                     hard_stop = True
                     break
-                
+            
             if not hard_stop and character_stack:
                 output(ToAsciiString(character_stack))
 
