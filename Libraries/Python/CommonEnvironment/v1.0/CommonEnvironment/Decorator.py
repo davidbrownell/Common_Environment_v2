@@ -55,7 +55,7 @@ def AsFunc(method_name):
     """
     # ----------------------------------------------------------------------
     @wrapt.decorator
-    def Wrapper(wrapped, instance, args, kwargs):
+    def Wrapper(wrapped, _, args, kwargs):
         assert inspect.isclass(wrapped)
 
         # ----------------------------------------------------------------------

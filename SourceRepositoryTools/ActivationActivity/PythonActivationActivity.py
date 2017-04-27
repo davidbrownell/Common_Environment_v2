@@ -214,6 +214,21 @@ class PythonActivationActivity(IActivationActivity):
                                                preserve_original=False,
                                              ))
         
+        # Get the python version
+        source_dir = os.path.realpath(os.path.join(_script_dir, "..", "..", constants.ToolsDir, cls.Name))
+        assert os.path.isdir(source_dir), source_dir
+        
+        source_dir, python_version = SourceRepositoryTools.GetVersionedDirectoryEx(version_specs.Tools, source_dir)
+        assert os.path.isdir(source_dir), source_dir
+        assert python_version
+        
+        # Create a substitution dict that can be used to populate subdirs based on the
+        # python version being used.
+        if python_version[0] == 'v':
+            python_version = python_version[1:]
+        
+        is_python_version2 = python_version.split('.')[0] == '2'
+
         # Symbolicly link the reference python files
 
         # ----------------------------------------------------------------------
@@ -227,25 +242,12 @@ class PythonActivationActivity(IActivationActivity):
 
             local_actions = []
         
-            # Get the python version
-            source_dir = os.path.realpath(os.path.join(_script_dir, "..", "..", constants.ToolsDir, cls.Name))
-            assert os.path.isdir(source_dir), source_dir
-        
-            source_dir, version = SourceRepositoryTools.GetVersionedDirectoryEx(version_specs.Tools, source_dir)
-            assert os.path.isdir(source_dir), source_dir
-            assert version
-        
-            # Create a substitution dict that can be used to populate subdirs based on the
-            # python version being used.
-            if version[0] == 'v':
-                version = version[1:]
-        
             # Create the dirs that will contain dynamic content
-            sub_dict = { "python_version" : version,
-                         "python_version_short" : '.'.join(version.split('.')[0:2]),
+            sub_dict = { "python_version" : python_version,
+                         "python_version_short" : '.'.join(python_version.split('.')[0:2]),
                        }
         
-            if version.split('.')[0] == '2':
+            if is_python_version2:
                 global_actions.append(Shell.AugmentSet("PYTHONUNBUFFERED", "1"))
 
             # Create the actions
@@ -336,7 +338,7 @@ class PythonActivationActivity(IActivationActivity):
         
         # ----------------------------------------------------------------------
         
-        if sys.version_info[0] == 2:
+        if is_python_version2:
             version_dir = "v2"
         else:
             version_dir = "v3"

@@ -19,8 +19,9 @@ import sys
 
 from six.moves import StringIO
 
-from .CallOnExit import CallOnExit
-from .StreamDecorator import StreamDecorator
+from CommonEnvironment.CallOnExit import CallOnExit
+from CommonEnvironment import six_plus
+from CommonEnvironment.StreamDecorator import StreamDecorator
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -145,6 +146,22 @@ def _ExecuteImpl( command_line,
 
         # ----------------------------------------------------------------------
     
+    # ----------------------------------------------------------------------
+    def IsAsciiLetter(value):
+        if value >= ord('a') and value <= ord('z'):
+            return True
+
+        if value >= ord('A') and value <= ord('Z'):
+            return True
+
+        return False
+
+    # ----------------------------------------------------------------------
+    def ToAsciiString(content):
+        return bytearray(content).decode("ascii")
+
+    # ----------------------------------------------------------------------
+    
     args = [ command_line, ]
     kwargs = { "shell" : True,
                "stdout" : subprocess.PIPE,
@@ -152,10 +169,11 @@ def _ExecuteImpl( command_line,
                "env" : environment,
              }
 
-    if sys.version_info[0] != 2:
-        kwargs["encoding"] = "ansi"
-
     result = subprocess.Popen(*args, **kwargs)
+
+    ESC = 27
+    NEWLINE = 10
+    LINEFEED = 13
 
     with CallOnExit(Flush):
         try:
@@ -172,7 +190,7 @@ def _ExecuteImpl( command_line,
 
             while True:
                 if character_stack_type == CharacterStack_Buffered:
-                    c = character_stack.pop()
+                    value = character_stack.pop()
 
                     assert not character_stack
                     character_stack_type = None
@@ -182,56 +200,56 @@ def _ExecuteImpl( command_line,
                     if not c:
                         break
 
+                    value = ord(c)
+
                 content = None
 
                 if character_stack_type == CharacterStack_Escape:
-                    character_stack.append(c)
+                    character_stack.append(value)
 
-                    if c not in string.ascii_letters:
+                    if not IsAsciiLetter(value):
                         continue
 
-                    content = ''.join(character_stack)
-                    
+                    content = character_stack
+
                     character_stack = []
                     character_stack_type = None
                 
                 elif character_stack_type == CharacterStack_LineReset:
-                    if c in [ '\r', '\n', ]:
-                        character_stack.append(c)
+                    if c in [ NEWLINE, LINEFEED, ]:
+                        character_stack.append(value)
                         continue
 
-                    content = ''.join(character_stack)
+                    content = character_stack
                     
-                    character_stack = [ c, ]
+                    character_stack = [ value, ]
                     character_stack_type = CharacterStack_Buffered
                 
                 else:
                     assert character_stack_type == None, character_stack_type
 
-                    value = ord(c)
-
-                    if value == 27: # Esc
-                        character_stack.append(c)
+                    if value == ESC:
+                        character_stack.append(value)
                         character_stack_type = CharacterStack_Escape
 
                         continue
 
-                    if value == 13: # \r
-                        character_stack.append(c)
+                    if value in [ NEWLINE, LINEFEED, ]:
+                        character_stack.append(value)
                         character_stack_type = CharacterStack_LineReset
 
                         continue
 
-                    content = c
+                    content = [ value, ]
 
-                assert content != None
-
-                if output(content) == False:
+                assert content
+                
+                if output(ToAsciiString(content)) == False:
                     hard_stop = True
                     break
                 
             if not hard_stop and character_stack:
-                output(''.join(character_stack))
+                output(ToAsciiString(character_stack))
 
             result = result.wait() or 0
 

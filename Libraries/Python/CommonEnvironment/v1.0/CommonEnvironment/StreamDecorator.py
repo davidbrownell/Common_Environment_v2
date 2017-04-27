@@ -579,6 +579,8 @@ def __GenerateAnsiSequenceStreamImpl( stream,
                                       autoreset=False,
                                       do_not_modify_std_streams=False,
                                     ):
+    assert __InitAnsiSequenceStreamsImpl_initialized.value, "InitAnsiSequenceStreams() must be called before invoking this method"
+
     # When colorama was initialized, sys.stdout and sys.stderr were
     # configured to strip and convert ansi escape sequences. However,
     # we may want to preserve those sequences. Assume that the stream 
@@ -618,10 +620,11 @@ def __GenerateAnsiSequenceStreamImpl( stream,
                                          convert=False,
                                          autoreset=autoreset,
                                        )
+
                 convertor._modified = True
 
                 wrapped_stream._StreamWrapper__convertor = convertor
-
+            
                 restore_functors.append(lambda wrapped_stream=wrapped_stream, original_convertor=original_convertor: RestoreConvertor(wrapped_stream, original_convertor))
 
         if restore_functors:
@@ -629,9 +632,16 @@ def __GenerateAnsiSequenceStreamImpl( stream,
             restore_functors.append(cinit.reinit)
         
     with CallOnExit(*restore_functors):
-        if getattr(stream, "_StreamWrapper__wrapped", None) == cinit.orig_stdout:
-            this_stream = cinit.wrapped_stdout
-        else:
+        this_stream = None
+
+        wrapped = getattr(stream, "_StreamWrapper__wrapped")
+        if wrapped:
+            if wrapped == cinit.orig_stdout:
+                this_stream = cinit.wrapped_stdout
+            elif wrapped == cinit.orig_stderr:
+                this_stream = cinit.wrapped_stderr
+        
+        if this_stream == None:
             this_stream = stream
 
         yield StreamDecorator(cinit.wrap_stream( this_stream,

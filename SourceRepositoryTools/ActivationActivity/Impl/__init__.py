@@ -65,7 +65,7 @@ def ActivateLibraries( name,
 
     # ----------------------------------------------------------------------
     def ToRepositoryName(repository):
-        if repositories.configuration:
+        if repository.configuration:
             return "{} ({})".format(repository.name, repository.configuration)
 
         return repository.name
@@ -127,7 +127,11 @@ def ActivateLibraries( name,
             assert os.path.isdir(fullpath), fullpath
 
             fullpath, version = SourceRepositoryTools.GetVersionedDirectoryEx(version_info, fullpath)
+            
             fullpath = SourceRepositoryTools.GetCustomizedPath(fullpath)
+
+            fullpath = AugmentLibraryDir(fullpath)
+            assert os.path.isdir(fullpath), fullpath
 
             libraries[item] = QuickObject( repository=repository,
                                            fullpath=fullpath,
