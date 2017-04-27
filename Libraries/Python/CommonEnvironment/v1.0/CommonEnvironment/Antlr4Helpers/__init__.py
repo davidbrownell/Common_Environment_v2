@@ -116,5 +116,9 @@ def CreateParser( antlr_output_dir,
             return getattr(cls.Parser, name)
 
     # ----------------------------------------------------------------------
+    class Parser(six.with_metaclass(Meta, ParserBase)):
+        pass
 
-    return six_plus.CreateMetaClass(ParserBase, Meta)
+    # ----------------------------------------------------------------------
+    
+    return Parser
