@@ -65,7 +65,7 @@ def ActivateLibraries( name,
 
     # ----------------------------------------------------------------------
     def ToRepositoryName(repository):
-        if repositories.configuration:
+        if repository.configuration:
             return "{} ({})".format(repository.name, repository.configuration)
 
         return repository.name
