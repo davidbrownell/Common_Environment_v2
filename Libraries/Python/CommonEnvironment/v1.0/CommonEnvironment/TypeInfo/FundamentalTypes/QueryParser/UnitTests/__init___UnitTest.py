@@ -18,6 +18,8 @@ import sys
 import unittest
 import uuid
 
+import six
+
 from CommonEnvironment import Package
 from CommonEnvironment.TypeInfo import FundamentalTypes
 from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization.StringSerialization import StringSerialization
@@ -160,7 +162,7 @@ class UnitTest(unittest.TestCase):
         result = self._Parse('time >= @now')
         self.assertAlmostEqual(result.RHS.utcoffset(), now.time().utcoffset(), datetime.timedelta(minutes=1))
 
-        self.assertRaises(lambda: self._Parse('s != @now'))
+        self.assertRaises(Exception, lambda: self._Parse('s != @now'))
 
         for value, delta in [ ( "2Y", datetime.timedelta(weeks=52 * 2) ),
                               ( "2W", datetime.timedelta(weeks=2) ),
@@ -187,11 +189,11 @@ class UnitTest(unittest.TestCase):
         result = self._Parse('dt >= @today')
         self.assertAlmostEqual(result.RHS.date(), today.date(), datetime.timedelta(hours=24))
 
-        self.assertRaises(lambda: self._Parse('s != @today'))
+        self.assertRaises(Exception, lambda: self._Parse('s != @today'))
 
     # ----------------------------------------------------------------------
     def test_None(self):
-        self.assertRaises(lambda: self._Parse("constrained is @none"))
+        self.assertRaises(Exception, lambda: self._Parse("constrained is @none"))
 
         result = self._Parse("optional is @none")
         self.assertTrue(isinstance(result, StandardExpression))
@@ -207,20 +209,20 @@ class UnitTest(unittest.TestCase):
 
     # ----------------------------------------------------------------------
     def test_InvalidVar(self):
-        self.assertRaises(lambda: self._Parse("does_not_exist != 20"))
+        self.assertRaises(Exception, lambda: self._Parse("does_not_exist != 20"))
 
     # ----------------------------------------------------------------------
     def test_InvalidOperator(self):
-        self.assertRaises(lambda: self._Parse("b <= True"))
+        self.assertRaises(Exception, lambda: self._Parse("b <= True"))
 
     # ----------------------------------------------------------------------
     def test_InvalidString(self):
-        self.assertRaises(lambda: self._Parse("dt == 'invalid_datetime'"))
+        self.assertRaises(Exception, lambda: self._Parse("dt == 'invalid_datetime'"))
 
     # ----------------------------------------------------------------------
     def test_InvalidWithConstraint(self):
         self._Parse("constrained == 20")
-        self.assertRaises(lambda: self._Parse("constrained == 100"))
+        self.assertRaises(Exception, lambda: self._Parse("constrained == 100"))
 
     # ----------------------------------------------------------------------
     def test_Not(self):
@@ -243,7 +245,7 @@ class UnitTest(unittest.TestCase):
     # ----------------------------------------------------------------------
     def _ValidateStandard(self, lhs, operator, rhs):
         rhs_value = rhs
-        if not isinstance(rhs_value, basestring):
+        if not isinstance(rhs_value, six.string_types):
             rhs_value = StringSerialization.SerializeItem(self._types[lhs], rhs_value)
 
         result = self._Parse("{} {} '{}'".format(lhs, operator, rhs_value))

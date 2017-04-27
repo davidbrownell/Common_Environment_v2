@@ -19,9 +19,11 @@ import os
 import sys
 
 import antlr4
+import six
 
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment.Constraints import FunctionConstraints
+from CommonEnvironment import six_plus
 from CommonEnvironment.TypeInfo import FundamentalTypes
 
 # ---------------------------------------------------------------------------
@@ -73,27 +75,7 @@ def CreateParser( antlr_output_dir,
             mods.append(mod)
 
     # ----------------------------------------------------------------------
-    class Parser(object):
-
-        # ----------------------------------------------------------------------
-        class Meta(type):
-            
-            # ----------------------------------------------------------------------
-            def __init__(cls, *args, **kwargs):
-                # Augment the Parser class with the ANTLR4 objects
-                for k, v in classes.iteritems():
-                    setattr(cls, k, v)
-
-            # ----------------------------------------------------------------------
-            def __getattr__(cls, name):
-                # Most of the time, this will be called when referencing
-                # a token by name to get its numerical value.
-                return getattr(cls.Parser, name)
-
-        # ----------------------------------------------------------------------
-        
-        __metaclass__                       = Meta
-
+    class ParserBase(object):
         # ----------------------------------------------------------------------
         @staticmethod
         def Parse( visitor,
@@ -117,6 +99,25 @@ def CreateParser( antlr_output_dir,
         @classmethod
         def GetLiteral(cls, value):
             return GetLiteral(cls, value)
+
+    # ----------------------------------------------------------------------
+    class Meta(type):
+        
+        # ----------------------------------------------------------------------
+        def __init__(cls, *args, **kwargs):
+            # Augment the Parser class with the ANTLR4 objects
+            for k, v in six.iteritems(classes):
+                setattr(cls, k, v)
+
+        # ----------------------------------------------------------------------
+        def __getattr__(cls, name):
+            # Most of the time, this will be called when referencing
+            # a token by name to get its numerical value.
+            return getattr(cls.Parser, name)
+
+    # ----------------------------------------------------------------------
+    class Parser(six.with_metaclass(Meta, ParserBase)):
+        pass
 
     # ----------------------------------------------------------------------
     

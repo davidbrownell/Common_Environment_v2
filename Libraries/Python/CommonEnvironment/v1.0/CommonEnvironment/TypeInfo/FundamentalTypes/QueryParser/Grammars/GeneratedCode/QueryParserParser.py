@@ -1,24 +1,25 @@
-# Generated from C:\Temp\QueryParser\Grammars\BuildEnvironment\..\QueryParser.g4 by ANTLR 4.6
+# Generated from C:\Temp\QueryParser\Grammars\BuildEnvironment\..\QueryParser.g4 by ANTLR 4.7
 # encoding: utf-8
 from __future__ import print_function
 from antlr4 import *
 from io import StringIO
+import sys
 
 def serializedATN():
     with StringIO() as buf:
-        buf.write(u"\3\u0430\ud6d1\u8206\uad2d\u4417\uaef1\u8d80\uaadd\3")
+        buf.write(u"\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3")
         buf.write(u"\35\60\4\2\t\2\4\3\t\3\4\4\t\4\4\5\t\5\3\2\6\2\f\n\2")
         buf.write(u"\r\2\16\2\r\3\3\3\3\3\3\7\3\23\n\3\f\3\16\3\26\13\3\3")
         buf.write(u"\4\3\4\3\4\3\4\5\4\34\n\4\3\4\3\4\3\4\3\4\3\4\3\4\3\4")
         buf.write(u"\5\4%\n\4\3\5\3\5\3\5\3\5\3\5\5\5,\n\5\5\5.\n\5\3\5\2")
         buf.write(u"\2\6\2\4\6\b\2\7\3\2\b\t\3\2\22\23\3\2\n\21\4\2\30\31")
-        buf.write(u"\34\35\3\2\3\4\63\2\13\3\2\2\2\4\17\3\2\2\2\6$\3\2\2")
-        buf.write(u"\2\b-\3\2\2\2\n\f\5\4\3\2\13\n\3\2\2\2\f\r\3\2\2\2\r")
-        buf.write(u"\13\3\2\2\2\r\16\3\2\2\2\16\3\3\2\2\2\17\24\5\6\4\2\20")
-        buf.write(u"\21\t\2\2\2\21\23\5\6\4\2\22\20\3\2\2\2\23\26\3\2\2\2")
-        buf.write(u"\24\22\3\2\2\2\24\25\3\2\2\2\25\5\3\2\2\2\26\24\3\2\2")
-        buf.write(u"\2\27\30\7\27\2\2\30\31\t\3\2\2\31%\7\32\2\2\32\34\7")
-        buf.write(u"\24\2\2\33\32\3\2\2\2\33\34\3\2\2\2\34\35\3\2\2\2\35")
+        buf.write(u"\34\35\3\2\3\4\2\63\2\13\3\2\2\2\4\17\3\2\2\2\6$\3\2")
+        buf.write(u"\2\2\b-\3\2\2\2\n\f\5\4\3\2\13\n\3\2\2\2\f\r\3\2\2\2")
+        buf.write(u"\r\13\3\2\2\2\r\16\3\2\2\2\16\3\3\2\2\2\17\24\5\6\4\2")
+        buf.write(u"\20\21\t\2\2\2\21\23\5\6\4\2\22\20\3\2\2\2\23\26\3\2")
+        buf.write(u"\2\2\24\22\3\2\2\2\24\25\3\2\2\2\25\5\3\2\2\2\26\24\3")
+        buf.write(u"\2\2\2\27\30\7\27\2\2\30\31\t\3\2\2\31%\7\32\2\2\32\34")
+        buf.write(u"\7\24\2\2\33\32\3\2\2\2\33\34\3\2\2\2\34\35\3\2\2\2\35")
         buf.write(u"\36\7\27\2\2\36\37\t\4\2\2\37%\5\b\5\2 !\7\6\2\2!\"\5")
         buf.write(u"\4\3\2\"#\7\7\2\2#%\3\2\2\2$\27\3\2\2\2$\33\3\2\2\2$")
         buf.write(u" \3\2\2\2%\7\3\2\2\2&.\7\25\2\2\'.\7\26\2\2(+\t\5\2\2")
@@ -87,9 +88,9 @@ class QueryParserParser ( Parser ):
     DOUBLE_QUOTE_STRING=26
     SINGLE_QUOTE_STRING=27
 
-    def __init__(self, input):
-        super(QueryParserParser, self).__init__(input)
-        self.checkVersion("4.6")
+    def __init__(self, input, output=sys.stdout):
+        super(QueryParserParser, self).__init__(input, output=output)
+        self.checkVersion("4.7")
         self._interp = ParserATNSimulator(self, self.atn, self.decisionsToDFA, self.sharedContextCache)
         self._predicates = None
 

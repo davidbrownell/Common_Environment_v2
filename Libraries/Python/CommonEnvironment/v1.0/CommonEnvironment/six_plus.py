@@ -23,6 +23,11 @@ _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
+# <Redefinig built-in type> pylint: disable = W0622
+# <Unable to import> pylint: disable = E0401
+# <Using variable before assignment> pylint: disable = E0601
+# <No name in module> pylint: disable = E0611
+
 if sys.version_info[0] == 2:
 
     # <Unused argument> pylint: disable = W0613
@@ -45,6 +50,8 @@ if sys.version_info[0] == 2:
         return b
 
 else:
+    # <Invalid argument name> pylint: disable = C0103
+
     # ----------------------------------------------------------------------
     def BytesToString(b, encode=False):
         if encode:
