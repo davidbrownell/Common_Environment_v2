@@ -28,6 +28,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # |  Public Types
 # |  
 # ----------------------------------------------------------------------
+# <Too few public methods> pylint: disable = R0903
 class ModifiableValue(object):
     def __init__(self, value):
         self.value                          = value
@@ -58,7 +59,7 @@ def All( items,
          functor=None,                      # def Func(item) -> Bool
        ):
     if functor == None:
-        functor = lambda item: bool(item)
+        functor = bool
 
     for item in items:
         if not functor(item):
@@ -71,7 +72,7 @@ def Any( items,
          functor=None,                      # def Func(item) -> Bool
        ):
     if functor == None:
-        functor = lambda item: bool(item)
+        functor = bool
 
     for item in items:
         if functor(item):
@@ -80,6 +81,7 @@ def Any( items,
     return False
 
 # ----------------------------------------------------------------------
+# <Invalid argument name> pylint: disable = C0103
 def ToPascalCase(s):
     """Returns APascalCase string"""
     parts = s.split('_')
@@ -96,6 +98,7 @@ def ToPascalCase(s):
 # ----------------------------------------------------------------------
 _ToSnakeCase_regex = re.compile("((?<=[a-z0-9])[A-Z]|(?!^)[A-Z](?=[a-z]))")
     
+# <Invalid argument name> pylint: disable = C0103
 def ToSnakeCase(s):
     """Returns a_snake_case string"""
     return _ToSnakeCase_regex.sub(r'_\1', s).lower().replace('__', '_')
@@ -103,6 +106,7 @@ def ToSnakeCase(s):
 # ----------------------------------------------------------------------
 _ToPlural_engine = ModifiableValue(None)
 
+# <Invalid argument name> pylint: disable = C0103
 def ToPlural(s):
     if _ToPlural_engine.value == None:
         import inflect
@@ -137,8 +141,10 @@ if sys.version_info[0] == 2:
          not os.getenv("DEVELOPMENT_ENVIRONMENT_NO_LONG_FILENAME_PATCH") and \
          platform.python_implementation().lower().find("ironpython") == -1
        ):
-        import __builtin__
+        import __builtin__                  # <Unable to import> pylint: disable = F0401
     
+        import six
+
         # ----------------------------------------------------------------------
         def DecorateFilename(filename):
             if filename:
@@ -160,32 +166,32 @@ if sys.version_info[0] == 2:
             return NewFunction
     
         # ----------------------------------------------------------------------
-        def WalkItems(module, these_items):
-            for item in these_items:
-                if isinstance(item, basestring):
-                    setattr(module, item, Patch(getattr(module, item)))
+        def WalkItems(mod, items):
+            for item in items:
+                if isinstance(item, six.string_types):
+                    setattr(mod, item, Patch(getattr(mod, item)))
                 elif isinstance(item, dict):
                     for k, v in item.iteritems():
-                        WalkItems(getattr(module, k), v)
+                        WalkItems(getattr(mod, k), v)
                 else:
                     assert False, type(item)
     
         # ----------------------------------------------------------------------
         
-        for module_name, these_items in { "__builtin__" : [ "open",
-                                                          ],
-                                          "os" : [ "makedirs",
-                                                   "remove",
-                                                   "stat",
-                                                   { "path" : [ "exists",
-                                                                "getsize",
-                                                                "getmtime",
-                                                                "isdir",
-                                                                "isfile",
-                                                              ],
-                                                   }             
-                                                 ],
-                                        }.iteritems():
+        for module_name, these_items in six.iteritems({ "__builtin__" : [ "open",
+                                                                        ],
+                                                        "os" : [ "makedirs",
+                                                                 "remove",
+                                                                 "stat",
+                                                                 { "path" : [ "exists",
+                                                                              "getsize",
+                                                                              "getmtime",
+                                                                              "isdir",
+                                                                              "isfile",
+                                                                            ],
+                                                                 }             
+                                                               ],
+                                                      }):
             assert module_name in sys.modules
             module = sys.modules[module_name]
     
