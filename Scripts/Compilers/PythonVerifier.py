@@ -143,10 +143,6 @@ class Verifier( CustomInvocationMixin,
                      verbose_stream,
                      verbose,
                    ):                       # <Too many local variables> pylint: disable = R0914
-        # TODO: Python 3.6 is not supported by pylint at this time
-        if sys.version_info[0] == 3:
-            return 0
-
         environment = Shell.GetEnvironment()
 
         # If the file being invoked is a test file, measure the file under

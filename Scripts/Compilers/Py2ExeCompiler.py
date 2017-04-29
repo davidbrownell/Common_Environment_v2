@@ -23,6 +23,7 @@ import sys
 import textwrap
 
 from collections import OrderedDict
+import six
 from six.moves import StringIO
 
 from CommonEnvironment.CallOnExit import CallOnExit
@@ -265,7 +266,7 @@ class Compiler( AtomicInputProcessingMixin,
                                  packages=', '.join([ '"{}"'.format(package) for package in context.packages ]),
                                  script=input_filename,
                                  type=BuildTypeToString(context.build_type),
-                                 version_info='' if not version_info else StreamDecorator.LeftJustify( '\n'.join([ '"{}" : "{}",'.format(k, v) for k, v in version_info.iteritems() ]),
+                                 version_info='' if not version_info else StreamDecorator.LeftJustify( '\n'.join([ '"{}" : "{}",'.format(k, v) for k, v in six.iteritems(version_info) ]),
                                                                                                        len("setup( "),
                                                                                                      ),
                                  icon='' if context.icon_filename == None else '"icon_resources" : [ (1, "{}"), ],'.format(context.icon_filename),
