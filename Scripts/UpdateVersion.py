@@ -26,6 +26,8 @@ import time
 
 from collections import OrderedDict
 
+import six
+
 from CommonEnvironment import CommandLine
 from CommonEnvironment import RegularExpression
 from CommonEnvironment.StreamDecorator import StreamDecorator
@@ -65,14 +67,14 @@ def Create( filename,
 
     func = None
 
-    for k, v in EXTENSION_MAP.iteritems():
+    for k, v in six.iteritems(EXTENSION_MAP):
         if filename.endswith(k):
             func = v[0]
             break
 
     if func == None:
         raise CommandLine.UsageException("'{}' is not  a supported file type; supported extensions are {}".format( filename, 
-                                                                                                                   ', '.join([ "'{}'".format(k) for k in EXTENSION_MAP.iterkeys() ]),
+                                                                                                                   ', '.join([ "'{}'".format(k) for k in six.iterkeys(EXTENSION_MAP) ]),
                                                                                                                  ))
 
     output_stream.write("Writing '{}'...".format(filename))
@@ -93,14 +95,14 @@ def Update( filename,
           ):
     func = None
 
-    for k, v in EXTENSION_MAP.iteritems():
+    for k, v in six.iteritems(EXTENSION_MAP):
         if filename.endswith(k):
             func = v[1]
             break
 
     if func == None:
         raise CommandLine.UsageException("'{}' is not  a supported file type; supported extensions are {}".format( filename, 
-                                                                                                                   ', '.join([ "'{}'".format(k) for k in EXTENSION_MAP.iterkeys() ]),
+                                                                                                                   ', '.join([ "'{}'".format(k) for k in six.iterkeys(EXTENSION_MAP) ]),
                                                                                                                  ))
 
     content = func( open(filename).read(), 
@@ -144,9 +146,9 @@ def __CreatePython( major_version,
                                                                                    julian=julian,
                                                                                    build=build,
                                                                                  ))
-    output.append('\n'.join([ '{} = {}'.format(k, v) for k, v in additional_data.iteritems() ]))
+    output.append('\n'.join([ '{} = {}'.format(k, v) for k, v in six.iteritems(additional_data) ]))
 
-    return '\n'.join(output)
+    return "{}\n".format('\n'.join(output))
 
 # ---------------------------------------------------------------------------
 def __UpdatePython( content,
