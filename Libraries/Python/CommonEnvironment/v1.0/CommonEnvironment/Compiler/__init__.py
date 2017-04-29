@@ -286,7 +286,7 @@ class Base( InputProcessingMixin,
         if isinstance(optional_metadata, dict):
             # ---------------------------------------------------------------------------
             def Generator():
-                for item in optional_metadata.iteritems():
+                for item in six.iteritems(optional_metadata):
                     yield item
 
             # ---------------------------------------------------------------------------
@@ -507,11 +507,11 @@ class Base( InputProcessingMixin,
         placeholder = "<<!!--__"
 
         additional_args_lower = {}
-        for k, v in additional_args.iteritems():
+        for k, v in six.iteritems(additional_args):
             additional_args_lower[k.lower()] = v
 
         environ_lower = {}
-        for k, v in os.environ.iteritems():
+        for k, v in six.iteritems(os.environ):
             environ_lower[k.lower()] = v
 
         regexp = re.compile(r"\$\((?P<var>.+?)\)")

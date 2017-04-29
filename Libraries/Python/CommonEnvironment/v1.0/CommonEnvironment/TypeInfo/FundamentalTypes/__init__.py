@@ -291,8 +291,8 @@ def CreateSimpleVisitor( onBoolFunc=None,               # def Func(type_info, *a
     return SimpleVisitor
 
 # ----------------------------------------------------------------------
-def CreateTypeInfo(type, **kwargs):
-    if _IsStringType(type):
+def CreateTypeInfo(type_, **kwargs):
+    if _IsStringType(type_):
         return StringTypeInfo(**kwargs)
 
     for potential_type_info in [ BoolTypeInfo,
@@ -307,12 +307,12 @@ def CreateTypeInfo(type, **kwargs):
                                  IntTypeInfo,
                                  # StringTypeInfo,
                                  TimeTypeInfo,
-                                ]:
-        if potential_type_info.ExpectedType == type:
+                               ]:
+        if potential_type_info.ExpectedType == type_:
             return potential_type_info(**kwargs)
 
-    raise Exception("'{}' is not a recognized type".format(type))
-
+    raise Exception("'{}' is not a recognized type".format(type_))
+    
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
@@ -329,4 +329,3 @@ else:
         return t == str
 
     # ----------------------------------------------------------------------
-    
