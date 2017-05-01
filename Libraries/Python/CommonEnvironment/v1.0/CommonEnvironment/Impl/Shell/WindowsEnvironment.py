@@ -35,7 +35,12 @@ class WindowsEnvironment(Environment):
     ExecutableExtension                     = ".exe"
     AllArgumentsScriptVariable              = "%*"
     EnvironmentVariableDelimiter            = ';'
-    PotentialOSVersionDirectoryNames        = [ "10", "8", "7", "Vista", "2003Server", "XP", ]
+    PotentialOSVersionDirectoryNames        = [ # Client Versions
+                                                "10", "8", "7", "Vista", "XP", 
+                                                
+                                                # Server Versions
+                                                "2012ServerR2", "2003Server",
+                                              ]
     HasCaseSensitiveFileSystem              = False
     TempDirectories                         = [ os.getenv("TMP"), ]
 
