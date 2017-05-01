@@ -120,8 +120,8 @@ class PythonActivationActivity(IActivationActivity):
         dest_dir = os.path.join(generated_dir, cls.Name)
         assert os.path.isdir(dest_dir), dest_dir
 
-        cols = [ 40, 11, 100, ]
-        template = "{name:<%d}  {type:<%d}  {fullpath:<%d}\n" % tuple(cols)
+        cols = [ 40, 11, 11, 100, ]
+        template = "{name:<%d}  {type:<%d}  {specific:<%d} {fullpath:<%d}\n" % tuple(cols)
 
         for name, dirs in [ ( "Libraries", cls.LibrarySubdirs ),
                             ( "Scripts", cls.ScriptSubdirs ),
@@ -140,11 +140,13 @@ class PythonActivationActivity(IActivationActivity):
                              name=name,
                              header=template.format( name="Name",
                                                      type="Type",
+                                                     specific="OS Specific",
                                                      fullpath="Fullpath",
                                                    ),
                              underline=template.format( name='-' * cols[0],
                                                         type='-' * cols[1],
-                                                        fullpath='-' * cols[2],
+                                                        specific='-' * cols[2],
+                                                        fullpath='-' * cols[3],
                                                       ),
                            ))
 
@@ -162,8 +164,31 @@ class PythonActivationActivity(IActivationActivity):
                 if os.path.isdir(fullpath) and os.path.basename(fullpath) in [ "__pycache__", ]:
                     continue
 
+                if os.path.isdir(fullpath):
+                    type_ = "Directory"
+                    filenames = []
+                    
+                    for root, dirs, items in os.walk(fullpath):
+                        filenames += [ os.path.join(root, item) for item in items ]
+
+                else:
+                    type_ = "File"
+                    filenames = [ fullpath, ]
+
+                is_os_specific = False
+                for filename in filenames:
+                    if os.path.splitext(filename)[1] in [ # Windows 
+                                                          ".pyd", ".exe", ".bat", ".cmd", 
+                                                          
+                                                          # Linux
+                                                          ".so", ".sh", 
+                                                        ]:
+                        is_os_specific = True
+                        break
+
                 output_stream.write(template.format( name=item,
-                                                     type="Directory" if os.path.isdir(fullpath) else "File",
+                                                     type=type_,
+                                                     specific="True" if is_os_specific else "False",
                                                      fullpath=fullpath,
                                                    ))
 
