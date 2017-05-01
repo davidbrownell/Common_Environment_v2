@@ -27,8 +27,9 @@ from CommonEnvironment import Package
 with Package.NameInfo(__package__) as ni:
     __package__ = ni.created
 
+    from . import Constants
     from . import Impl
-
+    
     __package__ = ni.original
 
 import __init__ as SourceRepositoryTools
@@ -50,7 +51,7 @@ def EntryPoint( output_dir,
               ):
     assert os.path.isdir(output_dir), output_dir
 
-    filename = os.path.join(output_dir, SourceRepositoryTools.REPOSITORY_ID_FILENAME)
+    filename = os.path.join(output_dir, Constants.REPOSITORY_ID_FILENAME)
      
     with open(filename, 'w') as f:
         f.write(Impl.REPOSITORY_ID_CONTENT_TEMPLATE.format( name=name,
