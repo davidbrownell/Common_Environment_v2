@@ -121,21 +121,31 @@ def ActivateLibraries( name,
                                    ))
 
             fullpath = os.path.join(potential_library_dir, item)
-            assert os.path.isdir(fullpath), fullpath
-
-            fullpath = AugmentLibraryDir(fullpath)
-            assert os.path.isdir(fullpath), fullpath
-
-            fullpath, version = SourceRepositoryTools.GetVersionedDirectoryEx(version_info, fullpath)
             
-            fullpath = SourceRepositoryTools.GetCustomizedPath(fullpath)
+            # Library names can be customized in the following ways:
+            version = ModifiableValue(None)
 
-            fullpath = AugmentLibraryDir(fullpath)
-            assert os.path.isdir(fullpath), fullpath
+            # ----------------------------------------------------------------------
+            def GetVersionedDirectoryEx(fullpath):
+                fullpath, this_version = SourceRepositoryTools.GetVersionedDirectoryEx(version_info, fullpath)
+                version.value = this_version
+
+                return fullpath
+
+            # ----------------------------------------------------------------------
+
+            for index, method in enumerate([ SourceRepositoryTools.GetCustomizedPath,
+                                             AugmentLibraryDir,
+                                             GetVersionedDirectoryEx,
+                                             SourceRepositoryTools.GetCustomizedPath,
+                                             AugmentLibraryDir,
+                                           ]):
+                fullpath = method(fullpath)
+                assert os.path.isdir(fullpath), (index, fullpath)
 
             libraries[item] = QuickObject( repository=repository,
                                            fullpath=fullpath,
-                                           version=version,
+                                           version=version.value,
                                          )
 
     # On some systems, the symbolc link commands will generate output that we would like to 
