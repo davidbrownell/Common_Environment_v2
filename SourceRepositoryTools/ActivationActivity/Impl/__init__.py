@@ -109,10 +109,12 @@ def ActivateLibraries( name,
                         """\
                         The library '{name}' has already been defined.
 
-                        Original:               {original_name} <{original_id}> [{original_root}]
-                        New:                    {new_name} <{new_id}> [{new_root}]
+                            Original:       {original_name} ({original_version}) <{original_id}> [{original_root}]
+                            New:            {new_name} <{new_id}> [{new_root}]
+                        
                         """).format( name=item,
                                      original_name=ToRepositoryName(libraries[item].repository),
+                                     original_version=libraries[item].version,
                                      original_id=libraries[item].repository.id,
                                      original_root=libraries[item].repository.root,
                                      new_name=ToRepositoryName(repository),
