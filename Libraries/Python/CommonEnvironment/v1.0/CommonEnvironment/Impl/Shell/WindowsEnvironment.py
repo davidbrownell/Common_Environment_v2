@@ -35,7 +35,12 @@ class WindowsEnvironment(Environment):
     ExecutableExtension                     = ".exe"
     AllArgumentsScriptVariable              = "%*"
     EnvironmentVariableDelimiter            = ';'
-    PotentialOSVersionDirectoryNames        = [ "10", "8", "7", "Vista", "2003Server", "XP", ]
+    PotentialOSVersionDirectoryNames        = [ # Client Versions
+                                                "10", "8", "7", "Vista", "XP", 
+                                                
+                                                # Server Versions
+                                                "2003Server",
+                                              ]
     HasCaseSensitiveFileSystem              = False
     TempDirectories                         = [ os.getenv("TMP"), ]
 
@@ -52,15 +57,20 @@ class WindowsEnvironment(Environment):
             
         potential_versions = { "10" : "10",
                                "8" : "10",                  # Crazy, but true
+                               "2012ServerR2" : "10",
+                               
                                "2012Server" : "8",
                                "post2008Server" : "8",
+                               
                                "7" : "7",
                                "2008Server" : "7",
+                               
                                "2003Server" : "2003Server"
                              }
                             
         assert release in potential_versions, release
         self._os_version = potential_versions[release]
+        assert self._os_version in self.PotentialOSVersionDirectoryNames, self._os_version
         
         # Directory
         from win32com.shell import shellcon, shell      # <Unable to import> pylint: disable = F0401, E0611
