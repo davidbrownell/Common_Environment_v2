@@ -361,6 +361,25 @@ class PythonActivationActivity(IActivationActivity):
                                                      environment,
                                                    )
             if script_actions:
+                if environment.CategoryName == "Windows":
+                    for script_action in script_actions:
+                        if isinstance(script_action, Shell.SymbolicLink):
+                            name, ext = os.path.splitext(script_action.link_filename)
+                            if ext == ".py":
+                                source_filename = "{}{}".format( os.path.splitext(script_action.link_source)[0],
+                                                                 environment.ScriptExtension,
+                                                               )
+
+                                if not os.path.isfile(source_filename):
+                                    with open("{}{}".format(name, environment.ScriptExtension), 'w') as f:
+                                        f.write(textwrap.dedent(
+                                            """\
+                                            @echo off
+                                            python "{}" {}
+                                            """).format( script_action.link_filename,
+                                                         environment.AllArgumentsScriptVariable,
+                                                       ))
+
                 local_actions += script_actions
                 global_actions.append(environment.AugmentPath(script_dest_dir))
         
