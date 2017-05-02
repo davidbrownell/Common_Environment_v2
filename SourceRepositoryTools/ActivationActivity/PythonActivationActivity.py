@@ -20,6 +20,8 @@ import os
 import sys
 import textwrap
 
+from collections import OrderedDict
+
 import six
 
 import CommonEnvironment
@@ -120,9 +122,19 @@ class PythonActivationActivity(IActivationActivity):
         dest_dir = os.path.join(generated_dir, cls.Name)
         assert os.path.isdir(dest_dir), dest_dir
 
-        cols = [ 40, 11, 11, 100, ]
-        template = "{name:<%d}  {type:<%d}  {specific:<%d} {fullpath:<%d}\n" % tuple(cols)
+        cols = OrderedDict([ ( "name", ("Name", 40) ),
+                             ( "type", ("Type", 11) ),
+                             ( "extensions", ("Extensions", 10) ),
+                             ( "binaries", ("Binaries", 8) ),
+                             ( "fullpath", ("Fullpath", 100) ),
+                           ])
 
+        template = []
+        for k, v in six.iteritems(cols):
+            template.append("{%s:<%d}" % (k, v[1]))
+
+        template = "{}\n".format('  '.join(template))
+        
         for name, dirs in [ ( "Libraries", cls.LibrarySubdirs ),
                             ( "Scripts", cls.ScriptSubdirs ),
                           ]:
@@ -138,16 +150,8 @@ class PythonActivationActivity(IActivationActivity):
                 {header}{underline}
                 """).format( sep='=' * len(name),
                              name=name,
-                             header=template.format( name="Name",
-                                                     type="Type",
-                                                     specific="OS Specific",
-                                                     fullpath="Fullpath",
-                                                   ),
-                             underline=template.format( name='-' * cols[0],
-                                                        type='-' * cols[1],
-                                                        specific='-' * cols[2],
-                                                        fullpath='-' * cols[3],
-                                                      ),
+                             header=template.format(**{ k : v[0] for k, v in six.iteritems(cols) }),
+                             underline=template.format(**{ k : '-' * v[1] for k, v in six.iteritems(cols) }),
                            ))
 
             this_dest_dir = os.path.join(dest_dir, *dirs)
@@ -175,20 +179,27 @@ class PythonActivationActivity(IActivationActivity):
                     type_ = "File"
                     filenames = [ fullpath, ]
 
-                is_os_specific = False
+                has_extensions = False
+                has_binaries = False
+
                 for filename in filenames:
-                    if os.path.splitext(filename)[1] in [ # Windows 
-                                                          ".pyd", ".exe", ".bat", ".cmd", 
-                                                          
-                                                          # Linux
-                                                          ".so", ".sh", 
-                                                        ]:
-                        is_os_specific = True
+                    ext = os.path.splitext(filename)[1]
+
+                    if ext in [ ".pyd", ".so", ]:
+                        has_extensions = True
+
+                    if ( ext == environment.ScriptExtension or
+                         ext == environment.ExecutableExtension
+                       ):
+                        has_binaries = True
+
+                    if has_extensions and has_binaries:
                         break
 
                 output_stream.write(template.format( name=item,
                                                      type=type_,
-                                                     specific="True" if is_os_specific else "False",
+                                                     extensions="True" if has_extensions else "False",
+                                                     binaries="True" if has_binaries else "False",
                                                      fullpath=fullpath,
                                                    ))
 
