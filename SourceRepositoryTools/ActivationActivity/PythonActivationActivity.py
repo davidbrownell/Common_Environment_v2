@@ -51,6 +51,7 @@ SourceRepositoryTools                       = Package.ImportInit("..")
 
 # ----------------------------------------------------------------------
 EASY_INSTALL_PTH_FILENAME                   = "easy-install.pth"
+WRAPPERS_FILENAME                           = "__wrappers__.txt"
 
 # ----------------------------------------------------------------------
 @staticderived
@@ -157,12 +158,21 @@ class PythonActivationActivity(IActivationActivity):
             this_dest_dir = os.path.join(dest_dir, *dirs)
             assert os.path.isdir(this_dest_dir), this_dest_dir
 
+            ignore_filenames = set([ WRAPPERS_FILENAME, EASY_INSTALL_PTH_FILENAME, ])
+
+            potenial_wrappers_filename = os.path.join(this_dest_dir, WRAPPERS_FILENAME)
+            if os.path.isfile(potenial_wrappers_filename):
+                for name in [ line.strip() for line in open(potenial_wrappers_filename).readlines() if line.strip() ]:
+                    ignore_filenames.add(name)
+
             for item in os.listdir(this_dest_dir):
                 fullpath = os.path.join(this_dest_dir, item)
                 if environment.IsSymLink(fullpath):
                     continue
 
-                if os.path.isfile(fullpath) and os.path.splitext(fullpath)[1] in [ ".pyc", ".pyo", ]:
+                if os.path.isfile(fullpath) and ( os.path.splitext(fullpath)[1] in [ ".pyc", ".pyo", ] or
+                                                  item in ignore_filenames
+                                                ):
                     continue
 
                 if os.path.isdir(fullpath) and os.path.basename(fullpath) in [ "__pycache__", ]:
@@ -361,7 +371,12 @@ class PythonActivationActivity(IActivationActivity):
                                                      environment,
                                                    )
             if script_actions:
+                local_actions += script_actions
+                global_actions.append(environment.AugmentPath(script_dest_dir))
+        
                 if environment.CategoryName == "Windows":
+                    wrappers = []
+
                     for script_action in script_actions:
                         if isinstance(script_action, Shell.SymbolicLink):
                             name, ext = os.path.splitext(script_action.link_filename)
@@ -371,6 +386,8 @@ class PythonActivationActivity(IActivationActivity):
                                                                )
 
                                 if not os.path.isfile(source_filename):
+                                    wrappers.append("{}{}".format(os.path.basename(name), environment.ScriptExtension))
+
                                     with open("{}{}".format(name, environment.ScriptExtension), 'w') as f:
                                         f.write(textwrap.dedent(
                                             """\
@@ -380,9 +397,10 @@ class PythonActivationActivity(IActivationActivity):
                                                          environment.AllArgumentsScriptVariable,
                                                        ))
 
-                local_actions += script_actions
-                global_actions.append(environment.AugmentPath(script_dest_dir))
-        
+                    if wrappers:
+                        with open(os.path.join(script_dest_dir, WRAPPERS_FILENAME), 'w') as f:
+                            f.write('\n'.join(wrappers))
+                
             local_actions += SourceRepositoryTools.DelayExecute( _EasyInstallPathCallback,
                                                                  display_sentinel,
                                                                  easy_install_path_filename.value,
