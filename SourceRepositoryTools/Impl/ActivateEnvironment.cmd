@@ -70,7 +70,7 @@ if "%1" == "IsToolRepository" (
 )
 
 REM Only allow one activated environment at a time (unless we are activating a tool repository).
-if "%_ACTIVATE_ENVIRONMENT_IS_TOOL_REPOSITORY%" NEQ "1" if "%DEVELOPMENT_ENVIRONMENT_REPOSITORY%" NEQ "" if "%DEVELOPMENT_ENVIRONMENT_REPOSITORY%\" NEQ "%~dp0" (
+if "%_ACTIVATE_ENVIRONMENT_IS_TOOL_REPOSITORY%" NEQ "1" if "%DEVELOPMENT_ENVIRONMENT_REPOSITORY%" NEQ "" if /i "%DEVELOPMENT_ENVIRONMENT_REPOSITORY%\" NEQ "%~dp0" (
     @echo.
     @echo ERROR: Only one environment can be activated at a time, and it appears as
     @echo        if one is already active. Please open a new console window and run
