@@ -227,18 +227,16 @@ def GetCustomizedPathImpl( path,
         subdirs = os.listdir(path)
 
         if Impl.IsOSNameDirectory(path):
-            isLinux = getattr(environment, "IsLinux", False)
-            
             if environment.Name in subdirs:
                 path = os.path.join(path, environment.Name)
-            elif isLinux and Constants.LINUX_OS_NAME in subdirs:
-                path = os.path.join(path, Constants.LINUX_OS_NAME)
+            elif environment.CategoryName in subdirs:
+                path = os.path.join(path, environment.CategoryName)
             elif Constants.AGNOSTIC_OS_NAME in subdirs:
                 path = os.path.join(path, Constants.AGNOSTIC_OS_NAME)
             else:
                 return onError(path, "OS names were found in '{}', but no customization was found for '{}' (is {} missing?).".format( path, 
                                                                                                                                       environment.Name, 
-                                                                                                                                      ' or '.join([ "'{}'".format(name) for name in ([ Constants.LINUX_OS_NAME, ] if isLinux else []) + [ Constants.AGNOSTIC_OS_NAME, ] ]),
+                                                                                                                                      ' or '.join([ "'{}'".format(name) for name in [ environment.CategoryName, Constants.AGNOSTIC_OS_NAME, ] ]),
                                                                                                                                     ))
                 
         elif Impl.IsOSVersionDirectory(path, environment):
