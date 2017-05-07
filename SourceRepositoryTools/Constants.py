@@ -29,7 +29,6 @@ SETUP_ENVIRONMENT_CUSTOMIZATION_FILENAME    = "{}_custom.py".format(SETUP_ENVIRO
 ACTIVATE_ENVIRONMENT_CUSTOMIZATION_FILENAME = "{}_custom.py".format(ACTIVATE_ENVIRONMENT_NAME)
 
 AGNOSTIC_OS_NAME                            = "Agnostic"
-LINUX_OS_NAME                               = "Linux"
 
 INSTALL_LOCATION_FILENAME                   = "InstallLocation.txt"
 INSTALL_BINARY_FILENAME                     = "binaries.tar.gz"
