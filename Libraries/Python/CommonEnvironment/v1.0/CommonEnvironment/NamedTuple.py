@@ -29,7 +29,7 @@ _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ---------------------------------------------------------------------------
 
-def NamedTuple(name, *args, **kwargs):
+def NamedTuple(tuple_name, *args, **kwargs):
     """\
     Usage:
 
@@ -45,7 +45,7 @@ def NamedTuple(name, *args, **kwargs):
         kwargs = args[0]
         args = []
 
-    T = namedtuple(name, list(args) + list(six.iterkeys(kwargs)))
+    T = namedtuple(tuple_name, list(args) + list(six.iterkeys(kwargs)))
     T.__new__.__defaults__ = tuple(kwargs.values())
 
     return T
