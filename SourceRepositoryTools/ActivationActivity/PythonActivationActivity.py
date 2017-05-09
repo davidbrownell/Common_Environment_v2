@@ -283,7 +283,9 @@ class PythonActivationActivity(IActivationActivity):
                 library_keys = list(six.iterkeys(libraries))
 
                 for library_key in list(six.iterkeys(libraries)):
-                    if library_key != "CommonEnvironment":
+                    if library_key not in [ "CommonEnvironment", 
+                                            "colorama",
+                                          ]:
                         del libraries[library_key]
 
             local_actions = []
@@ -371,7 +373,12 @@ class PythonActivationActivity(IActivationActivity):
                                                      environment,
                                                    )
             if script_actions:
-                local_actions += script_actions
+                for script_action in script_actions:
+                    if isinstance(script_action, Shell.Message):
+                        script_action.value = "{}        {}".format(display_sentinel, script_action.value)
+
+                    local_actions.append(script_action)
+
                 global_actions.append(environment.AugmentPath(script_dest_dir))
         
                 if environment.CategoryName == "Windows":
