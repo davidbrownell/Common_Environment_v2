@@ -395,7 +395,7 @@ def _SetupBootstrap( environment,
         configurations = { None : SourceRepositoryTools.Configuration(),
                          }
                          
-    has_configurations = len(configurations) > 1 or next(iter(six.viewkeys(configurations))) != None
+    has_configurations = len(configurations) > 1 or next(six.iterkeys(configurations)) != None
     
     # A tool repository cannot have any configurations, dependencies, or version specs
     if ( is_tool_repository and 
