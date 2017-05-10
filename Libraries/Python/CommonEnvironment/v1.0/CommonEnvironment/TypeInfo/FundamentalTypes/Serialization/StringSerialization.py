@@ -16,6 +16,7 @@ import datetime
 import os
 import re
 import sys
+import textwrap
 import uuid
 
 from CommonEnvironment.Interface import staticderived
@@ -189,7 +190,21 @@ class StringSerialization(Serialization):
             # ----------------------------------------------------------------------
             @staticmethod
             def OnTime(type_info):
-                return [ r"(?P<hour>[0-1][0-9]|2[0-3]):(?P<minute>[0-5][0-9]):(?P<second>[0-5][0-9])(?:\.(?P<microseconds>\d+))?(?:(?P<tz_utc>Z)|(?P<tz_sign>[\+\-])(?P<tz_hour>\d{2}):(?P<tz_minute>[0-5][0-9]))?",
+                return [ textwrap.dedent(
+                           r"""(?# 
+                            Hour                        )(?P<hour>[0-1][0-9]|2[0-3]):(?#
+                            Minute                      )(?P<minute>[0-5][0-9]):(?#
+                            Second                      )(?P<second>[0-5][0-9])(?#
+                            Microseconds [optional]     )(?:\.(?P<microseconds>\d+))?(?#
+                            Timezone [optional] <begin> )(?:(?#
+                              Header or...              )(?P<tz_utc>Z)|(?#
+                              Offset <begin>            )(?:(?#
+                                Sign                    )(?P<tz_sign>[\+\-])(?#
+                                Hour                    )(?P<tz_hour>\d{2})(?#
+                                Minute                  )(?P<tz_minute>[0-5][0-9])(?#
+                              Offset <end>              ))(?#
+                            Timezone [optional] <end>   ))?(?#
+                            )"""),
                        ]
 
         # ----------------------------------------------------------------------
@@ -228,11 +243,11 @@ class StringSerialization(Serialization):
             def OnDuration(type_info):
                 seconds = item.total_seconds()
 
-                hours = int(seconds / (60 * 60))
-                seconds %= (60 * 60)
-
-                minutes = int(seconds / 60)
-                seconds %= 60
+                hours, seconds = divmod(seconds, 60 * 60)
+                minutes, seconds = divmod(seconds, 60)
+                
+                hours = int(hours)
+                minutes = int(minutes)
 
                 return "{hours}:{minutes:02}:{seconds:02.6f}".format(**locals())
         
@@ -333,23 +348,15 @@ class StringSerialization(Serialization):
                 return item.lower() in [ "true", "t", "yes", "y", "1", ]
         
             # ----------------------------------------------------------------------
-            @staticmethod
-            def OnDateTime(type_info):
-                match_dict = match.groupdict()
-
-                has_timezone = False
-                for attribute_name in [ "tz_utc", "tz_hour", ]:
-                    if match_dict.get(attribute_name, None) != None:
-                        has_timezone = True
-                        break
+            @classmethod
+            def OnDateTime(cls, type_info):
+                the_item, time_format_string = cls._GetTimeExpr(match.groupdict())
+                return datetime.datetime.strptime( the_item,
+                                                   "%Y-%m-%d{sep}{time_format_string}".format( sep='T' if 'T' in the_item else ' ',
+                                                                                               time_format_string=time_format_string,
+                                                                                             ),
+                                                 )
                 
-                return datetime.datetime.strptime(item, "%Y-%m-%d{sep}%H:%M{seconds}{fraction_seconds}{time_zone}" \
-                                                            .format( sep='T' if 'T' in item else ' ',
-                                                                     seconds=":%S" if item.count(':') > 1 else '',
-                                                                     fraction_seconds=".%f" if '.' in item else '',
-                                                                     time_zone="%z" if has_timezone else '',
-                                                                   ))
-        
             # ----------------------------------------------------------------------
             @staticmethod
             def OnDate(type_info):
@@ -444,20 +451,32 @@ class StringSerialization(Serialization):
                 return item
         
             # ----------------------------------------------------------------------
+            @classmethod
+            def OnTime(cls, type_info):
+                return datetime.datetime.strptime(*cls._GetTimeExpr(match.groupdict())).time()
+
+            # ----------------------------------------------------------------------
+            # ----------------------------------------------------------------------
+            # ----------------------------------------------------------------------
             @staticmethod
-            def OnTime(type_info):
-                match_dict = match.groupdict()
-                
-                has_timezone = False
-                for attribute_name in [ "tz_utc", "tz_hour", ]:
-                    if match_dict.get(attribute_name, None) != None:
-                        has_timezone = True
+            def _GetTimeExpr(match_dict):
+                has_timezone = True
+                for attribute_name in [ "tz_hour", "tz_minute", ]:
+                    if not match_dict.get(attribute_name, None):
+                        has_timezone = False
                         break
-                
-                return datetime.datetime.strptime(item, "%H:%M:%S{fraction_seconds}{time_zone}" \
-                                                            .format( fraction_seconds=".%f" if '.' in item else '',
-                                                                     time_zone="%z" if has_timezone else '',
-                                                                   )).time()
+
+                # Remove a trailing 'Z' (if necessary)
+                if not has_timezone and match_dict.get("tz_utc", None):
+                    the_item = item[:-1]
+                else:
+                    the_item = item
+
+                return the_item, "%H:%M{seconds}{fraction_seconds}{timezone}" \
+                                    .format( seconds=":%S" if the_item.count(':') > 1 else '',
+                                             fraction_seconds=".%f" if '.' in the_item else '',
+                                             timezone="%z" if has_timezone else '',
+                                           )
 
         # ----------------------------------------------------------------------
         
