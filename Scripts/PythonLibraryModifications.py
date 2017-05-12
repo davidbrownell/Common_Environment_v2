@@ -40,7 +40,6 @@ assert os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL")
 sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
 with CallOnExit(lambda: sys.path.pop(0)):
     from SourceRepositoryTools.ActivationActivity.PythonActivationActivity import PythonActivationActivity
-    from SourceRepositoryTools.ActivationActivity.Impl import ResetLibraryContent
 
 inflect_engine                              = inflect.engine()
 

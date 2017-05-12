@@ -98,6 +98,8 @@ def ActivateLibraries( name,
 
     # ----------------------------------------------------------------------
     
+    errors = []
+    
     for repository in repositories:
         potential_library_dir = os.path.join(repository.root, Constants.LIBRARIES_SUBDIR, name)
         if not os.path.isdir(potential_library_dir):
@@ -105,11 +107,11 @@ def ActivateLibraries( name,
 
         for item in os.listdir(potential_library_dir):
             if item in libraries:
-                raise Exception(textwrap.dedent(
+                errors.append(textwrap.dedent(
                         """\
                         The library '{name}' has already been defined.
 
-                            Original:       {original_name} ({original_version}) <{original_id}> [{original_root}]
+                            Original:       {original_name} <<{original_version}>> <{original_id}> [{original_root}]
                             New:            {new_name} <{new_id}> [{new_root}]
                         
                         """).format( name=item,
@@ -121,6 +123,7 @@ def ActivateLibraries( name,
                                      new_id=repository.id,
                                      new_root=repository.root,
                                    ))
+                continue
 
             fullpath = os.path.join(potential_library_dir, item)
             
@@ -150,6 +153,9 @@ def ActivateLibraries( name,
                                            version=version.value,
                                          )
 
+    if errors:
+        raise Exception(''.join(errors))
+        
     # On some systems, the symbolc link commands will generate output that we would like to 
     # be supressed in most cases. Instead of executing the content directly, execute it
     # ourselves.
