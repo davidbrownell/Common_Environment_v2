@@ -13,3 +13,4 @@ ActivateEnvironment.sh
 .gitignore
 
 Tools/Python/v2.7.10/Windows/DLLs/*.*-*
+*.ipynb
