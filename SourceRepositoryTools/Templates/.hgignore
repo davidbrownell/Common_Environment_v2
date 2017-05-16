@@ -7,7 +7,4 @@ ActivateEnvironment.cmd
 ActivateEnvironment.sh
 .coverage
 
-.tfignore
-
 .git/*
-.gitignore

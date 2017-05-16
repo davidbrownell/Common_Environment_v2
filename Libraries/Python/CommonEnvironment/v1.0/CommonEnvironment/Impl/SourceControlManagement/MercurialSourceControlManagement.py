@@ -55,6 +55,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
     DefaultBranch                           = "default"
     Tip                                     = "tip"
     WorkingDirectories                      = [ ".hg", ]
+    IgnoreFilename                          = ".hgignore"
 
     # ---------------------------------------------------------------------------
     # |

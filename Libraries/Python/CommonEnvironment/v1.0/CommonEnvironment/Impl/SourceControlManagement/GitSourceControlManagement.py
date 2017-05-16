@@ -49,6 +49,7 @@ class GitSourceControlManagement(DistributedSourceControlManagementBase):
     DefaultBranch                           = "master"
     Tip                                     = "head"
     WorkingDirectories                      = [ ".git", ]
+    IgnoreFilename                          = ".gitignore"
 
     DetachedHeadPseudoBranchName            = "__DetachedHeadPseudoBranchName_%(Index)d_%(BranchName)s__"
     _DetachedHeadPseudoBranchName_regex     = RegularExpression.TemplateStringToRegex(DetachedHeadPseudoBranchName)

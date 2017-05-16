@@ -24,6 +24,8 @@ import textwrap
 
 from collections import OrderedDict
 
+import six
+
 from CommonEnvironment import CommandLine
 from CommonEnvironment import FileSystem
 from CommonEnvironment import SourceControlManagement
@@ -83,7 +85,7 @@ def EntryPoint( root_dir,
         items = []
 
         for k, v in root.iteritems():
-            if isinstance(v, str):
+            if isinstance(v, six.string_types):
                 items.append('<repo root="{dir}" shortname="{name}" />\n'.format( dir=v,
                                                                                   name=os.path.split(k)[1],
                                                                                 ))

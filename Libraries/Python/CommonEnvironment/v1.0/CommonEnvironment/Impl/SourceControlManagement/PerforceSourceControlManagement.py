@@ -80,7 +80,8 @@ def PerforceSourceControlManagementFactory( raise_on_username_failure,
         DefaultBranch                       = TrunkName
         Tip                                 = "T"
         WorkingDirectories                  = []
-    
+        IgnoreFilename                      = None
+
         # ---------------------------------------------------------------------------
         # |
         # |  Public Methods
