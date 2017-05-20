@@ -539,6 +539,24 @@ class StreamDecorator(object):
             for dm in Impl(self.stream):
                 yield dm
 
+# ----------------------------------------------------------------------
+class FunctionToStreamWrapper(object):
+    """\
+    Converts a callable function into a functioning
+    stream.
+    """
+
+    # ----------------------------------------------------------------------
+    def __init__(self, func):
+        self._func                      = func
+
+    # ----------------------------------------------------------------------
+    def write(self, content):
+        self._func(content)
+
+    # ----------------------------------------------------------------------
+    def flush(self):
+        pass # Nothing to do
 
 # ----------------------------------------------------------------------
 # |  

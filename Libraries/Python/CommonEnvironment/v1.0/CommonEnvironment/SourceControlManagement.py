@@ -146,6 +146,10 @@ class SourceControlManagementBase(Interface):
     def WorkingDirectories(self):
         raise Exception("Abstract property")
 
+    @abstractproperty
+    def IgnoreFilename(self):
+        raise Exception("Abstract property")
+
     IsDistributed                           = False
 
     # ---------------------------------------------------------------------------
