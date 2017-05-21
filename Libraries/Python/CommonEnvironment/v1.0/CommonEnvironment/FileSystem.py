@@ -69,6 +69,12 @@ def WalkDirs( root,
     process_traverse_dir_name = _ProcessWalkArgs(traverse_include_dir_names, traverse_exclude_dir_names)
     process_traverse_dir_path = _ProcessWalkArgs(traverse_include_dir_paths, traverse_exclude_dir_paths)
 
+    from CommonEnvironment.CallOnExit import CallOnExit
+
+    sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
+    with CallOnExit(lambda: sys.path.pop(0)):
+        from SourceRepositoryTools.Constants import GENERATED_DIRECTORY_NAME
+
     root = Normalize(root)
 
     for root, dirs, filenames in os.walk(root):
@@ -92,7 +98,10 @@ def WalkDirs( root,
         while index < len(dirs):
             fullpath = os.path.join(root, dirs[index])
 
-            if not process_traverse_dir_path(fullpath) or not process_traverse_dir_name(dirs[index]):
+            if ( not process_traverse_dir_path(fullpath) or 
+                 not process_traverse_dir_name(dirs[index]) or
+                 dirs[index] == GENERATED_DIRECTORY_NAME
+               ):
                 dirs.pop(index)
             else:
                 index += 1
