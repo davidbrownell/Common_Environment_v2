@@ -258,7 +258,9 @@ def _SetupBootstrap( environment,
             for bump_name in [ "code",
                                "coding",
                                "source",
+                               "src",
                                "development",
+                               "dev",
                              ]:
                 if bump_name in parts_lower:
                     priority = 0
