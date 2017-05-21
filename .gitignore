@@ -1,13 +1,9 @@
-syntax: glob
-
 *.pyc
 *.pyo
 Generated/*
 ActivateEnvironment.cmd
 ActivateEnvironment.sh
 .coverage
-
-.git/*
-
 Tools/Python/v2.7.10/Windows/DLLs/*.*-*
 *.ipynb
+.hg/*
