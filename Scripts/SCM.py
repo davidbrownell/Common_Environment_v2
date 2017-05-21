@@ -32,6 +32,7 @@ import inflect
 from CommonEnvironment import ModifiableValue
 from CommonEnvironment import CommandLine
 from CommonEnvironment import FileSystem
+from CommonEnvironment import Interface
 from CommonEnvironment.QuickObject import QuickObject
 from CommonEnvironment import SourceControlManagement as SCMMod
 from CommonEnvironment.StreamDecorator import StreamDecorator
@@ -700,15 +701,20 @@ def AllChangeStatus( directory=None,
     directory = directory or os.getcwd()
 
     changes = []
-    
+    changes_lock = threading.Lock()
+
     # ----------------------------------------------------------------------
-    def Query(scm, directory):
+    def Query(scm, directory, task_index):
         status = scm.GetChangeStatus(directory)
         if status:
-            changes.append(QuickObject( scm=scm,
-                                        directory=directory,
-                                        status=status,
-                                      ))
+            with changes_lock:
+                if len(changes) <= task_index:
+                    changes.extend([ None, ] * (task_index - len(changes) + 1))
+
+            changes[task_index] = QuickObject( scm=scm,
+                                               directory=directory,
+                                               status=status,
+                                             )
     
         return None
     
@@ -760,6 +766,9 @@ def AllChangeStatus( directory=None,
                    ))
 
     for change in changes:
+        if changes == None:
+            continue
+
         output_stream.write("{}\n".format(template.format( dir=change.directory,
                                                            scm=change.scm.Name,
                                                            branch=change.status.branch,
@@ -783,12 +792,17 @@ def AllWorkingChangeStatus( directory=None,
     directory = directory or os.getcwd()
 
     changed_repos = []
+    changed_repos_lock = threading.Lock()
 
     # ---------------------------------------------------------------------------
-    def Query(scm, directory):
+    def Query(scm, directory, task_index):
         result = scm.HasWorkingChanges(directory) or scm.HasUntrackedWorkingChanges(directory)
         if result:
-            changed_repos.append((scm, directory))
+            with changed_repos_lock:
+                if len(changed_repos) <= task_index:
+                    changed_repos.extend([ None, ] * (task_index - len(changed_repos) + 1))
+
+            changed_repos[task_index] = (scm, directory)
 
         return result
 
@@ -806,18 +820,21 @@ def AllWorkingChangeStatus( directory=None,
                
                        require_distributed=True,
                      )
-    if result != 0 or not changed_repos:
+    if result != 0:
         return result
 
-    output_stream.write(textwrap.dedent(
-        """\
-        
-        There are working changes in {}:
-        {}
-        
-        """).format( inflect_engine.no("repository", len(changed_repos)),
-                     '\n'.join([ "    - {}".format(directory) for scm, directory in changed_repos ]),
-                   ))
+    changed_repos = [ cr for cr in changed_repos if cr ]
+    
+    if changed_repos:
+        output_stream.write(textwrap.dedent(
+            """\
+            
+            There are working changes in {}:
+            {}
+            
+            """).format( inflect_engine.no("repository", len(changed_repos)),
+                         '\n'.join([ "    - {}".format(directory) for scm, directory in changed_repos ]),
+                       ))
 
     return 0
 
@@ -964,13 +981,17 @@ def _AllImpl( directory,
               require_distributed,
             ):
     directory = directory or os.getcwd()
+    query_func = Interface.CreateCulledCallable(query_func)
 
     with StreamDecorator(output_stream).DoneManager( line_prefix='',
                                                      done_prefix="\nComposite Results: ",
                                                    ) as si:
+        items = []
+
         si.stream.write("\nSearching for repositories in '{}'...".format(directory))
-        with si.stream.DoneManager():
-            items = list(_GetSCMAndDirs(directory))
+        with si.stream.DoneManager( done_suffix_functor=lambda: "{} found".format(inflect_engine.no("repository", len(items))),
+                                  ):
+            items.extend(_GetSCMAndDirs(directory))
 
         if not items:
             return 0
@@ -985,7 +1006,10 @@ def _AllImpl( directory,
             on_status_update("Querying")
 
             if not require_distributed or scm.IsDistributed:
-                result = query_func(scm, directory)
+                result = query_func(OrderedDict([ ( "scm", scm, ),
+                                                  ( "directory", directory ),
+                                                  ( "task_index", task_index ),
+                                                ]))
 
                 if result:
                     with to_process_lock:

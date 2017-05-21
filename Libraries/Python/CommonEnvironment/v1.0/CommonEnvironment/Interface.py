@@ -631,7 +631,7 @@ else:
         # There should be a more definitive way to differentiate
         # between static/class/standard methods. Things are more
         # predictable if we have an item associated with an instance
-        # of an object, but not as clear when given a method associate
+        # of an object, but not as clear when given a method associated
         # with the class instance.
         #
         # This is a hack!

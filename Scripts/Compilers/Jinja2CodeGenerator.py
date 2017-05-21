@@ -34,9 +34,6 @@ from CommonEnvironment.Compiler.OutputMixin.MultipleOutputMixin import MultipleO
 
 from jinja2 import Environment
 
-import os
-import sys
-
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
@@ -268,7 +265,7 @@ def Generate( input,                          # <Redefining build-in type> pylin
 def Clean( output_dir,
            output_stream=sys.stdout,
          ):
-    return CodeGeneratorMod.CommandLineCleanOutputDir(output_dir, output_stream)
+    return CodeGeneratorMod.CommandLineClean(output_dir, output_stream)
 
 # ----------------------------------------------------------------------
 def CommandLineSuffix():

@@ -139,19 +139,22 @@ def ActivateLibraries( name,
 
             # ----------------------------------------------------------------------
 
-            for index, method in enumerate([ SourceRepositoryTools.GetCustomizedPath,
-                                             AugmentLibraryDir,
-                                             GetVersionedDirectoryEx,
-                                             SourceRepositoryTools.GetCustomizedPath,
-                                             AugmentLibraryDir,
-                                           ]):
-                fullpath = method(fullpath)
-                assert os.path.isdir(fullpath), (index, fullpath)
-
-            libraries[item] = QuickObject( repository=repository,
-                                           fullpath=fullpath,
-                                           version=version.value,
-                                         )
+            try:
+                for index, method in enumerate([ SourceRepositoryTools.GetCustomizedPath,
+                                                 AugmentLibraryDir,
+                                                 GetVersionedDirectoryEx,
+                                                 SourceRepositoryTools.GetCustomizedPath,
+                                                 AugmentLibraryDir,
+                                               ]):
+                    fullpath = method(fullpath)
+                    assert os.path.isdir(fullpath), (index, fullpath)
+                
+                libraries[item] = QuickObject( repository=repository,
+                                               fullpath=fullpath,
+                                               version=version.value,
+                                             )
+            except Exception as ex:
+                sys.stdout.write("    WARNING: {}\n".format(ex))
 
     if errors:
         raise Exception(''.join(errors))
