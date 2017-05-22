@@ -17,6 +17,9 @@
 import os
 import re
 import sys
+import textwrap
+
+import six
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -121,6 +124,43 @@ def ToPlural(s):
 
     return s
 
+# ----------------------------------------------------------------------
+def Describe( o,
+              output_stream=sys.stdout,
+            ):
+    from CommonEnvironment.StreamDecorator import StreamDecorator
+
+    output_stream.write(textwrap.dedent(
+        """\
+        Type
+        ----
+            {}
+
+        str(<value>)
+        ------------
+            {}
+
+        """).format(type(o), str(o)))
+        
+    keys = [ item for item in dir(o) if not item.startswith("__") ]
+    keys.sort()
+
+    for k in keys:
+        value = getattr(o, k)
+        
+        output_stream.write(textwrap.dedent(
+            """\
+            {}
+            {}
+                [{}]
+                {}
+
+            """).format( k,
+                         '-' * len(k),
+                         type(value),
+                         StreamDecorator.LeftJustify(str(value), 4).rstrip(),
+                       ))
+                                
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
