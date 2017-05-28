@@ -25,6 +25,8 @@ _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
+StreamDecorator.InitAnsiSequenceStreams()
+
 # User account names to backup
 USERS_TO_BACKUP                             = [ "David Brownell"
                                               ]
@@ -73,7 +75,7 @@ def EntryPoint( print_command_line=False,
                                 )
     assert os.path.isfile(backup_script), backup_script
 
-    command_line = 'python "{script}" Mirror "{output_dir}" {input}{display}{force}{verbose}' \
+    command_line = 'python "{script}" Mirror "{output_dir}" {input}{display}{force}{verbose} /preserve_ansi_escape_sequences' \
                         .format( script=backup_script,
                                  output_dir=OUTPUT_DIR,
                                  input=' '.join([ '"/input={}"'.format(input) for input in inputs ]),
