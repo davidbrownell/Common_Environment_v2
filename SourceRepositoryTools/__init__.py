@@ -411,7 +411,7 @@ def DelayExecuteWithPython(python_binary, method, *args, **kwargs):
 # ---------------------------------------------------------------------------
 def CreateDependencyMap(code_dir):
     
-    # Not that this functionality if very similiar to that found in Impl.TraverseDependencies.
+    # Note that this functionality if very similiar to that found in Impl.TraverseDependencies.
     # The difference between the two is this function will compile a map of all repositories
     # under the code dir, while Impl.TraverseDependencies will only traverse environment
     # data created during setup. Theoretically, it is possible for Impl.TraverseDependencies
@@ -545,3 +545,19 @@ def DisplayDependencyMap( dependency_map,
                                                                      skip_first_line=False,
                                                                    ),
                        ))
+
+# ----------------------------------------------------------------------
+def GetRepositoryRootForFile(filename):
+    dirname = os.path.dirname(filename)
+
+    while True:
+        if os.path.isfile(os.path.join(dirname, Constants.REPOSITORY_ID_FILENAME)):
+            return dirname
+
+        potential_dirname = os.path.dirname(dirname)
+        if potential_dirname == dirname:
+            break
+
+        dirname = potential_dirname
+
+    return None
