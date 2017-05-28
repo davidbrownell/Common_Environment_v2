@@ -93,6 +93,7 @@ def Test( test_items,
           release_only=False,
           preserve_ansi_escape_sequences=False,
           no_status=False,
+          verbose=False,
         ):
     assert test_items
     assert output_dir
@@ -243,12 +244,12 @@ def Test( test_items,
                     sink = StringIO()
         
                     if compiler.IsCompiler:
-                        compile_result = compiler.Compile(flavor_results.context, sink)
+                        compile_result = compiler.Compile(flavor_results.context, sink, verbose=verbose)
                         compiler.RemoveTemporaryArtifacts(flavor_results.context)
                     elif compiler.IsCodeGenerator:
-                        compile_result = compiler.Generate(flavor_results.context, sink)
+                        compile_result = compiler.Generate(flavor_results.context, sink, verbose=verbose)
                     elif compiler.IsVerifier:
-                        compile_result = compiler.Verify(flavor_results.context, sink)
+                        compile_result = compiler.Verify(flavor_results.context, sink, verbose=verbose)
                     else:
                         assert False, compiler.Name
         
@@ -699,6 +700,7 @@ def Execute( input,
                              release_only=release_only,
                              preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
                              no_status=no_status,
+                             verbose=verbose,
                           )
 
     if not complete_results:
@@ -810,6 +812,7 @@ def ExecuteTree( input_dir,
                              release_only=release_only,
                              preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
                              no_status=no_status,
+                             verbose=verbose,
                            )
 
     if not complete_results:

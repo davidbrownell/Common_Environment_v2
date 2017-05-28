@@ -62,12 +62,33 @@ def WalkDirs( root,
               traverse_exclude_dir_paths=None,          # ex. "C:\Foo\Bar"
 
               recurse=True,
+              include_generated=False,
             ):
     process_dir_name = _ProcessWalkArgs(include_dir_names, exclude_dir_names)
     process_dir_path = _ProcessWalkArgs(include_dir_paths, exclude_dir_paths)
 
     process_traverse_dir_name = _ProcessWalkArgs(traverse_include_dir_names, traverse_exclude_dir_names)
     process_traverse_dir_path = _ProcessWalkArgs(traverse_include_dir_paths, traverse_exclude_dir_paths)
+
+    if include_generated:
+        # ----------------------------------------------------------------------
+        def IsInvalid(fullpath, dir):
+            return not ( process_traverse_dir_path(fullpath) or 
+                         process_traverse_dir_name(dir)
+                       )
+
+        # ----------------------------------------------------------------------
+
+    else:
+        # ----------------------------------------------------------------------
+        def IsInvalid(fullpath, dir):
+            return ( dir == GENERATED_DIRECTORY_NAME or 
+                     not ( process_traverse_dir_path(fullpath) or 
+                           process_traverse_dir_name(dir)
+                         )
+                   )
+
+        # ----------------------------------------------------------------------
 
     from CommonEnvironment.CallOnExit import CallOnExit
 
@@ -98,10 +119,7 @@ def WalkDirs( root,
         while index < len(dirs):
             fullpath = os.path.join(root, dirs[index])
 
-            if ( not process_traverse_dir_path(fullpath) or 
-                 not process_traverse_dir_name(dirs[index]) or
-                 dirs[index] == GENERATED_DIRECTORY_NAME
-               ):
+            if IsInvalid(fullpath, dirs[index]):
                 dirs.pop(index)
             else:
                 index += 1
@@ -137,6 +155,7 @@ def WalkFiles( root,
                exclude_full_paths=None,                 # ex. "C:\foo\bar\file.ext"
 
                recurse=True,
+               include_generated=False,
              ):
     process_file_name = _ProcessWalkArgs(include_file_names, exclude_file_names)
     process_file_base_name = _ProcessWalkArgs(include_file_base_names, exclude_file_base_names)
@@ -153,6 +172,7 @@ def WalkFiles( root,
                                      traverse_include_dir_paths=traverse_include_dir_paths,
                                      traverse_exclude_dir_paths=traverse_exclude_dir_paths,
                                      recurse=recurse,
+                                     include_generated=include_generated,
                                    ):
         for filename in filenames:
             if not process_file_name(filename):

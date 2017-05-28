@@ -24,6 +24,7 @@ import six
 from six import StringIO
 
 from CommonEnvironment.Interface import abstractmethod
+from CommonEnvironment import Process
 from CommonEnvironment import Shell
 from CommonEnvironment.StreamDecorator import StreamDecorator
 
@@ -54,24 +55,11 @@ class CommandLineInvocationMixin(InvocationMixin):
                      verbose,
                    ):
         command_line = cls.CreateInvokeCommandLine(context, verbose_stream)
-        
-        result = subprocess.Popen( command_line,
-                                   shell=True,
-                                   stdout=subprocess.PIPE,
-                                   stderr=subprocess.STDOUT,
-                                 )
 
         sink = StringIO()
-        output_stream = StreamDecorator([ sink, verbose_stream, ])
+        
+        result = Process.Execute(command_line, StreamDecorator([ sink, verbose_stream, ]))
 
-        while True:
-            line = result.stdout.readline()
-            if not line:
-                break
-
-            output_stream.write(line)
-
-        result = result.wait() or 0
         if result != 0 and not verbose:
             status_stream.write(sink.getvalue())
 
