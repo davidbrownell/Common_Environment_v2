@@ -72,20 +72,19 @@ def WalkDirs( root,
 
     if include_generated:
         # ----------------------------------------------------------------------
-        def IsInvalid(fullpath, dir):
-            return not ( process_traverse_dir_path(fullpath) or 
-                         process_traverse_dir_name(dir)
-                       )
+        def IsValid(fullpath, dir):
+            return ( process_traverse_dir_path(fullpath) and
+                     process_traverse_dir_name(dir)
+                   )
 
         # ----------------------------------------------------------------------
 
     else:
         # ----------------------------------------------------------------------
-        def IsInvalid(fullpath, dir):
-            return ( dir == GENERATED_DIRECTORY_NAME or 
-                     not ( process_traverse_dir_path(fullpath) or 
-                           process_traverse_dir_name(dir)
-                         )
+        def IsValid(fullpath, dir):
+            return ( dir != GENERATED_DIRECTORY_NAME and
+                     process_traverse_dir_path(fullpath) and
+                     process_traverse_dir_name(dir)
                    )
 
         # ----------------------------------------------------------------------
@@ -119,7 +118,7 @@ def WalkDirs( root,
         while index < len(dirs):
             fullpath = os.path.join(root, dirs[index])
 
-            if IsInvalid(fullpath, dirs[index]):
+            if not IsValid(fullpath, dirs[index]):
                 dirs.pop(index)
             else:
                 index += 1
