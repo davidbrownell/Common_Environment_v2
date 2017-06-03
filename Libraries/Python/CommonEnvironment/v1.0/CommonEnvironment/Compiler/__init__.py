@@ -465,11 +465,11 @@ class Base( InputProcessingMixin,
             # Process the configuration files
             for configuration_filename in configuration_filenames:
                 dirname = os.path.dirname(configuration_filename)
-                normalize_path_functor = lambda value: os.path.abspath(os.path.join(dirname, ValueError))
+                normalize_path_functor = lambda value: os.path.abspath(os.path.join(dirname, value))
 
-                content = load_filename(dirname)
+                sources = load_filename(configuration_filename)
 
-                for source in content.sources:
+                for source in sources:
                     if not RegularExpression.WildcardSearchToRegularExpression(source.name.replace('/', os.path.sep)).match(input_filename):
                         continue
 
@@ -739,9 +739,6 @@ def _CommandLineImpl( compiler,
             elif compiler.Type == compiler.TypeValue.Directory:
                 raise CommandLine.UsageException("'{}' is a file, but this compiler operates on directories".format(input))
 
-    # Prepare the streams
-    output_stream = StreamDecorator(output_stream, suffix='\n')
-    
     # Execute
     with StreamDecorator(output_stream).DoneManager( line_prefix='',
                                                      done_prefix='\nExecution is ',
