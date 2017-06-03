@@ -84,6 +84,7 @@ class ObjectLikeTypeInfo(TypeInfo):
                                   item, 
                                   recurse=True,
                                   require_exact_match=None,
+                                  exclude_names=None,
                                 ):
         if require_exact_match == None:
             require_exact_match = self.RequireExactMatchDefault if self.RequireExactMatchDefault != None else True
@@ -117,7 +118,11 @@ class ObjectLikeTypeInfo(TypeInfo):
                 return "The attribute '{}' is not valid - {}".format(attribute_name, result)
 
         if require_exact_match and attributes:
-            return "The item contains extraneous data: {}".format(', '.join([ "'{}'".format(attr) for attr in attributes ]))
+            for attribute in (exclude_names or []):
+                attributes.discard(attribute)
+
+            if attributes:
+                return "The item contains extraneous data: {}".format(', '.join([ "'{}'".format(attr) for attr in attributes ]))
 
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
