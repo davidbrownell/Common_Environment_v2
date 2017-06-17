@@ -78,18 +78,21 @@ def ActivateLibraries( name,
             dirs = [ item for item in os.listdir(fullpath) if os.path.isdir(os.path.join(fullpath, item)) ]
 
             for library_versions, this_version in six.iteritems(library_version_dirs):
-                found = True
-
-                for library_version in library_versions:
-                    if library_version not in dirs:
-                        found = False
+                applies = True
+                
+                for dir in dirs:
+                    if dir not in library_versions:
+                        applies = False
                         break
 
-                if found:
-                    assert this_version in library_versions, this_version
-                    fullpath = os.path.join(fullpath, this_version)
+                if not applies:
+                    continue
 
-                    break
+                if this_version not in dirs:
+                    return None
+
+                fullpath = os.path.join(fullpath, this_version)
+                break
 
             if prev_fullpath == fullpath:
                 break
@@ -140,19 +143,27 @@ def ActivateLibraries( name,
             # ----------------------------------------------------------------------
 
             try:
+                apply_library = True
+
                 for index, method in enumerate([ SourceRepositoryTools.GetCustomizedPath,
                                                  AugmentLibraryDir,
                                                  GetVersionedDirectoryEx,
                                                  SourceRepositoryTools.GetCustomizedPath,
                                                  AugmentLibraryDir,
                                                ]):
-                    fullpath = method(fullpath)
+                    result = method(fullpath)
+                    if result == None:
+                        apply_library = False
+                        break
+
+                    fullpath = result
                     assert os.path.isdir(fullpath), (index, fullpath)
                 
-                libraries[item] = QuickObject( repository=repository,
-                                               fullpath=fullpath,
-                                               version=version.value,
-                                             )
+                if apply_library:
+                    libraries[item] = QuickObject( repository=repository,
+                                                   fullpath=fullpath,
+                                                   version=version.value,
+                                                 )
             except Exception as ex:
                 sys.stdout.write("    WARNING: {}\n".format(ex))
 
