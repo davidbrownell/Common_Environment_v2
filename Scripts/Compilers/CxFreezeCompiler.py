@@ -99,7 +99,7 @@ class Compiler(CompilerBase):
                          optional_includes='' if not context.includes else '"includes" : [ {} ],'.format(', '.join([ 'r"{}"'.format(include) for include in context.includes ])),
                          input=input_filename,
                          base="Win32GUI" if sys.platform == "win32" and context.build_type == cls.BuildType_Windows else "None",
-                         icon="# No Icon" if not context.icon_filename else '"icon" : r"{}",'.format(context.icon_filename),
+                         icon="# No icon" if not context.icon_filename else '"icon" : r"{}",'.format(context.icon_filename),
                          copyright="# No copyright" if not context.copyright else '"copyright" : "{}",'.format(context.copyright),
                          trademarks="# No trademarks" if not context.trademarks else '"trademarks" : "{}",'.format(context.trademarks),
                        )

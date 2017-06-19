@@ -75,7 +75,10 @@ class DistutilsCompiler( AtomicInputProcessingMixin,
     # ---------------------------------------------------------------------------
     @classmethod
     def _GetOptionalMetadata(cls):
-        return { "build_type" : cls.BuildType_Console,
+        return { "preserve_temp_dir" : False,
+                 
+                 # General modifiers
+                 "build_type" : cls.BuildType_Console,
                  "include_tcl" : False,
                  "no_optimize" : False,
                  "no_bundle" : False,
@@ -158,7 +161,13 @@ class DistutilsCompiler( AtomicInputProcessingMixin,
                 with open(temp_filename, 'w') as f:
                     f.write(generated_python_content)
 
-                with CallOnExit(lambda: os.remove(temp_filename)):
+                if context.preserve_temp_dir:
+                    this_dm.stream.write("Writing to '{}'\n".format(temp_filename))
+                    cleanup_func = lambda: None
+                else:
+                    cleanup_func = lambda: os.remove(temp_filename)
+
+                with CallOnExit(cleanup_func):
                     sink = StringIO()
 
                     this_dm.result = cls._Compile(context, temp_filename, StreamDecorator([ sink, this_verbose_stream, ]))
@@ -235,6 +244,8 @@ def CreateCompileMethod(Compiler):
                  name=None,
                  version=None,
     
+                 preserve_temp_dir=False,
+
                  output_stream=sys.stdout,
                  verbose=False,
                ):
@@ -272,6 +283,8 @@ def CreateCompileMethod(Compiler):
                                                trademarks=trademarks,
                                                name=name,
                                                version=version,
+
+                                               preserve_temp_dir=preserve_temp_dir,
                                              )
     
     # ----------------------------------------------------------------------
