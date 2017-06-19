@@ -124,8 +124,11 @@ class WindowsEnvironment(Environment):
         # to reliabaly get this info is to parse the output of 'dir' and extact the info.
         # This is horribly painful code.
         
-        from StringIO import StringIO
-        import cPickle as pickle
+        import six
+        from six import StringIO
+        import six.moves.cPickle as pickle
+
+        from CommonEnvironment import Process
 
         filename = filename.replace('/', os.path.sep)
 
@@ -163,16 +166,9 @@ class WindowsEnvironment(Environment):
             command_line = 'dir /AL "%s"' % os.path.dirname(filename)
             is_match = lambda name: name == os.path.basename(filename)
 
-        state = subprocess.Popen( command_line,
-                                  shell=True,
-                                  stdout=subprocess.PIPE,
-                                  stderr=subprocess.STDOUT,
-                                )
-        sink = state.stdout.read()
-        rval = state.wait() or 0
-        
-        assert rval == 0, sink
 
+        rval, sink = Process.Execute(command_line)
+        
         regexp = re.compile(r".+<(?P<type>.+?)>\s+(?P<link>.+?)\s+\[(?P<filename>.+?)\]\s*")
 
         for line in sink.split('\n'):
@@ -340,4 +336,3 @@ class WindowsEnvironment(Environment):
         return 'copy /Y "{source}" "{dest}"'.format( source=source,
                                                      dest=dest,
                                                    )
-        
