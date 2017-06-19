@@ -157,7 +157,7 @@ class Compiler(CompilerBase):
                               }},
                             ],
                  )
-            ''').format( paths='\n'.join([ 'sys.path.append(r"{}")'.format(os.path.abspath(path)) for path in context.paths ]),
+            ''').format( paths='\n'.join([ 'sys.path.append("{}")'.format(os.path.abspath(path).replace('\\', '\\\\')) for path in context.paths ]),
                          manifest=StreamDecorator.LeftJustify( open(context.manifest_filename).read() if context.manifest_filename != None and os.path.isfile(context.manifest_filename) else textwrap.dedent(
                                                                         """\
                                                                         <?xml version="1.0" encoding="UTF-8" standalone="yes"?>

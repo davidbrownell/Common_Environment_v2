@@ -82,8 +82,8 @@ class DistutilsCompiler( AtomicInputProcessingMixin,
                  "manifest_filename" : None,
                  "icon_filename" : None,
                  "paths" : [],
-                 "includes" : [],
-                 "excludes" : [],
+                 "includes" : [],           # Modules
+                 "excludes" : [],           # Modules
                  "packages" : [],
                  "distutil_args" : [],
                  "output_name" : None,
@@ -126,7 +126,7 @@ class DistutilsCompiler( AtomicInputProcessingMixin,
                 context.paths.append(dirname)
 
         if not context.include_tcl:
-            context.excludes += [ "Tkconstants", "Tkinter", "tcl", ]
+            context.excludes += [ "tkconstants", "tkinter", "tcl", ]
         del context.include_tcl
 
         return super(DistutilsCompiler, cls)._PostprocessContextItem(context)
