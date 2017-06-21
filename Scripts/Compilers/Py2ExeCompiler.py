@@ -67,24 +67,7 @@ class Compiler(CompilerBase):
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
     @classmethod
-    def _GenerateScriptContent( cls,
-                                context, 
-                                input_filename,
-                                output_filename,
-                              ):
-        # ---------------------------------------------------------------------------
-        def BuildTypeToString(build_type):
-            if build_type == cls.BuildType_Console:
-                return "console"
-            elif build_type == cls.BuildType_Windows:
-                return "windows"
-            else:
-                assert False
-
-        # ---------------------------------------------------------------------------
-
-        context._output_filename = output_filename
-
+    def _GenerateScriptContent(cls, context):
         version_info = OrderedDict()
         
         for attribute_name in [ "comments",
@@ -102,6 +85,38 @@ class Compiler(CompilerBase):
             
             version_info[attribute_name] = value
         
+        if version_info:
+            version_info = StreamDecorator.LeftJustify( '\n'.join([ '"{}" : "{}",'.format(k, v) for k, v in six.iteritems(version_info) ]),
+                                                        len("setup( "),
+                                                      )
+        else:
+            version_info = "# No version info"
+
+        icon_statement = "# No icon" if not context.icon_filename else '"icon_resources" : [ (1, "{}"), ],'.format(context.icon_filename)
+        executables = []
+
+        for input_filename in context.input_filenames:
+            executables.append(textwrap.dedent(
+                """\
+                {{ "script" : r"{input}",
+                 "dest_base" : "{name}",
+                 # "other_resources" : [ (24, 1, manifest), ],
+                 {version_info}
+                {icon}
+                }},
+                """).format( input=input_filename,
+                             name=os.path.splitext(os.path.basename(input_filename))[0],
+                             version_info=version_info,
+                             icon=icon_statement,
+                           ))
+
+        if context.build_type == cls.BuildType_Console:
+            build_type = "console"
+        elif context.build_type == cls.BuildType_Windows:
+            build_type = "windows"
+        else:
+            assert False, context.build_type
+
         return textwrap.dedent(
             '''\
             import os
@@ -149,13 +164,9 @@ class Compiler(CompilerBase):
                                         }},
                            }},
                     zipfile=None,
-                    {type}= [ {{ "script" : r"{script}",
-                                "dest_base" : "{name}",
-                                # "other_resources" : [ (24, 1, manifest), ],
-                                {version_info}
-                                {icon}
-                              }},
-                            ],
+                    {type}= [ 
+                        {executables}
+                    ],
                  )
             ''').format( paths='\n'.join([ 'sys.path.append("{}")'.format(os.path.abspath(path).replace('\\', '\\\\')) for path in context.paths ]),
                          manifest=StreamDecorator.LeftJustify( open(context.manifest_filename).read() if context.manifest_filename != None and os.path.isfile(context.manifest_filename) else textwrap.dedent(
@@ -165,19 +176,14 @@ class Compiler(CompilerBase):
                                                                         """).rstrip(),
                                                                4,
                                                              ),
-                         name=os.path.splitext(os.path.basename(output_filename))[0],
+                         name=os.path.splitext(os.path.basename(context.input_filenames[0]))[0],
                          optimize="0" if context.no_optimize else "2",
                          bundle="3" if context.no_bundle else "1",
                          optional_include_statement='' if not context.includes else '"includes" : [ {} ],'.format(', '.join([ 'r"{}"'.format(include) for include in context.includes ])),
                          optional_exclude_statement='' if not context.excludes else '"excludes" : [ {} ],'.format(', '.join([ 'r"{}"'.format(exclude) for exclude in context.excludes ])),
                          packages=', '.join([ '"{}"'.format(package) for package in context.packages ]),
-                         script=input_filename,
-                         type=BuildTypeToString(context.build_type),
-                         version_info='' if not version_info else StreamDecorator.LeftJustify( '\n'.join([ '"{}" : "{}",'.format(k, v) for k, v in six.iteritems(version_info) ]),
-                                                                                               len("setup( "),
-                                                                                             ),
-                         icon='' if context.icon_filename == None else '"icon_resources" : [ (1, "{}"), ],'.format(context.icon_filename),
-    
+                         type=build_type,
+                         executables=StreamDecorator.LeftJustify(''.join(executables), 12),
                        )
 
     # ----------------------------------------------------------------------
@@ -192,10 +198,8 @@ class Compiler(CompilerBase):
             FileSystem.RemoveTree("build")
 
             if os.path.isdir("dist"):
-                output_dir = os.path.dirname(context._output_filename)
-
-                FileSystem.RemoveTree(output_dir)
-                shutil.move("dist", output_dir)
+                FileSystem.RemoveTree(context.output_dir)
+                shutil.move("dist", context.output_dir)
 
         return result
 

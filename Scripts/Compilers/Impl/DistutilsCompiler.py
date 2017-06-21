@@ -106,21 +106,10 @@ class DistutilsCompiler( AtomicInputProcessingMixin,
     @classmethod
     def _PostprocessContextItem(cls, context):
         
-        # Create the output_filenames
-        output_filenames = []
+        if len(context.input_filenames) != 1 and context.output_name:
+            raise Exception("'output_name' can not be specified when multipe input files are provided")
 
-        if len(context.input_filenames) == 1:
-            output_filenames.append(os.path.join(context.output_dir, context.output_name or "{}.exe".format(os.path.splitext(os.path.basename(context.input_filenames[0]))[0])))
-        else:
-            if context.output_name != None:
-                raise Exception("'output_name' can not be specified when multipe input files are provided")
-
-            for input_filename in context.input_filenames:
-                name = os.path.splitext(os.path.basename(input_filename))[0]
-
-                output_filenames.append(os.path.join(context.output_dir, name, "{}.exe".format(name)))
-
-        context.output_filenames = output_filenames
+        context.output_filenames = []
                 
         # Ensure that the path of the inputs are included
         for input_filename in context.input_filenames:
@@ -143,46 +132,36 @@ class DistutilsCompiler( AtomicInputProcessingMixin,
                      verbose_stream,
                      verbose,
                    ):
-        for index, input_filename in enumerate(context.input_filenames):
-            status_stream.write("Processing '{}' ({} of {})...".format( input_filename,
-                                                                        index + 1,
-                                                                        len(context.input_filenames),
-                                                                      ))
-            with status_stream.DoneManager(associated_stream=verbose_stream) as (this_dm, this_verbose_stream):
-                output_filename = context.output_filenames[index]
-                
-                generated_python_content = cls._GenerateScriptContent( context, 
-                                                                       input_filename,
-                                                                       output_filename,
-                                                                     )
-                assert generated_python_content
+        with status_stream.DoneManager(associated_stream=verbose_stream) as (this_dm, this_verbose_stream):
+            generated_python_content = cls._GenerateScriptContent(context)
+            assert generated_python_content
 
-                temp_filename = Shell.GetEnvironment().CreateTempFilename(".py")
-                with open(temp_filename, 'w') as f:
-                    f.write(generated_python_content)
+            temp_filename = Shell.GetEnvironment().CreateTempFilename(".py")
+            with open(temp_filename, 'w') as f:
+                f.write(generated_python_content)
 
-                if context.preserve_temp_dir:
-                    this_dm.stream.write("Writing to '{}'\n".format(temp_filename))
-                    cleanup_func = lambda: None
-                else:
-                    cleanup_func = lambda: os.remove(temp_filename)
+            if context.preserve_temp_dir:
+                this_dm.stream.write("Writing to '{}'\n".format(temp_filename))
+                cleanup_func = lambda: None
+            else:
+                cleanup_func = lambda: os.remove(temp_filename)
 
-                with CallOnExit(cleanup_func):
-                    sink = StringIO()
+            with CallOnExit(cleanup_func):
+                sink = StringIO()
 
-                    this_dm.result = cls._Compile(context, temp_filename, StreamDecorator([ sink, this_verbose_stream, ]))
-                    if this_dm.result != 0:
-                        if not verbose:
-                            this_dm.stream.write(sink.getvalue())
+                this_dm.result = cls._Compile(context, temp_filename, StreamDecorator([ sink, this_verbose_stream, ]))
+                if this_dm.result != 0:
+                    if not verbose:
+                        this_dm.stream.write(sink.getvalue())
 
-                    return this_dm.result
+                return this_dm.result
 
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
     @staticmethod
     @abstractmethod
-    def _GenerateScriptContent(context, input_filename, output_filename):
+    def _GenerateScriptContent(context):
         raise Exception("Abstract method")
 
     # ----------------------------------------------------------------------
