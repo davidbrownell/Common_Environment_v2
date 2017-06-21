@@ -22,6 +22,7 @@ from CommonEnvironment import CommandLine
 from CommonEnvironment import FileSystem
 from CommonEnvironment import Interface
 from CommonEnvironment import Process
+from CommonEnvironment.StreamDecorator import StreamDecorator
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -50,11 +51,7 @@ class Compiler(CompilerBase):
     # ----------------------------------------------------------------------
     # ----------------------------------------------------------------------
     @classmethod
-    def _GenerateScriptContent( cls,
-                                context,
-                                input_filename,
-                                output_filename,
-                              ):
+    def _GenerateScriptContent(cls, context):
         # Raise an error if unsupported attributes are populated
         for attribute_name in [ "comments",
                                 "company_name",
@@ -63,7 +60,28 @@ class Compiler(CompilerBase):
             if getattr(context, attribute_name):
                 raise Exception("'{}' is not supported by this compiler".format(attribute_name))
 
-        context._output_filename = output_filename
+        base = "Win32GUI" if sys.platform == "win32" and context.build_type == cls.BuildType_Windows else "None"
+        icon_statement = "# No icon" if not context.icon_filename else '"icon" : r"{}",'.format(context.icon_filename)
+        copyright_statement = "# No copyright" if not context.copyright else '"copyright" : "{}",'.format(context.copyright)
+        trademarks_statement = "# No trademarks" if not context.trademarks else '"trademarks" : "{}",'.format(context.trademarks)
+
+        executables = []
+
+        for input_filename in context.input_filenames:
+            executables.append(textwrap.dedent(
+                """\
+                Executable( r"{input}",
+                            base={base},
+                            {icon}
+                            {copyright}
+                            {trademarks}
+                          ),
+                """).format( input=input_filename,
+                             base=base,
+                             icon=icon_statement,
+                             copyright=copyright_statement,
+                             trademarks=trademarks_statement,
+                           ))
 
         return textwrap.dedent(
             """\
@@ -81,27 +99,19 @@ class Compiler(CompilerBase):
                                                {optional_includes}
                                             }},
                            }},
-                   executables=[ Executable( r"{input}",
-                                             base={base},
-                                             {icon}
-                                             {copyright}
-                                             {trademarks}
-                                           ),
-                               ],
+                   executables=[ 
+                        {executables}
+                   ],
                  )
             """).format( paths='\n'.join([ 'sys.path.append("{}")'.format(os.path.abspath(path).replace('\\', '\\\\')) for path in context.paths ]),
-                         name=context.name or os.path.splitext(os.path.basename(output_filename))[0],
+                         name=context.name or os.path.splitext(os.path.basename(context.input_filenames[0]))[0],
                          version=context.version or "1.0.0.0",
                          description=context.file_description,
                          optimize="0" if context.no_optimize else "2",
                          packages=', '.join([ '"{}"'.format(package) for package in context.packages ]),
                          optional_excludes='' if not context.excludes else '"excludes" : [ {} ],'.format(', '.join([ 'r"{}"'.format(exclude) for exclude in context.excludes ])),
                          optional_includes='' if not context.includes else '"includes" : [ {} ],'.format(', '.join([ 'r"{}"'.format(include) for include in context.includes ])),
-                         input=input_filename,
-                         base="Win32GUI" if sys.platform == "win32" and context.build_type == cls.BuildType_Windows else "None",
-                         icon="# No icon" if not context.icon_filename else '"icon" : r"{}",'.format(context.icon_filename),
-                         copyright="# No copyright" if not context.copyright else '"copyright" : "{}",'.format(context.copyright),
-                         trademarks="# No trademarks" if not context.trademarks else '"trademarks" : "{}",'.format(context.trademarks),
+                         executables=StreamDecorator.LeftJustify(''.join(executables), 12),
                        )
 
     # ----------------------------------------------------------------------
@@ -114,10 +124,15 @@ class Compiler(CompilerBase):
         result = Process.Execute(command_line, output_stream)
         if result == 0:
             if os.path.isdir("build"):
+                subdirs = os.listdir("build")
+                assert len(subdirs) == 1, subdirs
+
+                source_dir = os.path.join("build", subdirs[0])
+
                 # Remove empty dirs
                 to_remove = []
 
-                for root, dirs, _ in os.walk("build"):
+                for root, dirs, _ in os.walk(source_dir):
                     for dir in dirs:
                         fullpath = os.path.join(root, dir)
 
@@ -127,10 +142,9 @@ class Compiler(CompilerBase):
                 for dir in to_remove:
                     os.rmdir(dir)
 
-                output_dir = os.path.dirname(context._output_filename)
-
-                FileSystem.RemoveTree(output_dir)
-                shutil.move("build", output_dir)
+                FileSystem.RemoveTree(context.output_dir)
+                shutil.move(source_dir, context.output_dir)
+                FileSystem.RemoveTree("build")
 
         return result
 
