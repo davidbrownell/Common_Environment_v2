@@ -49,8 +49,18 @@ def NameInfo(package_value):
             frame = inspect.stack()[3]          # 1 for ctor, 1 for method, 1 for contextmanager
             mod = inspect.getmodule(frame[0])
             
+            # This is a hack, but attempt to extract the module
+            # name if mod is None (which will happen when the
+            # script is frozen)
+            if mod:
+                mod_name = mod.__name__
+                mod_file = mod.__file__
+            else:
+                mod_file = frame[1]
+                mod_name = os.path.splitext(os.path.basename(mod_file))[0]
+
             self.original                       = package_value
-            self.created                        = CreateName(package_value, mod.__name__, mod.__file__)
+            self.created                        = CreateName(package_value, mod_name, mod_file)
         
     # ---------------------------------------------------------------------------
     
@@ -91,9 +101,9 @@ def CreateName(package, name, file):
     # Walk up all directories while there is an __init__ file...
     name_parts = []
 
-    dir = original_dir
-    while os.path.isfile(os.path.join(dir, "__init__.py")):
-        dir, name = os.path.split(dir)
+    directory = original_dir
+    while os.path.isfile(os.path.join(directory, "__init__.py")):
+        directory, name = os.path.split(directory)
         name_parts.append(name)
 
     if not name_parts:
@@ -101,7 +111,7 @@ def CreateName(package, name, file):
         # isn't a file that is part of a package. However, we want
         # to simulate that it is part of a package so that relative 
         # imports work as expected.
-        if name == "__main__":
+        if name == "__main__" or getattr(sys, "frozen", False):
             name = "___EntryPoint___"
         else:
             name = "___{}Lib___".format(name)
@@ -124,7 +134,7 @@ def CreateName(package, name, file):
             if not item_exists:
                 # If here, we need to import the current package under its
                 # own name so that dependent imports will be successful.
-                sys.path.insert(0, dir)
+                sys.path.insert(0, directory)
                 with CallOnExit(lambda: sys.path.pop(0)):
                     sys.modules[name_part] = __import__(name_part)
                     
@@ -135,7 +145,7 @@ def CreateName(package, name, file):
                 # for the fully qualified package.
                 del sys.modules[name_part]
 
-        dir = os.path.join(dir, name_part)
+        directory = os.path.join(directory, name_part)
 
     return this_name
     
