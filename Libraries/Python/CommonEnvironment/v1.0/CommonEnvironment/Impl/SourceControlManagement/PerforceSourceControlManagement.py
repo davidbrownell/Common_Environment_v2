@@ -26,7 +26,6 @@ from contextlib import contextmanager
 
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment.Interface import *
-from CommonEnvironment import Package
 from CommonEnvironment.QuickObject import QuickObject
 from CommonEnvironment import Shell
 
