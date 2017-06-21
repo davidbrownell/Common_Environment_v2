@@ -20,7 +20,8 @@ import six
 from CommonEnvironment.Interface import staticderived
 from CommonEnvironment import RegularExpression
 
-from CommonEnvironment.TypeInfo import SchemaConverters
+from . import SchemaConverter
+
 from CommonEnvironment.TypeInfo.AnyOfTypeInfo import AnyOfTypeInfo
 from CommonEnvironment.TypeInfo.ClassTypeInfo import ClassTypeInfo
 from CommonEnvironment.TypeInfo.DictTypeInfo import DictTypeInfo
