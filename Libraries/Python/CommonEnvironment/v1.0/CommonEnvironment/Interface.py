@@ -276,7 +276,7 @@ class Interface(object):
                             has_default_value = True
                             
                             values.append("{name:<40}  {default:<20}  {type_}".format( name=name,
-                                                                                       default=default_value,
+                                                                                       default=str(default_value),
                                                                                        type_=type(default_value),
                                                                                      ))
                         else:
