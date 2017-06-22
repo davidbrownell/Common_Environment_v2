@@ -423,10 +423,13 @@ class StringSerialization(Serialization):
             # ----------------------------------------------------------------------
             @staticmethod
             def OnFilename(type_info):
-                value = item.replace('/', os.path.sep)
+                value = item
 
-                if custom_kwargs.get("normalize", True):
-                    value = os.path.realpath(os.path.normpath(value))
+                if "://" not in value:
+                    value = item.replace('/', os.path.sep)
+
+                    if custom_kwargs.get("normalize", True):
+                        value = os.path.realpath(os.path.normpath(value))
 
                 return value
         
