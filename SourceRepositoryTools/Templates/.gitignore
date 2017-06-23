@@ -1,0 +1,8 @@
+*.pyc
+*.pyo
+Generated/*
+ActivateEnvironment.cmd
+ActivateEnvironment.sh
+.coverage
+*.ipynb
+.hg/*
