@@ -29,6 +29,7 @@ from CommonEnvironment.TypeInfo.FundamentalTypes import ( DateTypeInfo,
                                                           DurationTypeInfo,
                                                           GuidTypeInfo,
                                                           TimeTypeInfo,
+                                                          UriTypeInfo,
                                                           Visitor as VisitorBase,
                                                           FUNDAMENTAL_TYPES,
                                                         )
@@ -156,6 +157,13 @@ class JsonSchemaConverter(SchemaConverter):
             def OnTime(type_info, *args, **kwargs):
                 return { "type" : "string",
                          "pattern" : "^{}$".format(RegularExpression.PythonToJavaScript(StringSerialization.GetRegularExpressionString(TimeTypeInfo()))),
+                       }
+
+            # ----------------------------------------------------------------------
+            @staticmethod
+            def OnUri(type_info, *args, **kwargs):
+                return { "type" : "string",
+                         "pattern" : "^{}$".format(RegularExpression.PythonToJavaScript(StringSerialization.GetRegularExpressionString(UriTypeInfo()))),
                        }
 
         # ----------------------------------------------------------------------
