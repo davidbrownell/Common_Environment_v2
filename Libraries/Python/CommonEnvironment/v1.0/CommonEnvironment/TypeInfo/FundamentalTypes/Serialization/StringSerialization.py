@@ -25,7 +25,9 @@ from CommonEnvironment.TypeInfo import ValidationException
 from CommonEnvironment.TypeInfo.FundamentalTypes import Visitor as FundamentalTypesVisitor, \
                                                         CreateSimpleVisitor, \
                                                         DateTypeInfo, \
-                                                        TimeTypeInfo
+                                                        TimeTypeInfo, \
+                                                        UriTypeInfo
+
 from CommonEnvironment.TypeInfo.FundamentalTypes.Serialization import Serialization                                                        
                                                      
 # ----------------------------------------------------------------------
@@ -207,6 +209,12 @@ class StringSerialization(Serialization):
                             )"""),
                        ]
 
+            # ----------------------------------------------------------------------
+            @staticmethod
+            def OnUri(type_info):
+                # This regex is overly aggressive in identifying uris, but should work in most cases.
+                return [ r"\S+://\S+", ]
+
         # ----------------------------------------------------------------------
         
         return Visitor.Accept(type_info)
@@ -285,6 +293,11 @@ class StringSerialization(Serialization):
             @staticmethod
             def OnTime(type_info):
                 return item.isoformat()
+
+            # ----------------------------------------------------------------------
+            @staticmethod
+            def OnUri(type_info):
+                return item.ToString()
 
         # ----------------------------------------------------------------------
         
@@ -423,13 +436,10 @@ class StringSerialization(Serialization):
             # ----------------------------------------------------------------------
             @staticmethod
             def OnFilename(type_info):
-                value = item
+                value = item.replace('/', os.path.sep)
 
-                if "://" not in value:
-                    value = item.replace('/', os.path.sep)
-
-                    if custom_kwargs.get("normalize", True):
-                        value = os.path.realpath(os.path.normpath(value))
+                if custom_kwargs.get("normalize", True):
+                    value = os.path.realpath(os.path.normpath(value))
 
                 return value
         
@@ -457,6 +467,11 @@ class StringSerialization(Serialization):
             @classmethod
             def OnTime(cls, type_info):
                 return datetime.datetime.strptime(*cls._GetTimeExpr(match.groupdict())).time()
+
+            # ----------------------------------------------------------------------
+            @staticmethod
+            def OnUri(type_info):
+                return UriTypeInfo.Uri.FromString(item)
 
             # ----------------------------------------------------------------------
             # ----------------------------------------------------------------------

@@ -116,6 +116,11 @@ class SimpleSchemaConveter(SchemaConverter):
             def OnTime(type_info, *args, **kwargs):
                 return "time"
 
+            # ----------------------------------------------------------------------
+            @staticmethod
+            def OnUri(type_info, *args, **kwargs):
+                return "string"
+
         # ----------------------------------------------------------------------
         
         result = Visitor.Accept(type_info)
