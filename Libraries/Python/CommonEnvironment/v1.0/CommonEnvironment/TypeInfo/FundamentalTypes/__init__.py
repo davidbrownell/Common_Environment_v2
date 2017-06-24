@@ -41,6 +41,7 @@ if '.' in __name__:
     from .IntTypeInfo import IntTypeInfo
     from .StringTypeInfo import StringTypeInfo
     from .TimeTypeInfo import TimeTypeInfo
+    from .UriTypeInfo import UriTypeInfo
     
     from .. import Arity
 else:
@@ -56,6 +57,7 @@ else:
     from CommonEnvironment.TypeInfo.FundamentalTypes.IntTypeInfo import IntTypeInfo
     from CommonEnvironment.TypeInfo.FundamentalTypes.StringTypeInfo import StringTypeInfo
     from CommonEnvironment.TypeInfo.FundamentalTypes.TimeTypeInfo import TimeTypeInfo
+    from CommonEnvironment.TypeInfo.FundamentalTypes.UriTypeInfo import UriTypeInfo
     
     from CommonEnvironment.TypeInfo import Arity
 
@@ -76,6 +78,7 @@ FUNDAMENTAL_TYPES                           = ( BoolTypeInfo,
                                                 IntTypeInfo,
                                                 StringTypeInfo,
                                                 TimeTypeInfo,
+                                                UriTypeInfo,
                                               )
 
 # ----------------------------------------------------------------------
@@ -158,35 +161,38 @@ class Visitor(_Interface.Interface):
         raise Exception("Abstract method")
 
     # ----------------------------------------------------------------------
+    @staticmethod
+    @_Interface.abstractmethod
+    def OnUri(type_info, *args, **kwargs):
+        raise Exception("Abstract method")
+        
+    # ----------------------------------------------------------------------
     @classmethod
     def Accept(cls, type_info, *args, **kwargs):
-        if isinstance(type_info, BoolTypeInfo):
-            return cls.OnBool(type_info, *args, **kwargs)
-        elif isinstance(type_info, DateTimeTypeInfo):
-            return cls.OnDateTime(type_info, *args, **kwargs)
-        elif isinstance(type_info, DateTypeInfo):
-            return cls.OnDate(type_info, *args, **kwargs)
-        elif isinstance(type_info, DirectoryTypeInfo):
-            return cls.OnDirectory(type_info, *args, **kwargs)
-        elif isinstance(type_info, DurationTypeInfo):
-            return cls.OnDuration(type_info, *args, **kwargs)
-        elif isinstance(type_info, EnumTypeInfo):
-            return cls.OnEnum(type_info, *args, **kwargs)
-        elif isinstance(type_info, FilenameTypeInfo):
-            return cls.OnFilename(type_info, *args, **kwargs)
-        elif isinstance(type_info, FloatTypeInfo):
-            return cls.OnFloat(type_info, *args, **kwargs)
-        elif isinstance(type_info, GuidTypeInfo):
-            return cls.OnGuid(type_info, *args, **kwargs)
-        elif isinstance(type_info, IntTypeInfo):
-            return cls.OnInt(type_info, *args, **kwargs)
-        elif isinstance(type_info, StringTypeInfo):
-            return cls.OnString(type_info, *args, **kwargs)
-        elif isinstance(type_info, TimeTypeInfo):
-            return cls.OnTime(type_info, *args, **kwargs)
-        else:
-            raise Exception("'{}' was not expected".format(type(type_info)))
+        lookup = { BoolTypeInfo             : cls.OnBool,
+                   DateTimeTypeInfo         : cls.OnDateTime,
+                   DateTypeInfo             : cls.OnDate,
+                   DirectoryTypeInfo        : cls.OnDirectory,
+                   DurationTypeInfo         : cls.OnDuration,
+                   EnumTypeInfo             : cls.OnEnum,
+                   FilenameTypeInfo         : cls.OnFilename,
+                   FloatTypeInfo            : cls.OnFloat,
+                   GuidTypeInfo             : cls.OnGuid,
+                   IntTypeInfo              : cls.OnInt,
+                   StringTypeInfo           : cls.OnString,
+                   TimeTypeInfo             : cls.OnTime,
+                   UriTypeInfo              : cls.OnUri,
+                 }
+        
+        typ = type(type_info)
+        
+        try:
+            func = lookup[typ]
+        except KeyError:
+            raise Exception("'{}' was not expected".format(typ))
 
+        return func(type_info, *args, **kwargs)
+        
 # ----------------------------------------------------------------------
 # |  
 # |  Public Methods
@@ -207,6 +213,7 @@ def CreateSimpleVisitor( onBoolFunc=None,               # def Func(type_info, *a
                          onIntFunc=None,                # def Func(type_info, *args, **kwargs)
                          onStringFunc=None,             # def Func(type_info, *args, **kwargs)
                          onTimeFunc=None,               # def Func(type_info, *args, **kwargs)
+                         onUriFunc=None,                # def Func(type_info, *args, **kwargs)
                          onDefaultFunc=None,            # def Func(type_info, *args, **kwargs)
                        ):
     onDefaultFunc = onDefaultFunc or (lambda *args, **kwargs: None)
@@ -222,6 +229,7 @@ def CreateSimpleVisitor( onBoolFunc=None,               # def Func(type_info, *a
     onGuidFunc = onGuidFunc or onDefaultFunc
     onIntFunc = onIntFunc or onDefaultFunc
     onStringFunc = onStringFunc or onDefaultFunc
+    onUriFunc = onUriFunc or onDefaultFunc
     onTimeFunc = onTimeFunc or onDefaultFunc
 
     # ----------------------------------------------------------------------
@@ -285,6 +293,11 @@ def CreateSimpleVisitor( onBoolFunc=None,               # def Func(type_info, *a
         @staticmethod
         def OnTime(type_info, *args, **kwargs):
             return onTimeFunc(type_info, *args, **kwargs)
+            
+        # ----------------------------------------------------------------------
+        @staticmethod
+        def OnUri(type_info, *args, **kwargs):
+            return onUriFunc(type_info, *args, **kwargs)
 
     # ----------------------------------------------------------------------
     
@@ -307,6 +320,7 @@ def CreateTypeInfo(type_, **kwargs):
                                  IntTypeInfo,
                                  # StringTypeInfo,
                                  TimeTypeInfo,
+                                 UriTypeInfo,
                                ]:
         if potential_type_info.ExpectedType == type_:
             return potential_type_info(**kwargs)

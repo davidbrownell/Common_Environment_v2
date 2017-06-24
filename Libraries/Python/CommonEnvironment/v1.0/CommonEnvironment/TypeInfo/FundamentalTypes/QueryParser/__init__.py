@@ -449,6 +449,19 @@ def ParseFactory( string_serialization=None,
                                         )
 
                 # ----------------------------------------------------------------------
+                @classmethod
+                def OnUri(cls, type_info, *args, **kwargs):
+                    return cls._Validate( type_info,
+                                          _Parser.EQUAL,
+                                          _Parser.NOT_EQUAL,
+                                          _Parser.LT,
+                                          _Parser.LTE,
+                                          _Parser.GT,
+                                          _Parser.GTE,
+                                          _Parser.LIKE,
+                                        )
+
+                # ----------------------------------------------------------------------
                 # ----------------------------------------------------------------------
                 # ----------------------------------------------------------------------
                 @staticmethod

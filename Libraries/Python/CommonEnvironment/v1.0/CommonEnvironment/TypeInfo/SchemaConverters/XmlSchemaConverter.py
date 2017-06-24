@@ -26,6 +26,7 @@ from CommonEnvironment import RegularExpression
 from . import SchemaConverter
 
 from ..FundamentalTypes import ( GuidTypeInfo,
+                                 UriTypeInfo,
                                  Visitor as FundamentalVisitor,
                                )
 
@@ -202,6 +203,16 @@ class XmlSchemaConverter(SchemaConverter):
             @staticmethod
             def OnTime(type_info, *args, **kwargs):
                 return "xs:time"
+
+            # ----------------------------------------------------------------------
+            @staticmethod
+            def OnUri(type_info, *args, **kwargs):
+                return textwrap.dedent(
+                    """\
+                    <xs:restriction base="xs:string">
+                      <xs:pattern value="{}" />
+                    </xs:restriction>
+                    """).format(RegularExpression.PythonToJavaScript(StringSerialization.GetRegularExpressionString(UriTypeInfo())))
             
         # ----------------------------------------------------------------------
         
