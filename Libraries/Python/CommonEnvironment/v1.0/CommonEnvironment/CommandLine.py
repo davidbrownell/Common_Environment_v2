@@ -597,6 +597,20 @@ class Executor(object):
             try:
                 if isinstance(param.type_info, FUNDAMENTAL_TYPES):
                     value = StringSerialization.DeserializeItem(param.type_info, arg)
+                elif isinstance(param.type_info, AnyOfTypeInfo):
+                    found = False
+
+                    for eti in param.type_info.ElementTypeInfos:
+                        try:
+                            value = StringSerialization.DeserializeItem(eti, arg)
+                            found = True
+                            break
+                        except TypeInfo.ValidationException:
+                            pass
+
+                    if not found:
+                        value = arg
+
                 else:
                     value = arg
 
