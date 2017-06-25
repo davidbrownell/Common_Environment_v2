@@ -16,7 +16,6 @@
 # ---------------------------------------------------------------------------
 import os
 import re
-import subprocess
 import shutil
 import sys
 import textwrap
@@ -29,6 +28,7 @@ from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CommandLine
 from CommonEnvironment.NamedTuple import NamedTuple
 from CommonEnvironment.QuickObject import QuickObject
+from CommonEnvironment import Process
 from CommonEnvironment import Shell
 from CommonEnvironment import SourceControlManagement
 from CommonEnvironment.StreamDecorator import StreamDecorator
@@ -106,14 +106,9 @@ def NormalizeRepoTemplates(code_root, *repo_templates_params):
         repo_enlist_all = os.path.join(repo_root, Constants.SCRIPTS_SUBDIR, "EnlistAll.py")
         assert os.path.isfile(repo_enlist_all), repo_enlist_all
 
-        result = subprocess.Popen( 'python "{}" List /verbose /no_populate'.format(repo_enlist_all),
-                                   stdout=subprocess.PIPE,
-                                   stderr=subprocess.STDOUT,
-                                   shell=True,
-                                 )
-        content = result.stdout.read()
-        assert (result.wait() or 0) == 0
-
+        result, content = Process.Execute('python "{}" List /verbose /no_populate'.format(repo_enlist_all),)
+        assert result == 0, result
+        
         for line in [ line.strip() for line in content.split('\n') if line.strip() ]:
             values = line.split(';')
             assert len(values) == 3, line
@@ -435,14 +430,7 @@ def SetupFunctionFactory( repo_templates,
                     if repo.setup_configurations:
                         command_line += " {}".format(' '.join([ '"/configuration={}"'.format(config) for config in repo.setup_configurations ]))
 
-                    result = subprocess.Popen( command_line,
-                                               stdout=subprocess.PIPE,
-                                               stderr=subprocess.STDOUT,
-                                               shell=True,
-                                             )
-
-                    this_dm.stream.write(result.stdout.read())
-                    this_dm.result = result.wait() or 0
+                    this_dm.result = Process.Execute(command_line, this_dm.stream)
 
         return dm.result
 
