@@ -16,6 +16,7 @@
 # ---------------------------------------------------------------------------
 import copy
 import itertools
+import json
 import os
 import sys
 import textwrap
