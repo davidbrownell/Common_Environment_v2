@@ -52,9 +52,7 @@ StreamDecorator                             = CommonEnvironmentImports.StreamDec
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
-GENERATED_ORIGINAL_ENVIRONMENT_FILENAME     = "OriginalEnvironment.data"
-GENERATED_REPO_DATA_FILENAME                = "Repository.data"
-
+GENERATED_ORIGINAL_ENVIRONMENT_FILENAME     = "OriginalEnvironment.json"
 CUSTOM_ACTIONS_METHOD_NAME                  = "CustomActions"
 
 # ---------------------------------------------------------------------------
@@ -69,8 +67,8 @@ def LoadOriginalEnvironment():
     filename = os.path.join(generated_dir, GENERATED_ORIGINAL_ENVIRONMENT_FILENAME)
     assert os.path.isfile(filename), filename
 
-    with open(filename, 'rb') as f:
-        return pickle.load(f)
+    with open(filename, 'r') as f:
+        return json.load(f)
 
 # ---------------------------------------------------------------------------
 def LoadRepoData():
@@ -344,8 +342,8 @@ def _ActivateOriginalEnvironment(generated_dir):
                 d.pop(k)
                 break
 
-    with open(os.path.join(generated_dir, GENERATED_ORIGINAL_ENVIRONMENT_FILENAME), 'wb') as f:
-        pickle.dump(d, f)
+    with open(os.path.join(generated_dir, GENERATED_ORIGINAL_ENVIRONMENT_FILENAME), 'w') as f:
+        json.dump(d, f)
         
 # ---------------------------------------------------------------------------
 def _ActivateMasterRepoData(configuration, generated_dir):
