@@ -17,6 +17,7 @@ import subprocess
 import string
 import sys
 
+import six
 from six.moves import StringIO
 
 from CommonEnvironment.CallOnExit import CallOnExit
@@ -146,6 +147,11 @@ def _ExecuteImpl( command_line,
 
         # ----------------------------------------------------------------------
     
+    if environment:
+        for k, v in six.iteritems(environment):
+            if not isinstance(v, six.string_types):
+                environment[k] = str(v)
+
     args = [ command_line, ]
 
     kwargs = { "shell" : True,
