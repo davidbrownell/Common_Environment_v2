@@ -19,6 +19,7 @@ import textwrap
 import urllib
 import zipfile
 
+import six
 import tqdm
 
 from CommonEnvironment.CallOnExit import CallOnExit
@@ -54,7 +55,7 @@ def EntryPoint( repo_name,
     assert binary_name.startswith(repo_name), (binary_name, repo_name)
     assert binary_name[len(repo_name)] == '-'
 
-    output_dir = os.path.join(base_dir, *tuple([ urllib.unquote(item) for item in binary_name[len(repo_name) + 1:].split('-') ]))
+    output_dir = os.path.join(base_dir, *tuple([ six.moves.urllib.parse.unquote(item) for item in binary_name[len(repo_name) + 1:].split('-') ]))
     
     # Don't do anything if the repo already exists
     if os.path.isdir(output_dir):
