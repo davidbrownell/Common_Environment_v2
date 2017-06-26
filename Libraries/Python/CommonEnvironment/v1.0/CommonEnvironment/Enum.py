@@ -185,7 +185,7 @@ def Create(*values):
                                                             return not self.__eq__(other)
 
                                                         def __hash__(self):
-                                                            return (self.string, self.value).__hash__()
+                                                            return self.value.__hash__()
 
                                                     globals()["{class_name}_{value}Obj"] = {class_name}_{value}Obj
                                                     """).format( value=value,
