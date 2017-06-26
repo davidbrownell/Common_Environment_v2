@@ -226,7 +226,7 @@ def _DeferedCallback( cls,
                       generated_dir,
                       context,
                     ):
-    for k, v in (context or {}).iteritems():
+    for k, v in six.iteritems(context or {}):
         setattr(cls, k, v)
 
     # <Access to a protected member> pylint: disable = W0212

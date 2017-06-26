@@ -231,7 +231,7 @@ class RepositoryInformation(object):
                                                              fundamental_development_root=fundamental_development_root,
                                                              is_tool_repository="1" if self.IsToolRepository else "0",
                                                              is_configurable_repository="1" if self.IsConfigurable else "0",
-                                                             configurations=CommonEnvironmentImports.six_plus.BytesToString(pickle.dumps(configurations), encode=True),
+                                                             configurations=CommonEnvironmentImports.six_plus.BytesToString(pickle.dumps(configurations, protocol=2), encode=True),
                                                            ))
 
     # ----------------------------------------------------------------------

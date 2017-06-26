@@ -23,7 +23,6 @@ be an implementation detail.
 
 import inspect
 import os
-import subprocess
 import re
 import sys
 import textwrap
@@ -33,6 +32,7 @@ import six
 from ..CallOnExit import CallOnExit
 from .. import CommandLine
 from .. import FileSystem
+from .. import Process
 from .. import RegularExpression
 from .. import Shell
 
@@ -109,14 +109,7 @@ class CompleteConfiguration(Configuration):
             # ---------------------------------------------------------------------------
             
         with CallOnExit(Cleanup):
-            result = subprocess.Popen( 'python "{}" Metadata'.format(build_filename),
-                                       shell=True,
-                                       stdout=subprocess.PIPE,
-                                       stderr=subprocess.STDOUT,
-                                     )
-            output = result.stdout.read()
-            result = result.wait() or 0
-
+            result, output = Process.Execute('python "{}" Metadata'.format(build_filename))
             assert result == 0, (result, output)
             
             match = RegularExpression.TemplateStringToRegex(cls._VIEW_METADATA_TEMPLATE).match(output)
