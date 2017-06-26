@@ -21,11 +21,14 @@ import stat
 import sys
 import textwrap
 
+import six
 from six.moves import cPickle as pickle
 
 from CommonEnvironment.Interface import *
 from CommonEnvironment import Package
 from CommonEnvironment import RegularExpression
+from CommonEnvironment import six_plus
+
 
 InvocationQueryMixin                        = Package.ImportInit().InvocationQueryMixin
 
@@ -179,7 +182,7 @@ class ConditionalInvocationQueryMixin(InvocationQueryMixin):
         def HasMetadataChanged(prev_context, prev_modified_time):
             prev_metadata_keys = list(prev_context.metadata.keys())
 
-            for k, v in context.__dict__.iteritems():
+            for k, v in six.iteritems(context.__dict__):
                 if k[0] == '_':
                     continue
 
@@ -215,7 +218,7 @@ class ConditionalInvocationQueryMixin(InvocationQueryMixin):
             match = RegularExpression.TemplateStringToRegex(cls._TEMPLATE).match(open(filename).read())
             if match:
                 try:
-                    prev_context = pickle.loads(match.group("data"))
+                    prev_context = pickle.loads(six_plus.BytesFromString(match.group("data"), decode=True))
                     prev_modified_time = cls._GetModifiedTime(filename)
                 except:
                     pass
@@ -258,7 +261,7 @@ class ConditionalInvocationQueryMixin(InvocationQueryMixin):
         filename = cls._GetPersistedFilename(context)
 
         with open(filename, 'w') as f:
-            f.write(cls._TEMPLATE.format(data=pickle.dumps(PersistedContext(cls, context))))
+            f.write(cls._TEMPLATE.format(data=six_plus.BytesToString(pickle.dumps(PersistedContext(cls, context)), encode=True)))
 
     # ---------------------------------------------------------------------------
     # |
@@ -301,7 +304,7 @@ class PersistedContext(object):
                 ):
         self.metadata = {}
 
-        for k, v in context.__dict__.iteritems():
+        for k, v in six.iteritems(context.__dict__):
             if k[0] == '_':
                 continue
 
