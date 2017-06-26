@@ -140,7 +140,7 @@ def Create(*values):
                 def CheckByString(i): return i.string == item
                 def CheckByItem(i): return i == item
 
-                if isinstance(item, (str, unicode)):
+                if isinstance(item, six.string_types):
                     Checker = CheckByString
                 elif isinstance(item, int):
                     Checker = CheckByValue
@@ -162,7 +162,7 @@ def Create(*values):
                                                     class {class_name}_{value}Obj(object):
                                                         string              = "{value}"
                                                         value               = {index}
-
+                                                        
                                                         def __str__(self):
                                                             return "{value}"
 
@@ -183,6 +183,9 @@ def Create(*values):
 
                                                         def __ne__(self, other):
                                                             return not self.__eq__(other)
+
+                                                        def __hash__(self):
+                                                            return (self.string, self.value).__hash__()
 
                                                     globals()["{class_name}_{value}Obj"] = {class_name}_{value}Obj
                                                     """).format( value=value,

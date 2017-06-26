@@ -16,17 +16,19 @@
 # ---------------------------------------------------------------------------
 import os
 import re
-import subprocess
 import shutil
 import sys
 import textwrap
 
 from collections import OrderedDict
 
+import six
+
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CommandLine
 from CommonEnvironment.NamedTuple import NamedTuple
 from CommonEnvironment.QuickObject import QuickObject
+from CommonEnvironment import Process
 from CommonEnvironment import Shell
 from CommonEnvironment import SourceControlManagement
 from CommonEnvironment.StreamDecorator import StreamDecorator
@@ -104,14 +106,9 @@ def NormalizeRepoTemplates(code_root, *repo_templates_params):
         repo_enlist_all = os.path.join(repo_root, Constants.SCRIPTS_SUBDIR, "EnlistAll.py")
         assert os.path.isfile(repo_enlist_all), repo_enlist_all
 
-        result = subprocess.Popen( 'python "{}" List /verbose /no_populate'.format(repo_enlist_all),
-                                   stdout=subprocess.PIPE,
-                                   stderr=subprocess.STDOUT,
-                                   shell=True,
-                                 )
-        content = result.stdout.read()
-        assert (result.wait() or 0) == 0
-
+        result, content = Process.Execute('python "{}" List /verbose /no_populate'.format(repo_enlist_all),)
+        assert result == 0, result
+        
         for line in [ line.strip() for line in content.split('\n') if line.strip() ]:
             values = line.split(';')
             assert len(values) == 3, line
@@ -362,7 +359,7 @@ def EnlistFunctionFactory( repo_templates,
                             set_branch_dm.stream.write(output)
 
             # Resore any branches
-            for index, (repo_path, repo_branch_name) in enumerate(branches_to_restore.iteritems()):
+            for index, (repo_path, repo_branch_name) in enumerate(six.iteritems(branches_to_restore)):
                 title = "Restoring branch '{}' in '{}' ({} of {})...".format( repo_branch_name,
                                                                               repo_path,
                                                                               index + 1,
@@ -433,14 +430,7 @@ def SetupFunctionFactory( repo_templates,
                     if repo.setup_configurations:
                         command_line += " {}".format(' '.join([ '"/configuration={}"'.format(config) for config in repo.setup_configurations ]))
 
-                    result = subprocess.Popen( command_line,
-                                               stdout=subprocess.PIPE,
-                                               stderr=subprocess.STDOUT,
-                                               shell=True,
-                                             )
-
-                    this_dm.stream.write(result.stdout.read())
-                    this_dm.result = result.wait() or 0
+                    this_dm.result = Process.Execute(command_line, this_dm.stream)
 
         return dm.result
 
@@ -487,7 +477,7 @@ def _DefineDynamicFunction( func_name,
     
     ApplyArgs(prefix_args)
 
-    for k, v in config_params.iteritems():
+    for k, v in six.iteritems(config_params):
         constraint_params[k] = CommandLine.StringTypeInfo(arity='?')
         params[k] = '"{}"'.format(v)
 
@@ -499,16 +489,18 @@ def _DefineDynamicFunction( func_name,
           func_name : None,
         }
 
-    exec textwrap.dedent(
+    statement = textwrap.dedent(
         """\
         @CommandLine.EntryPoint(){constraints}
         def {name}({params}):
             return Impl({args})
         """).format( name=func_name,
                      constraints='' if not constraint_params else "\n@CommandLine.FunctionConstraints(**constraint_params)",
-                     params=', '.join([ "{}{}".format(k, '' if v == _NoDefault else "={}".format(v)) for k, v in params.iteritems() ]),
-                     args=', '.join([ "{k}={k}".format(k=k) for k in params.iterkeys() ]),
-                   ) in d
+                     params=', '.join([ "{}{}".format(k, '' if v == _NoDefault else "={}".format(v)) for k, v in six.iteritems(params) ]),
+                     args=', '.join([ "{k}={k}".format(k=k) for k in six.iterkeys(params) ]),
+                   )
+                  
+    six.exec_(statement, d)
 
     return d[func_name]
 
@@ -563,5 +555,5 @@ def _CalculateRepoDiff( code_root,
 
     return QuickObject( matches=matches,
                         local_only=local_only,
-                        reference_only=[ (uri, repo.branch) for uri, repo in repo_uri_lookup.itervalues() ],
+                        reference_only=[ (uri, repo.branch) for uri, repo in six.itervalues(repo_uri_lookup) ],
                       )

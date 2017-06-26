@@ -35,18 +35,30 @@ if sys.version_info[0] == 2:
     
     # ----------------------------------------------------------------------
     def BytesToString(b, encode=False):
+        if encode:
+            b = base64.b64encode(b)
+
         return b
 
     # ----------------------------------------------------------------------
     def StringToBytes(s, encode=False):
+        if encode:
+            return base64.b64encode(s)
+        
         return s
 
     # ----------------------------------------------------------------------
     def BytesFromString(s, decode=False):
+        if decode:
+            s = base64.b64decode(s)
+
         return s
 
     # ----------------------------------------------------------------------
     def StringFromBytes(b, decode=False):
+        if decode:
+            b = base64.b64decode(b)
+
         return b
 
 else:

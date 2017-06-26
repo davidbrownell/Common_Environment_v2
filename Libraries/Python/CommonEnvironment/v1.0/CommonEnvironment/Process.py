@@ -17,6 +17,7 @@ import subprocess
 import string
 import sys
 
+import six
 from six.moves import StringIO
 
 from CommonEnvironment.CallOnExit import CallOnExit
@@ -146,6 +147,30 @@ def _ExecuteImpl( command_line,
 
         # ----------------------------------------------------------------------
     
+    if environment and sys.version_info[0] == 2:
+        # Keys and values must be strings, which can be a problem if the environment was extracted from unicode data
+        import unicodedata
+        
+        # ----------------------------------------------------------------------
+        def ConvertToString(item):
+            return unicodedata.normalize('NFKD', item ).encode('ascii','ignore')
+            
+        # ----------------------------------------------------------------------
+        
+        keys = list(six.iterkeys(environment))
+        
+        for key in keys:
+            value = environment[key]
+            
+            if isinstance(key, unicode):
+                del environment[key]
+                key = ConvertToString(key)
+                
+            if isinstance(value, unicode):
+                value = ConvertToString(value)
+
+            environment[key] = value
+
     args = [ command_line, ]
 
     kwargs = { "shell" : True,
