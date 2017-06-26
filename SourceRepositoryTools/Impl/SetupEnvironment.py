@@ -462,7 +462,7 @@ def _SetupBootstrap( environment,
                                     
                                                                           {}
                                                                           {}
-                                                                      """).format( StreamDecorator.LeftJustify('\n'.join([ "- {}".format(configuration) for configuration in configurations.iterkeys() ]), 4),
+                                                                      """).format( StreamDecorator.LeftJustify('\n'.join([ "- {}".format(configuration) for configuration in six.iterkeys(configurations) ]), 4),
                                                                                    StreamDecorator.LeftJustify( '' if optional_configuration_names else textwrap.dedent(
                                                                                                                      """\
                                     
