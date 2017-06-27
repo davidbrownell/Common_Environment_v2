@@ -28,6 +28,12 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 class Uri(object):
     
+    CREDENTIAL_DECORATORS                   = { "_BSLASH_" : '\\',
+                                                "_SLASH_" : '/',
+                                                "_COLON_" : ':',
+                                                "_AT_" : '@',
+                                              }
+
     # ----------------------------------------------------------------------
     @classmethod
     def FromString(cls, value):
@@ -50,7 +56,7 @@ class Uri(object):
                   host,
                   path,
                   query=None,
-                  credentials=None,         # (username, password)
+                  credentials=None,                     # (username, password)
                   port=None,
                 ):
         if not scheme:                      raise Exception("'scheme' must be valid")
@@ -59,19 +65,36 @@ class Uri(object):
         self.Scheme                         = scheme
         self.Host                           = host
         self.Path                           = path or None
-        self.Query                          = query or {}
-        self.Credentials                    = credentials or None
+        self.Query                          = six.moves.urllib.parse.parse_qs(query) if isinstance(query, six.string_types) else (query or {})
         self.Port                           = port or None
 
-        if isinstance(self.Query, six.string_types):
-            self.Query = six.moves.urllib.parse.parse_qs(self.Query)
+        # Python parsing functionality has problems when credentials contains backslashes, as it
+        # interprets that as the beginning of the path. As a hack, replace any special tokens with
+        # the proper chars when storing the actual username and password.
+        self._original_credentials          = credentials
+
+        if credentials:
+            # ----------------------------------------------------------------------
+            def Undecorate(s):
+                s = six.moves.urllib.parse.unquote(s)
+
+                for search, replace in six.iteritems(self.CREDENTIAL_DECORATORS):
+                    s = s.replace(search, replace)
+
+                return s
+
+            # ----------------------------------------------------------------------
+
+            username, password = credentials
+
+            self.Credentials                = ( Undecorate(username), Undecorate(password) )
             
     # ----------------------------------------------------------------------
     def ToString(self):
         host = []
 
-        if self.Credentials:
-            username, password = self.Credentials
+        if self._original_credentials:
+            username, password = self._original_credentials
             assert username
 
             host.append(six.moves.urllib.parse.quote(username))

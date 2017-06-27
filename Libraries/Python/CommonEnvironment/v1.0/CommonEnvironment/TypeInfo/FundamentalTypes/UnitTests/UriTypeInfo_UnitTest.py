@@ -43,6 +43,7 @@ class UnitTest(unittest.TestCase):
                    "http://a.b.com:80/Path",
                    "http://user:pass@a.b.com/Path",
                    "http://a.b.com/?a=b&c=d",
+                   "https://user:pass_BSLASH__AT_@a.b.com/Path",
                  ]:
             self.assertEqual(Uri.FromString(s).ToString(), s)
 
@@ -53,6 +54,19 @@ class UnitTest(unittest.TestCase):
         self.assertEqual(ti.PythonDefinitionString, "UriTypeInfo(arity=Arity(min=1, max_or_none=1))")
 
         ti.ValidateItem(Uri.FromString("http://one.two.three"))
+
+    # ----------------------------------------------------------------------
+    def test_UriTypes(self):
+        uri = Uri.FromString("https://user:pass_BSLASH__AT_@a.b.com:123/Path/More")
+
+
+        self.assertEqual(uri.Scheme, "https")
+        self.assertEqual(uri.Host, "a.b.com")
+        self.assertEqual(uri.Path, "/Path/More")
+        self.assertEqual(uri.Query, {})
+        self.assertEqual(uri.Port, 123)
+        self.assertEqual(uri.Credentials[0], "user")
+        self.assertEqual(uri.Credentials[1], "pass\\@")
 
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
