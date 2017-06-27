@@ -34,14 +34,14 @@ if sys.version_info[0] == 2:
     # <Invalid argument name> pylint: disable = C0103
     
     # ----------------------------------------------------------------------
-    def BytesToString(b, encode=False):
+    def BytesToString(b, encode=False, encoding=None):
         if encode:
             b = base64.b64encode(b)
 
         return b
 
     # ----------------------------------------------------------------------
-    def StringToBytes(s, encode=False):
+    def StringToBytes(s, encode=False, encoding=None):
         if encode:
             return base64.b64encode(s)
         
@@ -65,18 +65,18 @@ else:
     # <Invalid argument name> pylint: disable = C0103
 
     # ----------------------------------------------------------------------
-    def BytesToString(b, encode=False):
+    def BytesToString(b, encode=False, encoding=None):
         if encode:
             b = base64.b64encode(b)
 
-        return str(b, "utf-8")
+        return str(b, encoding or "utf-8")
 
     # ----------------------------------------------------------------------
-    def StringToBytes(s, encode=False):
+    def StringToBytes(s, encode=False, encoding=None):
         if encode:
             return base64.b64encode(s)
 
-        return bytearray(s, "utf-8")
+        return bytearray(s, encoding or "utf-8")
 
     # ----------------------------------------------------------------------
     def BytesFromString(s, decode=False):
