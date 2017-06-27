@@ -416,7 +416,7 @@ def _SetupBootstrap( environment,
                             ])
                   
     if optional_configuration_names:
-        for configuration_name in configurations.keys():
+        for configuration_name in list(six.iterkeys(configurations)):
             if configuration_name not in optional_configuration_names:
                 del configurations[configuration_name]
 
