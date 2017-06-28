@@ -16,7 +16,6 @@ import os
 import shutil
 import sys
 import textwrap
-import urllib
 import zipfile
 
 import six
@@ -101,7 +100,7 @@ def EntryPoint( repo_name,
 
             # ----------------------------------------------------------------------
             
-            result = urllib.urlretrieve(url, temp_filename, reporthook=Callback)
+            result = six.moves.urllib.request.urlretrieve(url, temp_filename, reporthook=Callback)
             progress[0].close()
 
             # Extract the file
