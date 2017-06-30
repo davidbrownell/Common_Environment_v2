@@ -103,7 +103,7 @@ class StringSerialization(Serialization):
             # ----------------------------------------------------------------------
             @staticmethod
             def OnDuration(type_info):
-                return [ r"(?P<hours>[1-9][0-9]*|0):(?P<minutes>[0-5][0-9]|0):(?P<seconds>[0-5][0-9])(?:\.(?P<microseconds>[0-9]+))?",
+                return [ r"(?:(?P<days>\d+)\.)?(?P<hours>2[0-3]|[0-1][0-9]|0):(?P<minutes>[0-5][0-9]|0):(?P<seconds>[0-5][0-9])(?:\.(?P<microseconds>[0-9]+))?",
                        ]
         
             # ----------------------------------------------------------------------
@@ -251,13 +251,22 @@ class StringSerialization(Serialization):
             def OnDuration(type_info):
                 seconds = item.total_seconds()
 
+                days, seconds = divmod(seconds, 60 * 60 * 24)
                 hours, seconds = divmod(seconds, 60 * 60)
                 minutes, seconds = divmod(seconds, 60)
                 
+                days = int(days)
                 hours = int(hours)
                 minutes = int(minutes)
 
-                return "{hours}:{minutes:02}:{seconds:02.6f}".format(**locals())
+                if days:
+                    prefix = "{days}.{hours:02}".format( days=days,
+                                                         hours=hours,
+                                                       )
+                else:
+                    prefix = str(hours)
+
+                return "{prefix}:{minutes:02}:{seconds:02.6f}".format(**locals())
         
             # ----------------------------------------------------------------------
             @staticmethod
@@ -398,11 +407,19 @@ class StringSerialization(Serialization):
                 parts = item.split(':')
 
                 if len(parts) == 3:
-                    hours = int(parts[0])
+                    days_and_hours = parts[0].split('.')
+                    if len(days_and_hours) == 2:
+                        days = int(days_and_hours[0])
+                        hours = int(days_and_hours[1])
+                    else:
+                        days = 0
+                        hours = int(days_and_hours[0])
+
                     minutes = int(parts[1])
                     seconds_string = parts[2]
 
                 elif len(parts) == 2:
+                    days = 0
                     hours = 0
                     minutes = int(parts[0])
                     seconds_string = parts[1]
@@ -422,7 +439,8 @@ class StringSerialization(Serialization):
                 else:
                     assert False, seconds_string
 
-                return datetime.timedelta( hours=hours,
+                return datetime.timedelta( days=days,
+                                           hours=hours,
                                            minutes=minutes,
                                            seconds=seconds,
                                            microseconds=microseconds,
@@ -484,12 +502,21 @@ class StringSerialization(Serialization):
                         has_timezone = False
                         break
 
-                # Remove a trailing 'Z' (if necessary)
-                if not has_timezone and match_dict.get("tz_utc", None):
-                    the_item = item[:-1]
-                else:
-                    the_item = item
+                the_item = item
 
+                if not has_timezone:
+                    # Remove a trailing 'Z' (if necessary)
+                    if match_dict.get("tz_utc", None):
+                        assert the_item.endswith('Z'), the_item
+                        the_item = the_item[:-1]
+
+                    # Limit the fractional part of the time string to 6 chars.
+                    period_index = the_item.rfind('.')
+                    if period_index != -1:
+                        to_trim = len(the_item) - period_index - 1 - 6
+                        if to_trim > 0:
+                            the_item = the_item[:-to_trim]
+                
                 return the_item, "%H:%M{seconds}{fraction_seconds}{timezone}" \
                                     .format( seconds=":%S" if the_item.count(':') > 1 else '',
                                              fraction_seconds=".%f" if '.' in the_item else '',
