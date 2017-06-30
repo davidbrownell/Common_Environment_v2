@@ -365,7 +365,7 @@ def Mirror( destination,
                                 os.makedirs(dest_dir)
                 
                             shutil.copyfile(k, v)
-                        except Exception, ex:
+                        except Exception as ex:
                             task_output.write(str(ex))
                             return -1
                 
@@ -391,7 +391,7 @@ def Mirror( destination,
                             value = to_remove[task_index]
                 
                             os.remove(value)
-                        except Exception, ex:
+                        except Exception as ex:
                             task_output.write(str(ex))
                             return -1
                 
