@@ -218,7 +218,7 @@ def _ExecuteImpl( command_line,
 
         # ----------------------------------------------------------------------
         def ToAsciiString(c):
-            return bytearray(c).decode("ansi")
+            return bytearray(c).decode("utf-8")
 
         # ----------------------------------------------------------------------
 
