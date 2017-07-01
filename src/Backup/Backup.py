@@ -25,10 +25,10 @@ import sys
 import textwrap
 
 from collections import OrderedDict
-import cPickle as pickle
 
 import inflect
 import six
+from six.moves import cPickle as pickle
 
 from CommonEnvironment import Any
 from CommonEnvironment.CallOnExit import CallOnExit
