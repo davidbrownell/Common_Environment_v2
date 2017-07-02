@@ -155,7 +155,7 @@ def Execute( tasks,
             future = futures[task_index]
 
             sink = StringIO()
-            
+
             # ----------------------------------------------------------------------
             def OnStatusUpdate(content):
                 UpdateStatus(future, task, StatusUpdate.Status, content)
@@ -184,7 +184,7 @@ def Execute( tasks,
             
             except:
                 task.result = -1
-            
+                
                 message = str(sys.exc_info()[1]).rstrip()
                 
                 OnStatusUpdate("ERROR: {}".format(message))
@@ -194,7 +194,7 @@ def Execute( tasks,
                 else:
                     sink.write("{}\n".format(message))
             
-            if clear_status_when_complete:
+            if clear_status_when_complete and task.result >= 0:
                 OnStatusUpdate(None)
             
             task.output = sink.getvalue()

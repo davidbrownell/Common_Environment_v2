@@ -218,7 +218,17 @@ def _ExecuteImpl( command_line,
 
         # ----------------------------------------------------------------------
         def ToAsciiString(c):
-            return bytearray(c).decode("utf-8")
+            result = bytearray(c)
+            
+            for codec in [ "utf-8", 
+                           "ansi", 
+                         ]:
+                try:
+                    return result.decode(codec)
+                except UnicodeDecodeError:
+                    pass
+                    
+            raise UnicodeDecodeError()
 
         # ----------------------------------------------------------------------
 
