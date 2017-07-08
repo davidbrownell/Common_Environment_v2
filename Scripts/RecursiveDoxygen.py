@@ -23,6 +23,7 @@ import textwrap
 from collections import OrderedDict
 
 import inflect
+import six
 
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CommandLine
@@ -193,10 +194,10 @@ def EntryPoint( code_dir,
                     input_filename_stream = StreamDecorator(f, line_prefix="    ")
                     type_stream = StreamDecorator(input_filename_stream, line_prefix="    ")
 
-                    for input_filename, types in results.iteritems():
+                    for input_filename, types in six.iteritems(results):
                         input_filename_stream.write('<location name="{}">\n'.format(input_filename))
                         with CallOnExit(lambda: input_filename_stream.write("</location>\n")):
-                            for type, output in types.iteritems():
+                            for type, output in six.iteritems(types):
                                 type_stream.write('<type name="{}">{}</type>\n'.format(type, output))
 
         return dm.result
