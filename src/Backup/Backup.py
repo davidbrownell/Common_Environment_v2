@@ -57,7 +57,7 @@ StreamDecorator.InitAnsiSequenceStreams()
                          exclude=CommandLine.EntryPoint.ArgumentInfo("One or more regular expressions used to specify filenames to exclude"),
                          traverse_include=CommandLine.EntryPoint.ArgumentInfo("One or more regular expressions used to specify directory names to include while parsing"),
                          traverse_exclude=CommandLine.EntryPoint.ArgumentInfo("One or more regular expressions used to specify directory names to exclude while parsing"),
-                         display=CommandLine.EntryPoint.ArgumentInfo("Display the operations that would be taken but do not perform them"),
+                         display=CommandLine.EntryPoint.ArgumentInfo("Display the operations that would be taken but does not perform them"),
                          password=CommandLine.EntryPoint.ArgumentInfo("Compress with a password"),
                        )
 @CommandLine.FunctionConstraints( backup_name=CommandLine.StringTypeInfo(),
@@ -116,7 +116,7 @@ def Offsite( backup_name,
         
             if not force and os.path.isfile(pickle_filename):
                 try:
-                    dest_file_info = pickle.load(open(pickle_filename))
+                    dest_file_info = pickle.load(open(pickle_filename, 'rb'))
                 except:
                     dm.stream.write("WARNING: The previously saved data appears to be corrupt and will not be used.\n")
                     dest_file_info = {}
@@ -144,7 +144,7 @@ def Offsite( backup_name,
                 to_copy_by_drive = {}
                 to_remove_by_drive = {}
         
-                for filename in to_copy.iterkeys():
+                for filename in six.iterkeys(to_copy):
                     to_copy_by_drive.setdefault(os.path.splitdrive(filename)[0], []).append(filename)
         
                 for filename in to_remove:
@@ -227,15 +227,15 @@ def Offsite( backup_name,
                                     
                     # ----------------------------------------------------------------------
                     
-                    for drive, filenames in to_copy_by_drive.iteritems():
+                    for drive, filenames in six.iteritems(to_copy_by_drive):
                         Compress(drive, filenames)
         
-                    for drive in to_remove_by_drive.keys():
+                    for drive in six.iterkeys(to_remove_by_drive):
                         Compress(drive, [])
         
             if dm.result == 0 and (to_copy or to_remove):
                 # Persist the data
-                with open(pickle_filename, 'w') as f:
+                with open(pickle_filename, 'wb') as f:
                     pickle.dump(source_file_info, f)
         
                 return 0
@@ -318,7 +318,7 @@ def Mirror( destination,
         
                 assert len(dest_file_info) <= 1, dest_file_info.keys()
                 if dest_file_info:
-                    for k, v in dest_file_info.values()[0].iteritems():
+                    for k, v in six.iteritems(next(six.itervalues(dest_file_info))):
                         assert len(k) > len_normalized_destination, k
                     
                         potential_drive = k[len_normalized_destination:].split(os.path.sep)[0]
@@ -326,9 +326,14 @@ def Mirror( destination,
                             drive = potential_drive.replace('_', ':')
                         else:
                             assert len(source_file_info) == 1, source_file_info.keys()
-                            assert source_file_info.values()[0]
-        
-                            drive = os.path.splitdrive(source_file_info.values()[0].keys()[0])[0]
+
+                            value = next(six.itervalues(source_file_info))
+                            assert value
+                            
+                            value = next(six.iterkeys(value))
+                            assert value
+
+                            drive = os.path.splitdrive(value)[0]
         
                         new_dest_file_info.setdefault(drive, {})[k] = v
                     
@@ -354,10 +359,12 @@ def Mirror( destination,
                     os.makedirs(destination)
             
                 if to_copy:
+                    to_copy_keys = list(six.iterkeys(to_copy))
+
                     # ----------------------------------------------------------------------
                     def Execute(task_index, task_output):
                         try:
-                            k = to_copy.keys()[task_index]
+                            k = to_copy_keys[task_index]
                             v = to_copy[k]
                 
                             dest_dir = os.path.dirname(v)
@@ -494,7 +501,7 @@ def _GetFileInfo( desc,
         def CalculateHash(filename):
             md5 = hashlib.md5()
 
-            with open(filename) as f:
+            with open(filename, 'rb') as f:
                 while True:
                     data = f.read(8192)
                     if not data:
@@ -509,12 +516,12 @@ def _GetFileInfo( desc,
         if input_files:
             with dm.stream.SingleLineDoneManager( "Calculating hashes...",
                                                 ) as this_dm:
-                for k, v in itertools.izip( input_files,
-                                            TaskPool.Transform( input_files,
-                                                                CalculateHash,
-                                                                this_dm.stream,
-                                                              ),
-                                          ):
+                for k, v in six.moves.zip( input_files,
+                                           TaskPool.Transform( input_files,
+                                                               CalculateHash,
+                                                               this_dm.stream,
+                                                             ),
+                                         ):
                     file_info.setdefault(os.path.splitdrive(k)[0], OrderedDict())[k] = v
 
         return file_info
@@ -541,7 +548,7 @@ def _CreateWork( source_file_info,
         def CreatePathConversionFunctions(drive, items):
             common_path = FileSystem.GetCommonPath(*items.keys())
             if not common_path and len(items) == 1:
-                common_path = FileSystem.AddTrailingSep(os.path.dirname(items.keys()[0]))
+                common_path = FileSystem.AddTrailingSep(os.path.dirname(next(six.iterkeys(items))))
 
             assert common_path
                 
@@ -579,13 +586,13 @@ def _CreateWork( source_file_info,
 
         # ----------------------------------------------------------------------
         
-        for drive, this_source_file_info in source_file_info.iteritems():
+        for drive, this_source_file_info in six.iteritems(source_file_info):
             ToDestFullPath, ToSourceFullPath = CreatePathConversionFunctions(drive, this_source_file_info)
             
             this_dest_file_info = dest_file_info.get(drive, {})
 
             # Files to copy
-            for k, v in this_source_file_info.iteritems():
+            for k, v in six.iteritems(this_source_file_info):
                 dest_filename = ToDestFullPath(k)
                 
                 copy = False
@@ -601,16 +608,16 @@ def _CreateWork( source_file_info,
                     to_copy[k] = dest_filename
 
             # Files to remove
-            for k, v in this_dest_file_info.iteritems():
+            for k, v in six.iteritems(this_dest_file_info):
                 source_filename = ToSourceFullPath(k)
                 
                 if source_filename not in this_source_file_info:
                     verbose_stream.write("[Remove] '{}' does not exist.\n".format(source_filename))
                     to_remove.append(k)
 
-        for drive, this_dest_file_info in dest_file_info.iteritems():
+        for drive, this_dest_file_info in six.iteritems(dest_file_info):
             if drive not in source_file_info:
-                for k in this_dest_file_info.iterkeys():
+                for k in six.iterkeys(this_dest_file_info):
                     source_filename = ToSourceFullPath(k)
 
                     verbose_stream.write("[Remove] '{}' does not exist.\n".format(k))
@@ -635,7 +642,7 @@ def _Display(to_copy, to_remove, output_stream):
 
         """).format( copy_header,
                      '-' * len(copy_header),
-                     '\n'.join([ "{0:<100} -> {1}".format(k, v) for k, v in to_copy.iteritems() ]),
+                     '\n'.join([ "{0:<100} -> {1}".format(k, v) for k, v in six.iteritems(to_copy) ]),
                      remove_header,
                      '-' * len(remove_header),
                      '\n'.join(to_remove),
