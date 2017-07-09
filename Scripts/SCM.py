@@ -714,6 +714,7 @@ def AllChangeStatus( directory=None,
             changes[task_index] = QuickObject( scm=scm,
                                                directory=directory,
                                                status=status,
+                                               current_branch=scm.GetCurrentBranch(directory),
                                              )
     
         return None
@@ -737,31 +738,35 @@ def AllChangeStatus( directory=None,
         return 0
 
     # Display the output
-    cols = [ 80, 17, 10, 17, 15, 13, 14, 14, ]
-    template = "{dir:<%d}  {scm:<%d}  {branch:<%d}  {untracked:<%d}  {working:<%d}  {local:<%d}  {remote:<%d}  {update:<%d}" % tuple(cols)
+    cols = [ 80, 17, 25, 25, 9, 7, 5, 6, 6, ]
+    template = "{dir:<%d}  {scm:<%d}  {recent_branch:<%d}  {working_branch:<%d}  {untracked:<%d}  {working:<%d}  {local:<%d}  {remote:<%d}  {update:<%d}" % tuple(cols)
     
     output_stream.write(textwrap.dedent(
         """\
+                                                                                                                                    Branches                                         Changes
+                                                                                                              /---------------------^^^^^^^^--------------------\\  /-----------------^^^^^^^---------------\\
 
         {}
         {}
         """).format( template.format( dir="Directory",
                                       scm="SCM",
-                                      branch="Branch",
-                                      untracked="Untracked Changes",
-                                      working="Working Changes",
-                                      local="Local Changes",
-                                      remote="Remote Changes",
-                                      update="Update Changes",
+                                      recent_branch="Most Recent",
+                                      working_branch="Current",
+                                      untracked="Untracked",
+                                      working="Working",
+                                      local="Local",
+                                      remote="Remote",
+                                      update="Update",
                                     ),
                      template.format( dir='-' * cols[0],
                                       scm='-' * cols[1],
-                                      branch='-' * cols[2],
-                                      untracked='-' * cols[3],
-                                      working='-' * cols[4],
-                                      local='-' * cols[5],
-                                      remote='-' * cols[6],
-                                      update='-' * cols[7],
+                                      recent_branch='-' * cols[2],
+                                      working_branch='-' * cols[3],
+                                      untracked='-' * cols[4],
+                                      working='-' * cols[5],
+                                      local='-' * cols[6],
+                                      remote='-' * cols[7],
+                                      update='-' * cols[8],
                                     ),
                    ))
 
@@ -771,7 +776,8 @@ def AllChangeStatus( directory=None,
 
         output_stream.write("{}\n".format(template.format( dir=change.directory,
                                                            scm=change.scm.Name,
-                                                           branch=change.status.branch,
+                                                           recent_branch=change.status.branch,
+                                                           working_branch=change.current_branch,
                                                            untracked=str(change.status.untracked) if change.status.untracked != None else "N/A",
                                                            working=str(change.status.working),
                                                            local=str(change.status.local) if hasattr(change.status, "local") else "N/A",
