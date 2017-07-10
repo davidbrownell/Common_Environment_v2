@@ -103,7 +103,7 @@ class StringSerialization(Serialization):
             # ----------------------------------------------------------------------
             @staticmethod
             def OnDuration(type_info):
-                return [ r"(?:(?P<days>\d+)\.)?(?P<hours>2[0-3]|[0-1][0-9]|0):(?P<minutes>[0-5][0-9]|0):(?P<seconds>[0-5][0-9])(?:\.(?P<microseconds>[0-9]+))?",
+                return [ r"(?:(?P<days>\d+)[\.:])?(?P<hours>2[0-3]|[0-1][0-9]|0):(?P<minutes>[0-5][0-9]|0):(?P<seconds>[0-5][0-9])(?:\.(?P<microseconds>[0-9]+))?",
                        ]
         
             # ----------------------------------------------------------------------
@@ -221,8 +221,13 @@ class StringSerialization(Serialization):
 
     # ----------------------------------------------------------------------
     @staticmethod
-    def _SerializeItemImpl(type_info, item, **custom_args):
-        
+    def _SerializeItemImpl(type_info, item, **custom_kwargs):
+        # custom_kwargs:
+        #   type_info type      Key         Value       Default             Desc
+        #   ------------------  ----------  ----------  ------------------  ----------------
+        #   DateTimeTypeInfo    sep         string      ' '                 String that separates dates and times (' ' or 'T')
+        #   DurationTypeInfo    sep         string      '.'                 String that separates days and hours ('.' or ':')
+
         # ----------------------------------------------------------------------
         @staticderived
         class Visitor(FundamentalTypesVisitor):
@@ -234,7 +239,7 @@ class StringSerialization(Serialization):
             # ----------------------------------------------------------------------
             @staticmethod
             def OnDateTime(type_info):
-                return item.isoformat(sep=custom_args.get("sep", ' '))
+                return item.isoformat(sep=custom_kwargs.get("sep", ' '))
         
             # ----------------------------------------------------------------------
             @staticmethod
@@ -260,9 +265,10 @@ class StringSerialization(Serialization):
                 minutes = int(minutes)
 
                 if days:
-                    prefix = "{days}.{hours:02}".format( days=days,
-                                                         hours=hours,
-                                                       )
+                    prefix = "{days}{sep}{hours:02}".format( days=days,
+                                                             sep=custom_kwargs.get("sep", '.'),
+                                                             hours=hours,
+                                                           )
                 else:
                     prefix = str(hours)
 
@@ -406,7 +412,13 @@ class StringSerialization(Serialization):
             def OnDuration(type_info):
                 parts = item.split(':')
 
-                if len(parts) == 3:
+                if len(parts) == 4:
+                    days = int(parts[0])
+                    hours = int(parts[1])
+                    minutes = int(parts[2])
+                    seconds_string = parts[3]
+
+                elif len(parts) == 3:
                     days_and_hours = parts[0].split('.')
                     if len(days_and_hours) == 2:
                         days = int(days_and_hours[0])

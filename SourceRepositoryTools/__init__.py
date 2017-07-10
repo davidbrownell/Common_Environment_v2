@@ -457,10 +457,10 @@ def CreateDependencyMap(code_dir):
 
     # ---------------------------------------------------------------------------
     
-    for unique_id in repositories.iterkeys():
+    for unique_id in six.iterkeys(repositories):
         Walk(unique_id, 1)
 
-    priority_values = list(repositories.iteritems())
+    priority_values = list(six.iteritems(repositories))
     priority_values.sort(key=lambda x: x[1].priority_modifier, reverse=True)
 
     # Convert the repositories into a structure that is valuable for processing
@@ -473,14 +473,14 @@ def CreateDependencyMap(code_dir):
                                           configurations=OrderedDict(),
                                         )
 
-        for configuration_name in repository_info.configurations.iterkeys():
+        for configuration_name in six.iterkeys(repository_info.configurations):
             results[unique_id].configurations[configuration_name] = QuickObject( relies_on_list=[],
                                                                                  relied_upon_by_list=[],
                                                                                )
 
     # Populate by dependencies
     for unique_id, repository_info in priority_values:
-        for configuration_name, configuration_info in repository_info.configurations.iteritems():
+        for configuration_name, configuration_info in six.iteritems(repository_info.configurations):
             # It is possible that a dependency is included more than once (as will be the case if someone
             # includes Common_Environment as a dependency even though a dependency on Common_Environment is implied).
             # Ensure we are only looking at unique dependencies.
@@ -495,7 +495,7 @@ def CreateDependencyMap(code_dir):
                 dependency_lookup.add(dependency.Id)
 
             # Ensure that the dependencies are ordered based on priority order
-            these_dependencies.sort(key=lambda x: x[0], reverse=True)
+            these_dependencies.sort(key=lambda x: x[0].Id, reverse=True)
 
             for dependency, priority_modifier in these_dependencies:
                 results[unique_id].configurations[configuration_name].relies_on_list.append(QuickObject( configuration=dependency.Configuration,
@@ -506,7 +506,7 @@ def CreateDependencyMap(code_dir):
                                                                                                                       ))
 
     # Ensure that we can index by repo path as well as id
-    for unique_id in results.keys():
+    for unique_id in list(six.iterkeys(results)):
         results[results[unique_id].root] = results[unique_id]
 
     return results
@@ -515,7 +515,7 @@ def CreateDependencyMap(code_dir):
 def DisplayDependencyMap( dependency_map,
                           output_stream=sys.stdout,
                         ):
-    for k, v in dependency_map.iteritems():
+    for k, v in six.iteritems(dependency_map):
         if not os.path.isdir(k):
             continue
 
@@ -539,7 +539,7 @@ def DisplayDependencyMap( dependency_map,
                                                                                                  relies_on_list='\n'.join([ "      - {} <{}> [{}]".format(item.dependency.name, item.configuration, item.dependency.root) for item in cv.relies_on_list ]) if cv.relies_on_list else "      <None>",
                                                                                                  relied_upon_by_list='\n'.join([ "      - {} <{}> [{}]".format(item.dependency.name, item.configuration, item.dependency.root) for item in cv.relied_upon_by_list ]) if cv.relied_upon_by_list else "      <None>",
                                                                                                )
-                                                                                 for ck, cv in v.configurations.iteritems() 
+                                                                                 for ck, cv in six.iteritems(v.configurations) 
                                                                                ]),
                                                                      2,
                                                                      skip_first_line=False,
