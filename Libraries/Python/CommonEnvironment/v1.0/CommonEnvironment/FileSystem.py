@@ -416,8 +416,14 @@ def _ProcessWalkArgs(include_items, exclude_items):
         for item in items:
             if isinstance(item, str) and item == value:
                 return True
-            elif callable(item) and item(value):
-                return True
+            
+            elif callable(item):
+                try:
+                    if item(value):
+                        return True
+                except:
+                    pass
+            
             elif hasattr(item, "match") and item.match(value):
                 return True
 
