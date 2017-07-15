@@ -160,11 +160,22 @@ def Describe( o,
                          type(value),
                          StreamDecorator.LeftJustify(str(value), 4).rstrip(),
                        ))
+
+# ----------------------------------------------------------------------
+def Listify( item_or_items_or_none,
+             always_return_list=False,
+           ):
+    if item_or_items_or_none is None:
+        return [] if always_return_list else None
+
+    if isinstance(item_or_items_or_none, list):
+        return item_or_items_or_none
+
+    return [ item_or_items_or_none, ]
                                 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
-
 if sys.version_info[0] == 2:
     # On Windows, python2.7 has problem with long filenames. Mokeypatch some
     # of those methods to work around the most common problems. In all cases,
