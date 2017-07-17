@@ -108,7 +108,7 @@ def _ExecuteImpl( command_line,
         # ----------------------------------------------------------------------
         def ConvertNewlines(content):
             content = content.replace('\r\n', '\n')
-            newlines_original_output(content)
+            return newlines_original_output(content)
 
         # ----------------------------------------------------------------------
         
@@ -124,8 +124,10 @@ def _ExecuteImpl( command_line,
             if '\n' in c:
                 assert c.endswith('\n'), c
                 
-                line_delimited_original_output("{}{}".format(''.join(internal_content), c))
+                content = "{}{}".format(''.join(internal_content), c)
                 internal_content[:] = []
+
+                return line_delimited_original_output(content)
 
             else:
                 internal_content.append(c)
