@@ -379,6 +379,14 @@ class StringSerialization(Serialization):
             @classmethod
             def OnDateTime(cls, type_info):
                 the_item, time_format_string = cls._GetTimeExpr(match.groupdict())
+
+                # Ensure that the fractional portion of the string only contains 6 digits
+                period_index = the_item.rfind('.')
+                if period_index != -1:
+                    length = len(the_item) - period_index - 1
+                    if length > 6:
+                        the_item = the_item[:-(length - 6)]
+
                 return datetime.datetime.strptime( the_item,
                                                    "%Y-%m-%d{sep}{time_format_string}".format( sep='T' if 'T' in the_item else ' ',
                                                                                                time_format_string=time_format_string,
