@@ -300,7 +300,7 @@ class Executor(object):
         self._keyword_regex                             = re.compile(r"^{prefix}(?P<tag>\S+?)(?:\s*{separator}\s*(?P<value>.+)\s*)?$".format( prefix=re.escape(self.CommandLineArgPrefix),
                                                                                                                                               separator=re.escape(self.CommandLineKeywordSeparator),
                                                                                                                                             ))
-        self._dict_regex                                = re.compile(r"^(?P<tag>\S+?)\s*{sep}\s*(?P<value>.+)$".format( sep=re.escape(self.CommandLineDictTagValueSeparator),
+        self._dict_regex                                = re.compile(r"^(?P<tag>.+?)(?<!\\){sep}(?P<value>.+)$".format( sep=re.escape(self.CommandLineDictTagValueSeparator),
                                                                                                                       ))
 
     # ---------------------------------------------------------------------------
@@ -571,6 +571,8 @@ class Executor(object):
                     return "'{}' is not a valid dictionary entry".format(arg)
 
                 tag = match.group("tag")
+                tag = tag.replace("\\{}".format(self.CommandLineDictTagValueSeparator), self.CommandLineDictTagValueSeparator)
+
                 value = match.group("value")
 
                 argument_values.setdefault(param.name, OrderedDict())
