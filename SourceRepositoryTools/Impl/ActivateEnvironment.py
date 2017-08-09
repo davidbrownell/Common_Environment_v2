@@ -93,6 +93,7 @@ def LoadRepoData():
                                                   set_dependency_environment_flag=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo(description="If provided, will set the dependency flag within the environment"),
                                                   version_spec=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo(description="Overrides version specifications for tools and/or libraries. Example: '/version_spec=Tools/Python:v3.6.0'."),
                                                   no_python_libraries=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo(description="Disables the import of python libraries, which can be useful when pip installing python libraries for Library inclusion."),
+                                                  no_clean=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo(description="Disables the cleaning of generated content; the default behavior is to clean as a part of every environment activiation."),
                                                 )
 @CommonEnvironmentImports.CommandLine.FunctionConstraints( output_filename_or_stdout=CommonEnvironmentImports.CommandLine.StringTypeInfo(),
                                                            repository_root=CommonEnvironmentImports.CommandLine.DirectoryTypeInfo(),
@@ -108,6 +109,7 @@ def Activate( output_filename_or_stdout,
               set_dependency_environment_flag=False,
               version_spec=None,
               no_python_libraries=False,
+              no_clean=False,
             ):
     configuration = configuration if configuration.lower() != "none" else None
     cl_version_specs = version_spec or {}
@@ -251,6 +253,7 @@ def Activate( output_filename_or_stdout,
                  "debug" : debug,
                  "is_tool_repository" : is_tool_repository,
                  "no_python_libraries" : no_python_libraries,
+                 "no_clean" : no_clean,
                }
 
         commands = []
@@ -430,7 +433,7 @@ def _ActivateNames(repositories):
                    )), ]
 
 # ---------------------------------------------------------------------------
-def _ActivatePython(constants, environment, configuration, repositories, version_specs, generated_dir, no_python_libraries):
+def _ActivatePython(constants, environment, configuration, repositories, version_specs, generated_dir, no_python_libraries, no_clean):
     commands = PythonActivationActivity.CreateCommands( constants,
                                                         environment,
                                                         configuration,
@@ -439,19 +442,23 @@ def _ActivatePython(constants, environment, configuration, repositories, version
                                                         generated_dir,
                                                         # Context is required because we are delay executing the commands
                                                         context={ "ProcessLibraries" : not no_python_libraries, 
+                                                                  "Clean" : not no_clean,
                                                                 },
                                                       )
 
     return commands
 
 # ---------------------------------------------------------------------------
-def _ActivateScripts(constants, environment, configuration, repositories, version_specs, generated_dir):
+def _ActivateScripts(constants, environment, configuration, repositories, version_specs, generated_dir, no_clean):
     return ScriptsActivationActivity.CreateCommands( constants,
                                                      environment,
                                                      configuration,
                                                      repositories,
                                                      version_specs,
                                                      generated_dir,
+                                                     # Context is required because we are delay-executing the commands
+                                                     context={ "Clean" : not no_clean,
+                                                             },
                                                    )
 
 # ---------------------------------------------------------------------------
