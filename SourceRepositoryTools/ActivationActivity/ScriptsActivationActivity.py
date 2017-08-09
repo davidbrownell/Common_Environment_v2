@@ -53,6 +53,7 @@ class ScriptsActivationActivity(IActivationActivity):
     # ---------------------------------------------------------------------------
     Name                                    = "Scripts"
     DelayExecute                            = True
+    Clean                                   = True
 
     CustomizationMethod                     = "CustomScriptExtractors"
     IndexScriptFilename                     = "DevEnvScripts"
@@ -75,8 +76,8 @@ class ScriptsActivationActivity(IActivationActivity):
         dest_dir = os.path.join(generated_dir, cls.Name)
 
         # Remove previously generated content (if any)
-        if os.path.isdir(dest_dir):
-            shutil.rmtree(dest_dir)
+        if cls.Clean:
+            FileSystem.RemoveTree(dest_dir)
 
         os.makedirs(dest_dir)
 
