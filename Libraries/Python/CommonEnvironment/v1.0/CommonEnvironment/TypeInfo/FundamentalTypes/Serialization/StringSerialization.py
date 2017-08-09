@@ -272,7 +272,20 @@ class StringSerialization(Serialization):
                 else:
                     prefix = str(hours)
 
-                return "{prefix}:{minutes:02}:{seconds:02.6f}".format(**locals())
+                # {seconds:02.6f} doesn't always work as a formatting string, so we need to do it ourselves.
+                prefix = "{prefix}:{minutes:02}:".format(**locals())
+
+                second_parts = str(seconds).split('.')
+                assert len(second_parts) == 2, second_parts
+
+                assert len(second_parts[0]) <= 2, second_parts[0]
+                second_parts[0] = second_parts[0].rjust(2, '0')
+
+                second_parts[1] = second_parts[1].ljust(6, '0')
+                if len(second_parts[1]) > 6:
+                    second_parts[1] = second_parts[1][:6]
+
+                return "{}{}.{}".format(prefix, second_parts[0], second_parts[1])
         
             # ----------------------------------------------------------------------
             @staticmethod
