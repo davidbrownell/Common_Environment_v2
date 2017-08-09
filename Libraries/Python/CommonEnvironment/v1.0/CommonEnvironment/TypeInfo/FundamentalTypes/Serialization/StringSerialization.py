@@ -278,7 +278,14 @@ class StringSerialization(Serialization):
                 second_parts = str(seconds).split('.')
                 assert len(second_parts) == 2, second_parts
 
-                return "{}{}.{}".format(prefix, second_parts[0].rjust(2, '0'), second_parts[1].ljust(6, '0'))
+                assert len(second_parts[0]) <= 2, second_parts[0]
+                second_parts[0] = second_parts[0].rjust(2, '0')
+
+                second_parts[1] = second_parts[1].ljust(6, '0')
+                if len(second_parts[1]) > 6:
+                    second_parts[1] = second_parts[1][:6]
+
+                return "{}{}.{}".format(prefix, second_parts[0], second_parts[1])
         
             # ----------------------------------------------------------------------
             @staticmethod
