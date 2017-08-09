@@ -26,6 +26,7 @@ import six
 
 import CommonEnvironment
 from CommonEnvironment.Interface import staticderived, clsinit
+from CommonEnvironment import FileSystem
 from CommonEnvironment import Package, ModifiableValue
 from CommonEnvironment import six_plus
 from CommonEnvironment import Shell
@@ -62,6 +63,7 @@ class PythonActivationActivity(IActivationActivity):
     Name                                    = "Python"
     DelayExecute                            = True
     ProcessLibraries                        = True
+    Clean                                   = True
 
     LibrarySubdirs                          = None      # Initialized in __clsinit__
     ScriptSubdirs                           = None      # Initialized in __clsinit__
@@ -233,6 +235,9 @@ class PythonActivationActivity(IActivationActivity):
         
         dest_dir = os.path.join(generated_dir, cls.Name)
         
+        if cls.Clean:
+            FileSystem.RemoveTree(dest_dir)
+
         global_actions = [ environment.AugmentPath(dest_dir),
                          ]
         
@@ -300,6 +305,7 @@ class PythonActivationActivity(IActivationActivity):
 
             # Create the actions
             local_actions.append(Shell.Message("{}    Cleaning previous links...".format(display_sentinel)))
+
             local_actions += [ environment.Raw(statement) for statement in CreateCleanSymLinkStatements(environment, dest_dir) ]
         
             # Prepopulate with the dynamic content
