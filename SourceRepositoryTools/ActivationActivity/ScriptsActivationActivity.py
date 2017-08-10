@@ -79,7 +79,8 @@ class ScriptsActivationActivity(IActivationActivity):
         if cls.Clean:
             FileSystem.RemoveTree(dest_dir)
 
-        os.makedirs(dest_dir)
+        if not os.path.isdir(dest_dir):
+            os.makedirs(dest_dir)
 
         commands = [ environment.EchoOff(),
                    ]
