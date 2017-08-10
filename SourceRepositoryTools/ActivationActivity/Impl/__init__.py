@@ -49,6 +49,7 @@ def ActivateLibraries( name,
                                                         #   where <args> can be any of the following:
                                                         #       libraries
                                                         #       create_message_statement_func   # def Func(message) -> message command that will not be suppressed during output
+                                                        #       display_sentinel                # string
                        environment,
                        repositories,
                        version_specs,

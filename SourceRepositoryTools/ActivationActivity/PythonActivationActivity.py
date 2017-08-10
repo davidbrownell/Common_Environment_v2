@@ -53,6 +53,8 @@ SourceRepositoryTools                       = Package.ImportInit("..")
 # ----------------------------------------------------------------------
 EASY_INSTALL_PTH_FILENAME                   = "easy-install.pth"
 WRAPPERS_FILENAME                           = "__wrappers__.txt"
+SCRIPTS_DIR_NAME                            = "__scripts__"
+ROOT_DIR_NAME                               = "__root__"
 
 # ----------------------------------------------------------------------
 @staticderived
@@ -359,23 +361,29 @@ class PythonActivationActivity(IActivationActivity):
             
             TraverseTree(source_dir, dest_dir, dynamic_subdirs)
         
+            # Apply the libraries
+            local_actions.append(Shell.Message("{}    Linking Libraries...".format(display_sentinel)))
+
             library_dest_dir = os.path.join(dest_dir, *[ subdir.format(**sub_dict) for subdir in cls.LibrarySubdirs ])
         
             for name, info in six.iteritems(libraries):
                 for item in os.listdir(info.fullpath):
                     fullpath = os.path.join(info.fullpath, item)
-                    if os.path.isdir(fullpath) and item == "__scripts__":
+                    if os.path.isdir(fullpath) and item in [ SCRIPTS_DIR_NAME,
+                                                             ROOT_DIR_NAME,
+                                                           ]:
                         continue
         
                     local_actions.append(environment.SymbolicLink(os.path.join(library_dest_dir, item), fullpath))
                 
             script_dest_dir = os.path.join(dest_dir, *cls.ScriptSubdirs)
             
+            # Apply the scripts
             local_actions.append(Shell.Message("{}    Linking Scripts...".format(display_sentinel)))
             
             script_actions = ActivateLibraryScripts( script_dest_dir,
                                                      libraries, 
-                                                     "__scripts__",
+                                                     SCRIPTS_DIR_NAME,
                                                      environment,
                                                    )
             if script_actions:
@@ -414,6 +422,21 @@ class PythonActivationActivity(IActivationActivity):
                         with open(os.path.join(script_dest_dir, WRAPPERS_FILENAME), 'w') as f:
                             f.write('\n'.join(wrappers))
                 
+            # Apply the root objects; these are files that need to at the python root. This requirement is extrememly rare.
+            local_actions.append(Shell.Message("{}    Linking Roots...".format(display_sentinel)))
+
+            for name, info in six.iteritems(libraries):
+                for item in os.listdir(info.fullpath):
+                    fullpath = os.path.join(info.fullpath, item)
+                    if os.path.isdir(fullpath) and item == ROOT_DIR_NAME:
+                        for filename in FileSystem.WalkFiles( fullpath,
+                                                              recurse=False,
+                                                            ):
+                            local_actions.append(Shell.SymbolicLink( os.path.join(bin_dir, os.path.basename(filename)), 
+                                                                filename,
+                                                              ))
+
+            # Augment easy install
             local_actions += SourceRepositoryTools.DelayExecute( _EasyInstallPathCallback,
                                                                  display_sentinel,
                                                                  easy_install_path_filename.value,
