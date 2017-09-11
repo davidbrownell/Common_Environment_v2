@@ -338,9 +338,7 @@ def GetSizeDisplay(num_bytes, suffix='B'):
     return "%.1f %s%s" % (num_bytes, 'Yi', suffix)
 
 # ----------------------------------------------------------------------
-def RemoveTree( path, 
-                optional_retry_iterations=5,            # Can be None
-              ):
+def RemoveTree(path):
     if not os.path.isdir(path):
         return False
         
