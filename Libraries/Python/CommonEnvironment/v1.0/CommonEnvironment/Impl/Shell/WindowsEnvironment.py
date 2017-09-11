@@ -200,6 +200,12 @@ class WindowsEnvironment(Environment):
             
         os.system(command_line)
         
+    # ----------------------------------------------------------------------
+    @staticmethod
+    def RemoveDir(dir):
+        if os.path.isdir(dir):
+            os.system('rmdir /S /Q "{}"'.format(dir))
+
     # ---------------------------------------------------------------------------
     # |
     # |  Private Methods
