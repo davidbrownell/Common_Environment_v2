@@ -39,9 +39,9 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 with Package.NameInfo(__package__) as ni:
     __package__ = ni.created
     
-    from .Impl import ActivateLibraries, \
-                      ActivateLibraryScripts, \
-                      CreateCleanSymLinkStatements
+    from .Impl.ActivationHelpers import ActivateLibraries, \
+                                        ActivateLibraryScripts, \
+                                        CreateCleanSymLinkStatements
 
     from .IActivationActivity import IActivationActivity
 
@@ -119,9 +119,16 @@ class PythonActivationActivity(IActivationActivity):
         else:
             assert False, environment.Name
 
+    # ----------------------------------------------------------------------
+    @staticmethod
+    def GetNewLibraryContent():
+        pass # BugBug
+
     # ---------------------------------------------------------------------------
     @classmethod
     def OutputModifications(cls, generated_dir, output_stream):
+        # BugBug: Call GetNewLibraryContent
+
         environment = Shell.GetEnvironment()
 
         dest_dir = os.path.join(generated_dir, cls.Name)
