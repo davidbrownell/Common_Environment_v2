@@ -237,6 +237,8 @@ class PythonActivationActivity(IActivationActivity):
         
         dest_dir = os.path.join(generated_dir, cls.Name)
         
+        sys.stdout.write("    Cleaning previous content...\n")
+        
         if cls.Clean:
             FileSystem.RemoveTree(dest_dir)
 
@@ -295,8 +297,6 @@ class PythonActivationActivity(IActivationActivity):
                                           ]:
                         del libraries[library_key]
 
-            local_actions = []
-        
             # Create the dirs that will contain dynamic content
             sub_dict = { "python_version" : python_version,
                          "python_version_short" : '.'.join(python_version.split('.')[0:2]),
@@ -306,9 +306,13 @@ class PythonActivationActivity(IActivationActivity):
                 global_actions.append(Shell.AugmentSet("PYTHONUNBUFFERED", "1"))
 
             # Create the actions
-            local_actions.append(Shell.Message("{}    Cleaning previous links...".format(display_sentinel)))
-
-            local_actions += [ environment.Raw(statement) for statement in CreateCleanSymLinkStatements(environment, dest_dir) ]
+            if not os.path.isdir(dest_dir):
+                os.makedirs(dest_dir)
+                
+            local_actions = []
+            
+            if not cls.Clean:
+                local_actions += [ environment.Raw(statement) for statement in CreateCleanSymLinkStatements(environment, dest_dir) ]
         
             # Prepopulate with the dynamic content
             dynamic_subdirs = {}

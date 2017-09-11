@@ -338,52 +338,17 @@ def GetSizeDisplay(num_bytes, suffix='B'):
     return "%.1f %s%s" % (num_bytes, 'Yi', suffix)
 
 # ----------------------------------------------------------------------
-def RemoveTree( path, 
-                optional_retry_iterations=5,            # Can be None
+def RemoveTree( path,
+                optional_retry_iterations=5,
               ):
     if not os.path.isdir(path):
         return False
         
-    # ---------------------------------------------------------------------------
-    def Impl(renamed_path):
-        # Take care of any sym links/junctions, as removing them will remove the source
-        # as well.
-        from CommonEnvironment import Shell
+    from CommonEnvironment import Shell
 
-        environment = Shell.GetEnvironment()
+    environment = Shell.GetEnvironment()
 
-        for root, dirs, filenames in os.walk(renamed_path):
-            new_dirs = []
-            
-            for dir in dirs:
-                fullpath = os.path.join(root, dir)
-                
-                if environment.IsSymLink(fullpath):
-                    environment.DeleteSymLink(fullpath, command_only=False)
-                else:
-                    new_dirs.append(dir)
-
-            dirs[:] = new_dirs
-
-        # ---------------------------------------------------------------------------
-        def OnError(action, name, exc):
-            if not os.path.isfile(name):
-                return
-
-            elif not os.stat(name)[0] & stat.S_IWRITE:
-                os.chmod(name, stat.S_IWRITE)
-                os.remove(name)
-
-            else:
-                raise Exception("Unable to remove '{}'".format(name))
-
-        # ---------------------------------------------------------------------------
-
-        shutil.rmtree(renamed_path, onerror=OnError)
-        
-    # ---------------------------------------------------------------------------
-
-    _RemoveImpl(Impl, path, optional_retry_iterations)
+    _RemoveImpl(environment.RemoveDir, path, optional_retry_iterations)
     return True
 
 # ----------------------------------------------------------------------
