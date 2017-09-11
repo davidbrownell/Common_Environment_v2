@@ -338,15 +338,17 @@ def GetSizeDisplay(num_bytes, suffix='B'):
     return "%.1f %s%s" % (num_bytes, 'Yi', suffix)
 
 # ----------------------------------------------------------------------
-def RemoveTree(path):
+def RemoveTree( path,
+                optional_retry_iterations=5,
+              ):
     if not os.path.isdir(path):
         return False
         
-    # shutil.rmtree will follow symlinks and delete all they point to, which is rarely
-    # what we want. Do it manually.
     from CommonEnvironment import Shell
 
-    Shell.GetEnvironment().RemoveDir(path)
+    environment = Shell.GetEnvironment()
+
+    _RemoveImpl(environment.RemoveDir, path, optional_retry_iterations)
     return True
 
 # ----------------------------------------------------------------------
