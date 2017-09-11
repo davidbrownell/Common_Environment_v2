@@ -42,45 +42,6 @@ import Constants
 import SourceRepositoryTools
 
 # ----------------------------------------------------------------------
-def WriteLibraryInfo( generated_dir,
-                      name,
-                      libraries,            # { "<name>" : { "version" : "<version>",
-                                            #                "fullpath" : "<fullpath>",
-                                            #              },
-                                            # }
-                    ):
-    # Write the link file
-    with open(os.path.join(generated_dir, "{}.txt".format(name)), 'w') as f:
-        library_keys = list(six.iterkeys(libraries))
-        library_keys.sort(key=lambda name: name.lower())
-
-        cols = OrderedDict([ ( "Name", 40 ),
-                             ( "Version", 15 ),
-                             ( "Fullpath", 60 ),
-                           ])
-
-        template = '  '.join([ '{{{}:<{}}}'.format(index, v) for index, v in enumerate(six.itervalues(cols)) ])
-
-        f.write(textwrap.dedent(
-            """\
-            {}
-            {}
-            {}
-            """).format( template.format(*six.iterkeys(cols)),
-                         template.format(*[ '-' * v for v in six.itervalues(cols) ]),
-                         '\n'.join([ template.format(*[ key, 
-                                                        libraries[key].version,
-                                                        libraries[key].fullpath,
-                                                      ])
-                                     for key in library_keys
-                                   ]),
-                       ))
-        
-    # Write the pickle file
-    with open(os.path.join(generated_dir, "{}.pickle".format(name)), 'wb') as f:
-        pickle.dump(libraries, f)
-
-# ----------------------------------------------------------------------
 def ActivateLibraries( name,
                        create_commands_func,            # def Func(<args>) -> environment commands
                                                         #
@@ -362,3 +323,42 @@ def CreateCleanSymLinkStatements(environment, path):
                     statements.append(statement)
     
     return statements
+
+# ----------------------------------------------------------------------
+def WriteLibraryInfo( generated_dir,
+                      name,
+                      libraries,            # { "<name>" : { "version" : "<version>",
+                                            #                "fullpath" : "<fullpath>",
+                                            #              },
+                                            # }
+                    ):
+    # Write the link file
+    with open(os.path.join(generated_dir, "{}.txt".format(name)), 'w') as f:
+        library_keys = list(six.iterkeys(libraries))
+        library_keys.sort(key=lambda name: name.lower())
+
+        cols = OrderedDict([ ( "Name", 40 ),
+                             ( "Version", 15 ),
+                             ( "Fullpath", 60 ),
+                           ])
+
+        template = '  '.join([ '{{{}:<{}}}'.format(index, v) for index, v in enumerate(six.itervalues(cols)) ])
+
+        f.write(textwrap.dedent(
+            """\
+            {}
+            {}
+            {}
+            """).format( template.format(*six.iterkeys(cols)),
+                         template.format(*[ '-' * v for v in six.itervalues(cols) ]),
+                         '\n'.join([ template.format(*[ key, 
+                                                        libraries[key].version,
+                                                        libraries[key].fullpath,
+                                                      ])
+                                     for key in library_keys
+                                   ]),
+                       ))
+        
+    # Write the pickle file
+    with open(os.path.join(generated_dir, "{}.pickle".format(name)), 'wb') as f:
+        pickle.dump(libraries, f)
