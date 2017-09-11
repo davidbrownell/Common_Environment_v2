@@ -433,6 +433,15 @@ class Environment(Interface):
         assert os.path.isfile(filename), filename
         os.chmod(filename, stat.S_IXUSR | stat.S_IWUSR | stat.S_IRUSR)
         
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @abstractmethod
+    def RemoveDir(dir):
+        """\
+        Removes a directory.
+        """
+        raise Exception("Abstract Method")
+
     # ---------------------------------------------------------------------------
     # |
     # |  Private Methods

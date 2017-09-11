@@ -80,6 +80,12 @@ class LinuxEnvironmentImpl(Environment):
                          decorated_install=(install_location[len(os.path.sep):] if install_location.startswith(os.path.sep) else install_location).replace(os.path.sep, '-'),
                        ))
 
+    # ----------------------------------------------------------------------
+    @staticmethod
+    def RemoveDir(dir):
+        if os.path.isdir(dir):
+            os.system('rm-fr "{}"'.format(dir))
+
     # ---------------------------------------------------------------------------
     # |
     # |  Private Methods
