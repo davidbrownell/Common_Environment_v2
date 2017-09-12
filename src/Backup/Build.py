@@ -69,6 +69,5 @@ def Clean( output_dir,
 # ----------------------------------------------------------------------
 if __name__ == "__main__":
     try: sys.exit(BuildMod.Main(BuildMod.Configuration( "Backup",
-                                                        required_development_environment="Windows",
                                                       )))
     except KeyboardInterrupt: pass
