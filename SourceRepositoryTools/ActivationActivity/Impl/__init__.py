@@ -43,6 +43,7 @@ import Constants
 import SourceRepositoryTools
 
 # ----------------------------------------------------------------------
+# BugBug: Activation
 def WriteLibraryInfo( generated_dir,
                       name,
                       libraries,            # { "<name>" : { "version" : "<version>",
@@ -82,6 +83,7 @@ def WriteLibraryInfo( generated_dir,
         pickle.dump(libraries, f)
 
 # ----------------------------------------------------------------------
+# BugBug: Activation
 def ActivateLibraries( name,
                        create_commands_func,            # def Func(<args>) -> environment commands
                                                         #
@@ -262,6 +264,7 @@ def ActivateLibraries( name,
                     )
 
 # ----------------------------------------------------------------------
+# BugBug: Activation
 def ActivateLibraryScripts( dest_dir,
                             libraries,
                             library_script_dir_name,
@@ -330,6 +333,7 @@ def ActivateLibraryScripts( dest_dir,
     return actions
 
 # ----------------------------------------------------------------------
+# BugBug: Activation
 def CreateCleanSymLinkStatements(environment, path):
     if not os.path.isdir(path):
         return []
@@ -363,6 +367,7 @@ def CreateCleanSymLinkStatements(environment, path):
     return statements
 
 # ----------------------------------------------------------------------
+# BugBug: LibraryModifications
 def GetNewLibraryContent(library_dir, script_dir):
     # Don't treat the scripts dir as a library if it happens to
     # be a sibling.
@@ -408,6 +413,7 @@ def GetNewLibraryContent(library_dir, script_dir):
                       )
 
 # ----------------------------------------------------------------------
+# BugBug: LibraryModifications
 def DisplayNewLibraryContent(library_dir, script_dir, output_stream):
     results = GetNewLibraryContent(library_dir, script_dir)
 
@@ -452,6 +458,7 @@ def DisplayNewLibraryContent(library_dir, script_dir, output_stream):
                        ))
 
 # ----------------------------------------------------------------------
+# BugBug: LibraryModifications
 def CopyNewLibraryContent( type_name,
                            library_dir,
                            script_dir,
@@ -588,6 +595,7 @@ def CopyNewLibraryContent( type_name,
         return dm.result
 
 # ----------------------------------------------------------------------
+# BugBug: LibraryModifications
 def ResetLibraryContent(library_name, output_stream):
     output_stream = StreamDecorator(output_stream)
 
