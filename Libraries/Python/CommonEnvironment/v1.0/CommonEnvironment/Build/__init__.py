@@ -65,16 +65,18 @@ class Configuration(object):
                   required_development_environment=None,
                   required_development_configurations=None,
                   disable_if_dependency_environment=False,
+                  configuration_required_on_clean=True,
                 ):
         self.Name                                       = name
         self.Priority                                   = priority
         self.RequiresOutputDir                          = requires_output_dir
         self.Configurations                             = configurations or []
+        self.ConfigurationRequiredOnClean               = configuration_required_on_clean
         self.RequiredDevelopmentEnvironment             = required_development_environment
         self.RequiredDevelopmentConfigurations          = required_development_configurations or []
         self.DisableIfDependencyEnvironment             = disable_if_dependency_environment
         self.SuggestedOutputDirLocation                 = suggested_output_dir_location or self.Name
-    
+        
 # ---------------------------------------------------------------------------
 class CompleteConfiguration(Configuration):
 
@@ -167,6 +169,7 @@ class CompleteConfiguration(Configuration):
                                                     required_dev_environment=self.RequiredDevelopmentEnvironment or "None",
                                                     required_dev_configurations=', '.join(self.RequiredDevelopmentConfigurations) if self.RequiredDevelopmentConfigurations else "None",
                                                     disable_if_dependency="True" if self.DisableIfDependencyEnvironment else "False",
+                                                    configuration_required_on_clean="None" if not self.Configurations else "True" if self.ConfigurationRequiredOnClean else "False",
                                                   )
 
     # ---------------------------------------------------------------------------
@@ -190,6 +193,7 @@ class CompleteConfiguration(Configuration):
         Required Development Environment:                       {required_dev_environment}
         Required Development Environment Configurations:        {required_dev_configurations}
         Disable If Dependency Environment:                      {disable_if_dependency}
+        Configuration Required On Clean:                        {configuration_required_on_clean}
         """).lstrip()
 
 # ---------------------------------------------------------------------------
@@ -309,10 +313,11 @@ def _RedirectEntryPoint(function_name, entry_point, config):
     required_arguments = []
 
     if config.Configurations:
-        assert "configuration" in entry_point.ConstraintsDecorator.Preconditions, function_name
-        entry_point.ConstraintsDecorator.Preconditions["configuration"] = CommandLine.EnumTypeInfo(config.Configurations)
+        if function_name != "Clean" or config.ConfigurationRequiredOnClean:
+            assert "configuration" in entry_point.ConstraintsDecorator.Preconditions, function_name
+            entry_point.ConstraintsDecorator.Preconditions["configuration"] = CommandLine.EnumTypeInfo(config.Configurations)
 
-        required_arguments.append("configuration")
+            required_arguments.append("configuration")
 
     if config.RequiresOutputDir:
         required_arguments.append("output_dir")
