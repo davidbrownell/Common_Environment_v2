@@ -227,6 +227,12 @@ def ActivateLibraryScripts( dest_dir,
                             library_script_dir_name,
                             environment,
                           ):
+    """\
+    Walks all libraries looking for a subdir named <library_script_dir_name>. When
+    found, will walk all items in that dir and map the files, ensuring naming conflicts
+    are avoided.
+    """
+
     actions = []
 
     all_scripts = OrderedDict()
@@ -288,6 +294,33 @@ def ActivateLibraryScripts( dest_dir,
                 continue
 
             actions.append(environment.SymbolicLink(os.path.join(dest_dir, script_name), script_info.fullpath))
+
+    return actions
+
+# ----------------------------------------------------------------------
+def ActivateLibraryComponents( dest_dir,
+                               libraries,
+                               library_component_dir_name,
+                               environment,
+                             ):
+    """\
+    Walks all libraries looking for subdirs named <library_component_dir_name>. When
+    found, will map those dirs to the specified dir name.
+    """
+    
+    actions = []
+    
+    for name, info in six.iteritems(libraries):
+        potential_dir = os.path.join(info.fullpath, library_component_dir_name)
+        if not os.path.isdir(potential_dir):
+            continue
+
+        actions.append(environment.SymbolicLink( os.path.join(dest_dir, name),
+                                                 potential_dir,
+                                              ))
+
+    FileSystem.RemoveTree(dest_dir)
+    os.makedirs(dest_dir)
 
     return actions
 
