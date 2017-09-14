@@ -274,8 +274,16 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
     # ---------------------------------------------------------------------------
     @classmethod
     def HasWorkingChanges(cls, repo_root):
-        result, output = cls.Execute(repo_root, "hg diff")
-        return result == 0 and len(output.strip()) != 0
+        result, output = cls.Execute(repo_root, "hg status")
+        assert result == 0, (result, output)
+
+        for line in output.split('\n'):
+            line = line.strip()
+
+            if line and not line.startswith('?'):
+                return True
+        
+        return False
 
     # ---------------------------------------------------------------------------
     @classmethod
@@ -283,7 +291,9 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
         result, output = cls.Execute(repo_root, "hg status")
 
         for line in output.split('\n'):
-            if line.lstrip().startswith('?'):
+            line = line.lstrip()
+
+            if line.startswith('?'):
                 return True
 
         return False
