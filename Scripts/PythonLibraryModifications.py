@@ -316,12 +316,16 @@ def Reset( output_stream=sys.stdout,
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint
 @CommandLine.FunctionConstraints( lib_name=CommandLine.StringTypeInfo(),
+                                  pip_arg=CommandLine.StringTypeInfo(arity='*'),
                                   output_stream=None,
                                 )
 def Install( lib_name,
+             pip_arg=None,
              output_stream=sys.stdout,
              verbose=False,
            ):
+    pip_args = pip_arg; del pip_arg;
+
     repo_root = os.getenv("DEVELOPMENT_ENVIRONMENT_REPOSITORY")
 
     scm = SourceControlManagement.GetSCM(repo_root)
@@ -338,7 +342,9 @@ def Install( lib_name,
                                                      done_prefix="\nComplete Result: ",
                                                      done_suffix='\n',
                                                    ) as dm:
-        pip_command_line = 'pip install "{}"'.format(lib_name)
+        pip_command_line = 'pip install "{}"{}'.format( lib_name,
+                                                        '' if not pip_args else " {}".format(' '.join([ '"{}"'.format(pip_arg) for pip_arg in pip_args ])),
+                                                      )
 
         dm.stream.write("Detecting libraries...")
         with dm.stream.DoneManager( done_suffix='\n',
