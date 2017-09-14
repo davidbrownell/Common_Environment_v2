@@ -90,6 +90,10 @@ def DisplayNewLibraryContent( new_content,
     if new_content.scripts:
         operations.append(( "Scripts", new_content.scripts ))
 
+    if not operations:
+        output_stream.write("No changes were detected.\n")
+        return
+
     cols = [ 40, 9, 100, ]
     template = "{name:<%d}  {type:<%d}  {fullpath:<%d}" % tuple(cols)
 

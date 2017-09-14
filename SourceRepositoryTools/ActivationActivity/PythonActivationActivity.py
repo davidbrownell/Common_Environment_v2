@@ -217,7 +217,7 @@ class PythonActivationActivity(IActivationActivity):
                    }
             
         for k, v in six.iteritems(sub_dict):
-            global_actions.append(Shell.Set("DEVELOPMENT_ENVIRONMENT_{}".format(k.upper()), v))
+            global_actions.append(Shell.AugmentSet("DEVELOPMENT_ENVIRONMENT_{}".format(k.upper()), v))
 
         # Symbolicly link the reference python files
 

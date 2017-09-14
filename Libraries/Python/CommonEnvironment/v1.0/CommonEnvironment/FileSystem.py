@@ -418,7 +418,7 @@ def _RemoveImpl( func,                          # def Func(renamed_path)
                  path, 
                  optional_retry_iterations,
                ):
-    assert os.path.exists(path)
+    assert os.path.exists(path), path
 
     # Rename the dir or item to a temporary one and then remove
     # the renamed item. This works around timing issues associated
