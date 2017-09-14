@@ -28,6 +28,7 @@ import CommonEnvironment
 from CommonEnvironment.Interface import staticderived, clsinit
 from CommonEnvironment import FileSystem
 from CommonEnvironment import Package, ModifiableValue
+from CommonEnvironment.QuickObject import QuickObject
 from CommonEnvironment import six_plus
 from CommonEnvironment import Shell
 
@@ -45,7 +46,6 @@ with Package.NameInfo(__package__) as ni:
 
     from .IActivationActivity import IActivationActivity
 
-    
     __package__ = ni.original
 
 SourceRepositoryTools                       = Package.ImportInit("..")
@@ -53,6 +53,7 @@ SourceRepositoryTools                       = Package.ImportInit("..")
 # ----------------------------------------------------------------------
 EASY_INSTALL_PTH_FILENAME                   = "easy-install.pth"
 WRAPPERS_FILENAME                           = "__wrappers__.txt"
+
 SCRIPTS_DIR_NAME                            = "__scripts__"
 ROOT_DIR_NAME                               = "__root__"
 
@@ -120,112 +121,32 @@ class PythonActivationActivity(IActivationActivity):
             assert False, environment.Name
 
     # ----------------------------------------------------------------------
-    @staticmethod
-    def GetNewLibraryContent():
-        pass # BugBug
-
-    # ---------------------------------------------------------------------------
     @classmethod
-    def OutputModifications(cls, generated_dir, output_stream):
-        # BugBug: Call GetNewLibraryContent
+    def GetEnvironmentSettings(cls):
+        sub_dict = {}
 
-        environment = Shell.GetEnvironment()
+        for suffix in [ "PYTHON_VERSION",
+                        "PYTHON_VERSION_SHORT",
+                      ]:
+            sub_dict[suffix.lower()] = os.getenv("DEVELOPMENT_ENVIRONMENT_{}".format(suffix))
 
-        dest_dir = os.path.join(generated_dir, cls.Name)
-        assert os.path.isdir(dest_dir), dest_dir
+        generated_dir = os.path.join(os.getenv("DEVELOPMENT_ENVIRONMENT_REPOSITORY_GENERATED"), cls.Name)
 
-        cols = OrderedDict([ ( "name", ("Name", 40) ),
-                             ( "type", ("Type", 11) ),
-                             ( "extensions", ("Extensions", 10) ),
-                             ( "binaries", ("Binaries", 8) ),
-                             ( "fullpath", ("Fullpath", 100) ),
-                           ])
+        # ----------------------------------------------------------------------
+        def Populate(dirs):
+            if not dirs:
+                return generated_dir
 
-        template = []
-        for k, v in six.iteritems(cols):
-            template.append("{%s:<%d}" % (k, v[1]))
+            dirs = [ d.format(sub_dict) for d in dirs ]
+            return os.path.join(generated_dir, *dirs)
 
-        template = "{}\n".format('  '.join(template))
-        
-        for name, dirs in [ ( "Libraries", cls.LibrarySubdirs ),
-                            ( "Scripts", cls.ScriptSubdirs ),
-                          ]:
-            if dirs == None:
-                continue
-                
-            output_stream.write(textwrap.dedent(
-                """\
-                {sep}
-                {name}
-                {sep}
+        # ----------------------------------------------------------------------
 
-                {header}{underline}
-                """).format( sep='=' * len(name),
-                             name=name,
-                             header=template.format(**{ k : v[0] for k, v in six.iteritems(cols) }),
-                             underline=template.format(**{ k : '-' * v[1] for k, v in six.iteritems(cols) }),
-                           ))
-
-            this_dest_dir = os.path.join(dest_dir, *dirs)
-            assert os.path.isdir(this_dest_dir), this_dest_dir
-
-            ignore_filenames = set([ WRAPPERS_FILENAME, EASY_INSTALL_PTH_FILENAME, ])
-
-            potenial_wrappers_filename = os.path.join(this_dest_dir, WRAPPERS_FILENAME)
-            if os.path.isfile(potenial_wrappers_filename):
-                for name in [ line.strip() for line in open(potenial_wrappers_filename).readlines() if line.strip() ]:
-                    ignore_filenames.add(name)
-
-            for item in os.listdir(this_dest_dir):
-                fullpath = os.path.join(this_dest_dir, item)
-                if environment.IsSymLink(fullpath):
-                    continue
-
-                if os.path.isfile(fullpath) and ( os.path.splitext(fullpath)[1] in [ ".pyc", ".pyo", ] or
-                                                  item in ignore_filenames
-                                                ):
-                    continue
-
-                if os.path.isdir(fullpath) and os.path.basename(fullpath) in [ "__pycache__", ]:
-                    continue
-
-                if os.path.isdir(fullpath):
-                    type_ = "Directory"
-                    filenames = []
-                    
-                    for root, dirs, items in os.walk(fullpath):
-                        filenames += [ os.path.join(root, item) for item in items ]
-
-                else:
-                    type_ = "File"
-                    filenames = [ fullpath, ]
-
-                has_extensions = False
-                has_binaries = False
-
-                for filename in filenames:
-                    ext = os.path.splitext(filename)[1]
-
-                    if ext in [ ".pyd", ".so", ]:
-                        has_extensions = True
-
-                    if ( ext == environment.ScriptExtension or
-                         ext == environment.ExecutableExtension
-                       ):
-                        has_binaries = True
-
-                    if has_extensions and has_binaries:
-                        break
-
-                output_stream.write(template.format( name=item,
-                                                     type=type_,
-                                                     extensions="True" if has_extensions else "False",
-                                                     binaries="True" if has_binaries else "False",
-                                                     fullpath=fullpath,
-                                                   ))
-
-            output_stream.write('\n')
-
+        return QuickObject( library_dir=Populate(cls.LibrarySubdirs),
+                            script_dir=Populate(cls.ScriptSubdirs),
+                            binary=os.path.join(Populate(cls.BinSubdirs), "python{}".format(cls.BinExtension or '')),
+                          )
+                                                     
     # ---------------------------------------------------------------------------
     # ---------------------------------------------------------------------------
     # ---------------------------------------------------------------------------
@@ -291,6 +212,13 @@ class PythonActivationActivity(IActivationActivity):
         
         is_python_version2 = python_version.split('.')[0] == '2'
 
+        sub_dict = { "python_version" : python_version,
+                     "python_version_short" : '.'.join(python_version.split('.')[0:2]),
+                   }
+            
+        for k, v in six.iteritems(sub_dict):
+            global_actions.append(Shell.Set("DEVELOPMENT_ENVIRONMENT_{}".format(k.upper()), v))
+
         # Symbolicly link the reference python files
 
         # ----------------------------------------------------------------------
@@ -304,26 +232,22 @@ class PythonActivationActivity(IActivationActivity):
                                           ]:
                         del libraries[library_key]
 
-            # Create the dirs that will contain dynamic content
-            sub_dict = { "python_version" : python_version,
-                         "python_version_short" : '.'.join(python_version.split('.')[0:2]),
-                       }
-        
             if is_python_version2:
                 global_actions.append(Shell.AugmentSet("PYTHONUNBUFFERED", "1"))
 
-            # Create the actions
             if not os.path.isdir(dest_dir):
                 os.makedirs(dest_dir)
-                
+
+            # Create the actions
             local_actions = []
             
             if not cls.Clean:
                 local_actions += [ environment.Raw(statement) for statement in CreateCleanSymLinkStatements(environment, dest_dir) ]
         
-            # Prepopulate with the dynamic content
+            # Create the dirs that will contain dynamic content
             dynamic_subdirs = {}
-            
+
+            # Prepopulate with the dynamic content
             for subdirs in [ cls.LibrarySubdirs,
                              cls.ScriptSubdirs,
                            ]:
