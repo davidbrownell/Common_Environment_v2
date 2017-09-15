@@ -34,7 +34,9 @@ from CommonEnvironment import ModifiableValue
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CommandLine
 from CommonEnvironment import FileSystem
+from CommonEnvironment import Process
 from CommonEnvironment import Shell
+from CommonEnvironment import SourceControlManagement
 from CommonEnvironment.StreamDecorator import StreamDecorator
 from CommonEnvironment import TaskPool
 
@@ -73,40 +75,38 @@ def Display( output_stream=sys.stdout,
 
     new_library_content = _GetNewLibraryContent(settings)
     
-    DisplayNewLibraryContent( settings.library_dir,
-                              settings.script_dir,
-                              output_stream,
-                              new_library_content=new_library_content,
-                            )
+    DisplayNewLibraryContent(new_library_content, output_stream)
 
     # Augment the display with extension and binary info
     environment = Shell.GetEnvironment()
 
-    output_stream.write(textwrap.dedent(
-        """\
+    if new_library_content.extensions:
+        output_stream.write(textwrap.dedent(
+            """\
+        
+            ==========
+            Extensions
+            ==========
+            """))
+        
+        for k, v in six.iteritems(new_library_content.extensions):
+            output_stream.write("{}\n{}\n\n".format( k, 
+                                                     StreamDecorator.LeftJustify( '\n'.join(v),
+                                                                                  4,
+                                                                                  skip_first_line=False,
+                                                                                ),
+                                                   ))
 
-        ==========
-        Extensions
-        ==========
-        """))
-
-    for k, v in six.iteritems(new_library_content.extensions):
-        output_stream.write("{}\n{}\n\n".format( k, 
-                                                 StreamDecorator.LeftJustify( '\n'.join(v),
-                                                                              4,
-                                                                              skip_first_line=False,
-                                                                            ),
-                                               ))
-
-    output_stream.write(textwrap.dedent(
-        """\
-
-        ========
-        Binaries
-        ========
-        {}
-
-        """).format('\n'.join(new_library_content.script_extensions)))
+    if new_library_content.script_extensions:
+        output_stream.write(textwrap.dedent(
+            """\
+        
+            ========
+            Binaries
+            ========
+            {}
+        
+            """).format('\n'.join(new_library_content.script_extensions)))
 
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint
@@ -236,12 +236,10 @@ def Move( no_move=False,
                             continue
 
                     try:
-                        potential_dest_dir = os.path.join(os.getenv("DEVELOPMENT_ENVIRONMENT_REPOSITORY"), Constants.LIBRARIES_SUBDIR, PythonActivationActivity.Name, name)
+                        potential_dest_dir = os.path.join(os.getenv("DEVELOPMENT_ENVIRONMENT_REPOSITORY"), Constants.LIBRARIES_SUBDIR, PythonActivationActivity.Name, name, lib_info.version)
                         
                         if lib_info.Fullpath in new_content.extensions:
                             potential_dest_dir = os.path.join(potential_dest_dir, environment.CategoryName)
-
-                        potential_dest_dir = os.path.join(potential_dest_dir, lib_info.version)
 
                         if os.path.isdir(potential_dest_dir):
                             this_dm.result = -1
@@ -317,11 +315,135 @@ def Reset( output_stream=sys.stdout,
 
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint
-@CommandLine.FunctionConstraints( output_stream=None,
+@CommandLine.FunctionConstraints( lib_name=CommandLine.StringTypeInfo(),
+                                  pip_arg=CommandLine.StringTypeInfo(arity='*'),
+                                  output_stream=None,
                                 )
-def Install( output_stream=sys.stdout,
+def Install( lib_name,
+             pip_arg=None,
+             output_stream=sys.stdout,
+             verbose=False,
            ):
-    raise Exception("TODO")
+    pip_args = pip_arg; del pip_arg;
+
+    repo_root = os.getenv("DEVELOPMENT_ENVIRONMENT_REPOSITORY")
+
+    scm = SourceControlManagement.GetSCM(repo_root)
+    if not scm:
+        output_stream.write("ERROR: A SCM could not be found.\n")
+        return -1
+
+    if scm.HasWorkingChanges(repo_root) or scm.HasUntrackedWorkingChanges(repo_root):
+        output_stream.write("ERROR: Changes were detected in the working directory; please revert/shelve these changes and run this script again.\n")
+        return -1
+
+    # Execute an installation
+    with StreamDecorator(output_stream).DoneManager( line_prefix='',
+                                                     done_prefix="\nComplete Result: ",
+                                                     done_suffix='\n',
+                                                   ) as dm:
+        pip_command_line = 'pip install "{}"{}'.format( lib_name,
+                                                        '' if not pip_args else " {}".format(' '.join([ '"{}"'.format(pip_arg) for pip_arg in pip_args ])),
+                                                      )
+
+        dm.stream.write("Detecting libraries...")
+        with dm.stream.DoneManager( done_suffix='\n',
+                                  ) as this_dm:
+            libraries = []
+
+            # ----------------------------------------------------------------------
+            def OnOutput(line):
+                this_dm.stream.write(line)
+
+                if not line.startswith("Installing collected packages: "):
+                    return True
+
+                line = line[len("Installing collected packages: "):]
+
+                for library in line.split(','):
+                    library = library.strip()
+                    if library:
+                        libraries.append(library)
+
+                return False
+
+            # ----------------------------------------------------------------------
+
+            Process.Execute( pip_command_line,
+                             OnOutput,
+                             line_delimited_output=True,
+                           )
+
+        dm.stream.write("Reverting local changes...")
+        with dm.stream.DoneManager() as this_dm:
+            this_dm.result = scm.Clean(repo_root, no_prompt=True)[0]
+
+        dm.stream.write("Removing existing libraries...")
+        with dm.stream.DoneManager( done_suffix='\n',
+                                  ) as this_dm:
+            environment = Shell.GetEnvironment()
+            python_settings = PythonActivationActivity.GetEnvironmentSettings()
+
+            lib_dir = os.path.join(os.getenv("DEVELOPMENT_ENVIRONMENT_REPOSITORY_GENERATED"), PythonActivationActivity.Name, python_settings.library_dir)
+            assert os.path.isdir(lib_dir), lib_dir
+
+            library_items = {}
+            
+            for name in os.listdir(lib_dir):
+                fullpath = os.path.join(lib_dir, name)
+
+                if not os.path.isdir(fullpath):
+                    continue
+
+                library_items[name.lower()] = environment.IsSymLink(fullpath)
+
+            # ----------------------------------------------------------------------
+            def RemoveItem(name):
+                if library_items[name]:
+                    this_dm.stream.write("Removing '{}' for upgrade.\n".format(name))
+                    os.remove(os.path.join(lib_dir, name))
+                else:
+                    this_dm.stream.write("Removing temporary '{}'.\n".format(name))
+                    FileSystem.RemoveTree(os.path.join(lib_dir, name))
+
+                del library_items[name]
+
+            # ----------------------------------------------------------------------
+
+            for library in libraries:
+                potential_library_names = [ library.lower(), ]
+                
+                # Sometimes a library's name will begin with 'Py' but be saved in the
+                # filesystem without the 'Py' prefix. Account for that scenario.
+                library_lower = library.lower()
+
+                if library_lower.startswith("py"):
+                    potential_library_names.append(library_lower[len("py"):])
+
+                for potential_library_name in potential_library_names:
+                    if potential_library_name not in library_items:
+                        continue
+
+                    RemoveItem(potential_library_name)
+                    
+                    # Is there a dist info as well?
+                    dist_info_name = None
+
+                    for item in six.iterkeys(library_items):
+                        if item.endswith(".dist-info") and item.startswith(potential_library_name):
+                            dist_info_name = item
+                            break
+
+                    if dist_info_name:
+                        RemoveItem(dist_info_name)
+
+                    break
+
+        dm.stream.write("Installing...")
+        with dm.stream.DoneManager() as this_dm:
+            this_dm.result = Process.Execute(pip_command_line, this_dm.stream)
+
+        return dm.result
 
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint
