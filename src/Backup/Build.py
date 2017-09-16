@@ -37,18 +37,9 @@ def Build( output_dir,
            output_stream=sys.stdout,
            verbose=False,
          ):
-    common_environment_dir = FileSystem.RemoveTrailingSep(os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
-
-    paths = [ common_environment_dir,
-              os.path.join(common_environment_dir, "SourceRepositoryTools"),
-              os.path.join(common_environment_dir, "SourceRepositoryTools", "Impl")
-            ]
-
-    includes = [ "SourceRepositoryTools",
-               ]
-
-    excludes = [
-               ]
+    paths = []
+    includes = []
+    excludes = []
 
     command_line = '"{script}" Compile "/input={input}" "/output_dir={output_dir}" /no_bundle /no_optimize{verbose}{paths}{includes}{excludes}' \
                         .format( script=Shell.GetEnvironment().CreateScriptName("CxFreezeCompiler"),
