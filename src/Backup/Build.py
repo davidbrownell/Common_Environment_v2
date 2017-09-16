@@ -37,11 +37,27 @@ def Build( output_dir,
            output_stream=sys.stdout,
            verbose=False,
          ):
-    command_line = '"{script}" Compile "/input={input}" "/output_dir={output_dir}" /no_bundle /no_optimize{verbose}' \
-                        .format( script=Shell.GetEnvironment().CreateScriptName("Py2ExeCompiler"),
+    common_environment_dir = FileSystem.RemoveTrailingSep(os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
+
+    paths = [ common_environment_dir,
+              os.path.join(common_environment_dir, "SourceRepositoryTools"),
+              os.path.join(common_environment_dir, "SourceRepositoryTools", "Impl")
+            ]
+
+    includes = [ "SourceRepositoryTools",
+               ]
+
+    excludes = [
+               ]
+
+    command_line = '"{script}" Compile "/input={input}" "/output_dir={output_dir}" /no_bundle /no_optimize{verbose}{paths}{includes}{excludes}' \
+                        .format( script=Shell.GetEnvironment().CreateScriptName("CxFreezeCompiler"),
                                  input=os.path.join(_script_dir, "Backup.py"),
                                  output_dir=output_dir,
                                  verbose='' if not verbose else " /verbose",
+                                 paths='' if not paths else " {}".format(' '.join([ '"/path={}"'.format(path) for path in paths ])),
+                                 includes='' if not includes else " {}".format(' '.join([ '"/include={}"'.format(include) for include in includes ])),
+                                 excludes='' if not excludes else " {}".format(' '.join([ '"/exclude={}"'.format(exclude) for exclude in excludes ])),
                                )
 
     return Process.Execute(command_line, output_stream)

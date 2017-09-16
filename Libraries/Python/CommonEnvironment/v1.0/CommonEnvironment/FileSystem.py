@@ -338,6 +338,17 @@ def GetSizeDisplay(num_bytes, suffix='B'):
     return "%.1f %s%s" % (num_bytes, 'Yi', suffix)
 
 # ----------------------------------------------------------------------
+def CopyTree(source, dest):
+    for fullpath in WalkFiles(source):
+        this_dest = dest + fullpath[len(source):]
+        this_dest_dir = os.path.dirname(this_dest)
+
+        if not os.path.isdir(this_dest_dir):
+            os.makedirs(this_dest_dir)
+
+        shutil.copy(fullpath, this_dest)
+
+# ----------------------------------------------------------------------
 def RemoveTree( path,
                 optional_retry_iterations=5,
               ):

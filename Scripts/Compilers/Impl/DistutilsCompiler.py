@@ -107,8 +107,9 @@ class DistutilsCompiler( AtomicInputProcessingMixin,
     def _PostprocessContextItem(cls, context):
         
         if len(context.input_filenames) != 1 and context.output_name:
-            raise Exception("'output_name' can not be specified when multipe input files are provided")
+            raise Exception("'output_name' can not be specified when multipule input files are provided")
 
+        # Don't specify output filenames, as there will be many.
         context.output_filenames = []
                 
         # Ensure that the path of the inputs are included
