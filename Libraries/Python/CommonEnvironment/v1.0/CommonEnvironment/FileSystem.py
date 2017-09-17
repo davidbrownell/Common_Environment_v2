@@ -27,6 +27,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ---------------------------------------------------------------------------
 
 CODE_EXCLUDE_DIR_NAMES                      = [ "Generated",
+                                                "__pycache__",
                                                 ".hg",                      # Mercurial
                                                 ".git",                     # Git
                                                 ".svn",                     # Subversion
@@ -82,7 +83,7 @@ def WalkDirs( root,
     else:
         # ----------------------------------------------------------------------
         def IsValid(fullpath, dir):
-            return ( dir != GENERATED_DIRECTORY_NAME and
+            return ( dir not in CODE_EXCLUDE_DIR_NAMES and
                      process_traverse_dir_path(fullpath) and
                      process_traverse_dir_name(dir)
                    )
@@ -90,10 +91,6 @@ def WalkDirs( root,
         # ----------------------------------------------------------------------
 
     from CommonEnvironment.CallOnExit import CallOnExit
-
-    sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
-    with CallOnExit(lambda: sys.path.pop(0)):
-        from SourceRepositoryTools.Constants import GENERATED_DIRECTORY_NAME
 
     root = Normalize(root)
 
@@ -336,6 +333,17 @@ def GetSizeDisplay(num_bytes, suffix='B'):
         num_bytes /= 1024.0
 
     return "%.1f %s%s" % (num_bytes, 'Yi', suffix)
+
+# ----------------------------------------------------------------------
+def CopyTree(source, dest):
+    for fullpath in WalkFiles(source):
+        this_dest = dest + fullpath[len(source):]
+        this_dest_dir = os.path.dirname(this_dest)
+
+        if not os.path.isdir(this_dest_dir):
+            os.makedirs(this_dest_dir)
+
+        shutil.copy(fullpath, this_dest)
 
 # ----------------------------------------------------------------------
 def RemoveTree( path,
