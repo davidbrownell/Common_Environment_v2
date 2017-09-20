@@ -137,7 +137,7 @@ class PythonActivationActivity(IActivationActivity):
             if not dirs:
                 return generated_dir
 
-            dirs = [ d.format(sub_dict) for d in dirs ]
+            dirs = [ d.format(**sub_dict) for d in dirs ]
             return os.path.join(generated_dir, *dirs)
 
         # ----------------------------------------------------------------------
