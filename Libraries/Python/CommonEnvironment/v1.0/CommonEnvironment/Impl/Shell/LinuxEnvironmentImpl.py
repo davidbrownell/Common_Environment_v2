@@ -84,7 +84,7 @@ class LinuxEnvironmentImpl(Environment):
     @staticmethod
     def RemoveDir(dir):
         if os.path.isdir(dir):
-            os.system('rm-fr "{}"'.format(dir))
+            os.system('rm -fr "{}"'.format(dir))
 
     # ---------------------------------------------------------------------------
     # |
