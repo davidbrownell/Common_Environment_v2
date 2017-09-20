@@ -38,7 +38,7 @@ then
     export DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL="$(cd "$(dirname "$0")" && pwd)"
 
     linux_distro=`python -c "import platform; print platform.linux_distribution()[0]"`
-    export PYTHON_BINARY=$DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL/Tools/Python/v2.7.10/$linux_distro/bin/python
+    export PYTHON_BINARY=$DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL/Tools/Python/v3.6.0/$linux_distro/bin/python
     # Common_Environment END
     
     if [ "$DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL" = "" ];
