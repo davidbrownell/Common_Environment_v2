@@ -286,6 +286,13 @@ class StreamDecorator(object):
                     if index == 0:
                         continue
 
+                    if ( dm.result != info.result and 
+                         (dm.result == 0 or (dm.result > 0 and info.result < 0))
+                       ):
+                        dm.result = info.result
+                    else:
+                        break
+
                     if dm.result != 0:
                         break
                 
@@ -400,7 +407,7 @@ class StreamDecorator(object):
             first_write = ModifiableValue(True)
 
             # ----------------------------------------------------------------------
-            def Write(content, prefix):
+            def Write(content, prefix, result):
                 message = "{}: {}\n".format(prefix, content.strip())
 
                 if first_write.value:
@@ -410,12 +417,17 @@ class StreamDecorator(object):
                 dm.stream.write(message)
                 reset_line.value = False
 
+                if ( result is not None and 
+                     (dm.result == 0 or (dm.result > 0 and result < 0))
+                   ):
+                    dm.result = result
+
             # ----------------------------------------------------------------------
             
-            dm.stream.write_verbose = lambda content: Write(content, "VERBOSE")
-            dm.stream.write_info = lambda content: Write(content, "INFO")
-            dm.stream.write_warning = lambda content: Write(content, "WARNING")
-            dm.stream.write_error = lambda content: Write(content, "ERROR")
+            dm.stream.write_verbose = lambda content: Write(content, "VERBOSE", None)
+            dm.stream.write_info = lambda content: Write(content, "INFO", None)
+            dm.stream.write_warning = lambda content: Write(content, "WARNING", 1)
+            dm.stream.write_error = lambda content: Write(content, "ERROR", -1)
 
             try:
                 yield dm
