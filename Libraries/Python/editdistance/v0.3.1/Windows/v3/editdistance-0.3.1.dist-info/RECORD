@@ -1,0 +1,12 @@
+editdistance/__init__.py,sha256=HXtvJWycA3Ar4EgSVDgZk9aAf9cDNlXnaG0gvtG6JaY,47
+editdistance/_editdistance.h,sha256=xz_hvn5ZnL6FCuKi9g7PIeRmoGeQfa9tpXY_MVxWwlo,272
+editdistance/bycython.cp36-win_amd64.pyd,sha256=9F1JaGtWwbc9Dc6XWqOlY9td86jEYKQDI-U9F_u2Znk,66048
+editdistance/def.h,sha256=jcpGekwJAbu5y2x6cUAnwEi3K3bZlRHGieO7g13n7CE,256
+editdistance-0.3.1.dist-info/DESCRIPTION.rst,sha256=OCTuuN6LcWulhHS3d5rfjdsQtW22n7HENFRh6jC6ego,10
+editdistance-0.3.1.dist-info/METADATA,sha256=wpyYQqLWxG0Azm6X4OCvHJzZWDeHpD2TFoHrjW7j-20,375
+editdistance-0.3.1.dist-info/RECORD,,
+editdistance-0.3.1.dist-info/WHEEL,sha256=4fkP9V5fUlnPlEu2h0nt7u0cPpJipYsJO32nXNevnFk,106
+editdistance-0.3.1.dist-info/metadata.json,sha256=ZEYaFkXtpuN125hl8hdfKg24FSGSnUqONvv1iCKEfp4,528
+editdistance-0.3.1.dist-info/top_level.txt,sha256=YCxmzM2UWY4vF6jRttHU0SeO4bTkh1iH8PRFGnHk26U,13
+editdistance-0.3.1.dist-info/INSTALLER,sha256=zuuue4knoyJ-UwPPXg8fezS7VCrXJQrAP7zeNuwvFQg,4
+editdistance/__pycache__/__init__.cpython-36.pyc,,
