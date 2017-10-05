@@ -408,7 +408,9 @@ class StreamDecorator(object):
 
             # ----------------------------------------------------------------------
             def Write(content, prefix, result):
-                message = "{}: {}\n".format(prefix, content.strip())
+                message = self.LeftJustify( "{}: {}\n".format(prefix, content.strip()),
+                                            len(prefix),
+                                          )
 
                 if first_write.value:
                     message = "{}{}".format(dm.stream._line_prefix(0), message)
