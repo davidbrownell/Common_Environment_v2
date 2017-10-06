@@ -1,0 +1,14 @@
+LICENSE
+MANIFEST.in
+README.rst
+requirements.txt
+setup.cfg
+setup.py
+requests_negotiate_sspi/__init__.py
+requests_negotiate_sspi/requests_negotiate_sspi.py
+requests_negotiate_sspi/version.py
+requests_negotiate_sspi.egg-info/PKG-INFO
+requests_negotiate_sspi.egg-info/SOURCES.txt
+requests_negotiate_sspi.egg-info/dependency_links.txt
+requests_negotiate_sspi.egg-info/requires.txt
+requests_negotiate_sspi.egg-info/top_level.txt

@@ -84,7 +84,7 @@ def EntryPoint( root_dir,
     def GenerateContent(root, is_root):
         items = []
 
-        for k, v in root.iteritems():
+        for k, v in six.iteritems(root):
             if isinstance(v, six.string_types):
                 items.append('<repo root="{dir}" shortname="{name}" />\n'.format( dir=v,
                                                                                   name=os.path.split(k)[1],
