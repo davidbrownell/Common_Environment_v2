@@ -1,0 +1,70 @@
+Metadata-Version: 1.1
+Name: requests-negotiate-sspi
+Version: 0.3.1
+Summary: This package allows for Single-Sign On HTTP Negotiate authentication using the requests library on Windows.
+Home-page: https://github.com/brandond/requests-negotiate-sspi
+Author: Brandon Davidson
+Author-email: UNKNOWN
+License:    Copyright 2016 Brandon Davidson
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+Download-URL: https://github.com/brandond/requests-negotiate-sspi/tarball/0.3.1
+Description: requests-negotiate-sspi
+        =======================
+        An implementation of HTTP Negotiate authentication for Requests.
+        This module provides single-sign-on using Kerberos or NTLM using the
+        Windows SSPI interface.
+        
+        This module supports Extended Protection for Authentication (aka 
+        Channel Binding Hash), which makes it usable for services that require
+        it, including Active Directory Federation Services.
+        
+        Usage
+        -----
+        .. code-block:: python
+        
+           import requests
+           from requests_negotiate_sspi import HttpNegotiateAuth
+        
+           r = requests.get('https://iis.contoso.com', auth=HttpNegotiateAuth())
+        
+        Options
+        -------
+        ``username``: Username.
+           Default: None
+        
+        ``password``: Password.
+           Default: None
+        
+        ``domain``: NT Domain name.
+           Default: '.' for local account.
+        
+        ``service``: Kerberos Service type for remote Service Principal Name.
+           Default: HTTP
+        
+        ``host``: Host name for Service Principal Name.
+           Default: Extracted from request URI
+        
+        If username and password are not specified, the user's default credentials are used.
+        This allows for single-sign-on to domain resources if the user is currently logged on
+        with a domain account.
+Platform: UNKNOWN
+Classifier: Development Status :: 4 - Beta
+Classifier: Intended Audience :: Developers
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 2
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.4
+Classifier: Programming Language :: Python :: 3.5
+Provides: requests_negotiate_sspi

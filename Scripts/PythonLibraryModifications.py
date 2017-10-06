@@ -537,7 +537,7 @@ def _GetNewLibraryContent(settings):
     
     # Crack the script's wrappers file to get a list of all the script files
     # that should be ignored.
-    script_ignore_items = set([ WRAPPERS_FILENAME, ])
+    script_ignore_items = set([ "__pycache__", WRAPPERS_FILENAME, ])
 
     potential_filename = os.path.join(settings.script_dir, WRAPPERS_FILENAME)
     if os.path.isfile(potential_filename):
@@ -565,7 +565,7 @@ def _GetNewLibraryContent(settings):
 
     new_library_content.extensions = extensions
 
-    new_library_content.script_extensions = [ script for script in new_library_content.scripts if os.path.scriptext(script) in [ environment.ScriptExtension, environment.ExecutableExtension, ] ]
+    new_library_content.script_extensions = [ script for script in new_library_content.scripts if os.path.splitext(script)[1] in [ environment.ScriptExtension, environment.ExecutableExtension, ] ]
 
     return new_library_content
 
