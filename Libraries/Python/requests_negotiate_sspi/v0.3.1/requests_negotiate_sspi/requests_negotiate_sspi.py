@@ -36,7 +36,7 @@ class HttpNegotiateAuth(AuthBase):
             This allows for single-sign-on to domain resources if the user is currently logged on
             with a domain account.
         """
-        print("BugBug: A")
+        
         if domain is None:
             domain = '.'
 
@@ -50,9 +50,7 @@ class HttpNegotiateAuth(AuthBase):
             self._host = host
 
     def _retry_using_http_Negotiate_auth(self, response, scheme, args):
-        print("BugBug: B")
         if 'Authorization' in response.request.headers:
-            print("BugBug B++")
             return response
         
         if self._host is None:
@@ -170,10 +168,8 @@ class HttpNegotiateAuth(AuthBase):
         print('Sending Response - error={} authenticated={}'.format(error, clientauth.authenticated))
         
         del request.headers["X-FORMS_BASED_AUTH_ACCEPTED"]
-        print("BugBug0", request)
         
         response3 = response2.connection.send(request, **args)
-        print("BugBug************", response3.status_code, response3.headers, "\n")
         
         # Update the history and return
         response3.history.append(response)
@@ -182,7 +178,6 @@ class HttpNegotiateAuth(AuthBase):
         return response3
 
     def _response_hook(self, r, **kwargs):
-        print("BugBug C", r.status_code, r.headers, r.text)
         if r.status_code == 401:
             for scheme in ('NTLM', 'Negotiate', ):
                 if scheme.lower() in r.headers.get('WWW-Authenticate', '').lower():
@@ -190,7 +185,6 @@ class HttpNegotiateAuth(AuthBase):
 
 
     def __call__(self, r):
-        print("BugBug: D")
         r.headers['Connection'] = 'Keep-Alive'
         r.register_hook('response', self._response_hook)
         return r
