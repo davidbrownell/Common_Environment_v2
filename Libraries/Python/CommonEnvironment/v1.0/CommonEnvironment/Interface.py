@@ -50,7 +50,9 @@ class Interface(object):
             def Method(self, a, b):
                 raise Exception("Abstract method")
 
-            @staticabstractmethod
+            # @staticabstractmethod
+            @staticmethod
+            @abstractmethod
             def StaticMethod(a, b, c, d=None):
                 raise Exception("Abstract static method")
 
