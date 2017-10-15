@@ -68,6 +68,18 @@ class Task(object):
         self.Functor                        = functor
 
 # ---------------------------------------------------------------------------
+class ExecuteException(Exception):
+    def __init__(self, exceptions):
+        strs = []
+        
+        for index, ex in six.iteritems(exceptions):
+            strs.append("{}) {}".format(index, str(ex)))
+            
+        super(ExecuteException, self).__init__('\n'.join(strs))
+        
+        self.Exceptions                     = exceptions
+        
+# ---------------------------------------------------------------------------
 # |
 # |  Public Methods
 # |
@@ -217,11 +229,22 @@ def Execute( tasks,
             display_thread.start()
 
             # Check for exceptions
-            for future in futures:
-                future.result()
+            exceptions = OrderedDict()
+
+            for index, future in enumerate(futures):
+                try:
+                    future.result()
+                except Exception as ex:
+                    # An exception here is a pretty signifiant error and likely something that happend
+                    # outside the scope of the executed function. This is here to prevent catastrophic 
+                    # failure with the TaskPool.
+                    exceptions[index] = ex
 
             terminate_event.set()
             display_thread.join()
+
+            if exceptions:
+                raise ExecuteException(exceptions)
 
     # ----------------------------------------------------------------------
     prev_statuses = []
