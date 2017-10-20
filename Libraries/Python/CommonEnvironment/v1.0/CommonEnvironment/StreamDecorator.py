@@ -290,13 +290,6 @@ class StreamDecorator(object):
                          (dm.result == 0 or (dm.result > 0 and info.result < 0))
                        ):
                         dm.result = info.result
-                    else:
-                        break
-
-                    if dm.result != 0:
-                        break
-                
-                    dm.result = info.result
 
         # ----------------------------------------------------------------------
         
@@ -326,7 +319,7 @@ class StreamDecorator(object):
                     info.result = 0
 
             except Exception:
-                if info.result in [ None, 0, ]:
+                if info.result is None or info.result >= 0:
                     info.result = -1
 
                 if display_exceptions:
