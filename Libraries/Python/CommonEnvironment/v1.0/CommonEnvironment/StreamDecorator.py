@@ -413,7 +413,7 @@ class StreamDecorator(object):
                 reset_line.value = False
 
                 if ( result is not None and 
-                     (dm.result == 0 or (dm.result > 0 and result < 0))
+                     (dm.result in [ None, 0, ] or (dm.result > 0 and result < 0))
                    ):
                     dm.result = result
 
