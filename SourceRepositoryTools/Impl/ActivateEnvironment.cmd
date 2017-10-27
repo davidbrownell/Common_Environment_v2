@@ -17,23 +17,6 @@
 
 pushd %~dp0
 
-REM Enusure that this command prompt has been launched from an elevated command prompt.
-REM This is necessary, as some activities only function when they are able to create sympolic
-REM links, which requires elevated privelidges.
-REM
-REM This technique is based on information found at:
-REM     https://stackoverflow.com/questions/4051883/batch-script-how-to-check-for-admin-rights#11995662
-net session >nul 2>&1
-if %ERRORLEVEL% NEQ 0 (
-    @echo.
-    @echo ERROR: This script must be run from an elevated command prompt.
-    @echo.
-    @echo        [Admin privelidges required]
-    @echo.
-    
-    goto end
-)
-
 REM Get the python executable and the fullpath to the source repository tools.
 REM This information is required to bootstrap the environment activation process.
 if not exist "%~dp0Generated\Windows\EnvironmentBootstrap.data" (
