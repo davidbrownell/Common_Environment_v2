@@ -27,7 +27,7 @@ if not exist "%~dp0Generated\Windows\EnvironmentBootstrap.data" (
     @echo        [%~dp0Generated\Windows\EnvironmentBootstrap.data was not found]
     @echo.
 
-    goto end
+    goto error_end
 )
 
 set _ACTIVATE_ENVIRONMENT_PREVIOUS_FUNDAMENTAL=%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%
@@ -62,7 +62,7 @@ if "%_ACTIVATE_ENVIRONMENT_IS_TOOL_REPOSITORY%" NEQ "1" if "%DEVELOPMENT_ENVIRON
     @echo        [DEVELOPMENT_ENVIRONMENT_REPOSITORY is already defined as "%DEVELOPMENT_ENVIRONMENT_REPOSITORY%"]
     @echo.
 
-    goto end
+    goto error_end
 )
 
 REM If we are working with a repository that requires a configuration name, extract the value. If
@@ -85,7 +85,7 @@ if "%_ACTIVATE_ENVIRONMENT_IS_CONFIGURABLE_REPOSITORY%" NEQ "0" (
         %PYTHON_BINARY% "%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\SourceRepositoryTools\Impl\ActivateEnvironment.py" ListConfigurations %~dp0 indented
         @echo.
 
-        goto reset_and_end
+        goto reset_and_error_end
     )
 
     if "%DEVELOPMENT_ENVIRONMENT_REPOSITORY_CONFIGURATION%" NEQ "" (
@@ -98,7 +98,7 @@ if "%_ACTIVATE_ENVIRONMENT_IS_CONFIGURABLE_REPOSITORY%" NEQ "0" (
             @echo        ["%DEVELOPMENT_ENVIRONMENT_REPOSITORY_CONFIGURATION%" != "%1"]
             @echo.
 
-            goto reset_and_end
+            goto reset_and_error_end
         )
     )
 
@@ -141,7 +141,7 @@ if %_ACTIVATE_ENVIRONMENT_SCRIPT_GENERATION_ERROR_LEVEL% NEQ 0 (
     @echo        [%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\SourceRepositoryTools\Impl\ActivateEnvironment.py failed]
     @echo.
 
-    goto reset_and_end
+    goto reset_and_error_end
 )
 
 if %_ACTIVATE_ENVIRONMENT_SCRIPT_EXECUTION_ERROR_LEVEL% NEQ 0 (
@@ -152,32 +152,28 @@ if %_ACTIVATE_ENVIRONMENT_SCRIPT_EXECUTION_ERROR_LEVEL% NEQ 0 (
     @echo        [%_ACTIVATE_ENVIRONMENT_TEMP_SCRIPT_NAME% failed]
     @echo.
 
-    goto reset_and_end
+    goto reset_and_error_end
 )
 
 REM Cleanup...
 del "%_ACTIVATE_ENVIRONMENT_TEMP_SCRIPT_NAME%"
 
-:complete
 @echo.
 @echo.
 @echo The environment has been activated and is ready for development.
 @echo.
 @echo.
+
+set _ACTIVATE_ENVIRONMENT_ERROR_LEVEL=0
 goto end
 
-@REM ---------------------------------------------------------------------------
-:create_temp_script_name
-setlocal EnableDelayedExpansion
-set _filename=%~dp0\ActivateEnvironment-!RANDOM!-!Time:~6,5!.cmd
-endlocal & set _ACTIVATE_ENVIRONMENT_TEMP_SCRIPT_NAME=%_filename%
-
-if exist "%_ACTIVATE_ENVIRONMENT_TEMP_SCRIPT_NAME%" goto :create_temp_script_name
-goto :EOF
-@REM ---------------------------------------------------------------------------
-
-:reset_and_end
+:reset_and_error_end
 set DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=
+goto error_end
+
+:error_end
+set _ACTIVATE_ENVIRONMENT_ERROR_LEVEL=-1
+goto end
 
 :end
 set _ACTIVATE_ENVIRONMENT_SCRIPT_EXECUTION_ERROR_LEVEL=
@@ -193,3 +189,15 @@ set _ACTIVATE_ENVIRONMENT_IS_TOOL_REPOSITORY=
 set _ACTIVATE_ENVIRONMENT_PREVIOUS_FUNDAMENTAL=
 
 popd
+
+exit /B %_ACTIVATE_ENVIRONMENT_ERROR_LEVEL%
+
+@REM ---------------------------------------------------------------------------
+:create_temp_script_name
+setlocal EnableDelayedExpansion
+set _filename=%~dp0\ActivateEnvironment-!RANDOM!-!Time:~6,5!.cmd
+endlocal & set _ACTIVATE_ENVIRONMENT_TEMP_SCRIPT_NAME=%_filename%
+
+if exist "%_ACTIVATE_ENVIRONMENT_TEMP_SCRIPT_NAME%" goto :create_temp_script_name
+goto :EOF
+@REM ---------------------------------------------------------------------------
