@@ -32,11 +32,6 @@ fi
 # environment)
 if [ ${0##*/} = ActivateEnvironment.sh ];
 then
-    should_continue=0
-fi
-
-if [ $should_continue = 0 ];
-then
     echo
     echo "This script activates a console for development according to information"
     echo "specific to the repository."
@@ -47,6 +42,8 @@ then
     echo "    . ./ActivateEnvironment.sh"
     echo
     echo
+
+    should_continue=0
 fi
 
 # Move the the dir that contains this script, regardless of where we are invoked from. Note that
@@ -245,6 +242,11 @@ then
     fi
 fi
 
+if [ $changed_dir = 1 ];
+then        
+    popd > /dev/null
+fi
+
 if [ $should_continue = 1 ];
 then
     echo ""
@@ -252,9 +254,8 @@ then
     echo "The environment has been activated and is ready for development."
     echo ""
     echo ""
-fi
 
-if [ $changed_dir = 1 ];
-then        
-    popd > /dev/null
+    return 0
+else
+    return -1
 fi
