@@ -662,8 +662,8 @@ def _SetupScmHooks(environment, repository_root, customization_mod, debug, optio
             config.add_section("hooks")
 
         config.set("hooks", "pretxncommit.CommonEnvironment", "python:{}:PreTxnCommit".format(hooks_filename))
-        config.set("hooks", "preoutgoing.CommonEnvironment", "python:{}:PreOutgoing".format(hooks_filename)) # BugBug
-        config.set("hooks", "pretxnchangegroup.CommonEnvironment", "python:{}:PreTxnChangeGroup".format(hooks_filename)) # BugBug
+        config.set("hooks", "preoutgoing.CommonEnvironment", "python:{}:PreOutgoing".format(hooks_filename))
+        config.set("hooks", "pretxnchangegroup.CommonEnvironment", "python:{}:PreTxnChangeGroup".format(hooks_filename))
 
         backup_hg_filename = "{}.bak".format(potential_hg_filename)
         if os.path.isfile(potential_hg_filename) and not os.path.isfile(backup_hg_filename):
