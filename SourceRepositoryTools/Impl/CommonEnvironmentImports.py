@@ -44,6 +44,7 @@ from CommonEnvironment import CommandLine
 from CommonEnvironment import FileSystem
 from CommonEnvironment import Interface
 from CommonEnvironment import Package
+from CommonEnvironment import Process
 from CommonEnvironment.QuickObject import QuickObject
 from CommonEnvironment import RegularExpression
 from CommonEnvironment import six_plus
