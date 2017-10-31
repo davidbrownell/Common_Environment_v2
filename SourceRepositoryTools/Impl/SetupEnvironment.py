@@ -667,7 +667,7 @@ def _SetupScmHooks(environment, repository_root, customization_mod, debug, optio
         # config.set("hooks", "preoutgoing.CommonEnvironment", "python:{}:PreOutgoing".format(hooks_filename))
         # config.set("hooks", "pretxnchangegroup.CommonEnvironment", "python:{}:PreTxnChangeGroup".format(hooks_filename))
 
-        # config.remove_option("hooks", "pretxncommit.CommonEnvironment")
+        config.remove_option("hooks", "pretxncommit.CommonEnvironment")
         config.remove_option("hooks", "preoutgoing.CommonEnvironment")
         config.remove_option("hooks", "pretxnchangegroup.CommonEnvironment")
 
