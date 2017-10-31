@@ -21,12 +21,14 @@ Sets up an environment for development.
 import inspect
 import itertools
 import os
+import shutil
 import sys
 import textwrap
 
 from collections import OrderedDict
 
 import six
+from six.moves import configparser
 
 import CommonEnvironmentImports
 
@@ -35,12 +37,9 @@ _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ---------------------------------------------------------------------------
 
-with CommonEnvironmentImports.Package.NameInfo(__package__) as ni:
-    __package__ = ni.created
-
-    from .. import Constants
-
-    __package__ = ni.original
+sys.path.insert(0, os.path.join(_script_dir, ".."))
+with CommonEnvironmentImports.CallOnExit(lambda: sys.path.pop(0)):
+    import Constants
 
 Impl                                        = CommonEnvironmentImports.Package.ImportInit()
 SourceRepositoryTools                       = CommonEnvironmentImports.Package.ImportInit("..")
@@ -182,7 +181,8 @@ def _EntryPointPostInstall(repository_root, debug, optional_configuration_names)
         setup_methods = [ _SetupBootstrap,
                           _SetupCustom,
                           _SetupShortcuts,
-                          _SetupGenerated,
+                          _SetupGeneratedPermissions,
+                          _SetupScmHooks,
                         ]
 
         potential_customization_filename = os.path.join(repository_root, Constants.SETUP_ENVIRONMENT_CUSTOMIZATION_FILENAME)
@@ -634,11 +634,49 @@ def _SetupShortcuts(environment, repository_root, customization_mod, debug, opti
            ]
 
 # ---------------------------------------------------------------------------
-def _SetupGenerated(environment, repository_root, customization_mod, debug, optional_configuration_names):
+def _SetupGeneratedPermissions(environment, repository_root, customization_mod, debug, optional_configuration_names):
     generated_dir = os.path.join(repository_root, Constants.GENERATED_DIRECTORY_NAME, environment.CategoryName)
     assert os.path.isdir(generated_dir), generated_dir
     
     os.chmod(generated_dir, 0x777)
+
+# ----------------------------------------------------------------------
+def _SetupScmHooks(environment, repository_root, customization_mod, debug, optional_configuration_names):
+    # Augment the SCM with hooks
+
+    # Mercurial
+    if os.path.isdir(os.path.join(repository_root, ".hg")):
+        hooks_filename = os.path.normpath(os.path.join(_script_dir, "Hooks", "Mercurial.py"))
+        assert os.path.isfile(hooks_filename), hooks_filename
+
+        potential_hg_filename = os.path.join(repository_root, ".hg", "hgrc")
+
+        config = configparser.ConfigParser( allow_no_value=True,
+                                          )
+        
+        if os.path.isfile(potential_hg_filename):
+            with open(potential_hg_filename) as f:
+                config.read_file(f)
+
+        if not config.has_section("hooks"):
+            config.add_section("hooks")
+
+        # This isn't working well right now
+
+        # config.set("hooks", "pretxncommit.CommonEnvironment", "python:{}:PreTxnCommit".format(hooks_filename))
+        # config.set("hooks", "preoutgoing.CommonEnvironment", "python:{}:PreOutgoing".format(hooks_filename))
+        # config.set("hooks", "pretxnchangegroup.CommonEnvironment", "python:{}:PreTxnChangeGroup".format(hooks_filename))
+
+        config.remove_option("hooks", "pretxncommit.CommonEnvironment")
+        config.remove_option("hooks", "preoutgoing.CommonEnvironment")
+        config.remove_option("hooks", "pretxnchangegroup.CommonEnvironment")
+
+        backup_hg_filename = "{}.bak".format(potential_hg_filename)
+        if os.path.isfile(potential_hg_filename) and not os.path.isfile(backup_hg_filename):
+            shutil.copyfile(potential_hg_filename, backup_hg_filename)
+
+        with open(potential_hg_filename, 'w') as f:
+            config.write(f)
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------

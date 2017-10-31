@@ -44,6 +44,17 @@ TOOLS_SUBDIR                                = "Tools"
 
 IGNORE_DIRECTORY_AS_BOOTSTRAP_DEPENDENCY_SENTINEL_FILENAME = "IgnoreAsBootstrapDependency"
 
+# The following methods are defined in SETUP_ENVIRONMENT_CUSTOMIZATION_FILENAME and
+# can be provided to perform SCM-event activities. In each case, throw an Exception
+# to communicate a specific error, True if the activities are configuration-specific,
+# and False if no configuration-specific activities are required.
+#
+# Parameters for each method are defined in ./Impl/Hooks/HooksImplParser.SimpleSchema
+#
+COMMIT_HOOK_EVENT_HANDLER                   = "Commit"
+PUSH_HOOK_EVENT_HANDLER                     = "Push"
+PUSHED_HOOK_EVENT_HANDLER                   = "Pushed"
+
 # ----------------------------------------------------------------------
 DE_FUNDAMENTAL_ROOT_NAME                    = "DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"                     # Root of the fundamental repository
 DE_REPO_ROOT_NAME                           = "DEVELOPMENT_ENVIRONMENT_REPOSITORY"
@@ -55,12 +66,23 @@ DE_REPO_DATA_NAME                           = "DEVELOPMENT_ENVIRONMENT_REPOSITOR
 assert os.getenv(DE_FUNDAMENTAL_ROOT_NAME)
 
 DE_FUNDAMENTAL = os.getenv(DE_FUNDAMENTAL_ROOT_NAME)
-if DE_FUNDAMENTAL.endswith(os.path.sep):
-    DE_FUNDAMENTAL = DE_FUNDAMENTAL[:-len(os.path.sep)]
+if DE_FUNDAMENTAL is None:
+    # If here, we aren't running in a standard environment and are likely
+    # running as part of an exe. See if we are running on a system
+    # that is similiar to a CommonEnvironment.
+    assert "python" not in sys.executable.lower(), sys.executable
 
-assert os.path.isdir(DE_FUNDAMENTAL), DE_FUNDAMENTAL
+    potential_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
+    if os.path.isdir(potential_dir):
+        DE_FUNDAMENTAL = potential_dir
+
+if DE_FUNDAMENTAL is not None:
+    if DE_FUNDAMENTAL.endswith(os.path.sep):
+        DE_FUNDAMENTAL = DE_FUNDAMENTAL[:-len(os.path.sep)]
+
+    assert os.path.isdir(DE_FUNDAMENTAL), DE_FUNDAMENTAL
 
 # PYTHON_BINARY
-assert os.getenv("PYTHON_BINARY")
 PYTHON_BINARY = os.getenv("PYTHON_BINARY")
-os.path.isfile(PYTHON_BINARY), PYTHON_BINARY
+if PYTHON_BINARY is not None:
+    assert os.path.isfile(PYTHON_BINARY), PYTHON_BINARY

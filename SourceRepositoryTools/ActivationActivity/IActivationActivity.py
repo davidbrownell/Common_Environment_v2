@@ -21,6 +21,8 @@ import os
 import copy
 import sys
 
+from contextlib import contextmanager
+
 import six
 
 from CommonEnvironment.CallOnExit import CallOnExit
@@ -142,6 +144,23 @@ class IActivationActivity(Interface):
 
             return Process.Execute(temp_filename, output_stream.write)
 
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @contextmanager
+    def CustomMethodManager(customization_filename, method_name):
+        if not os.path.isfile(customization_filename):
+            yield None
+            return
+
+        customization_path, customization_name = os.path.split(customization_filename)
+        customization_name = os.path.splitext(customization_name)[0]
+
+        sys.path.insert(0, customization_path)
+        with CallOnExit(lambda: sys.path.pop(0)):
+            mod = __import__(customization_name)
+            with CallOnExit(lambda: sys.modules.pop(customization_name)):
+                yield getattr(mod, method_name, None)
+
     # ---------------------------------------------------------------------------
     @staticmethod
     def CallMethod(method, **kwargs):
@@ -182,21 +201,11 @@ class IActivationActivity(Interface):
         return value is None or a list of items.
         """
 
-        if not os.path.isfile(customization_filename):
-            return
+        with cls.CustomMethodManager(customization_filename, method_name) as method:
+            if not method:
+                return
 
-        customization_path, customization_name = os.path.split(customization_filename)
-        customization_name = os.path.splitext(customization_name)[0]
-
-        sys.path.insert(0, customization_path)
-        with CallOnExit(lambda: sys.path.pop(0)):
-            mod = __import__(customization_name)
-            with CallOnExit(lambda: sys.modules.pop(customization_name)):
-                method = getattr(mod, method_name, None)
-                if method == None:
-                    return
-
-                return cls.CallMethod(method, **kwargs)
+            return cls.CallMethod(method, **kwargs)
 
     # ---------------------------------------------------------------------------
     # |
@@ -213,7 +222,7 @@ class IActivationActivity(Interface):
                              generated_dir,
                            ):
         raise Exception("Abstract method")
-
+    
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
