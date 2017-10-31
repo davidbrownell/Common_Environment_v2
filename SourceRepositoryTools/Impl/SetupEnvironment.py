@@ -18,7 +18,6 @@
 Sets up an environment for development.
 """
 
-import configparser
 import inspect
 import itertools
 import os
@@ -29,6 +28,7 @@ import textwrap
 from collections import OrderedDict
 
 import six
+from six.moves import configparser
 
 import CommonEnvironmentImports
 
