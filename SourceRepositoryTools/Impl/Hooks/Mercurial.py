@@ -64,6 +64,8 @@ del GetCommonEnvironment
         
 # ----------------------------------------------------------------------
 def PreTxnCommit(ui, repo, node, parent1, parent2, *args, **kwargs):
+    return 0 # Disabling hooks for now
+
     is_debug = _IsDebug(ui)
 
     if is_debug:
@@ -99,6 +101,8 @@ def PreTxnCommit(ui, repo, node, parent1, parent2, *args, **kwargs):
 
 # ----------------------------------------------------------------------
 def PreOutgoing(ui, repo, source, *args, **kwargs):
+    return 0 # Disabling hooks for now
+
     # Only process push data
     if source != "push":
         return 0
@@ -135,6 +139,8 @@ def PreOutgoing(ui, repo, source, *args, **kwargs):
 
 # ----------------------------------------------------------------------
 def PreTxnChangeGroup(ui, repo, source, node, node_last, *args, **kwargs):
+    return 0 # Disabling hooks for now
+
     if source != "serve":
         return 0
 
