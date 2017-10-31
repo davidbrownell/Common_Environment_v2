@@ -90,8 +90,8 @@ def Dependencies():
 
     # Note that it isn't necessary to include "CommonEnvironment" as an explicit dependency,
     # but is shown as an example here.
-    return SourceRepositoryTools.Configuration( [ SourceRepositoryTools.Dependency( "F4015FA1A91D46FD8D826F6C4F0A50BF",
-                                                                                    "CommonEnvironment",
+    return SourceRepositoryTools.Configuration( [ SourceRepositoryTools.Dependency( "CB90253369F54AB5A33F988F31AB6502",
+                                                                                    "Common_SimpleSchemaCodeGenerator",
                                                                                   ),
                                                 ],
                                               )
@@ -99,54 +99,3 @@ def Dependencies():
 # ---------------------------------------------------------------------------
 def CustomActions():
     return []
-
-# ----------------------------------------------------------------------
-# Define one of the following methods if necessary:
-#
-#       def Commit(data)                    # No configuration-specific activities
-#       def Commit(data, configuration)     # Has configuration-specific activities
-#
-def Commit(data):
-    """SCM commit hook event (fired before committing a change on the local repository)"""
-
-    # Data params are defined in :
-    #   <DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL>/SourceRepositoryTools/Impl/Hooks/HooksImplParser.SimpleSchema
-    #
-    # Return values:
-    #   - raise Exception on error
-
-    pass
-
-# ----------------------------------------------------------------------
-# Define one of the following methods if necessary:
-#
-#       def Push(data)                      # No configuration-specific activities
-#       def Push(data, configuration)       # Has configuration-specific activities
-#
-def Push(data):
-    """SCM push hook event (fired before pushing changes from a local to a remote repository)"""
-
-    # Data params are defined in :
-    #   <DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL>/SourceRepositoryTools/Impl/Hooks/HooksImplParser.SimpleSchema
-    #
-    # Return values:
-    #   - raise Exception on error
-
-    pass
-
-# ----------------------------------------------------------------------
-# Define one of the following methods if necessary:
-#
-#       def Pushed(data)                    # No configuration-specific activities
-#       def Pushed(data, configuration)     # Has configuration-specific activities
-#
-def Pushed(data):
-    """SCM pushed hook event (fired before committing pushed changes from a remote repository)"""
-
-    # Data params are defined in :
-    #   <DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL>/SourceRepositoryTools/Impl/Hooks/HooksImplParser.SimpleSchema
-    #
-    # Return values:
-    #   - raise Exception on error
-
-    pass
