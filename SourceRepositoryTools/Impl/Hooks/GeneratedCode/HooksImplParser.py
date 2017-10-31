@@ -65,22 +65,37 @@ def FromJson(root):
 # |  
 # ----------------------------------------------------------------------
 def Commit_FromJson(item, always_include_optional=False, process_additional_data=False, is_root=False):
-    parser = _FromParser()
-
-    if is_root and isinstance(item, six.string_types):
-        item = json.loads(item)
-    elif not isinstance(item, list):
-        if isinstance(item, dict) and "Commit" in item:
-            item = item["Commit"]
-        elif not isinstance(item, dict) and hasattr(item, "Commit"):
-            item = getattr(item, "Commit")
-        elif is_root:
-            item = None
+    # ----------------------------------------------------------------------
+    def LoadImpl():
+        if not isinstance(item, list):
+            if is_root:
+                if isinstance(item, six.string_types):
+                    return json.loads(item)
+    
+                if hasattr(item, "read"):
+                    return json.load(item)
+    
+            if isinstance(item, dict):
+                if "Commit" in item:
+                    return item["Commit"]
+            elif hasattr(item, "Commit"):
+                return getattr(item, "Commit")
+    
+            if is_root:
+                return None
+    
+        return item
+    
+    # ----------------------------------------------------------------------
+    
+    item = LoadImpl()
 
     Commit_TypeInfo.ValidateArity(item)
 
     if item == None:
         return None
+
+    parser = _FromParser()
 
     result = parser.Commit_ItemFromJson(item, always_include_optional, process_additional_data)
 
@@ -88,22 +103,37 @@ def Commit_FromJson(item, always_include_optional=False, process_additional_data
 
 # ----------------------------------------------------------------------
 def Push_FromJson(item, always_include_optional=False, process_additional_data=False, is_root=False):
-    parser = _FromParser()
-
-    if is_root and isinstance(item, six.string_types):
-        item = json.loads(item)
-    elif not isinstance(item, list):
-        if isinstance(item, dict) and "Push" in item:
-            item = item["Push"]
-        elif not isinstance(item, dict) and hasattr(item, "Push"):
-            item = getattr(item, "Push")
-        elif is_root:
-            item = None
+    # ----------------------------------------------------------------------
+    def LoadImpl():
+        if not isinstance(item, list):
+            if is_root:
+                if isinstance(item, six.string_types):
+                    return json.loads(item)
+    
+                if hasattr(item, "read"):
+                    return json.load(item)
+    
+            if isinstance(item, dict):
+                if "Push" in item:
+                    return item["Push"]
+            elif hasattr(item, "Push"):
+                return getattr(item, "Push")
+    
+            if is_root:
+                return None
+    
+        return item
+    
+    # ----------------------------------------------------------------------
+    
+    item = LoadImpl()
 
     Push_TypeInfo.ValidateArity(item)
 
     if item == None:
         return None
+
+    parser = _FromParser()
 
     result = parser.Push_ItemFromJson(item, always_include_optional, process_additional_data)
 
@@ -111,22 +141,37 @@ def Push_FromJson(item, always_include_optional=False, process_additional_data=F
 
 # ----------------------------------------------------------------------
 def Pushed_FromJson(item, always_include_optional=False, process_additional_data=False, is_root=False):
-    parser = _FromParser()
-
-    if is_root and isinstance(item, six.string_types):
-        item = json.loads(item)
-    elif not isinstance(item, list):
-        if isinstance(item, dict) and "Pushed" in item:
-            item = item["Pushed"]
-        elif not isinstance(item, dict) and hasattr(item, "Pushed"):
-            item = getattr(item, "Pushed")
-        elif is_root:
-            item = None
+    # ----------------------------------------------------------------------
+    def LoadImpl():
+        if not isinstance(item, list):
+            if is_root:
+                if isinstance(item, six.string_types):
+                    return json.loads(item)
+    
+                if hasattr(item, "read"):
+                    return json.load(item)
+    
+            if isinstance(item, dict):
+                if "Pushed" in item:
+                    return item["Pushed"]
+            elif hasattr(item, "Pushed"):
+                return getattr(item, "Pushed")
+    
+            if is_root:
+                return None
+    
+        return item
+    
+    # ----------------------------------------------------------------------
+    
+    item = LoadImpl()
 
     Pushed_TypeInfo.ValidateArity(item)
 
     if item == None:
         return None
+
+    parser = _FromParser()
 
     result = parser.Pushed_ItemFromJson(item, always_include_optional, process_additional_data)
 
@@ -143,14 +188,14 @@ ChangeInfo_author_TypeInfo                                                  = St
 ChangeInfo_date_TypeInfo                                                    = DateTimeTypeInfo(arity=Arity(min=1, max_or_none=1))
 ChangeInfo_description_TypeInfo                                             = StringTypeInfo(arity=Arity(min=1, max_or_none=1), min_length=0)
 ChangeInfo_branch_TypeInfo                                                  = StringTypeInfo(arity=Arity(min=1, max_or_none=1), min_length=1)
-Commit_TypeInfo                                                             = AnyOfTypeInfo(arity=Arity(min=1, max_or_none=1), type_info_list=[ DictTypeInfo(arity=Arity(min=1, max_or_none=1), items={ "modified" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=True, match_any=False), "added" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=True, match_any=False), "removed" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=True, match_any=False) }, require_exact_match=None), ClassTypeInfo(arity=Arity(min=1, max_or_none=1), items={ "modified" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=True, match_any=False), "added" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=True, match_any=False), "removed" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=True, match_any=False) }, require_exact_match=None) ])
+Commit_TypeInfo                                                             = AnyOfTypeInfo(arity=Arity(min=1, max_or_none=1), type_info_list=[ DictTypeInfo(arity=Arity(min=1, max_or_none=1), items={ "modified" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=True, match_any=False), "added" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=True, match_any=False), "removed" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=False, match_any=False) }, require_exact_match=None), ClassTypeInfo(arity=Arity(min=1, max_or_none=1), items={ "modified" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=True, match_any=False), "added" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=True, match_any=False), "removed" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=False, match_any=False) }, require_exact_match=None) ])
 Commit_modified_TypeInfo                                                    = FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=True, match_any=False)
 Commit_added_TypeInfo                                                       = FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=True, match_any=False)
 Commit_removed_TypeInfo                                                     = FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=False, match_any=False)
 Push_TypeInfo                                                               = AnyOfTypeInfo(arity=Arity(min=1, max_or_none=1), type_info_list=[ DictTypeInfo(arity=Arity(min=1, max_or_none=1), items={ "url" : StringTypeInfo(arity=Arity(min=0, max_or_none=1), min_length=1) }, require_exact_match=None), ClassTypeInfo(arity=Arity(min=1, max_or_none=1), items={ "url" : StringTypeInfo(arity=Arity(min=0, max_or_none=1), min_length=1) }, require_exact_match=None) ])
 Push_url_TypeInfo                                                           = StringTypeInfo(arity=Arity(min=0, max_or_none=1), min_length=1)
-Pushed_TypeInfo                                                             = AnyOfTypeInfo(arity=Arity(min=1, max_or_none=1), type_info_list=[ DictTypeInfo(arity=Arity(min=1, max_or_none=1), items={ "changes" : AnyOfTypeInfo(arity=Arity(min=1, max_or_none=None), type_info_list=[ DictTypeInfo(arity=Arity(min=1, max_or_none=1), items={ "modified" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=True, match_any=False), "added" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=True, match_any=False), "removed" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=True, match_any=False) }, require_exact_match=None), ClassTypeInfo(arity=Arity(min=1, max_or_none=1), items={ "modified" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=True, match_any=False), "added" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=True, match_any=False), "removed" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=True, match_any=False) }, require_exact_match=None) ]) }, require_exact_match=None), ClassTypeInfo(arity=Arity(min=1, max_or_none=1), items={ "changes" : AnyOfTypeInfo(arity=Arity(min=1, max_or_none=None), type_info_list=[ DictTypeInfo(arity=Arity(min=1, max_or_none=1), items={ "modified" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=True, match_any=False), "added" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=True, match_any=False), "removed" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=True, match_any=False) }, require_exact_match=None), ClassTypeInfo(arity=Arity(min=1, max_or_none=1), items={ "modified" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=True, match_any=False), "added" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=True, match_any=False), "removed" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=True, match_any=False) }, require_exact_match=None) ]) }, require_exact_match=None) ])
-Pushed_changes_TypeInfo                                                     = AnyOfTypeInfo(arity=Arity(min=1, max_or_none=None), type_info_list=[ DictTypeInfo(arity=Arity(min=1, max_or_none=1), items={ "modified" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=True, match_any=False), "added" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=True, match_any=False), "removed" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=True, match_any=False) }, require_exact_match=None), ClassTypeInfo(arity=Arity(min=1, max_or_none=1), items={ "modified" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=True, match_any=False), "added" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=True, match_any=False), "removed" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=True, match_any=False) }, require_exact_match=None) ])
+Pushed_TypeInfo                                                             = AnyOfTypeInfo(arity=Arity(min=1, max_or_none=1), type_info_list=[ DictTypeInfo(arity=Arity(min=1, max_or_none=1), items={ "changes" : AnyOfTypeInfo(arity=Arity(min=1, max_or_none=None), type_info_list=[ DictTypeInfo(arity=Arity(min=1, max_or_none=1), items={ "modified" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=False, match_any=False), "added" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=False, match_any=False), "removed" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=False, match_any=False) }, require_exact_match=None), ClassTypeInfo(arity=Arity(min=1, max_or_none=1), items={ "modified" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=False, match_any=False), "added" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=False, match_any=False), "removed" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=False, match_any=False) }, require_exact_match=None) ]) }, require_exact_match=None), ClassTypeInfo(arity=Arity(min=1, max_or_none=1), items={ "changes" : AnyOfTypeInfo(arity=Arity(min=1, max_or_none=None), type_info_list=[ DictTypeInfo(arity=Arity(min=1, max_or_none=1), items={ "modified" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=False, match_any=False), "added" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=False, match_any=False), "removed" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=False, match_any=False) }, require_exact_match=None), ClassTypeInfo(arity=Arity(min=1, max_or_none=1), items={ "modified" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=False, match_any=False), "added" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=False, match_any=False), "removed" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=False, match_any=False) }, require_exact_match=None) ]) }, require_exact_match=None) ])
+Pushed_changes_TypeInfo                                                     = AnyOfTypeInfo(arity=Arity(min=1, max_or_none=None), type_info_list=[ DictTypeInfo(arity=Arity(min=1, max_or_none=1), items={ "modified" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=False, match_any=False), "added" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=False, match_any=False), "removed" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=False, match_any=False) }, require_exact_match=None), ClassTypeInfo(arity=Arity(min=1, max_or_none=1), items={ "modified" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=False, match_any=False), "added" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=False, match_any=False), "removed" : FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=False, match_any=False) }, require_exact_match=None) ])
 Pushed_changes_modified_TypeInfo                                            = FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=False, match_any=False)
 Pushed_changes_added_TypeInfo                                               = FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=False, match_any=False)
 Pushed_changes_removed_TypeInfo                                             = FilenameTypeInfo(arity=Arity(min=0, max_or_none=None), ensure_exists=False, match_any=False)
