@@ -11,3 +11,4 @@ ActivateEnvironment.sh
 
 Tools/Python/v2.7.10/Windows/DLLs/*.*-*
 *.ipynb
+SourceRepositoryTools/Impl/Hooks/GeneratedCode/HooksImplParserCompiler.CIQM.data

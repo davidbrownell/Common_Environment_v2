@@ -85,5 +85,3 @@ def Commit(data):
                                          StreamDecorator.LeftJustify('\n'.join(errors), 4),
                                          StreamDecorator.LeftJustify(''.join(instructions), 4),
                                        ))
-
-    
