@@ -64,8 +64,6 @@ del GetCommonEnvironment
         
 # ----------------------------------------------------------------------
 def PreTxnCommit(ui, repo, node, parent1, parent2, *args, **kwargs):
-    return 0 # Disabling hooks for now
-
     is_debug = _IsDebug(ui)
 
     if is_debug:
