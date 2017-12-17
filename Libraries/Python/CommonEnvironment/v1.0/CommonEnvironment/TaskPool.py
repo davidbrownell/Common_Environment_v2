@@ -57,7 +57,7 @@ class Task(object):
                                             #           task_index
                                             #           core_index          # Technically speaking, this isn't the core index but can be used to simulate thread local storage
                                             #           output_stream
-                                            #           on_status_update   # def Func(content)
+                                            #           on_status_update    # def Func(content)
                 ):
         assert name
         assert action_description
