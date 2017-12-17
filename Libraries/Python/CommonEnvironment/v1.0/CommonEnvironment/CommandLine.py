@@ -665,8 +665,10 @@ class Executor(object):
                     param = potential_param
                     break
 
-            if param == None:
+            if param is None:
                 return "'{}' is not a recognized command line argument".format(tag)
+            if value is None and not param.is_switch:
+                return "A value was expected with the keyword argument '{}'".format(tag)
 
             return ApplyImpl(param, value)
 
