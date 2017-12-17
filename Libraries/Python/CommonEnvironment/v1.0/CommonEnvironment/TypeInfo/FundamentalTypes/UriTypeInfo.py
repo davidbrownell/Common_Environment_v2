@@ -72,6 +72,7 @@ class Uri(object):
         # interprets that as the beginning of the path. As a hack, replace any special tokens with
         # the proper chars when storing the actual username and password.
         self._original_credentials          = credentials
+        self.Credentials                    = None
 
         if credentials:
             # ----------------------------------------------------------------------
