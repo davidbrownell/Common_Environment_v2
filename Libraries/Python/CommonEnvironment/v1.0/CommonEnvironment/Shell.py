@@ -333,6 +333,27 @@ class Environment(Interface):
                 
         return '\n'.join(results)
         
+    # ----------------------------------------------------------------------
+    def ExecuteCommands(self, commands):
+        """\
+        Creates a temporary script file, writes the commands to that file,
+        and then executes it. Returns the result and output generated during 
+        execution.
+        """
+
+        from CommonEnvironment.CallOnExit import CallOnExit
+        from CommonEnvironment import Process
+
+        temp_filename = self.CreateScriptName(self.ScriptExtension)
+
+        with open(temp_filename, 'w') as f:
+            f.write(self.GenerateCommands(commands))
+
+        with CallOnExit(lambda: os.remove(temp_filename)):
+            self.MakeFileExecutable(temp_filename)
+
+            return Process.Execute(temp_filename)
+
     # ---------------------------------------------------------------------------
     @classmethod
     def EnumEnvironmentVariable(cls, name):

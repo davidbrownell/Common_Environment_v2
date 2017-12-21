@@ -18,6 +18,7 @@ Processes files for offsite or mirrored backup.
 
 import hashlib
 import itertools
+import json
 import os
 import re
 import shutil
@@ -30,7 +31,7 @@ import inflect
 import six
 from six.moves import cPickle as pickle
 
-from CommonEnvironment import Any
+from CommonEnvironment import Any, ModifiableValue
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CommandLine
 from CommonEnvironment import FileSystem
@@ -53,12 +54,13 @@ StreamDecorator.InitAnsiSequenceStreams()
                          output_dir=CommandLine.EntryPoint.ArgumentInfo("Output directory that will contain the compressed file(s)"),
                          input=CommandLine.EntryPoint.ArgumentInfo("One or more filenames or directories used to parse for input"),
                          force=CommandLine.EntryPoint.ArgumentInfo("Ignore previously saved information when calculating work to execute"),
+                         use_links=CommandLine.EntryPoint.ArgumentInfo("Create symbolic links rather than copying files"),
+                         auto_commit=CommandLine.EntryPoint.ArgumentInfo("Invoke 'CommitOffsite' automatically"),
                          include=CommandLine.EntryPoint.ArgumentInfo("One or more regular expressions used to specify filenames to include"),
                          exclude=CommandLine.EntryPoint.ArgumentInfo("One or more regular expressions used to specify filenames to exclude"),
                          traverse_include=CommandLine.EntryPoint.ArgumentInfo("One or more regular expressions used to specify directory names to include while parsing"),
                          traverse_exclude=CommandLine.EntryPoint.ArgumentInfo("One or more regular expressions used to specify directory names to exclude while parsing"),
-                         display=CommandLine.EntryPoint.ArgumentInfo("Display the operations that would be taken but does not perform them"),
-                         password=CommandLine.EntryPoint.ArgumentInfo("Compress with a password"),
+                         display_only=CommandLine.EntryPoint.ArgumentInfo("Display the operations that would be taken but does not perform them"),
                        )
 @CommandLine.FunctionConstraints( backup_name=CommandLine.StringTypeInfo(),
                                   output_dir=CommandLine.DirectoryTypeInfo(ensure_exists=False),
@@ -67,190 +69,213 @@ StreamDecorator.InitAnsiSequenceStreams()
                                   exclude=CommandLine.StringTypeInfo(arity='*'),
                                   traverse_include=CommandLine.StringTypeInfo(arity='*'),
                                   traverse_exclude=CommandLine.StringTypeInfo(arity='*'),
-                                  password=CommandLine.StringTypeInfo(arity='?'),
                                   output_stream=None,
                                 )
 def Offsite( backup_name,
              output_dir,
              input,
              force=False,
+             use_links=False,
+             auto_commit=False,
              include=None,
              exclude=None,
              traverse_include=None,
              traverse_exclude=None,
-             display=False,
-             password=None,
+             display_only=False,
              output_stream=sys.stdout,
              verbose=False,
              preserve_ansi_escape_sequences=False,
            ):
     """\
-    Calculates data to modify based on statistics produced during previous invocations.
+    Prepares data to backup based on the result of previous invocations.
     """
-
+    
     inputs = input; del input
     includes = include; del include
     excludes = exclude; del exclude
     traverse_includes = traverse_include; del traverse_include
     traverse_excludes = traverse_exclude; del traverse_exclude
-        
+
     with StreamDecorator.GenerateAnsiSequenceStream( output_stream,
                                                      preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
                                                    ) as output_stream:
         with output_stream.DoneManager( line_prefix='',
                                         done_prefix="\nResults: ",
+                                        done_suffix='\n',
                                       ) as dm:
             environment = Shell.GetEnvironment()
-        
-            pickle_filename = environment.CreateDataFilename("{}.backup".format(backup_name))
-        
+
+            pickle_filename = _CreatePickleFilename(backup_name, environment)
+
+            # Read the source info
             source_file_info = _GetFileInfo( "source",
                                              inputs,
                                              includes,
                                              excludes,
                                              traverse_includes,
                                              traverse_excludes,
+                                             False,     # simple_compare
                                              dm.stream,
                                            )
-            dm.stream.write("\n")
-        
+
+            dm.stream.write('\n')
+
+            # Read the destination info
+            dest_file_info = {}
+            dest_hashes = set()
+
             if not force and os.path.isfile(pickle_filename):
                 try:
-                    dest_file_info = pickle.load(open(pickle_filename, 'rb'))
+                    with open(pickle_filename, 'rb') as f:
+                        dest_file_info = pickle.load(f)
+
+                    for dfi in dest_file_info:
+                        dest_hashes.add(dfi.Hash)
+
                 except:
                     dm.stream.write("WARNING: The previously saved data appears to be corrupt and will not be used.\n")
-                    dest_file_info = {}
             else:
                 dest_file_info = {}
-        
+
             # Calculate work to complete
-            to_copy, to_remove = _CreateWork( source_file_info,
-                                              dest_file_info,
-                                              None,
-                                              dm.stream,
-                                              verbose,
-                                            )
-        
-            if display:
-                _Display(to_copy, to_remove, dm.stream)
-        
+            work = _CreateWork( source_file_info,
+                                dest_file_info,
+                                None,
+                                False,     # simple_compare
+                                dm.stream,
+                                verbose,
+                              )
+
+            if display_only:
+                _Display(work, dm.stream, show_dest=False)
+                return dm.result
+
+            # Process the files to add
+            commands = []
+            data = []
+            
+            if use_links:
+                generate_command_func = lambda source, dest: environment.SymbolicLink(dest, source)
             else:
-                if os.path.isdir(output_dir):
-                    dm.stream.write("Removing existing content in '{}'...".format(output_dir))
-                    with dm.stream.DoneManager():
-                        FileSystem.RemoveTree(output_dir)
-        
-                # Organize the files by drive
-                to_copy_by_drive = {}
-                to_remove_by_drive = {}
-        
-                for filename in six.iterkeys(to_copy):
-                    to_copy_by_drive.setdefault(os.path.splitdrive(filename)[0], []).append(filename)
-        
-                for filename in to_remove:
-                    to_remove_by_drive.setdefault(os.path.splitdrive(filename)[0], []).append(filename)
-        
-                previous_dir = os.getcwd()
-                with CallOnExit(lambda: os.chdir(previous_dir)):
-                    command_line_template = '7z a -t7z "{{output_filename}}" -mx9 -v{chunk_size}b -scsWIN -ssw -y{password} -slp "@{{arg_filename}}"' \
-                                                .format( chunk_size=250 * 1024 * 1024, # 250Mb,
-                                                         password='' if not password else ' "-p{}"'.format(password),
-                                                       )
-        
-                    # ----------------------------------------------------------------------
-                    def ProcessToRemove(drive):
-                        if drive not in to_remove_by_drive:
-                            return
-        
-                        # Create a filename tht contains all of the filename to remove
-                        remove_filename = "__RemoveFiles__.txt"
-        
-                        if drive:
-                            remove_filename = os.path.join(drive, remove_filename)
-                        else:
-                            remove_filename = "{}{}".format(os.path.sep, remove_filename)
-        
-                        with open(remove_filename, 'w') as f:
-                            f.write('\n'.join(to_remove_by_drive[drive]))
-        
-                        del to_remove_by_drive[drive]
-                        
-                        return remove_filename
-        
-                    # ----------------------------------------------------------------------
-                    def Compress(drive, filenames):
-                        drive_suffix = ''
-        
-                        if drive:
-                            if len(to_copy_by_drive) > 1 or len(to_remove_by_drive) > 1:
-                                drive_suffix = ".{}".format(drive.replace(':', '_'))
-                            
-                            this_drive = drive
-                            if not this_drive.endswith(os.path.sep):
-                                this_drive += os.path.sep
-        
-                            os.chdir(this_drive)
-                            
-                        else:
-                            os.chdir(os.path.sep)
-        
-                        remove_filename = ProcessToRemove(drive)
-        
-                        if remove_filename:
-                            filenames.append(remove_filename)
-                            Cleanup = lambda: os.remove(remove_filename)
-                        else:
-                            Cleanup = lambda: None
-        
-                        with CallOnExit(Cleanup):
-                            # Create the arg filename
-                            arg_filename = environment.CreateTempFilename()
-        
-                            with open(arg_filename, 'w') as f:
-                                for filename in filenames:
-                                    drive, filename = os.path.splitdrive(filename)
-                                    if filename.startswith(os.path.sep):
-                                        filename = filename[len(os.path.sep):]
-        
-                                    f.write("{}\n".format(filename))
-        
-                            with CallOnExit(lambda: os.remove(arg_filename)):
-                                dm.stream.write("Compressing{}...".format('' if not drive else " {}".format(drive)))
-                                with dm.stream.DoneManager( done_suffix='\n',
-                                                          ) as this_dm:
-                                    command_line = command_line_template.format( output_filename=os.path.join(output_dir, "Backup{}.7z".format(drive_suffix)),
-                                                                                 arg_filename=arg_filename,
-                                                                               )
-                                    this_dm.result = Process.Execute( command_line,
-                                                                      this_dm.stream,
-                                                                    )
-                                    
-                    # ----------------------------------------------------------------------
-                    
-                    for drive, filenames in six.iteritems(to_copy_by_drive):
-                        Compress(drive, filenames)
-        
-                    for drive in six.iterkeys(to_remove_by_drive):
-                        Compress(drive, [])
-        
-            if dm.result == 0 and (to_copy or to_remove):
-                # Persist the data
-                with open(pickle_filename, 'wb') as f:
+                generate_command_func = lambda source, dest: environment.CopyFile(source, dest)
+
+            for sfi, dfi in six.iteritems(work):
+                if sfi is None:
+                    continue
+
+                if sfi.Hash not in dest_hashes:
+                    commands.append(generate_command_func(sfi.Name, os.path.join(output_dir, sfi.Hash)))
+                    dest_hashes.add(sfi.Hash)
+
+                data.append({ "filename" : sfi.Name,
+                              "hash" : sfi.Hash,
+                              "operation" : "add" if isinstance(dfi, six.string_types) else "modify",
+                            })
+
+            for dfi in work.get(None, []):
+                data.append({ "filename" : dfi.Name,
+                              "hash" : dfi.Hash,
+                              "operation" : "remove",
+                            })
+
+            if not data:
+                dm.stream.write("No content to apply.\n")
+                dm.result = 1
+
+                return dm.result
+
+            dm.stream.write("Applying content...")
+            with dm.stream.DoneManager( done_suffix='\n',
+                                      ) as apply_dm:
+                apply_dm.stream.write("Cleaning previous content...")
+                with apply_dm.stream.DoneManager():
+                    FileSystem.RemoveTree(output_dir)
+
+                os.makedirs(output_dir)
+
+                if commands:
+                    apply_dm.stream.write("Creating content...")
+                    with apply_dm.stream.DoneManager():
+                        apply_dm.result, output = environment.ExecuteCommands(commands)
+                        if apply_dm.result != 0:
+                            apply_dm.stream.write(output)
+                            return apply_dm.result
+
+                with open(os.path.join(output_dir, "data.json"), 'w') as f:
+                    json.dump(data, f)
+
+            dm.stream.write("Writing pending data...")
+            with dm.stream.DoneManager():
+                pending_pickle_filename = _CreatePendingPickleFilename(pickle_filename)
+
+                with open(pending_pickle_filename, 'wb') as f:
                     pickle.dump(source_file_info, f)
-        
-                return 0
-        
-            return dm.result or 1
+
+            if auto_commit:
+                dm.result = CommitOffsite(backup_name, dm.stream)
+            else:
+                dm.stream.write(textwrap.dedent(
+                    """\
+
+
+
+                    ***** Pending data has been written, but will not be considered official until it is committed via a call to CommitOffsite. *****
+
+
+
+                    """))
+
+            return dm.result
+
+# ----------------------------------------------------------------------
+@CommandLine.EntryPoint( backup_name=CommandLine.EntryPoint.ArgumentInfo("Name used to uniquely identify the backup"),
+                       )
+@CommandLine.FunctionConstraints( backup_name=CommandLine.StringTypeInfo(),
+                                  output_stream=None,
+                                )
+def CommitOffsite( backup_name,
+                   output_stream=sys.stdout,
+                   preserve_ansi_escape_sequences=False,
+                 ):
+    """\
+    Commits data previously generated by Offsite. This can be useful when
+    additional steps must be taken (for example, upload) before a Backup can 
+    be considered as successful.
+    """
+
+    with StreamDecorator.GenerateAnsiSequenceStream( output_stream,
+                                                     preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
+                                                   ) as output_stream:
+        with output_stream.DoneManager( line_prefix='',
+                                        done_prefix="\nResults: ",
+                                        done_suffix='\n',
+                                      ) as dm:
+            environment = Shell.GetEnvironment()
+
+            pickle_filename = _CreatePickleFilename(backup_name, environment)
+            pending_pickle_filename = _CreatePendingPickleFilename(pickle_filename)
+
+            if not os.path.isfile(pending_pickle_filename):
+                dm.stream.write("ERROR: Pending data was not found.\n")
+                dm.result = -1
+            else:
+                FileSystem.RemoveFile(pickle_filename)
+                shutil.move(pending_pickle_filename, pickle_filename)
+
+                dm.stream.write("The pending data has been committed.\n")
+
+            return dm.result
 
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint( destination=CommandLine.EntryPoint.ArgumentInfo("Destination directory"),
                          input=CommandLine.EntryPoint.ArgumentInfo("One or more filenames or directories used to parse for input"),
                          force=CommandLine.EntryPoint.ArgumentInfo("Ignore information in the destination when calculating work to execute"),
+                         simple_compare=CommandLine.EntryPoint.ArgumentInfo("Compare via file size and modified date rather than with a hash. This will be faster, but more error prone when detecting changes."),
                          include=CommandLine.EntryPoint.ArgumentInfo("One or more regular expressions used to specify filenames to include"),
                          exclude=CommandLine.EntryPoint.ArgumentInfo("One or more regular expressions used to specify filenames to exclude"),
                          traverse_include=CommandLine.EntryPoint.ArgumentInfo("One or more regular expressions used to specify directory names to include while parsing"),
                          traverse_exclude=CommandLine.EntryPoint.ArgumentInfo("One or more regular expressions used to specify directory names to exclude while parsing"),
-                         display=CommandLine.EntryPoint.ArgumentInfo("Display the operations that would be taken but do not perform them"),
+                         display_only=CommandLine.EntryPoint.ArgumentInfo("Display the operations that would be taken but do not perform them"),
                        )
 @CommandLine.FunctionConstraints( destination=CommandLine.DirectoryTypeInfo(ensure_exists=False),
                                   input=CommandLine.FilenameTypeInfo(match_any=True, arity='+'),
@@ -263,11 +288,12 @@ def Offsite( backup_name,
 def Mirror( destination,
             input,
             force=False,
+            simple_compare=False,
             include=None,
             exclude=None,
             traverse_include=None,
             traverse_exclude=None,
-            display=False,
+            display_only=False,
             output_stream=sys.stdout,
             verbose=False,
             preserve_ansi_escape_sequences=False,
@@ -297,6 +323,7 @@ def Mirror( destination,
                                              excludes,
                                              traverse_includes,
                                              traverse_excludes,
+                                             simple_compare,
                                              dm.stream,
                                            )
             dm.stream.write("\n")
@@ -308,119 +335,171 @@ def Mirror( destination,
                                                None,
                                                None,
                                                None,
+                                               simple_compare,
                                                dm.stream,
                                              )
-        
-                # _CreateWork expects a dictionary organized by original source drive;
-                # Perform that conversion.
-                new_dest_file_info = OrderedDict()
-                len_normalized_destination = len(FileSystem.AddTrailingSep(destination))
-        
-                assert len(dest_file_info) <= 1, dest_file_info.keys()
-                if dest_file_info:
-                    for k, v in six.iteritems(next(six.itervalues(dest_file_info))):
-                        assert len(k) > len_normalized_destination, k
-                    
-                        potential_drive = k[len_normalized_destination:].split(os.path.sep)[0]
-                        if potential_drive.endswith('_') and len(potential_drive) <= 3:
-                            drive = potential_drive.replace('_', ':')
-                        else:
-                            assert len(source_file_info) == 1, source_file_info.keys()
-
-                            value = next(six.itervalues(source_file_info))
-                            assert value
-                            
-                            value = next(six.iterkeys(value))
-                            assert value
-
-                            drive = os.path.splitdrive(value)[0]
-        
-                        new_dest_file_info.setdefault(drive, {})[k] = v
-                    
-                    dest_file_info = new_dest_file_info
         
                 dm.stream.write("\n")
             else:
                 dest_file_info = {}
         
             # Calculate the work to complete
-            to_copy, to_remove = _CreateWork( source_file_info,
-                                              dest_file_info,
-                                              destination,
-                                              dm.stream,
-                                              verbose,
-                                            )
+            work = _CreateWork( source_file_info,
+                                dest_file_info,
+                                destination,
+                                simple_compare,
+                                dm.stream,
+                                verbose,
+                              )
         
-            if display:
-                _Display(to_copy, to_remove, dm.stream)
-            
-            else:
-                if not os.path.isdir(destination):
-                    os.makedirs(destination)
-            
-                if to_copy:
-                    to_copy_keys = list(six.iterkeys(to_copy))
+            if display_only:
+                _Display(work, dm.stream, show_dest=True)
+                return dm.result
 
-                    # ----------------------------------------------------------------------
-                    def Execute(task_index, task_output):
-                        try:
-                            k = to_copy_keys[task_index]
-                            v = to_copy[k]
+            if not os.path.isdir(destination):
+                os.makedirs(destination)
+            
+            executed_work = False
+
+            # Copy files
+            tasks = []
+
+            for sfi, dfi in six.iteritems(work):
+                if sfi is None:
+                    continue
+
+                sfi = sfi.Name
+                dfi = getattr(dfi, "Name", dfi)
+
+                tasks.append((sfi, dfi))
                 
-                            dest_dir = os.path.dirname(v)
-                            if not os.path.isdir(dest_dir):
-                                os.makedirs(dest_dir)
-                
-                            shutil.copyfile(k, v)
-                        except Exception as ex:
-                            task_output.write(str(ex))
-                            return -1
-                
-                    # ----------------------------------------------------------------------
-        
-                    with dm.stream.SingleLineDoneManager( "Copying {}...".format(inflect_engine.no("file", len(to_copy))),
-                                                        ) as this_dm:
-                           TaskPool.Execute( [ TaskPool.Task( "Copy '{}' to '{}'".format(k, v),
-                                                              "Copying '{}' to '{}'".format(k, v),
-                                                              Execute,
-                                                            )
-                                               for k, v in six.iteritems(to_copy)
-                                             ],
-                                             num_concurrent_tasks=1,
-                                             output_stream=this_dm.stream,
-                                             progress_bar=True,
-                                           )
-                
-                if to_remove:
-                    # ----------------------------------------------------------------------
-                    def Execute(task_index, task_output):
-                        try:
-                            value = to_remove[task_index]
-                
-                            os.remove(value)
-                        except Exception as ex:
-                            task_output.write(str(ex))
-                            return -1
-                
-                    # ----------------------------------------------------------------------
-                    
-                    with dm.stream.SingleLineDoneManager( "Removing {}...".format(inflect_engine.no("file", len(to_remove))),
-                                                        ) as this_dm:
-                        TaskPool.Execute( [ TaskPool.Task( "Remove '{}'".format(value),
-                                                           "Removing '{}'".format(value),
-                                                           Execute,
-                                                         )
-                                            for value in to_remove
-                                          ],
-                                          num_concurrent_tasks=1,
-                                          output_stream=this_dm.stream,
-                                          progress_bar=True,
-                                        )
-                               
-            return dm.result or (1 if not (to_copy or to_remove) else 0)
+            if tasks:
+                # ----------------------------------------------------------------------
+                def Execute(task_index, task_output):
+                    try:
+                        source, dest = tasks[task_index]
+
+                        dest_dir = os.path.dirname(dest)
+                        if not os.path.isdir(dest_dir):
+                            os.makedirs(dest_dir)
+
+                        shutil.copy2(source, dest)
+
+                    except Exception as ex:
+                        task_output.write(str(ex))
+                        return -1
+
+                # ----------------------------------------------------------------------
+
+                with dm.stream.SingleLineDoneManager( "Copying {}...".format(inflect_engine.no("file", len(tasks))),
+                                                    ) as this_dm:
+                    this_dm.result = TaskPool.Execute( [ TaskPool.Task( "Copy '{}' to '{}'".format(source, dest),
+                                                                        "Copying '{}' to '{}'".format(source, dest),
+                                                                        Execute,
+                                                                      )
+                                                         for source, dest in tasks
+                                                       ],
+                                                       num_concurrent_tasks=1,
+                                                       output_stream=this_dm.stream,
+                                                       progress_bar=True,
+                                                     )
+
+                    if this_dm.result != 0:
+                        return this_dm.result
+
+                executed_work = True
+
+            # Remove files
+            remove_files = [ dfi.Name for dfi in work.get(None, []) ]
+            if remove_files:
+                # ----------------------------------------------------------------------
+                def Execute(task_index, task_output):
+                    try:
+                        value = remove_files[task_index]
+                        os.remove(value)
+
+                    except Exception as ex:
+                        task_output.write(str(ex))
+                        return -1
+
+                # ----------------------------------------------------------------------
+
+                with dm.stream.SingleLineDoneManager( "Removing {}...".format(inflect_engine.no("file", len(remove_files))),
+                                                    ) as this_dm:
+                    this_dm.result = TaskPool.Execute( [ TaskPool.Task( "Remove '{}'".format(filename),
+                                                                        "Removing '{}'".format(filename),
+                                                                        Execute,
+                                                                      )
+                                                         for filename in remove_files
+                                                       ],
+                                                       num_concurrent_tasks=1,
+                                                       output_stream=this_dm.stream,
+                                                       progress_bar=True,
+                                                     )
+
+                    if this_dm.result != 0:
+                        return this_dm.result
+
+                executed_work = True
+
+            if not executed_work:
+                dm.result = 1
+
+            return dm.result
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+class _FileInfo(object):
+    # ----------------------------------------------------------------------
+    def __init__( self, 
+                  name,
+                  size, 
+                  last_modified, 
+                  hash=None,
+                ):
+        self.Name                           = name
+        self.Size                           = size
+        self.LastModified                   = last_modified
+        self.Hash                           = hash
+
+    # ----------------------------------------------------------------------
+    def __hash__(self):
+        return hash(( self.Name, self.Size, self.LastModified, self.Hash, ))
+
+    # ----------------------------------------------------------------------
+    def __repr__(self):
+        return "{}, {}, {}, {}".format( self.Name,
+                                        self.Size, 
+                                        self.LastModified, 
+                                        self.Hash,
+                                      )
+
+    # ----------------------------------------------------------------------
+    def AreEqual(self, other, compare_hashes=True):
+        return ( self.Size == other.Size and
+                 abs(self.LastModified - other.LastModified) <= 0.00001 and
+                 (not compare_hashes or self.Hash == other.Hash)
+               )
+
+    # ----------------------------------------------------------------------
+    def __eq__(self, other):
+        return self.AreEqual(other)
+            
+    # ----------------------------------------------------------------------
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+def _CreatePickleFilename(backup_name, environment):
+    return environment.CreateDataFilename("{}.backup".format(backup_name))
+
+# ----------------------------------------------------------------------
+def _CreatePendingPickleFilename(pickle_filename):
+    return "{}.pending".format(pickle_filename)
+
 # ----------------------------------------------------------------------
 def _GetFileInfo( desc,
                   inputs,
@@ -428,10 +507,11 @@ def _GetFileInfo( desc,
                   excludes,
                   traverse_includes,
                   traverse_excludes,
+                  simple_compare,
                   output_stream,
                 ):
-    output_stream.write("Processing {}...".format(desc))
-    with StreamDecorator(output_stream).DoneManager() as dm:
+    output_stream.write("Processing '{}'...".format(desc))
+    with output_stream.DoneManager() as dm:
         input_files = []
 
         dm.stream.write("Processing content...")
@@ -445,16 +525,21 @@ def _GetFileInfo( desc,
                 elif os.path.isdir(i):
                     input_dirs.append(i)
                 else:
-                    assert False, i
+                    raise CommandLine.UsageException("'{}' is not a valid file or directory".format(i))
 
             if input_dirs:
-                file_dm.stream.write("Processing {}...".format(inflect_engine.no("directory", len(input_dirs))))
-                with file_dm.stream.DoneManager():
-                    for input_dir in input_dirs:
-                        input_files += FileSystem.WalkFiles( input_dir,
-                                                             traverse_include_dir_paths=traverse_includes,
-                                                             traverse_exclude_dir_paths=traverse_excludes,
-                                                           )
+                file_dm.stream.write("Processing Directories...")
+                with file_dm.stream.DoneManager() as dir_dm:
+                    for index, input_dir in enumerate(input_dirs):
+                        dir_dm.stream.write("'{}' ({} of {})...".format( input_dir,
+                                                                         index + 1,
+                                                                         len(input_dirs),
+                                                                       ))
+                        with dir_dm.stream.DoneManager():
+                            input_files += FileSystem.WalkFiles( input_dir,
+                                                                 traverse_include_dir_paths=traverse_includes,
+                                                                 traverse_exclude_dir_paths=traverse_excludes,
+                                                               )
 
         if includes or excludes:
             # ----------------------------------------------------------------------
@@ -470,13 +555,14 @@ def _GetFileInfo( desc,
                 return results
 
             # ----------------------------------------------------------------------
-        
+
             dm.stream.write("Filtering files...")
             with dm.stream.DoneManager( lambda: "{} to process".format(inflect_engine.no("file", len(input_files))),
                                       ):
+
                 if includes:
                     include_regexes = ToRegexes(includes)
-                    IncludeChecker = lambda input_file: Any(include_regexes, lambda regex: regex.match(input_files))
+                    IncludeChecker = lambda input_file: Any(include_regexes, lambda regex: regex.match(input_file))
                 else:
                     IncludeChecker = lambda input_file: True
 
@@ -494,160 +580,253 @@ def _GetFileInfo( desc,
 
                 input_files[:] = valid_files
 
-        # Hash each file
-        file_info = OrderedDict()
+        file_info = []
 
-        # ----------------------------------------------------------------------
-        def CalculateHash(filename):
-            md5 = hashlib.md5()
-
-            with open(filename, 'rb') as f:
-                while True:
-                    data = f.read(8192)
-                    if not data:
-                        break
-
-                    md5.update(data)
-
-                return md5.hexdigest()
-
-        # ----------------------------------------------------------------------
-        
         if input_files:
-            with dm.stream.SingleLineDoneManager( "Calculating hashes...",
+            with dm.stream.SingleLineDoneManager( "Calculating info...",
                                                 ) as this_dm:
-                for k, v in six.moves.zip( input_files,
-                                           TaskPool.Transform( input_files,
-                                                               CalculateHash,
-                                                               this_dm.stream,
-                                                             ),
-                                         ):
-                    file_info.setdefault(os.path.splitdrive(k)[0], OrderedDict())[k] = v
+                # ----------------------------------------------------------------------
+                def CalculateInfo(filename):
+                    return _FileInfo( filename,
+                                      os.path.getsize(filename),
+                                      os.path.getmtime(filename),
+                                    )
+
+                # ----------------------------------------------------------------------
+                def CalculateHash(filename):
+                    info = CalculateInfo(filename)
+
+                    sha = hashlib.sha224()
+
+                    with open(filename, 'rb') as f:
+                        while True:
+                            data = f.read(8192)
+                            if not data:
+                                break
+
+                            sha.update(data)
+
+                    info.Hash = sha.hexdigest()
+
+                    return info
+
+                # ----------------------------------------------------------------------
+
+                file_info += TaskPool.Transform( input_files,
+                                                 CalculateInfo if simple_compare else CalculateHash,
+                                                 this_dm.stream,
+                                               )
 
         return file_info
 
 # ----------------------------------------------------------------------
 def _CreateWork( source_file_info,
                  dest_file_info,
-                 destination,               # Can be None
+                 optional_local_destination_dir,
+                 simple_compare,
                  output_stream,
                  verbose,
                ):
-    to_copy = OrderedDict()
-    to_remove = []
+    """\
+    Returns a dict in the following format:
+
+        - Added files will have a key that is _FileInfo (source) and value that is the destination filename
+        - Modified files will have a key that is _FileInfo (source) and value that is _FileInfo (dest)
+        - Removed files will have a key that is None and a value that is a list of _FileInfo (dest)
+    """
+
+    results = OrderedDict()
 
     output_stream.write("Processing file information...")
-    with StreamDecorator(output_stream).DoneManager( done_suffix_functor=[ lambda: "{} to copy".format(inflect_engine.no("file", len(to_copy))),
-                                                                           lambda: "{} to remove".format(inflect_engine.no("file", len(to_remove))),
-                                                                         ],
-                                                     done_suffix='\n',
-                                                   ) as dm:
+    with output_stream.DoneManager( done_suffix='\n',
+                                  ) as dm:
         verbose_stream = StreamDecorator(dm.stream if verbose else None, "INFO: ")
 
-        # ----------------------------------------------------------------------
-        def CreatePathConversionFunctions(drive, items):
-            common_path = FileSystem.GetCommonPath(*items.keys())
-            if not common_path and len(items) == 1:
-                common_path = FileSystem.AddTrailingSep(os.path.dirname(next(six.iterkeys(items))))
+        added = 0
+        modified = 0
+        removed = 0
+        matched = 0
 
-            assert common_path
-                
-            # ----------------------------------------------------------------------
-            def CreateToDestFullPath():
-                if destination == None:
-                    return lambda filename: filename
+        source_map = { sfi.Name : sfi for sfi in source_file_info }
+        dest_map = { dfi.Name : dfi for dfi in dest_file_info }
 
-                common_path_len = len(common_path)
+        ToDest, FromDest = _CreateFilenameMappingFunctions(source_file_info, optional_local_destination_dir)
 
-                if len(source_file_info) == 1:
-                    return lambda filename: os.path.join(destination, filename[common_path_len:])
+        for sfi in six.itervalues(source_map):
+            dest_filename = ToDest(sfi.Name)
 
-                dest_drive_dir = drive.replace(':', '_')
-                
-                return lambda filename: os.path.join(destination, dest_drive_dir, filename[common_path_len:])
+            if dest_filename not in dest_map:
+                verbose_stream.write("[Add] '{}' does not exist.\n".format(sfi.Name))
 
-            # ----------------------------------------------------------------------
-            def CreateToSourceFullPath():
-                if destination == None:
-                    return lambda filename: filename
+                results[sfi] = dest_filename
+                added += 1
+            elif sfi.AreEqual(dest_map[dest_filename]):
+                matched += 1
+            else:
+                verbose_stream.write("[Modify] '{}' has changed.\n".format(sfi.Name))
 
-                destination_path_len = len(FileSystem.AddTrailingSep(destination))
+                results[sfi] = dest_map[dest_filename]
+                modified += 1
 
-                if len(source_file_info) == 1:
-                    drive_delta = 0
-                else:
-                    drive_delta = len(drive) + len(os.path.sep)
-
-                return lambda filename: os.path.join(common_path, filename[destination_path_len + drive_delta:])
-
-            # ----------------------------------------------------------------------
-
-            return CreateToDestFullPath(), CreateToSourceFullPath()
-
-        # ----------------------------------------------------------------------
-        
-        for drive, this_source_file_info in six.iteritems(source_file_info):
-            ToDestFullPath, ToSourceFullPath = CreatePathConversionFunctions(drive, this_source_file_info)
+        for dfi in six.itervalues(dest_map):
+            source_filename = FromDest(dfi.Name)
             
-            this_dest_file_info = dest_file_info.get(drive, {})
+            if source_filename not in source_map:
+                verbose_stream.write("[Remove] '{}' will be removed.\n".format(dfi.Name))
 
-            # Files to copy
-            for k, v in six.iteritems(this_source_file_info):
-                dest_filename = ToDestFullPath(k)
-                
-                copy = False
+                results.setdefault(None, []).append(dfi)
+                removed += 1
 
-                if dest_filename not in this_dest_file_info:
-                    verbose_stream.write("[Add] '{}' does not exist.\n".format(k))
-                    copy = True
-                elif this_dest_file_info[dest_filename] != v:
-                    verbose_stream.write("[Add] '{}' has changed.\n".format(k))
-                    copy = True
-                    
-                if copy:
-                    to_copy[k] = dest_filename
+        total = added + modified + removed + matched
 
-            # Files to remove
-            for k, v in six.iteritems(this_dest_file_info):
-                source_filename = ToSourceFullPath(k)
-                
-                if source_filename not in this_source_file_info:
-                    verbose_stream.write("[Remove] '{}' does not exist.\n".format(source_filename))
-                    to_remove.append(k)
+        dm.stream.write("- {0} to add ({1:.02f}%)\n".format( inflect_engine.no("file", added),
+                                                             0.0 if total == 0 else (float(added) / total) * 100,
+                                                           ))
 
-        for drive, this_dest_file_info in six.iteritems(dest_file_info):
-            if drive not in source_file_info:
-                for k in six.iterkeys(this_dest_file_info):
-                    source_filename = ToSourceFullPath(k)
-
-                    verbose_stream.write("[Remove] '{}' does not exist.\n".format(k))
-                    to_remove.append(k)
-
-        return to_copy, to_remove
-              
+        dm.stream.write("- {0} to modifiy ({1:.02f}%)\n".format( inflect_engine.no("file", modified),
+                                                                 0.0 if total == 0 else (float(modified) / total) * 100,
+                                                               ))
+        dm.stream.write("- {0} to remove ({1:.02f}%)\n".format( inflect_engine.no("file", removed),
+                                                                0.0 if total == 0 else (float(removed) / total) * 100,
+                                                              ))
+        dm.stream.write("- {0} matched ({1:.02f}%)\n".format( inflect_engine.no("file", matched),
+                                                              0.0 if total == 0 else (float(matched) / total) * 100,
+                                                            ))
+    
+    return results
+        
 # ----------------------------------------------------------------------
-def _Display(to_copy, to_remove, output_stream):
-    copy_header = "Source files to copy ({})".format(len(to_copy))
-    remove_header = "Destination files to remove ({})".format(len(to_remove))
+def _CreateFilenameMappingFunctions(source_file_info, optional_local_destination_dir):
+    if optional_local_destination_dir is None:
+        return lambda filename: filename, lambda filename: filename
 
-    output_stream.write(textwrap.dedent(
-        """\
-        {}
-        {}
-        {}
+    # ----------------------------------------------------------------------
+    def IsMultiDrive():
+        drive = None
 
-        {}
-        {}
-        {}
+        for file_info in source_file_info:
+            this_drive = os.path.splitdrive(file_info.Name)[0]
+            if this_drive != drive:
+                if drive is None:
+                    drive = this_drive
+                else:
+                    return True
 
-        """).format( copy_header,
-                     '-' * len(copy_header),
-                     '\n'.join([ "{0:<100} -> {1}".format(k, v) for k, v in six.iteritems(to_copy) ]),
-                     remove_header,
-                     '-' * len(remove_header),
-                     '\n'.join(to_remove),
-                   ))
-                                
+        return False
+
+    # ----------------------------------------------------------------------
+        
+    if IsMultiDrive():
+        # ----------------------------------------------------------------------
+        def ToDest(filename):
+            drive, suffix = os.path.splitdrive(filename)
+            drive = drive.replace(':', '_')
+
+            suffix = FileSystem.RemoveInitialSep(suffix)
+            
+            return os.path.join(optional_local_destination_dir, drive, suffix)
+
+        # ----------------------------------------------------------------------
+        def FromDest(filename):
+            assert filename.startswith(optional_local_destination_dir), (filename, optional_local_destination_dir)
+            filename = filename[len(optional_local_destination_dir):]
+            filename = FileSystem.RemoveInitialSep(filename)
+
+            parts = filename.split(os.path.sep)
+            parts[0] = parts[0].replace('_', ':')
+
+            return os.path.join(*parts)
+
+        # ----------------------------------------------------------------------
+
+    else:
+        if len(source_file_info) == 1:
+            common_path = os.path.dirname(source_file_info[0].Name)
+        else:
+            common_path = FileSystem.GetCommonPath(*[ sfi.Name for sfi in source_file_info ])
+            assert common_path
+
+        common_path = FileSystem.AddTrailingSep(common_path)
+
+        # ----------------------------------------------------------------------
+        def ToDest(filename):
+            assert filename.startswith(common_path), (filename, common_path)
+            filename = filename[len(common_path):]
+
+            return os.path.join(optional_local_destination_dir, filename)
+
+        # ----------------------------------------------------------------------
+        def FromDest(filename):
+            assert filename.startswith(optional_local_destination_dir), (filename, optional_local_destination_dir)
+            filename = filename[len(optional_local_destination_dir):]
+            filename = FileSystem.RemoveInitialSep(filename)
+
+            return os.path.join(common_path, filename)
+
+        # ----------------------------------------------------------------------
+
+    return ToDest, FromDest
+
+# ----------------------------------------------------------------------
+def _Display(work, output_stream, show_dest=False):
+    added = OrderedDict()
+    modified = OrderedDict()
+    removed = []
+
+    for sfi, dfi in six.iteritems(work):
+        if sfi is None:
+            continue
+
+        if isinstance(dfi, six.string_types):
+            added[sfi.Name] = dfi
+        else:
+            modified[sfi.Name] = dfi.Name
+
+    removed = [ item.Name for item in work.get(None, []) ]
+
+    if show_dest:
+        template = "    {source:<100} -> {dest}\n"
+    else:
+        template = "    {source}\n"
+
+    # ----------------------------------------------------------------------
+    def WriteHeader(header):
+        output_stream.write(textwrap.dedent(
+            """\
+            {}
+            {}
+            """).format( header,
+                         '-' * len(header),
+                       ))
+
+    # ----------------------------------------------------------------------
+
+    # Added
+    WriteHeader("Files to Add ({})".format(len(added)))
+    
+    for source, dest in six.iteritems(added):
+        output_stream.write(template.format( source=source,
+                                             dest=dest,
+                                           ))
+    output_stream.write("\n")
+
+    # Modified
+    WriteHeader("Files to Modify ({})".format(len(modified)))
+
+    for source, dest in six.iteritems(modified):
+        output_stream.write(template.format( source=source,
+                                             dest=dest,
+                                           ))
+    output_stream.write("\n")
+
+    # Removed
+    WriteHeader("Files to Remove ({})".format(len(removed)))
+
+    for item in removed:
+        output_stream.write("    {}\n".format(item))
+
+    output_stream.write("\n")
+
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------

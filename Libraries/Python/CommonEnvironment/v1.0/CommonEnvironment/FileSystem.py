@@ -312,6 +312,13 @@ def AddTrailingSep(path):
 
     return path
 
+# ----------------------------------------------------------------------
+def RemoveInitialSep(path):
+    if path.startswith(os.path.sep):
+        path = path[len(os.path.sep):]
+
+    return path
+
 # ---------------------------------------------------------------------------
 def Normalize(path):
     path = os.path.normpath(path)
