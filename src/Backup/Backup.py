@@ -151,32 +151,30 @@ def Offsite( backup_name,
                 return dm.result
 
             # Process the files to add
-            commands = []
-            data = []
-            
-            if use_links:
-                generate_command_func = lambda source, dest: environment.SymbolicLink(dest, source)
-            else:
-                generate_command_func = lambda source, dest: environment.CopyFile(source, dest)
+            to_copy = OrderedDict()
 
-            for sfi, dfi in six.iteritems(work):
-                if sfi is None:
-                    continue
-
-                if sfi.Hash not in dest_hashes:
-                    commands.append(generate_command_func(sfi.Name, os.path.join(output_dir, sfi.Hash)))
-                    dest_hashes.add(sfi.Hash)
-
-                data.append({ "filename" : sfi.Name,
-                              "hash" : sfi.Hash,
-                              "operation" : "add" if isinstance(dfi, six.string_types) else "modify",
-                            })
-
-            for dfi in work.get(None, []):
-                data.append({ "filename" : dfi.Name,
-                              "hash" : dfi.Hash,
-                              "operation" : "remove",
-                            })
+            dm.stream.write("Creating application data...")
+            with dm.stream.DoneManager():
+                data = []
+                
+                for sfi, dfi in six.iteritems(work):
+                    if sfi is None:
+                        continue
+                
+                    if sfi.Hash not in dest_hashes:
+                        to_copy[sfi.Name] = os.path.join(output_dir, sfi.Hash)
+                        dest_hashes.add(sfi.Hash)
+                
+                    data.append({ "filename" : sfi.Name,
+                                  "hash" : sfi.Hash,
+                                  "operation" : "add" if isinstance(dfi, six.string_types) else "modify",
+                                })
+                
+                for dfi in work.get(None, []):
+                    data.append({ "filename" : dfi.Name,
+                                  "hash" : dfi.Hash,
+                                  "operation" : "remove",
+                                })
 
             if not data:
                 dm.stream.write("No content to apply.\n")
@@ -193,16 +191,68 @@ def Offsite( backup_name,
 
                 os.makedirs(output_dir)
 
-                if commands:
-                    apply_dm.stream.write("Creating content...")
-                    with apply_dm.stream.DoneManager():
-                        apply_dm.result, output = environment.ExecuteCommands(commands)
-                        if apply_dm.result != 0:
-                            apply_dm.stream.write(output)
-                            return apply_dm.result
+                if to_copy:
+                    with apply_dm.stream.SingleLineDoneManager( "Copying content...",
+                                                              ) as copy_dm:
+                        if use_links:
+                            # Use task pool functionality for its progress bar
+                            batch_size = 1000
+                        
+                            batches = list(six.moves.range(0, len(commands), batch_size))
+                        
+                            # ----------------------------------------------------------------------
+                            def Execute(task_index, output_stream):
+                                index = batches[task_index]
+                                these_commands = commands[index:index + batch_size]
+                                
+                                result, output = environment.ExecuteCommands(these_commands)
+                                if result != 0:
+                                    output_stream.write(output)
+                                    
+                                return result
+                                
+                            # ----------------------------------------------------------------------
+                        
+                            tasks = [ TaskPool.Task( str(batch),
+                                                     str(batch),
+                                                     Execute,
+                                                   )
+                                      for batch in batches
+                                    ]
 
-                with open(os.path.join(output_dir, "data.json"), 'w') as f:
-                    json.dump(data, f)
+                        else:
+                            items = [ (k, v) for k, v in six.iteritems(to_copy) ]
+
+                            # ----------------------------------------------------------------------
+                            def Execute(task_index, on_status_update):
+                                
+                                source, dest = items[task_index]
+
+                                on_status_update(FileSystem.GetSizeDisplay(os.path.getsize(source)))
+                                shutil.copy2(source, dest)
+
+                            # ----------------------------------------------------------------------
+
+                            tasks = [ TaskPool.Task( source,
+                                                     "'{}' -> '{}'".format(source, dest),
+                                                     Execute,
+                                                   )
+                                      for source, dest in items
+                                    ]
+
+                        copy_dm.result = TaskPool.Execute( tasks,
+                                                           num_concurrent_tasks=1,
+                                                           output_stream=copy_dm.stream,
+                                                           progress_bar=True,
+                                                         )
+                                                           
+                        if copy_dm.result != 0:
+                            return copy_dm.result
+
+                apply_dm.stream.write("Writing 'data.json'...")
+                with apply_dm.stream.DoneManager():
+                    with open(os.path.join(output_dir, "data.json"), 'w') as f:
+                        json.dump(data, f)
 
             dm.stream.write("Writing pending data...")
             with dm.stream.DoneManager():
@@ -229,11 +279,14 @@ def Offsite( backup_name,
 
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint( backup_name=CommandLine.EntryPoint.ArgumentInfo("Name used to uniquely identify the backup"),
+                         backup_suffix=CommandLine.EntryPoint.ArgumentInfo("Suffix used when making a copy of the committed data; this can be helpful when archiving committed data"),
                        )
 @CommandLine.FunctionConstraints( backup_name=CommandLine.StringTypeInfo(),
+                                  backup_suffix=CommandLine.StringTypeInfo(arity='?'),
                                   output_stream=None,
                                 )
 def CommitOffsite( backup_name,
+                   backup_suffix=None,
                    output_stream=sys.stdout,
                    preserve_ansi_escape_sequences=False,
                  ):
@@ -261,6 +314,9 @@ def CommitOffsite( backup_name,
             else:
                 FileSystem.RemoveFile(pickle_filename)
                 shutil.move(pending_pickle_filename, pickle_filename)
+
+                if backup_suffix:
+                    shutil.copy2(pickle_filename, "{}.{}".format(pickle_filename, backup_suffix))
 
                 dm.stream.write("The pending data has been committed.\n")
 
@@ -535,10 +591,15 @@ def _GetFileInfo( desc,
                                                                          index + 1,
                                                                          len(input_dirs),
                                                                        ))
-                        with dir_dm.stream.DoneManager():
+                                                                       
+                        prev_len_input_files = len(input_files)
+                        
+                        with dir_dm.stream.DoneManager( done_suffix_functor=lambda: "{} found".format(inflect_engine.no("file", len(input_files) - prev_len_input_files)),
+                                                      ):
                             input_files += FileSystem.WalkFiles( input_dir,
-                                                                 traverse_include_dir_paths=traverse_includes,
-                                                                 traverse_exclude_dir_paths=traverse_excludes,
+                                                                 traverse_include_dir_names=traverse_includes,
+                                                                 traverse_exclude_dir_names=traverse_excludes,
+                                                                 include_generated=True,
                                                                )
 
         if includes or excludes:
@@ -548,7 +609,9 @@ def _GetFileInfo( desc,
 
                 for item in items:
                     try:
-                        results.append(re.compile(item))
+                        results.append(re.compile("^.*{sep}{expr}{sep}.*$".format( sep=re.escape(os.path.sep),
+                                                                                   expr=item,
+                                                                                 )))
                     except:
                         raise CommandLine.UsageException("'{}' is not a valid regular expression".format(item))
 
@@ -577,7 +640,7 @@ def _GetFileInfo( desc,
                 for input_file in input_files:
                     if not ExcludeChecker(input_file) and IncludeChecker(input_file):
                         valid_files.append(input_file)
-
+                        
                 input_files[:] = valid_files
 
         file_info = []
@@ -593,14 +656,15 @@ def _GetFileInfo( desc,
                                     )
 
                 # ----------------------------------------------------------------------
-                def CalculateHash(filename):
+                def CalculateHash(filename, on_status_update):
                     info = CalculateInfo(filename)
-
+                    on_status_update(FileSystem.GetSizeDisplay(info.Size))
+                    
                     sha = hashlib.sha224()
 
                     with open(filename, 'rb') as f:
                         while True:
-                            data = f.read(8192)
+                            data = f.read(65536)
                             if not data:
                                 break
 
@@ -615,6 +679,9 @@ def _GetFileInfo( desc,
                 file_info += TaskPool.Transform( input_files,
                                                  CalculateInfo if simple_compare else CalculateHash,
                                                  this_dm.stream,
+                                                 # Only run in 1 thread to prevent disk thrashing that results from trying to hash multiple files simultaneously
+                                                 num_concurrent_tasks=1,
+                                                 name_functor=lambda index, item: item,
                                                )
 
         return file_info
