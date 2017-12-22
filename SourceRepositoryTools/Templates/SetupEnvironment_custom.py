@@ -84,8 +84,8 @@ def Dependencies():
     #                                                 )
     #
     #       # Explicit configurations
-    #       return OrderedDict([ ( "Debug" : SourceRepositoryTools.Configuration(<See above>)) ),
-    #                            ( "Release" : SourceRepositoryTools.Configuration(<See above>) ),
+    #       return OrderedDict([ ( "Debug", SourceRepositoryTools.Configuration(<See above>)) ),
+    #                            ( "Release", SourceRepositoryTools.Configuration(<See above>) ),
     #                          ])
 
     # Note that it isn't necessary to include "CommonEnvironment" as an explicit dependency,

@@ -51,7 +51,7 @@ StreamDecorator.InitAnsiSequenceStreams()
 
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint( backup_name=CommandLine.EntryPoint.ArgumentInfo("Name used to uniquely identify the backup"),
-                         output_dir=CommandLine.EntryPoint.ArgumentInfo("Output directory that will contain the compressed file(s)"),
+                         output_dir=CommandLine.EntryPoint.ArgumentInfo("Output directory that will contain the file(s) that have been added/removed"),
                          input=CommandLine.EntryPoint.ArgumentInfo("One or more filenames or directories used to parse for input"),
                          force=CommandLine.EntryPoint.ArgumentInfo("Ignore previously saved information when calculating work to execute"),
                          use_links=CommandLine.EntryPoint.ArgumentInfo("Create symbolic links rather than copying files"),
@@ -750,9 +750,9 @@ def _CreateWork( source_file_info,
                                                              0.0 if total == 0 else (float(added) / total) * 100,
                                                            ))
 
-        dm.stream.write("- {0} to modifiy ({1:.02f}%)\n".format( inflect_engine.no("file", modified),
-                                                                 0.0 if total == 0 else (float(modified) / total) * 100,
-                                                               ))
+        dm.stream.write("- {0} to modify ({1:.02f}%)\n".format( inflect_engine.no("file", modified),
+                                                                0.0 if total == 0 else (float(modified) / total) * 100,
+                                                              ))
         dm.stream.write("- {0} to remove ({1:.02f}%)\n".format( inflect_engine.no("file", removed),
                                                                 0.0 if total == 0 else (float(removed) / total) * 100,
                                                               ))
