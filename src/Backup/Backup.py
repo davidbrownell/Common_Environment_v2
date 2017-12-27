@@ -31,8 +31,10 @@ import six
 from six.moves import cPickle as pickle
 
 from CommonEnvironment import Any
+from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CommandLine
 from CommonEnvironment import FileSystem
+from CommonEnvironment import Process
 from CommonEnvironment import Shell
 from CommonEnvironment.StreamDecorator import StreamDecorator
 from CommonEnvironment import TaskPool
@@ -55,6 +57,8 @@ StreamDecorator.InitAnsiSequenceStreams()
                          input=CommandLine.EntryPoint.ArgumentInfo("One or more filenames or directories used to parse for input"),
                          force=CommandLine.EntryPoint.ArgumentInfo("Ignore previously saved information when calculating work to execute"),
                          ssd=CommandLine.EntryPoint.ArgumentInfo("Leverage optimizations available if the source drive is a Solid-State Drive (SSD)"),
+                         compress=CommandLine.EntryPoint.ArgumentInfo("Compress the data"),
+                         encryption_password=CommandLine.EntryPoint.ArgumentInfo("Encrypt the data with this password"),
                          use_links=CommandLine.EntryPoint.ArgumentInfo("Create symbolic links rather than copying files"),
                          auto_commit=CommandLine.EntryPoint.ArgumentInfo("Invoke 'CommitOffsite' automatically"),
                          include=CommandLine.EntryPoint.ArgumentInfo("One or more regular expressions used to specify filenames to include"),
@@ -66,6 +70,7 @@ StreamDecorator.InitAnsiSequenceStreams()
 @CommandLine.FunctionConstraints( backup_name=CommandLine.StringTypeInfo(),
                                   output_dir=CommandLine.DirectoryTypeInfo(ensure_exists=False),
                                   input=CommandLine.FilenameTypeInfo(match_any=True, arity='+'),
+                                  encryption_password=CommandLine.StringTypeInfo(arity='?'),
                                   include=CommandLine.StringTypeInfo(arity='*'),
                                   exclude=CommandLine.StringTypeInfo(arity='*'),
                                   traverse_include=CommandLine.StringTypeInfo(arity='*'),
@@ -77,6 +82,8 @@ def Offsite( backup_name,
              input,
              force=False,
              ssd=False,
+             compress=False,
+             encryption_password=None,
              use_links=False,
              auto_commit=False,
              include=None,
@@ -92,6 +99,9 @@ def Offsite( backup_name,
     Prepares data to backup based on the result of previous invocations.
     """
     
+    if use_links and (compress or encryption_password):
+        raise CommandLine.UsageException("The 'use_links' option is not compatible with compression and/or encryption.")
+
     inputs = input; del input
     includes = include; del include
     excludes = exclude; del exclude
@@ -257,6 +267,60 @@ def Offsite( backup_name,
                     with open(os.path.join(output_dir, "data.json"), 'w') as f:
                         json.dump(data, f)
 
+            if compress or encryption_password:
+                # Compress and/or encrypt using 7zip
+                if compress and encryption_password:
+                    description = "Compressing and Encrypting data..."
+                    compression_level = 9
+                    encryption_arg = ' "-p{}"'.format(encryption_password)
+                elif compress:
+                    description = "Compressing data..."
+                    compression_level = 9
+                    encryption_arg = ''
+                elif encryption_password:
+                    description = "Encrypting data..."
+                    compression_level = 0
+                    encryption_arg = ' "-p{}"'.format(encryption_password)
+                else:
+                    assert False
+
+                dm.stream.write(description)
+                with dm.stream.DoneManager( done_suffix='\n',
+                                          ) as zip_dm:
+                    temp_dir = output_dir + ".tmp"
+                    FileSystem.RemoveTree(temp_dir)
+                    os.makedirs(temp_dir)
+
+                    zip_dm.stream.write("Creating instructions...")
+                    with zip_dm.stream.DoneManager():
+                        filenames_filename = environment.CreateTempFilename()
+
+                        with open(filenames_filename, 'w') as f:
+                            f.write("{}\n".format(os.path.join(output_dir, "data.json")))
+                            f.write('\n'.join(six.itervalues(to_copy)))
+
+                    with CallOnExit(lambda: FileSystem.RemoveFile(filenames_filename)):
+                        zip_dm.stream.write("Executing...")
+                        with zip_dm.stream.DoneManager( done_suffix='\n',
+                                                      ) as this_dm:
+                            command_line = '7z a -t7z "{output}" -mx{compression_level} -v{chunk_size}b -scsWIN -ssw{encryption_arg} -y "@{filenames_filename}"' \
+                                                .format( output=os.path.join(temp_dir, "Backup.7z"),
+                                                         compression_level=compression_level,
+                                                         chunk_size=250 * 1024 * 1024, # MB
+                                                         encryption_arg=encryption_arg,
+                                                         filenames_filename=filenames_filename,
+                                                       )
+
+                            this_dm.result = Process.Execute(command_line, this_dm.stream)
+                            if this_dm.result != 0:
+                                return this_dm.result
+
+                    # Swap the output_dir and the temp_dir
+                    zip_dm.stream.write("Removing original content...")
+                    with zip_dm.stream.DoneManager():
+                        FileSystem.RemoveTree(output_dir)
+                        shutil.move(temp_dir, output_dir)
+
             dm.stream.write("Writing pending data...")
             with dm.stream.DoneManager():
                 pending_pickle_filename = _CreatePendingPickleFilename(pickle_filename)
@@ -345,6 +409,8 @@ def OffsiteRestore( source_dir,
     """\
     Restores content created by previously created Offsite Backups
     """
+
+    # TODO: Add support for decryption/decompression
 
     dir_substitutions = dir_substitution; del dir_substitution
 
