@@ -17,7 +17,6 @@ Processes files for offsite or mirrored backup.
 """
 
 import hashlib
-import itertools
 import json
 import os
 import re
@@ -31,7 +30,7 @@ import inflect
 import six
 from six.moves import cPickle as pickle
 
-from CommonEnvironment import Any, ModifiableValue
+from CommonEnvironment import Any
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CommandLine
 from CommonEnvironment import FileSystem
@@ -49,11 +48,17 @@ inflect_engine                              = inflect.engine()
 
 StreamDecorator.InitAnsiSequenceStreams()
 
+# <Too many braches> pylint: disable = R0912
+# <Too many local variables> pylint: disable = R0914
+
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint( backup_name=CommandLine.EntryPoint.ArgumentInfo("Name used to uniquely identify the backup"),
                          output_dir=CommandLine.EntryPoint.ArgumentInfo("Output directory that will contain the file(s) that have been added/removed"),
                          input=CommandLine.EntryPoint.ArgumentInfo("One or more filenames or directories used to parse for input"),
                          force=CommandLine.EntryPoint.ArgumentInfo("Ignore previously saved information when calculating work to execute"),
+                         ssd=CommandLine.EntryPoint.ArgumentInfo("Leverage optimizations available if the source drive is a Solid-State Drive (SSD)"),
+                         compress=CommandLine.EntryPoint.ArgumentInfo("Compress the data"),
+                         encryption_password=CommandLine.EntryPoint.ArgumentInfo("Encrypt the data with this password"),
                          use_links=CommandLine.EntryPoint.ArgumentInfo("Create symbolic links rather than copying files"),
                          auto_commit=CommandLine.EntryPoint.ArgumentInfo("Invoke 'CommitOffsite' automatically"),
                          include=CommandLine.EntryPoint.ArgumentInfo("One or more regular expressions used to specify filenames to include"),
@@ -65,6 +70,7 @@ StreamDecorator.InitAnsiSequenceStreams()
 @CommandLine.FunctionConstraints( backup_name=CommandLine.StringTypeInfo(),
                                   output_dir=CommandLine.DirectoryTypeInfo(ensure_exists=False),
                                   input=CommandLine.FilenameTypeInfo(match_any=True, arity='+'),
+                                  encryption_password=CommandLine.StringTypeInfo(arity='?'),
                                   include=CommandLine.StringTypeInfo(arity='*'),
                                   exclude=CommandLine.StringTypeInfo(arity='*'),
                                   traverse_include=CommandLine.StringTypeInfo(arity='*'),
@@ -75,6 +81,9 @@ def Offsite( backup_name,
              output_dir,
              input,
              force=False,
+             ssd=False,
+             compress=False,
+             encryption_password=None,
              use_links=False,
              auto_commit=False,
              include=None,
@@ -90,6 +99,9 @@ def Offsite( backup_name,
     Prepares data to backup based on the result of previous invocations.
     """
     
+    if use_links and (compress or encryption_password):
+        raise CommandLine.UsageException("The 'use_links' option is not compatible with compression and/or encryption.")
+
     inputs = input; del input
     includes = include; del include
     excludes = exclude; del exclude
@@ -116,6 +128,7 @@ def Offsite( backup_name,
                                              traverse_excludes,
                                              False,     # simple_compare
                                              dm.stream,
+                                             ssd=ssd,
                                            )
 
             dm.stream.write('\n')
@@ -198,12 +211,12 @@ def Offsite( backup_name,
                             # Use task pool functionality for its progress bar
                             batch_size = 1000
                         
-                            batches = list(six.moves.range(0, len(commands), batch_size))
+                            batches = list(six.moves.range(0, len(to_copy), batch_size))
                         
                             # ----------------------------------------------------------------------
                             def Execute(task_index, output_stream):
                                 index = batches[task_index]
-                                these_commands = commands[index:index + batch_size]
+                                these_commands = to_copy[index:index + batch_size]
                                 
                                 result, output = environment.ExecuteCommands(these_commands)
                                 if result != 0:
@@ -241,7 +254,7 @@ def Offsite( backup_name,
                                     ]
 
                         copy_dm.result = TaskPool.Execute( tasks,
-                                                           num_concurrent_tasks=1,
+                                                           num_concurrent_tasks=None if ssd else 1,
                                                            output_stream=copy_dm.stream,
                                                            progress_bar=True,
                                                          )
@@ -253,6 +266,60 @@ def Offsite( backup_name,
                 with apply_dm.stream.DoneManager():
                     with open(os.path.join(output_dir, "data.json"), 'w') as f:
                         json.dump(data, f)
+
+            if compress or encryption_password:
+                # Compress and/or encrypt using 7zip
+                if compress and encryption_password:
+                    description = "Compressing and Encrypting data..."
+                    compression_level = 9
+                    encryption_arg = ' "-p{}"'.format(encryption_password)
+                elif compress:
+                    description = "Compressing data..."
+                    compression_level = 9
+                    encryption_arg = ''
+                elif encryption_password:
+                    description = "Encrypting data..."
+                    compression_level = 0
+                    encryption_arg = ' "-p{}"'.format(encryption_password)
+                else:
+                    assert False
+
+                dm.stream.write(description)
+                with dm.stream.DoneManager( done_suffix='\n',
+                                          ) as zip_dm:
+                    temp_dir = output_dir + ".tmp"
+                    FileSystem.RemoveTree(temp_dir)
+                    os.makedirs(temp_dir)
+
+                    zip_dm.stream.write("Creating instructions...")
+                    with zip_dm.stream.DoneManager():
+                        filenames_filename = environment.CreateTempFilename()
+
+                        with open(filenames_filename, 'w') as f:
+                            f.write("{}\n".format(os.path.join(output_dir, "data.json")))
+                            f.write('\n'.join(six.itervalues(to_copy)))
+
+                    with CallOnExit(lambda: FileSystem.RemoveFile(filenames_filename)):
+                        zip_dm.stream.write("Executing...")
+                        with zip_dm.stream.DoneManager( done_suffix='\n',
+                                                      ) as this_dm:
+                            command_line = '7z a -t7z "{output}" -mx{compression_level} -v{chunk_size}b -scsWIN -ssw{encryption_arg} -y "@{filenames_filename}"' \
+                                                .format( output=os.path.join(temp_dir, "Backup.7z"),
+                                                         compression_level=compression_level,
+                                                         chunk_size=250 * 1024 * 1024, # MB
+                                                         encryption_arg=encryption_arg,
+                                                         filenames_filename=filenames_filename,
+                                                       )
+
+                            this_dm.result = Process.Execute(command_line, this_dm.stream)
+                            if this_dm.result != 0:
+                                return this_dm.result
+
+                    # Swap the output_dir and the temp_dir
+                    zip_dm.stream.write("Removing original content...")
+                    with zip_dm.stream.DoneManager():
+                        FileSystem.RemoveTree(output_dir)
+                        shutil.move(temp_dir, output_dir)
 
             dm.stream.write("Writing pending data...")
             with dm.stream.DoneManager():
@@ -323,6 +390,194 @@ def CommitOffsite( backup_name,
             return dm.result
 
 # ----------------------------------------------------------------------
+@CommandLine.EntryPoint( source_dir=CommandLine.EntryPoint.ArgumentInfo("Directory that contains all offsite backup output, each iteration stored in a subdirectory"),
+                         dir_substitution=CommandLine.EntryPoint.ArgumentInfo("Destination substitutions to perform if the data to be restored should be restored at a location different from when it was backed up"),
+                         display_only=CommandLine.EntryPoint.ArgumentInfo("Display the operations that would be taken but does not perform them"),
+                         ssd=CommandLine.EntryPoint.ArgumentInfo("Leverage optimizations available if the source drive is a Solid-State Drive (SSD)"), 
+                       )
+@CommandLine.FunctionConstraints( source_dir=CommandLine.DirectoryTypeInfo(),
+                                  dir_substitution=CommandLine.DictTypeInfo(require_exact_match=False, arity='?'),
+                                  output_stream=None,
+                                )
+def OffsiteRestore( source_dir,
+                    dir_substitution={},
+                    display_only=False,
+                    ssd=False,
+                    output_stream=sys.stdout,
+                    preserve_ansi_escape_sequences=False,
+                  ):
+    """\
+    Restores content created by previously created Offsite Backups
+    """
+
+    # TODO: Add support for decryption/decompression
+
+    dir_substitutions = dir_substitution; del dir_substitution
+
+    with StreamDecorator.GenerateAnsiSequenceStream( output_stream,
+                                                     preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
+                                                   ) as output_stream:
+        with output_stream.DoneManager( line_prefix='',
+                                        done_prefix="\nResults: ",
+                                        done_suffix='\n',
+                                      ) as dm:
+            # Get the dirs
+            dirs = []
+
+            for item in os.listdir(source_dir):
+                fullpath = os.path.join(source_dir, item)
+                if not os.path.isdir(fullpath):
+                    continue
+
+                # In most cases, the files will be children of this subdir. However,
+                # when I initially uploaded the content, I did so mistakenly with a
+                # single subdir under the expected dir. Check for this scenario and 
+                # drill in if necessary.
+                while True:
+                    if not os.path.isfile(os.path.join(fullpath, "data.json")):
+                        children = list(os.listdir(fullpath))
+
+                        if len(children) == 1 and os.path.isdir(children[0]):
+                            fullpath = children[0]
+                            continue
+
+                    break
+
+                dirs.append(fullpath)
+
+            # Get the file data
+            file_data = OrderedDict()
+            hashed_filenames = {}
+
+            dm.stream.write("Reading file data from {}...".format(inflect_engine.no("directory", len(dirs))))
+            with dm.stream.DoneManager( done_suffix='\n',
+                                      ) as dir_dm:
+                for index, dir in enumerate(dirs):
+                    dir_dm.stream.write("'{}' ({} of {})...".format( dir,
+                                                                     index + 1,
+                                                                     len(dirs),
+                                                                   ))
+                    with dir_dm.stream.DoneManager() as this_dir_dm:
+                        data_filename = os.path.join(dir, "data.json")
+                        if not os.path.isfile(data_filename):
+                            this_dir_dm.stream.write("INFO: The file 'data.json' was not found in the dir '{}'.\n".format(dir))
+                            this_dir_dm.result = 1
+
+                            continue
+
+                        try:
+                            with open(data_filename) as f:
+                                data = json.load(f)
+                        except:
+                            this_dir_dm.stream.write("ERROR: The data in '{}' is corrupt.\n".format(data_filename))
+                            this_dir_dm.result = -1
+
+                            continue
+
+                        for file_info_index, file_info in enumerate(data):
+                            operation = file_info["operation"]
+
+                            if operation not in [ "add", "modify", "remove", ]:
+                                this_dir_dm.stream.write("ERROR: The file info operation '{}' is not valid (Index: {}).\n".format(file_info["operation"], file_info_index))
+                                this_dir_dm.result = -1
+
+                                continue
+
+                            filename = file_info["filename"]
+
+                            # Check if the data is in the expected state
+                            if operation == "add":
+                                if filename in file_data:
+                                    this_dir_dm.stream.write("ERROR: Information for the file '{}' has already been added and cannot be added again (Index: {}).\n".format(filename, file_info_index))
+                                    this_dir_dm.result = -1
+
+                                    continue
+                            elif operation in [ "modify", "remove", ]:
+                                if filename not in file_data:
+                                    this_dir_dm.stream.write("ERROR: Information for the file '{}' was not previously provided (Index: {}).\n".format(filename, file_info_index))
+                                    this_dir_dm.result = -1
+
+                                    continue
+
+                            # Add or remove the data
+                            if operation in [ "add", "modify", ]:
+                                hash = file_info["hash"]
+                                if hash not in hashed_filenames:
+                                    hashed_filename = os.path.join(dir, file_info["hash"])
+                                    if not os.path.isfile(hashed_filename):
+                                        this_dir_dm.stream.write("ERROR: Contents for the file '{}' were not found at '{}' (Index: {}).\n".format( filename,
+                                                                                                                                                   hashed_filename,
+                                                                                                                                                   file_info_index,
+                                                                                                                                                 ))
+                                        this_dir_dm.result = -1
+
+                                        continue
+
+                                    hashed_filenames[hash] = hashed_filename
+
+                                file_data[filename] = hashed_filenames[hash]
+                            
+                            elif file_info["operation"] == "remove":
+                                del file_data[filename]
+
+            keys = sorted(six.iterkeys(file_data))
+
+            # Perform destination substitutions (if necessary)
+            if dir_substitutions:
+                for key in keys:
+                    for k, v in six.iteritems(dir_substitutions):
+                        new_key = key.replace(k, v)
+
+                        file_data[new_key] = file_data[key]
+                        del file_data[key]
+
+                keys = sorted(six.iterkeys(file_data))
+
+            if display_only:
+                dm.stream.write("{} to restore...\n\n".format(inflect_engine.no("file", len(keys))))
+
+                for key in keys:
+                    dm.stream.write("  - {0:<120} <- {1}\n".format(key, file_data[key]))
+                
+                return dm.result
+
+            with dm.stream.SingleLineDoneManager( "Copying files...",
+                                                ) as copy_dm:
+                # ----------------------------------------------------------------------
+                def Execute(task_index, on_status_update):
+                    dest = keys[task_index]
+                    source = file_data[dest]
+
+                    on_status_update(FileSystem.GetSizeDisplay(os.path.getsize(source)))
+
+                    dest_dir = os.path.dirname(dest)
+                    if not os.path.isdir(dest_dir):
+                        try:
+                            os.makedirs(dest_dir)
+                        except:
+                            # This can happen when attempting to create the dir from
+                            # multiple threads simultaneously. If the error is something
+                            # else, the copy statement below will raise an exception.
+                            pass 
+
+                    shutil.copy2(source, dest)
+
+                # ----------------------------------------------------------------------
+
+                copy_dm.result = TaskPool.Execute( [ TaskPool.Task( key,
+                                                                    "'{}' -> '{}'".format(file_data[key], key),
+                                                                    Execute,
+                                                                  )
+                                                     for key in keys 
+                                                   ],
+                                                   output_stream=copy_dm.stream,
+                                                   progress_bar=True,
+                                                   num_concurrent_tasks=None if ssd else 1,
+                                                 )
+
+            return dm.result
+
+# ----------------------------------------------------------------------
 @CommandLine.EntryPoint( destination=CommandLine.EntryPoint.ArgumentInfo("Destination directory"),
                          input=CommandLine.EntryPoint.ArgumentInfo("One or more filenames or directories used to parse for input"),
                          force=CommandLine.EntryPoint.ArgumentInfo("Ignore information in the destination when calculating work to execute"),
@@ -381,6 +636,7 @@ def Mirror( destination,
                                              traverse_excludes,
                                              simple_compare,
                                              dm.stream,
+                                             ssd=False,
                                            )
             dm.stream.write("\n")
         
@@ -393,6 +649,7 @@ def Mirror( destination,
                                                None,
                                                simple_compare,
                                                dm.stream,
+                                               ssd=False,
                                              )
         
                 dm.stream.write("\n")
@@ -455,7 +712,7 @@ def Mirror( destination,
                                                                       )
                                                          for source, dest in tasks
                                                        ],
-                                                       num_concurrent_tasks=1,
+                                                       num_concurrent_tasks=1,          # Never run this in parallel, as we don't have enough information about both the source and the dest
                                                        output_stream=this_dm.stream,
                                                        progress_bar=True,
                                                      )
@@ -488,7 +745,7 @@ def Mirror( destination,
                                                                       )
                                                          for filename in remove_files
                                                        ],
-                                                       num_concurrent_tasks=1,
+                                                       num_concurrent_tasks=1,          # Never run this in parallel, as we don't have enough information about both the source and the dest
                                                        output_stream=this_dm.stream,
                                                        progress_bar=True,
                                                      )
@@ -565,6 +822,7 @@ def _GetFileInfo( desc,
                   traverse_excludes,
                   simple_compare,
                   output_stream,
+                  ssd,
                 ):
     output_stream.write("Processing '{}'...".format(desc))
     with output_stream.DoneManager() as dm:
@@ -679,8 +937,7 @@ def _GetFileInfo( desc,
                 file_info += TaskPool.Transform( input_files,
                                                  CalculateInfo if simple_compare else CalculateHash,
                                                  this_dm.stream,
-                                                 # Only run in 1 thread to prevent disk thrashing that results from trying to hash multiple files simultaneously
-                                                 num_concurrent_tasks=1,
+                                                 num_concurrent_tasks=None if ssd else 1,
                                                  name_functor=lambda index, item: item,
                                                )
 
@@ -727,7 +984,7 @@ def _CreateWork( source_file_info,
 
                 results[sfi] = dest_filename
                 added += 1
-            elif sfi.AreEqual(dest_map[dest_filename]):
+            elif sfi.AreEqual(dest_map[dest_filename], compare_hashes=not simple_compare):
                 matched += 1
             else:
                 verbose_stream.write("[Modify] '{}' has changed.\n".format(sfi.Name))

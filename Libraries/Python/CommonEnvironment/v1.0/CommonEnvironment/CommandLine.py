@@ -803,7 +803,7 @@ class Executor(object):
                 verbose.append(verbose_template.format( name=param.name,
                                                         type="switch" if param.is_switch else "Dictionary" if isinstance(param.type_info, DictTypeInfo) else param.type_info.Desc,
                                                         arity=param.display_arity,
-                                                        default=default_value,
+                                                        default=str(default_value),
                                                         desc=StreamDecorator.LeftJustify( '\n'.join(textwrap.wrap(param.description, 100)),
                                                                                           verbose_desc_offset + 4,
                                                                                         ),
