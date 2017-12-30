@@ -166,7 +166,7 @@ def Offsite( backup_name,
             # Process the files to add
             to_copy = OrderedDict()
 
-            dm.stream.write("Creating application data...")
+            dm.stream.write("Creating Application Data...")
             with dm.stream.DoneManager():
                 data = []
                 
@@ -195,17 +195,17 @@ def Offsite( backup_name,
 
                 return dm.result
 
-            dm.stream.write("Applying content...")
+            dm.stream.write("Applying Content...")
             with dm.stream.DoneManager( done_suffix='\n',
                                       ) as apply_dm:
-                apply_dm.stream.write("Cleaning previous content...")
+                apply_dm.stream.write("Cleaning Previous Content...")
                 with apply_dm.stream.DoneManager():
                     FileSystem.RemoveTree(output_dir)
 
                 os.makedirs(output_dir)
 
                 if to_copy:
-                    with apply_dm.stream.SingleLineDoneManager( "Copying content...",
+                    with apply_dm.stream.SingleLineDoneManager( "Copying Content...",
                                                               ) as copy_dm:
                         if use_links:
                             # Use task pool functionality for its progress bar
@@ -291,7 +291,7 @@ def Offsite( backup_name,
                     FileSystem.RemoveTree(temp_dir)
                     os.makedirs(temp_dir)
 
-                    zip_dm.stream.write("Creating instructions...")
+                    zip_dm.stream.write("Creating Instructions...")
                     with zip_dm.stream.DoneManager():
                         filenames_filename = environment.CreateTempFilename()
 
@@ -316,12 +316,12 @@ def Offsite( backup_name,
                                 return this_dm.result
 
                     # Swap the output_dir and the temp_dir
-                    zip_dm.stream.write("Removing original content...")
+                    zip_dm.stream.write("Removing Original Content...")
                     with zip_dm.stream.DoneManager():
                         FileSystem.RemoveTree(output_dir)
                         shutil.move(temp_dir, output_dir)
 
-            dm.stream.write("Writing pending data...")
+            dm.stream.write("Writing Pending Data...")
             with dm.stream.DoneManager():
                 pending_pickle_filename = _CreatePendingPickleFilename(pickle_filename)
 
@@ -449,7 +449,7 @@ def OffsiteRestore( source_dir,
             file_data = OrderedDict()
             hashed_filenames = {}
 
-            dm.stream.write("Reading file data from {}...".format(inflect_engine.no("directory", len(dirs))))
+            dm.stream.write("Reading File Data from {}...".format(inflect_engine.no("directory", len(dirs))))
             with dm.stream.DoneManager( done_suffix='\n',
                                       ) as dir_dm:
                 for index, dir in enumerate(dirs):
@@ -541,7 +541,7 @@ def OffsiteRestore( source_dir,
                 
                 return dm.result
 
-            with dm.stream.SingleLineDoneManager( "Copying files...",
+            with dm.stream.SingleLineDoneManager( "Copying Files...",
                                                 ) as copy_dm:
                 # ----------------------------------------------------------------------
                 def Execute(task_index, on_status_update):
@@ -828,7 +828,7 @@ def _GetFileInfo( desc,
     with output_stream.DoneManager() as dm:
         input_files = []
 
-        dm.stream.write("Processing content...")
+        dm.stream.write("Processing Content...")
         with dm.stream.DoneManager( done_suffix_functor=lambda: "{} found".format(inflect_engine.no("file", len(input_files))),
                                   ) as file_dm:
             input_dirs = []
@@ -877,7 +877,7 @@ def _GetFileInfo( desc,
 
             # ----------------------------------------------------------------------
 
-            dm.stream.write("Filtering files...")
+            dm.stream.write("Filtering Files...")
             with dm.stream.DoneManager( lambda: "{} to process".format(inflect_engine.no("file", len(input_files))),
                                       ):
 
@@ -904,7 +904,7 @@ def _GetFileInfo( desc,
         file_info = []
 
         if input_files:
-            with dm.stream.SingleLineDoneManager( "Calculating info...",
+            with dm.stream.SingleLineDoneManager( "Calculating Info...",
                                                 ) as this_dm:
                 # ----------------------------------------------------------------------
                 def CalculateInfo(filename):
@@ -961,7 +961,7 @@ def _CreateWork( source_file_info,
 
     results = OrderedDict()
 
-    output_stream.write("Processing file information...")
+    output_stream.write("Processing File Information...")
     with output_stream.DoneManager( done_suffix='\n',
                                   ) as dm:
         verbose_stream = StreamDecorator(dm.stream if verbose else None, "INFO: ")
