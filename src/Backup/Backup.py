@@ -46,6 +46,8 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 
 inflect_engine                              = inflect.engine()
 
+OFFSITE_BACKUP_FILENAME                     = "Backup.7z"
+
 StreamDecorator.InitAnsiSequenceStreams()
 
 # <Too many braches> pylint: disable = R0912
@@ -314,7 +316,7 @@ def Offsite( backup_name,
                         with zip_dm.stream.DoneManager( done_suffix='\n',
                                                       ) as this_dm:
                             command_line = '7z a -t7z "{output}" -mx{compression_level} -v{chunk_size}b -scsWIN -ssw{encryption_arg} -y "@{filenames_filename}"' \
-                                                .format( output=os.path.join(temp_dir, "Backup.7z"),
+                                                .format( output=os.path.join(temp_dir, OFFSITE_BACKUP_FILENAME),
                                                          compression_level=compression_level,
                                                          chunk_size=250 * 1024 * 1024, # MB
                                                          encryption_arg=encryption_arg,
@@ -406,15 +408,18 @@ def CommitOffsite( backup_name,
 
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint( source_dir=CommandLine.EntryPoint.ArgumentInfo("Directory that contains all offsite backup output, each iteration stored in a subdirectory"),
+                         encryption_password=CommandLine.EntryPoint.ArgumentInfo("Decrypt the data with this password"),
                          dir_substitution=CommandLine.EntryPoint.ArgumentInfo("Destination substitutions to perform if the data to be restored should be restored at a location different from when it was backed up"),
                          display_only=CommandLine.EntryPoint.ArgumentInfo("Display the operations that would be taken but does not perform them"),
                          ssd=CommandLine.EntryPoint.ArgumentInfo("Leverage optimizations available if the source drive is a Solid-State Drive (SSD)"), 
                        )
 @CommandLine.FunctionConstraints( source_dir=CommandLine.DirectoryTypeInfo(),
+                                  encryption_password=CommandLine.StringTypeInfo(arity='?'),
                                   dir_substitution=CommandLine.DictTypeInfo(require_exact_match=False, arity='?'),
                                   output_stream=None,
                                 )
 def OffsiteRestore( source_dir,
+                    encryption_password=None,
                     dir_substitution={},
                     display_only=False,
                     ssd=False,
@@ -424,8 +429,6 @@ def OffsiteRestore( source_dir,
     """\
     Restores content created by previously created Offsite Backups
     """
-
-    # TODO: Add support for decryption/decompression
 
     dir_substitutions = dir_substitution; del dir_substitution
 
@@ -463,10 +466,46 @@ def OffsiteRestore( source_dir,
                     with dir_dm.stream.DoneManager() as this_dir_dm:
                         data_filename = os.path.join(dir, "data.json")
                         if not os.path.isfile(data_filename):
-                            this_dir_dm.stream.write("INFO: The file 'data.json' was not found in the dir '{}'.\n".format(dir))
-                            this_dir_dm.result = 1
+                            # See if there is compressed data to decompress
+                            for zipped_ext in [ '', ".001", ]:
+                                potential_filename = os.path.join(dir, "{}{}".format(OFFSITE_BACKUP_FILENAME, zipped_ext))
+                                if not os.path.isfile(potential_filename):
+                                    continue
 
-                            continue
+                                # Extract the data
+                                temp_dir = dir + ".tmp"
+                                
+                                FileSystem.RemoveTree(temp_dir)
+                                os.makedirs(temp_dir)
+
+                                this_dir_dm.stream.write("Decompressing data...")
+                                with this_dir_dm.stream.DoneManager( done_suffix='\n',
+                                                                   ) as decompress_dm:
+                                    command_line = '7z e -y "-o{dir}"{password} "{input}"' \
+                                                        .format( dir=temp_dir,
+                                                                 input=potential_filename,
+                                                                 password=' "-p{}"'.fomrat(encryption_password) if encryption_password else '',
+                                                               )
+
+                                    decompress_dm.result = Process.Execute(command_line, decompress_dm.stream)
+                                    if decompress_dm.result != 0:
+                                        return decompress_dm.result
+
+                                this_dir_dm.stream.write("Removing original data...")
+                                with this_dir_dm.stream.DoneManager():
+                                    FileSystem.RemoveTree(dir)
+
+                                this_dir_dm.stream.write("Restoring compressed data...")
+                                with this_dir_dm.stream.DoneManager():
+                                    shutil.move(temp_dir, dir)
+
+                                break
+                                
+                            if not os.path.isfile(data_filename):
+                                this_dir_dm.stream.write("INFO: The file 'data.json' was not found in the dir '{}'.\n".format(dir))
+                                this_dir_dm.result = 1
+
+                                continue
 
                         try:
                             with open(data_filename) as f:
@@ -540,7 +579,7 @@ def OffsiteRestore( source_dir,
                 dm.stream.write("{} to restore...\n\n".format(inflect_engine.no("file", len(keys))))
 
                 for key in keys:
-                    dm.stream.write("  - {0:<120} <- {1}\n".format(key, file_data[key]))
+                    dm.stream.write("  - {0:<100} <- {1}\n".format(key, file_data[key]))
                 
                 return dm.result
 
