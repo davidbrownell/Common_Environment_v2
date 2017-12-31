@@ -207,6 +207,13 @@ def Offsite( backup_name,
 
                 os.makedirs(output_dir)
 
+                apply_dm.stream.write("Writing 'data.json'...")
+                with apply_dm.stream.DoneManager():
+                    with open(os.path.join(output_dir, "data.json"), 'w') as f:
+                        json.dump(data, f)
+
+                del data # Save memory
+
                 if to_copy:
                     with apply_dm.stream.SingleLineDoneManager( "Copying Content...",
                                                               ) as copy_dm:
@@ -266,10 +273,7 @@ def Offsite( backup_name,
                         if copy_dm.result != 0:
                             return copy_dm.result
 
-                apply_dm.stream.write("Writing 'data.json'...")
-                with apply_dm.stream.DoneManager():
-                    with open(os.path.join(output_dir, "data.json"), 'w') as f:
-                        json.dump(data, f)
+                del to_copy # Save memory
 
             if compress or encryption_password:
                 # Compress and/or encrypt using 7zip
