@@ -66,6 +66,7 @@ StreamDecorator.InitAnsiSequenceStreams()
                          traverse_include=CommandLine.EntryPoint.ArgumentInfo("One or more regular expressions used to specify directory names to include while parsing"),
                          traverse_exclude=CommandLine.EntryPoint.ArgumentInfo("One or more regular expressions used to specify directory names to exclude while parsing"),
                          display_only=CommandLine.EntryPoint.ArgumentInfo("Display the operations that would be taken but does not perform them"),
+                         working_dir=CommandLine.EntryPoint.ArgumentInfo("Specify a custom working directory; use this option if space on the drive associated with 'output_dir' is limited and another drive is available"),
                          disable_progress_status=CommandLine.EntryPoint.ArgumentInfo("Do not display file-specific status when performing long-running operations"),
                        )
 @CommandLine.FunctionConstraints( backup_name=CommandLine.StringTypeInfo(),
@@ -76,6 +77,7 @@ StreamDecorator.InitAnsiSequenceStreams()
                                   exclude=CommandLine.StringTypeInfo(arity='*'),
                                   traverse_include=CommandLine.StringTypeInfo(arity='*'),
                                   traverse_exclude=CommandLine.StringTypeInfo(arity='*'),
+                                  working_dir=CommandLine.DirectoryTypeInfo(ensure_exists=False),
                                   output_stream=None,
                                 )
 def Offsite( backup_name,
@@ -92,6 +94,7 @@ def Offsite( backup_name,
              traverse_include=None,
              traverse_exclude=None,
              display_only=False,
+             working_dir=None,
              disable_progress_status=False,
              output_stream=sys.stdout,
              verbose=False,
@@ -295,7 +298,7 @@ def Offsite( backup_name,
                 dm.stream.write(description)
                 with dm.stream.DoneManager( done_suffix='\n',
                                           ) as zip_dm:
-                    temp_dir = output_dir + ".tmp"
+                    temp_dir = working_dir or output_dir + ".tmp"
                     FileSystem.RemoveTree(temp_dir)
                     os.makedirs(temp_dir)
 
@@ -324,10 +327,15 @@ def Offsite( backup_name,
                                 return this_dm.result
 
                     # Swap the output_dir and the temp_dir
-                    zip_dm.stream.write("Removing Original Content...")
-                    with zip_dm.stream.DoneManager():
-                        FileSystem.RemoveTree(output_dir)
-                        shutil.move(temp_dir, output_dir)
+                    zip_dm.stream.write("Updating Original Content...")
+                    with zip_dm.stream.DoneManager() as update_dm:
+                        update_dm.stream.write("Removing...")
+                        with update_dm.stream.DoneManager():
+                            FileSystem.RemoveTree(output_dir)
+
+                        update_dm.stream.write("Moving...")
+                        with update_dm.stream.DoneManager():
+                            shutil.move(temp_dir, output_dir)
 
             dm.stream.write("Writing Pending Data...")
             with dm.stream.DoneManager():
@@ -437,21 +445,9 @@ def OffsiteRestore( source_dir,
                 if not os.path.isdir(fullpath):
                     continue
 
-                # In most cases, the files will be children of this subdir. However,
-                # when I initially uploaded the content, I did so mistakenly with a
-                # single subdir under the expected dir. Check for this scenario and 
-                # drill in if necessary.
-                while True:
-                    if not os.path.isfile(os.path.join(fullpath, "data.json")):
-                        children = list(os.listdir(fullpath))
-
-                        if len(children) == 1 and os.path.isdir(children[0]):
-                            fullpath = children[0]
-                            continue
-
-                    break
-
                 dirs.append(fullpath)
+
+            dirs = sorted(dirs)
 
             # Get the file data
             file_data = OrderedDict()
