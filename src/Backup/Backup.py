@@ -77,7 +77,7 @@ StreamDecorator.InitAnsiSequenceStreams()
                                   exclude=CommandLine.StringTypeInfo(arity='*'),
                                   traverse_include=CommandLine.StringTypeInfo(arity='*'),
                                   traverse_exclude=CommandLine.StringTypeInfo(arity='*'),
-                                  working_dir=CommandLine.DirectoryTypeInfo(ensure_exists=False),
+                                  working_dir=CommandLine.DirectoryTypeInfo(ensure_exists=False, arity='?'),
                                   output_stream=None,
                                 )
 def Offsite( backup_name,
@@ -307,8 +307,7 @@ def Offsite( backup_name,
                         filenames_filename = environment.CreateTempFilename()
 
                         with open(filenames_filename, 'w') as f:
-                            f.write("{}\n".format(os.path.join(output_dir, "data.json")))
-                            f.write('\n'.join(six.itervalues(to_copy)))
+                            f.write('\n'.join([ os.path.join(output_dir, name) for name in os.listdir(output_dir) ]))
 
                     with CallOnExit(lambda: FileSystem.RemoveFile(filenames_filename)):
                         zip_dm.stream.write("Executing...")
