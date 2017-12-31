@@ -46,6 +46,8 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 
 inflect_engine                              = inflect.engine()
 
+OFFSITE_BACKUP_FILENAME                     = "Backup.7z"
+
 StreamDecorator.InitAnsiSequenceStreams()
 
 # <Too many braches> pylint: disable = R0912
@@ -66,6 +68,8 @@ StreamDecorator.InitAnsiSequenceStreams()
                          traverse_include=CommandLine.EntryPoint.ArgumentInfo("One or more regular expressions used to specify directory names to include while parsing"),
                          traverse_exclude=CommandLine.EntryPoint.ArgumentInfo("One or more regular expressions used to specify directory names to exclude while parsing"),
                          display_only=CommandLine.EntryPoint.ArgumentInfo("Display the operations that would be taken but does not perform them"),
+                         working_dir=CommandLine.EntryPoint.ArgumentInfo("Specify a custom working directory; use this option if space on the drive associated with 'output_dir' is limited and another drive is available"),
+                         disable_progress_status=CommandLine.EntryPoint.ArgumentInfo("Do not display file-specific status when performing long-running operations"),
                        )
 @CommandLine.FunctionConstraints( backup_name=CommandLine.StringTypeInfo(),
                                   output_dir=CommandLine.DirectoryTypeInfo(ensure_exists=False),
@@ -75,6 +79,7 @@ StreamDecorator.InitAnsiSequenceStreams()
                                   exclude=CommandLine.StringTypeInfo(arity='*'),
                                   traverse_include=CommandLine.StringTypeInfo(arity='*'),
                                   traverse_exclude=CommandLine.StringTypeInfo(arity='*'),
+                                  working_dir=CommandLine.DirectoryTypeInfo(ensure_exists=False, arity='?'),
                                   output_stream=None,
                                 )
 def Offsite( backup_name,
@@ -91,6 +96,8 @@ def Offsite( backup_name,
              traverse_include=None,
              traverse_exclude=None,
              display_only=False,
+             working_dir=None,
+             disable_progress_status=False,
              output_stream=sys.stdout,
              verbose=False,
              preserve_ansi_escape_sequences=False,
@@ -129,6 +136,7 @@ def Offsite( backup_name,
                                              False,     # simple_compare
                                              dm.stream,
                                              ssd=ssd,
+                                             disable_progress_status=disable_progress_status,
                                            )
 
             dm.stream.write('\n')
@@ -166,7 +174,7 @@ def Offsite( backup_name,
             # Process the files to add
             to_copy = OrderedDict()
 
-            dm.stream.write("Creating application data...")
+            dm.stream.write("Creating Application Data...")
             with dm.stream.DoneManager():
                 data = []
                 
@@ -195,17 +203,24 @@ def Offsite( backup_name,
 
                 return dm.result
 
-            dm.stream.write("Applying content...")
+            dm.stream.write("Applying Content...")
             with dm.stream.DoneManager( done_suffix='\n',
                                       ) as apply_dm:
-                apply_dm.stream.write("Cleaning previous content...")
+                apply_dm.stream.write("Cleaning Previous Content...")
                 with apply_dm.stream.DoneManager():
                     FileSystem.RemoveTree(output_dir)
 
                 os.makedirs(output_dir)
 
+                apply_dm.stream.write("Writing 'data.json'...")
+                with apply_dm.stream.DoneManager():
+                    with open(os.path.join(output_dir, "data.json"), 'w') as f:
+                        json.dump(data, f)
+
+                del data # Save memory
+
                 if to_copy:
-                    with apply_dm.stream.SingleLineDoneManager( "Copying content...",
+                    with apply_dm.stream.SingleLineDoneManager( "Copying Content...",
                                                               ) as copy_dm:
                         if use_links:
                             # Use task pool functionality for its progress bar
@@ -238,10 +253,11 @@ def Offsite( backup_name,
 
                             # ----------------------------------------------------------------------
                             def Execute(task_index, on_status_update):
-                                
                                 source, dest = items[task_index]
 
-                                on_status_update(FileSystem.GetSizeDisplay(os.path.getsize(source)))
+                                if not disable_progress_status:
+                                    on_status_update(FileSystem.GetSizeDisplay(os.path.getsize(source)))
+                                
                                 shutil.copy2(source, dest)
 
                             # ----------------------------------------------------------------------
@@ -262,10 +278,7 @@ def Offsite( backup_name,
                         if copy_dm.result != 0:
                             return copy_dm.result
 
-                apply_dm.stream.write("Writing 'data.json'...")
-                with apply_dm.stream.DoneManager():
-                    with open(os.path.join(output_dir, "data.json"), 'w') as f:
-                        json.dump(data, f)
+                del to_copy # Save memory
 
             if compress or encryption_password:
                 # Compress and/or encrypt using 7zip
@@ -287,24 +300,23 @@ def Offsite( backup_name,
                 dm.stream.write(description)
                 with dm.stream.DoneManager( done_suffix='\n',
                                           ) as zip_dm:
-                    temp_dir = output_dir + ".tmp"
+                    temp_dir = working_dir or output_dir + ".tmp"
                     FileSystem.RemoveTree(temp_dir)
                     os.makedirs(temp_dir)
 
-                    zip_dm.stream.write("Creating instructions...")
+                    zip_dm.stream.write("Creating Instructions...")
                     with zip_dm.stream.DoneManager():
                         filenames_filename = environment.CreateTempFilename()
 
                         with open(filenames_filename, 'w') as f:
-                            f.write("{}\n".format(os.path.join(output_dir, "data.json")))
-                            f.write('\n'.join(six.itervalues(to_copy)))
+                            f.write('\n'.join([ os.path.join(output_dir, name) for name in os.listdir(output_dir) ]))
 
                     with CallOnExit(lambda: FileSystem.RemoveFile(filenames_filename)):
                         zip_dm.stream.write("Executing...")
                         with zip_dm.stream.DoneManager( done_suffix='\n',
                                                       ) as this_dm:
                             command_line = '7z a -t7z "{output}" -mx{compression_level} -v{chunk_size}b -scsWIN -ssw{encryption_arg} -y "@{filenames_filename}"' \
-                                                .format( output=os.path.join(temp_dir, "Backup.7z"),
+                                                .format( output=os.path.join(temp_dir, OFFSITE_BACKUP_FILENAME),
                                                          compression_level=compression_level,
                                                          chunk_size=250 * 1024 * 1024, # MB
                                                          encryption_arg=encryption_arg,
@@ -316,12 +328,17 @@ def Offsite( backup_name,
                                 return this_dm.result
 
                     # Swap the output_dir and the temp_dir
-                    zip_dm.stream.write("Removing original content...")
-                    with zip_dm.stream.DoneManager():
-                        FileSystem.RemoveTree(output_dir)
-                        shutil.move(temp_dir, output_dir)
+                    zip_dm.stream.write("Updating Original Content...")
+                    with zip_dm.stream.DoneManager() as update_dm:
+                        update_dm.stream.write("Removing...")
+                        with update_dm.stream.DoneManager():
+                            FileSystem.RemoveTree(output_dir)
 
-            dm.stream.write("Writing pending data...")
+                        update_dm.stream.write("Moving...")
+                        with update_dm.stream.DoneManager():
+                            shutil.move(temp_dir, output_dir)
+
+            dm.stream.write("Writing Pending Data...")
             with dm.stream.DoneManager():
                 pending_pickle_filename = _CreatePendingPickleFilename(pickle_filename)
 
@@ -391,15 +408,18 @@ def CommitOffsite( backup_name,
 
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint( source_dir=CommandLine.EntryPoint.ArgumentInfo("Directory that contains all offsite backup output, each iteration stored in a subdirectory"),
+                         encryption_password=CommandLine.EntryPoint.ArgumentInfo("Decrypt the data with this password"),
                          dir_substitution=CommandLine.EntryPoint.ArgumentInfo("Destination substitutions to perform if the data to be restored should be restored at a location different from when it was backed up"),
                          display_only=CommandLine.EntryPoint.ArgumentInfo("Display the operations that would be taken but does not perform them"),
                          ssd=CommandLine.EntryPoint.ArgumentInfo("Leverage optimizations available if the source drive is a Solid-State Drive (SSD)"), 
                        )
 @CommandLine.FunctionConstraints( source_dir=CommandLine.DirectoryTypeInfo(),
+                                  encryption_password=CommandLine.StringTypeInfo(arity='?'),
                                   dir_substitution=CommandLine.DictTypeInfo(require_exact_match=False, arity='?'),
                                   output_stream=None,
                                 )
 def OffsiteRestore( source_dir,
+                    encryption_password=None,
                     dir_substitution={},
                     display_only=False,
                     ssd=False,
@@ -409,8 +429,6 @@ def OffsiteRestore( source_dir,
     """\
     Restores content created by previously created Offsite Backups
     """
-
-    # TODO: Add support for decryption/decompression
 
     dir_substitutions = dir_substitution; del dir_substitution
 
@@ -429,27 +447,15 @@ def OffsiteRestore( source_dir,
                 if not os.path.isdir(fullpath):
                     continue
 
-                # In most cases, the files will be children of this subdir. However,
-                # when I initially uploaded the content, I did so mistakenly with a
-                # single subdir under the expected dir. Check for this scenario and 
-                # drill in if necessary.
-                while True:
-                    if not os.path.isfile(os.path.join(fullpath, "data.json")):
-                        children = list(os.listdir(fullpath))
-
-                        if len(children) == 1 and os.path.isdir(children[0]):
-                            fullpath = children[0]
-                            continue
-
-                    break
-
                 dirs.append(fullpath)
+
+            dirs = sorted(dirs)
 
             # Get the file data
             file_data = OrderedDict()
             hashed_filenames = {}
 
-            dm.stream.write("Reading file data from {}...".format(inflect_engine.no("directory", len(dirs))))
+            dm.stream.write("Reading File Data from {}...".format(inflect_engine.no("directory", len(dirs))))
             with dm.stream.DoneManager( done_suffix='\n',
                                       ) as dir_dm:
                 for index, dir in enumerate(dirs):
@@ -460,10 +466,46 @@ def OffsiteRestore( source_dir,
                     with dir_dm.stream.DoneManager() as this_dir_dm:
                         data_filename = os.path.join(dir, "data.json")
                         if not os.path.isfile(data_filename):
-                            this_dir_dm.stream.write("INFO: The file 'data.json' was not found in the dir '{}'.\n".format(dir))
-                            this_dir_dm.result = 1
+                            # See if there is compressed data to decompress
+                            for zipped_ext in [ '', ".001", ]:
+                                potential_filename = os.path.join(dir, "{}{}".format(OFFSITE_BACKUP_FILENAME, zipped_ext))
+                                if not os.path.isfile(potential_filename):
+                                    continue
 
-                            continue
+                                # Extract the data
+                                temp_dir = dir + ".tmp"
+                                
+                                FileSystem.RemoveTree(temp_dir)
+                                os.makedirs(temp_dir)
+
+                                this_dir_dm.stream.write("Decompressing data...")
+                                with this_dir_dm.stream.DoneManager( done_suffix='\n',
+                                                                   ) as decompress_dm:
+                                    command_line = '7z e -y "-o{dir}"{password} "{input}"' \
+                                                        .format( dir=temp_dir,
+                                                                 input=potential_filename,
+                                                                 password=' "-p{}"'.fomrat(encryption_password) if encryption_password else '',
+                                                               )
+
+                                    decompress_dm.result = Process.Execute(command_line, decompress_dm.stream)
+                                    if decompress_dm.result != 0:
+                                        return decompress_dm.result
+
+                                this_dir_dm.stream.write("Removing original data...")
+                                with this_dir_dm.stream.DoneManager():
+                                    FileSystem.RemoveTree(dir)
+
+                                this_dir_dm.stream.write("Restoring compressed data...")
+                                with this_dir_dm.stream.DoneManager():
+                                    shutil.move(temp_dir, dir)
+
+                                break
+                                
+                            if not os.path.isfile(data_filename):
+                                this_dir_dm.stream.write("INFO: The file 'data.json' was not found in the dir '{}'.\n".format(dir))
+                                this_dir_dm.result = 1
+
+                                continue
 
                         try:
                             with open(data_filename) as f:
@@ -537,11 +579,11 @@ def OffsiteRestore( source_dir,
                 dm.stream.write("{} to restore...\n\n".format(inflect_engine.no("file", len(keys))))
 
                 for key in keys:
-                    dm.stream.write("  - {0:<120} <- {1}\n".format(key, file_data[key]))
+                    dm.stream.write("  - {0:<100} <- {1}\n".format(key, file_data[key]))
                 
                 return dm.result
 
-            with dm.stream.SingleLineDoneManager( "Copying files...",
+            with dm.stream.SingleLineDoneManager( "Copying Files...",
                                                 ) as copy_dm:
                 # ----------------------------------------------------------------------
                 def Execute(task_index, on_status_update):
@@ -637,6 +679,7 @@ def Mirror( destination,
                                              simple_compare,
                                              dm.stream,
                                              ssd=False,
+                                             disable_progress_status=False,
                                            )
             dm.stream.write("\n")
         
@@ -650,6 +693,7 @@ def Mirror( destination,
                                                simple_compare,
                                                dm.stream,
                                                ssd=False,
+                                               disable_progress_status=False,
                                              )
         
                 dm.stream.write("\n")
@@ -823,12 +867,13 @@ def _GetFileInfo( desc,
                   simple_compare,
                   output_stream,
                   ssd,
+                  disable_progress_status,
                 ):
     output_stream.write("Processing '{}'...".format(desc))
     with output_stream.DoneManager() as dm:
         input_files = []
 
-        dm.stream.write("Processing content...")
+        dm.stream.write("Processing Content...")
         with dm.stream.DoneManager( done_suffix_functor=lambda: "{} found".format(inflect_engine.no("file", len(input_files))),
                                   ) as file_dm:
             input_dirs = []
@@ -877,7 +922,7 @@ def _GetFileInfo( desc,
 
             # ----------------------------------------------------------------------
 
-            dm.stream.write("Filtering files...")
+            dm.stream.write("Filtering Files...")
             with dm.stream.DoneManager( lambda: "{} to process".format(inflect_engine.no("file", len(input_files))),
                                       ):
 
@@ -904,7 +949,7 @@ def _GetFileInfo( desc,
         file_info = []
 
         if input_files:
-            with dm.stream.SingleLineDoneManager( "Calculating info...",
+            with dm.stream.SingleLineDoneManager( "Calculating Info...",
                                                 ) as this_dm:
                 # ----------------------------------------------------------------------
                 def CalculateInfo(filename):
@@ -916,7 +961,9 @@ def _GetFileInfo( desc,
                 # ----------------------------------------------------------------------
                 def CalculateHash(filename, on_status_update):
                     info = CalculateInfo(filename)
-                    on_status_update(FileSystem.GetSizeDisplay(info.Size))
+
+                    if not disable_progress_status:
+                        on_status_update(FileSystem.GetSizeDisplay(info.Size))
                     
                     sha = hashlib.sha224()
 
@@ -961,7 +1008,7 @@ def _CreateWork( source_file_info,
 
     results = OrderedDict()
 
-    output_stream.write("Processing file information...")
+    output_stream.write("Processing File Information...")
     with output_stream.DoneManager( done_suffix='\n',
                                   ) as dm:
         verbose_stream = StreamDecorator(dm.stream if verbose else None, "INFO: ")
