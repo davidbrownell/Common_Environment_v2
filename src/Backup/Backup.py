@@ -66,6 +66,7 @@ StreamDecorator.InitAnsiSequenceStreams()
                          traverse_include=CommandLine.EntryPoint.ArgumentInfo("One or more regular expressions used to specify directory names to include while parsing"),
                          traverse_exclude=CommandLine.EntryPoint.ArgumentInfo("One or more regular expressions used to specify directory names to exclude while parsing"),
                          display_only=CommandLine.EntryPoint.ArgumentInfo("Display the operations that would be taken but does not perform them"),
+                         disable_progress_status=CommandLine.EntryPoint.ArgumentInfo("Do not display file-specific status when performing long-running operations"),
                        )
 @CommandLine.FunctionConstraints( backup_name=CommandLine.StringTypeInfo(),
                                   output_dir=CommandLine.DirectoryTypeInfo(ensure_exists=False),
@@ -91,6 +92,7 @@ def Offsite( backup_name,
              traverse_include=None,
              traverse_exclude=None,
              display_only=False,
+             disable_progress_status=False,
              output_stream=sys.stdout,
              verbose=False,
              preserve_ansi_escape_sequences=False,
@@ -129,6 +131,7 @@ def Offsite( backup_name,
                                              False,     # simple_compare
                                              dm.stream,
                                              ssd=ssd,
+                                             disable_progress_status=disable_progress_status,
                                            )
 
             dm.stream.write('\n')
@@ -238,10 +241,11 @@ def Offsite( backup_name,
 
                             # ----------------------------------------------------------------------
                             def Execute(task_index, on_status_update):
-                                
                                 source, dest = items[task_index]
 
-                                on_status_update(FileSystem.GetSizeDisplay(os.path.getsize(source)))
+                                if not disable_progress_status:
+                                    on_status_update(FileSystem.GetSizeDisplay(os.path.getsize(source)))
+                                
                                 shutil.copy2(source, dest)
 
                             # ----------------------------------------------------------------------
@@ -637,6 +641,7 @@ def Mirror( destination,
                                              simple_compare,
                                              dm.stream,
                                              ssd=False,
+                                             disable_progress_status=False,
                                            )
             dm.stream.write("\n")
         
@@ -650,6 +655,7 @@ def Mirror( destination,
                                                simple_compare,
                                                dm.stream,
                                                ssd=False,
+                                               disable_progress_status=False,
                                              )
         
                 dm.stream.write("\n")
@@ -823,6 +829,7 @@ def _GetFileInfo( desc,
                   simple_compare,
                   output_stream,
                   ssd,
+                  disable_progress_status,
                 ):
     output_stream.write("Processing '{}'...".format(desc))
     with output_stream.DoneManager() as dm:
@@ -916,7 +923,9 @@ def _GetFileInfo( desc,
                 # ----------------------------------------------------------------------
                 def CalculateHash(filename, on_status_update):
                     info = CalculateInfo(filename)
-                    on_status_update(FileSystem.GetSizeDisplay(info.Size))
+
+                    if not disable_progress_status:
+                        on_status_update(FileSystem.GetSizeDisplay(info.Size))
                     
                     sha = hashlib.sha224()
 
