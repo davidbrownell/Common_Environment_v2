@@ -8,7 +8,7 @@
 # |  
 # ---------------------------------------------------------------------------
 # |  
-# |  Copyright David Brownell 2016-17.
+# |  Copyright David Brownell 2016-18.
 # |          
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -36,7 +36,7 @@ _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ---------------------------------------------------------------------------
 
-COPYRIGHT_EXPRESSIONS = [ re.compile(r".*?Copyright \(c\) (?P<copyright>\S*).*"),   # Matches 'Copyright (c) 2011-17 David Brownell. Permission to use, copy, '
+COPYRIGHT_EXPRESSIONS = [ re.compile(r".*?Copyright \(c\) (?P<copyright>\S*).*"),   # Matches 'Copyright (c) 2011-18 David Brownell. Permission to use, copy, '
                           re.compile(r".*?Copyright (?P<copyright>[^\.]+)\..*"),    # Matches 'Copyright David Brownell 2011.'
                         ]
       
@@ -132,8 +132,8 @@ def EntryPoint( code_dir,
                             end = year_match.group("end") if "end" in year_match.groupdict() else begin
 
                             if len(end) == 2:
-                                end = str(((int(year) / 100) * 100) + int(end))
-
+                                end = str(((int(year) // 100) * 100) + int(end))
+                                
                             if len(begin) != 4:
                                 file_dm.stream.write("WARNING: '{}' appears to have a copyright, but it isn't in an expected format ('{}') [1].\n".format(fullpath, line.strip()))
                                 continue
