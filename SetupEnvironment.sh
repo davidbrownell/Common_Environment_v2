@@ -37,7 +37,7 @@ then
 
     export DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL="$(cd "$(dirname "$0")" && pwd)"
 
-    linux_distro=`python -c "import platform; print platform.linux_distribution()[0]"`
+    linux_distro=`python "$DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL/SourceRepositoryTools/Impl/GetLinuxDistro.py"`
     export PYTHON_BINARY=$DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL/Tools/Python/v3.6.0/$linux_distro/bin/python
     # Common_Environment END
     
