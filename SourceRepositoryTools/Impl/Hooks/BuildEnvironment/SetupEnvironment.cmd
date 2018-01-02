@@ -7,7 +7,7 @@
 @REM |
 @REM ---------------------------------------------------------------------------
 @REM |
-@REM |  Copyright David Brownell 2015-17.
+@REM |  Copyright David Brownell 2015-18.
 @REM |        
 @REM |Distributed under the Boost Software License, Version 1.0.
 @REM |(See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)

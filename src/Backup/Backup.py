@@ -7,7 +7,7 @@
 # |  
 # ----------------------------------------------------------------------
 # |  
-# |  Copyright David Brownell 2017.
+# |  Copyright David Brownell 2017-18.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 # |  
@@ -629,6 +629,7 @@ def OffsiteRestore( source_dir,
                          traverse_include=CommandLine.EntryPoint.ArgumentInfo("One or more regular expressions used to specify directory names to include while parsing"),
                          traverse_exclude=CommandLine.EntryPoint.ArgumentInfo("One or more regular expressions used to specify directory names to exclude while parsing"),
                          display_only=CommandLine.EntryPoint.ArgumentInfo("Display the operations that would be taken but do not perform them"),
+                         disable_progress_status=CommandLine.EntryPoint.ArgumentInfo("Do not display file-specific status when performing long-running operations"),
                        )
 @CommandLine.FunctionConstraints( destination=CommandLine.DirectoryTypeInfo(ensure_exists=False),
                                   input=CommandLine.FilenameTypeInfo(match_any=True, arity='+'),
@@ -647,6 +648,7 @@ def Mirror( destination,
             traverse_include=None,
             traverse_exclude=None,
             display_only=False,
+            disable_progress_status=False,
             output_stream=sys.stdout,
             verbose=False,
             preserve_ansi_escape_sequences=False,
@@ -679,7 +681,7 @@ def Mirror( destination,
                                              simple_compare,
                                              dm.stream,
                                              ssd=False,
-                                             disable_progress_status=False,
+                                             disable_progress_status=disable_progress_status,
                                            )
             dm.stream.write("\n")
         
@@ -693,7 +695,7 @@ def Mirror( destination,
                                                simple_compare,
                                                dm.stream,
                                                ssd=False,
-                                               disable_progress_status=False,
+                                               disable_progress_status=disable_progress_status,
                                              )
         
                 dm.stream.write("\n")
