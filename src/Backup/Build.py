@@ -35,17 +35,15 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
                                 )
 def Build( output_dir,
            output_stream=sys.stdout,
-           verbose=False,
          ):
     paths = []
     includes = []
     excludes = []
 
-    command_line = '"{script}" Compile "/input={input}" "/output_dir={output_dir}" /no_bundle /no_optimize{verbose}{paths}{includes}{excludes}' \
+    command_line = '"{script}" Compile "/input={input}" "/output_dir={output_dir}" /no_bundle /no_optimize /verbose {paths}{includes}{excludes}' \
                         .format( script=Shell.GetEnvironment().CreateScriptName("CxFreezeCompiler"),
                                  input=os.path.join(_script_dir, "Backup.py"),
                                  output_dir=output_dir,
-                                 verbose='' if not verbose else " /verbose",
                                  paths='' if not paths else " {}".format(' '.join([ '"/path={}"'.format(path) for path in paths ])),
                                  includes='' if not includes else " {}".format(' '.join([ '"/include={}"'.format(include) for include in includes ])),
                                  excludes='' if not excludes else " {}".format(' '.join([ '"/exclude={}"'.format(exclude) for exclude in excludes ])),
