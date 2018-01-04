@@ -967,7 +967,7 @@ def _GetFileInfo( desc,
                     if not disable_progress_status:
                         on_status_update(FileSystem.GetSizeDisplay(info.Size))
                     
-                    sha = hashlib.sha224()
+                    sha = hashlib.sha256()
 
                     with open(filename, 'rb') as f:
                         while True:
