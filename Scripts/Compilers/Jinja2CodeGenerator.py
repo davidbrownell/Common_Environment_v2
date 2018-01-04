@@ -19,6 +19,8 @@ import textwrap
 
 from collections import OrderedDict
 
+import six
+
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CommandLine
 from CommonEnvironment import FileSystem
@@ -32,7 +34,7 @@ from CommonEnvironment.Compiler.InvocationQueryMixin.ConditionalInvocationQueryM
 from CommonEnvironment.Compiler.InvocationMixin.CustomInvocationMixin import CustomInvocationMixin
 from CommonEnvironment.Compiler.OutputMixin.MultipleOutputMixin import MultipleOutputMixin
 
-from jinja2 import Environment
+from jinja2 import Environment, FileSystemLoader, StrictUndefined, Undefined
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -84,6 +86,7 @@ class CodeGenerator( AtomicInputProcessingMixin,
         return [ ( "jinja2_context", {} ),
                  ( "jinja2_context_code", [] ),
                  ( "preserve_dir_structure", False ),
+                 ( "ignore_errors", False ),
                ] + \
                super(CodeGenerator, cls)._GetOptionalMetadata()
 
@@ -104,7 +107,7 @@ class CodeGenerator( AtomicInputProcessingMixin,
             del mod
 
             if isinstance(var, dict):
-                for k, v in var.iteritems():
+                for k, v in six.iteritems(var):
                     jinja2_context[k] = v
             else:
                 jinja2_context[context_code.var_name] = var
@@ -112,7 +115,7 @@ class CodeGenerator( AtomicInputProcessingMixin,
         del context.jinja2_context_code
 
         # Load the custom context
-        for k, v in context.jinja2_context.iteritems():
+        for k, v in six.iteritems(context.jinja2_context):
             if len(v) == 1:
                 jinja2_context[k] = v[0]
             else:
@@ -176,9 +179,9 @@ class CodeGenerator( AtomicInputProcessingMixin,
                    ):
         total_rval = 0
 
-        for index, (input_filename, output_filename) in enumerate(itertools.izip( context.input_filenames,
-                                                                                  context.output_filenames,
-                                                                                )):
+        for index, (input_filename, output_filename) in enumerate(six.moves.zip( context.input_filenames,
+                                                                                 context.output_filenames,
+                                                                               )):
             status_stream.write("Processing '{}' ({} of {})...".format( input_filename,
                                                                         index + 1,
                                                                         len(context.output_filenames),
@@ -198,11 +201,12 @@ class CodeGenerator( AtomicInputProcessingMixin,
                     
                     env = Environment( trim_blocks=True,
                                        lstrip_blocks=True,
+                                       loader=FileSystemLoader(os.path.dirname(input_filename)),
+                                       undefined=Undefined if context.ignore_errors else StrictUndefined,
                                      )
 
-                    env.filters["doubleslash"] = lambda value: value.replace('\\', '\\\\')
-
                     env.tests["valid_file"] = lambda value: os.path.isfile(os.path.join(os.path.dirname(input_filename), value))
+                    env.filters["doubleslash"] = lambda value: value.replace('\\', '\\\\')
                     env.filters["read_file"] = ReadFileFilter
                     
                     template = env.from_string(open(input_filename).read())
@@ -233,6 +237,7 @@ def Generate( input,                          # <Redefining build-in type> pylin
               context=None,
               context_code=None,
               preserve_dir_structure=False,
+              ignore_errors=False,
               force=False,
               output_stream=sys.stdout,
               verbose=False,
@@ -255,6 +260,7 @@ def Generate( input,                          # <Redefining build-in type> pylin
                                                  jinja2_context=context,
                                                  jinja2_context_code=context_code,
                                                  preserve_dir_structure=preserve_dir_structure,
+                                                 ignore_errors=ignore_errors,
                                                )
 
 # ---------------------------------------------------------------------------
