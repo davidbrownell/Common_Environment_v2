@@ -34,7 +34,7 @@ from CommonEnvironment.Compiler.InvocationQueryMixin.ConditionalInvocationQueryM
 from CommonEnvironment.Compiler.InvocationMixin.CustomInvocationMixin import CustomInvocationMixin
 from CommonEnvironment.Compiler.OutputMixin.MultipleOutputMixin import MultipleOutputMixin
 
-from jinja2 import Environment, FileSystemLoader, StrictUndefined, Undefined
+from jinja2 import exceptions, Environment, FileSystemLoader, StrictUndefined, Undefined
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -177,48 +177,90 @@ class CodeGenerator( AtomicInputProcessingMixin,
                      verbose_stream,
                      verbose,
                    ):
-        total_rval = 0
+        # ----------------------------------------------------------------------
+        class RelativeFileSystemLoader(FileSystemLoader):
+            
+            # ----------------------------------------------------------------------
+            def __init__( self, 
+                          input_filename, 
+                          searchpath=None,
+                          *args, 
+                          **kwargs
+                        ):
+                super(RelativeFileSystemLoader, self).__init__( searchpath=[ os.path.dirname(input_filename), ] + (searchpath or []),
+                                                                *args, 
+                                                                **kwargs
+                                                              )
 
-        for index, (input_filename, output_filename) in enumerate(six.moves.zip( context.input_filenames,
-                                                                                 context.output_filenames,
-                                                                               )):
-            status_stream.write("Processing '{}' ({} of {})...".format( input_filename,
-                                                                        index + 1,
-                                                                        len(context.output_filenames),
-                                                                      ))
-            with status_stream.DoneManager( suppress_exceptions=True,
-                                          ) as dm:
+            # ----------------------------------------------------------------------
+            def get_source(self, environment, template):
+                method = super(RelativeFileSystemLoader, self).get_source
+
                 try:
-                    # ----------------------------------------------------------------------
-                    def ReadFileFilter(value):
-                        potential_filename = os.path.join(os.path.dirname(input_filename), value)
-                        if not os.path.isfile(potential_filename):
-                            return "<< '{}' was not found >>".format(potential_filename)
+                    return method(environment, template)
 
-                        return open(potential_filename).read()
+                except exceptions.TemplateNotFound:
+                    for searchpath in reversed(self.searchpath):
+                        potential_template = os.path.normpath(os.path.join(searchpath, template).replace('/', os.path.sep))
+                        if os.path.isfile(potential_template):
+                            dirname, template = os.path.split(potential_template)
 
-                    # ----------------------------------------------------------------------
-                    
-                    env = Environment( trim_blocks=True,
-                                       lstrip_blocks=True,
-                                       loader=FileSystemLoader(os.path.dirname(input_filename)),
-                                       undefined=Undefined if context.ignore_errors else StrictUndefined,
-                                     )
+                            self.searchpath.append(dirname)
+                            return method(environment, template)
 
-                    env.tests["valid_file"] = lambda value: os.path.isfile(os.path.join(os.path.dirname(input_filename), value))
-                    env.filters["doubleslash"] = lambda value: value.replace('\\', '\\\\')
-                    env.filters["read_file"] = ReadFileFilter
-                    
-                    template = env.from_string(open(input_filename).read())
-                    
-                    with open(output_filename, 'w') as f:
-                        f.write(template.render(**context.jinja2_context))
-
-                except:
-                    total_rval = -1
                     raise
 
-        return total_rval
+        # ----------------------------------------------------------------------
+
+        with status_stream.DoneManager( display=False,
+                                      ) as dm:
+            for index, (input_filename, output_filename) in enumerate(six.moves.zip( context.input_filenames,
+                                                                                     context.output_filenames,
+                                                                                   )):
+                status_stream.write("Processing '{}' ({} of {})...".format( input_filename,
+                                                                            index + 1,
+                                                                            len(context.output_filenames),
+                                                                          ))
+                with dm.stream.DoneManager( suppress_exceptions=True,
+                                          ) as this_dm:
+                    try:
+                        # ----------------------------------------------------------------------
+                        def ReadFileFilter(value):
+                            potential_filename = os.path.join(os.path.dirname(input_filename), value)
+                            if not os.path.isfile(potential_filename):
+                                return "<< '{}' was not found >>".format(potential_filename)
+            
+                            return open(potential_filename).read()
+            
+                        # ----------------------------------------------------------------------
+
+                        env = Environment( trim_blocks=True,
+                                           lstrip_blocks=True,
+                                           loader=RelativeFileSystemLoader(input_filename),
+                                           undefined=Undefined if context.ignore_errors else StrictUndefined,
+                                         )
+            
+                        env.tests["valid_file"] = lambda value: os.path.isfile(os.path.join(os.path.dirname(input_filename), value))
+                        env.filters["doubleslash"] = lambda value: value.replace('\\', '\\\\')
+                        
+                        # Technically speaking, this isn't required as Jinja's import/include/extend functionality
+                        # superseeds this functionality. However, it remains in the name of backwards compatibility.
+                        env.filters["read_file"] = ReadFileFilter
+                        
+                        template = env.from_string(open(input_filename).read())
+                        
+                        try:
+                            with open(output_filename, 'w') as f:
+                                f.write(template.render(**context.jinja2_context))
+                        except exceptions.UndefinedError as ex:
+                            this_dm.stream.write("ERROR: {}\n".format(str(ex)))
+                            this_dm.result = -1
+            
+                    except:
+                        this_dm.result = -1
+                        raise
+            
+            return dm.result
 
 # ---------------------------------------------------------------------------
 # |
