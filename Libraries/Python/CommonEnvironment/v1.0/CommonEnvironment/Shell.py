@@ -430,19 +430,11 @@ class Environment(Interface):
         for those systems where it is a straighforward process.
         """
 
-        temp_filename = self.CreateTempFilename(self.ScriptExtension)
-        with open(temp_filename, 'w') as f:
-            f.write(self.GenerateCommands(self.SymbolicLink(link_filename, target, is_dir=is_dir)))
-
-        with CallOnExit(lambda: os.remove(temp_filename)):
-            from . import Process
+        result, output = self.ExecuteCommands(self.SymbolicLink(link_filename, target, is_dir=is_dir))
+        if result != 0:
             from .StreamDecorator import StreamDecorator
 
-            self.MakeFileExecutable(temp_filename)
-
-            result, output = Process.Execute(temp_filename)
-            if result != 0:
-                raise Exception(textwrap.dedent(
+            raise Exception(textwrap.dedent(
                     """\
                     An error was encountered when generating a symbolic link:
                         {}
