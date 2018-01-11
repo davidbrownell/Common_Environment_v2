@@ -34,7 +34,13 @@ from CommonEnvironment.Compiler.InvocationQueryMixin.ConditionalInvocationQueryM
 from CommonEnvironment.Compiler.InvocationMixin.CustomInvocationMixin import CustomInvocationMixin
 from CommonEnvironment.Compiler.OutputMixin.MultipleOutputMixin import MultipleOutputMixin
 
-from jinja2 import exceptions, Environment, FileSystemLoader, StrictUndefined, Undefined
+from jinja2 import DebugUndefined, \
+                   Environment, \
+                   exceptions, \
+                   FileSystemLoader, \
+                   make_logging_undefined, \
+                   StrictUndefined, \
+                   Undefined
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -87,6 +93,7 @@ class CodeGenerator( AtomicInputProcessingMixin,
                  ( "jinja2_context_code", [] ),
                  ( "preserve_dir_structure", False ),
                  ( "ignore_errors", False ),
+                 ( "debug", False ),
                ] + \
                super(CodeGenerator, cls)._GetOptionalMetadata()
 
@@ -234,10 +241,28 @@ class CodeGenerator( AtomicInputProcessingMixin,
             
                         # ----------------------------------------------------------------------
 
+                        loader = RelativeFileSystemLoader(input_filename)
+
+                        if context.debug:
+                            from jinja2 import meta
+
+                            env = Environment(loader=loader)
+
+                            content = env.parse(open(input_filename).read())
+                            
+                            this_dm.stream.write("Variables:\n{}\n".format('\n'.join([ "    - {}".format(var) for var in meta.find_undeclared_variables(content) ])))
+                            
+                            continue
+
+                        elif context.ignore_errors:
+                            undef = Undefined
+                        else:
+                            undef = StrictUndefined
+
                         env = Environment( trim_blocks=True,
                                            lstrip_blocks=True,
-                                           loader=RelativeFileSystemLoader(input_filename),
-                                           undefined=Undefined if context.ignore_errors else StrictUndefined,
+                                           loader=loader,
+                                           undefined=undef,
                                          )
             
                         env.tests["valid_file"] = lambda value: os.path.isfile(os.path.join(os.path.dirname(input_filename), value))
@@ -250,11 +275,15 @@ class CodeGenerator( AtomicInputProcessingMixin,
                         template = env.from_string(open(input_filename).read())
                         
                         try:
-                            with open(output_filename, 'w') as f:
-                                f.write(template.render(**context.jinja2_context))
+                            content = template.render(**context.jinja2_context)
                         except exceptions.UndefinedError as ex:
                             this_dm.stream.write("ERROR: {}\n".format(str(ex)))
                             this_dm.result = -1
+
+                            continue
+
+                        with open(output_filename, 'w') as f:
+                            f.write(content)
             
                     except:
                         this_dm.result = -1
@@ -280,6 +309,7 @@ def Generate( input,                          # <Redefining build-in type> pylin
               context_code=None,
               preserve_dir_structure=False,
               ignore_errors=False,
+              debug=False,
               force=False,
               output_stream=sys.stdout,
               verbose=False,
@@ -303,6 +333,7 @@ def Generate( input,                          # <Redefining build-in type> pylin
                                                  jinja2_context_code=context_code,
                                                  preserve_dir_structure=preserve_dir_structure,
                                                  ignore_errors=ignore_errors,
+                                                 debug=debug,
                                                )
 
 # ---------------------------------------------------------------------------
