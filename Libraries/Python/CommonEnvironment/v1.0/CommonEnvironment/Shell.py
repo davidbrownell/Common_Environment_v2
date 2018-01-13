@@ -641,7 +641,8 @@ def GetEnvironment():
         if env.IsActive(plat):
             this_env = env()
             
-            assert this_env.OSVersion in env.PotentialOSVersionDirectoryNames, this_env.OSVersion
+            # PotentialOSVersionDirectoryNames is optional
+            assert not env.PotentialOSVersionDirectoryNames or this_env.OSVersion in env.PotentialOSVersionDirectoryNames, this_env.OSVersion
             assert this_env.OSArchitecture in env.PotentialOSArchitectureDirectoryNames, this_env.OSArchitecture
             assert all(os.path.isdir(dir) for dir in env.TempDirectories)
 
