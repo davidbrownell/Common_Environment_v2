@@ -608,7 +608,8 @@ class Environment(Interface):
 def GetPotentialEnvironments():
     from .Impl.Shell.WindowsEnvironment import WindowsEnvironment
     from .Impl.Shell.UbuntuEnvironment import UbuntuEnvironment
-    
+    from .Impl.Shell.DebianEnvironment import DebianEnvironment
+
     return [ WindowsEnvironment,
              UbuntuEnvironment,
            ]
