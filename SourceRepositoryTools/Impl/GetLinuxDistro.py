@@ -8,4 +8,4 @@ except ImportError:
         
 import platform
 
-print_(platform.linux_distribution()[0])
+print_(platform.dist()[0])

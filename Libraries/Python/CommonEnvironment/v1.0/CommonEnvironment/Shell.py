@@ -644,3 +644,5 @@ def GetEnvironment():
             assert all(os.path.isdir(dir) for dir in env.TempDirectories)
 
             return this_env
+
+    assert False, "No environment for '{}'".format(plat)
