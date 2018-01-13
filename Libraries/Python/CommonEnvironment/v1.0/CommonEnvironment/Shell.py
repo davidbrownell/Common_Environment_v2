@@ -612,6 +612,7 @@ def GetPotentialEnvironments():
 
     return [ WindowsEnvironment,
              UbuntuEnvironment,
+             DebianEnvironment,
            ]
 
 # ---------------------------------------------------------------------------
