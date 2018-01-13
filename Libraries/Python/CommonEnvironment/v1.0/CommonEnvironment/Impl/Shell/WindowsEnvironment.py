@@ -342,3 +342,10 @@ class WindowsEnvironment(Environment):
         return 'copy /Y "{source}" "{dest}"'.format( source=source,
                                                      dest=dest,
                                                    )
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    def _GenerateMoveCommand(source, dest):
+        return 'move /Y "{source}" "{dest}"'.format( source=source,
+                                                     dest=dest,
+                                                   )

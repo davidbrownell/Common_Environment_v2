@@ -162,6 +162,13 @@ class CopyFile(Command):
         self.source = source
         self.dest = dest
         
+# ----------------------------------------------------------------------
+# <Too few public methods> pylint: disable = R0903
+class Move(Command):
+    def __init__(self, source, dest):
+        self.source = source
+        self.dest = dest
+
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
@@ -186,6 +193,7 @@ class Environment(Interface):
     RemoveFile                              = RemoveFile
     RemoveDirectory                         = RemoveDirectory
     CopyFile                                = CopyFile
+    Move                                    = Move
 
     # ---------------------------------------------------------------------------
     # |
@@ -305,6 +313,7 @@ class Environment(Interface):
                          RemoveFile,
                          RemoveDirectory,
                          CopyFile,
+                         Move,
                        ]
                        
         results = []
@@ -342,6 +351,7 @@ class Environment(Interface):
         """
 
         from CommonEnvironment.CallOnExit import CallOnExit
+        from CommonEnvironment import FileSystem
         from CommonEnvironment import Process
 
         temp_filename = self.CreateScriptName(self.ScriptExtension)
@@ -349,7 +359,7 @@ class Environment(Interface):
         with open(temp_filename, 'w') as f:
             f.write(self.GenerateCommands(commands))
 
-        with CallOnExit(lambda: os.remove(temp_filename)):
+        with CallOnExit(lambda: FileSystem.RemoveFile(temp_filename)):
             self.MakeFileExecutable(temp_filename)
 
             return Process.Execute(temp_filename)
@@ -584,6 +594,12 @@ class Environment(Interface):
     def _GenerateCopyFileCommand(source, dest):
         raise Exception("Abstract method")
     
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @abstractmethod
+    def _GenerateMoveCommand(source, dest):
+        raise Exception("Abstract method")
+
 # ---------------------------------------------------------------------------
 # |
 # |  Methods
@@ -599,15 +615,26 @@ def GetPotentialEnvironments():
 
 # ---------------------------------------------------------------------------
 def GetEnvironment():
-    # Get the platform_name
-    try:
-        platform_info = os.uname()                      # <Has no member> pylint: disable = E1101
-        platform_name = platform_info[3].lower()
-    except AttributeError:
-        platform_name = os.name.lower()
-        
+    # ----------------------------------------------------------------------
+    def GetPlatform():
+        import platform
+
+        result = platform.dist()
+        if result[0]:
+            return result[0].lower()
+
+        try:
+            platform_info = os.uname()                      # <Has no member> pylint: disable = E1101
+            platform_name = platform_info[3].lower()
+        except AttributeError:
+            platform_name = os.name.lower()
+       
+    # ----------------------------------------------------------------------
+
+    plat = GetPlatform()
+
     for env in GetPotentialEnvironments():
-        if env.IsActive(platform_name):
+        if env.IsActive(plat):
             this_env = env()
             
             assert this_env.OSVersion in env.PotentialOSVersionDirectoryNames, this_env.OSVersion
