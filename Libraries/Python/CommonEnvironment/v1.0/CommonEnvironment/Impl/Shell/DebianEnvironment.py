@@ -29,7 +29,7 @@ class DebianEnvironment(LinuxEnvironmentImpl):
     
     # ---------------------------------------------------------------------------
     def __init__(self):
-        super(UbuntuEnvironment, self).__init__()
+        super(DebianEnvironment, self).__init__()
         
         output_filename = "/tmp/Shell.Impl.Environment"
         
