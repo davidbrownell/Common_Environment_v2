@@ -25,7 +25,7 @@ _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ---------------------------------------------------------------------------
 
-class UbuntuEnvironment(LinuxEnvironmentImpl):
+class UbuntuEnvironment(DebianEnvironment):
     Name                                    = "Ubuntu"
     PotentialOSVersionDirectoryNames        = [ "16.04", "14.04", "12.04", "11.10", "11.04", ]
     
