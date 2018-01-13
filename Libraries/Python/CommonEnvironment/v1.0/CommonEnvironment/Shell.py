@@ -619,6 +619,10 @@ def GetPotentialEnvironments():
 def GetEnvironment():
     # ----------------------------------------------------------------------
     def GetPlatform():
+        result = os.getenv("DEVELOPMENT_ENVIRONMENT_LINUX_OVERRIDE")
+        if result:
+            return result.lower()
+
         import platform
 
         result = platform.dist()
