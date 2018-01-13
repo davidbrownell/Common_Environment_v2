@@ -625,9 +625,11 @@ def GetEnvironment():
 
         try:
             platform_info = os.uname()                      # <Has no member> pylint: disable = E1101
-            platform_name = platform_info[3].lower()
+            return platform_info[3].lower()
         except AttributeError:
-            platform_name = os.name.lower()
+            pass
+
+        return os.name.lower()
        
     # ----------------------------------------------------------------------
 
