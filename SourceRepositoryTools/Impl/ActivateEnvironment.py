@@ -329,6 +329,25 @@ def IsToolRepository( repository_root,
     else:
         sys.stdout.write(str(repo_info.is_tool_repository))
 
+# ----------------------------------------------------------------------
+@CommonEnvironmentImports.CommandLine.EntryPoint
+@CommonEnvironmentImports.CommandLine.FunctionConstraints( output_stream=None,
+                                                         )
+def EnvironmentDiffs( output_stream=sys.stdout,
+                    ):
+    original_env = LoadOriginalEnvironment()
+    this_env = dict(os.environ)
+
+    differences = {}
+
+    for k, v in six.iteritems(this_env):
+        if ( k not in original_env or
+             original_env[k] != v
+           ):
+            differences[k] = v
+        
+    output_stream.write(json.dumps(differences))
+
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
@@ -378,7 +397,9 @@ def _ActivateRepoData(environment, repositories, version_specs):
 
     filename = os.getenv(Constants.DE_REPO_DATA_NAME)
     if not filename:
-        filename = environment.CreateTempFilename(".RepoData{}".format(Constants.TEMPORARY_FILE_EXTENSION))
+        filename = environment.CreateTempFilename("{}{}".format( Constants.REPO_DATA_FILE_EXTENSION,
+                                                                 Constants.TEMPORARY_FILE_EXTENSION,
+                                                               ))
         commands.append(environment.Set(Constants.DE_REPO_DATA_NAME, filename, preserve_original=False))
 
     with open(filename, 'wb') as f:
