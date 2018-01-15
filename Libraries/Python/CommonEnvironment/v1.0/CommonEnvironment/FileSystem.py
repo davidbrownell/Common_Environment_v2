@@ -14,6 +14,7 @@
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 # |  
 # ---------------------------------------------------------------------------
+import itertools
 import os
 import platform
 import shutil
@@ -342,16 +343,90 @@ def GetSizeDisplay(num_bytes, suffix='B'):
     return "%.1f %s%s" % (num_bytes, 'Yi', suffix)
 
 # ----------------------------------------------------------------------
-def CopyTree(source, dest):
-    for fullpath in WalkFiles(source):
-        this_dest = dest + fullpath[len(source):]
-        this_dest_dir = os.path.dirname(this_dest)
+def CopyTree( source, 
+              dest,
+              excludes=None,
+              output_stream=None,
+            ):
+    import tqdm
 
-        if not os.path.isdir(this_dest_dir):
-            os.makedirs(this_dest_dir)
+    from CommonEnvironment import Any, ModifiableValue
+    from CommonEnvironment import RegularExpression
+    from CommonEnvironment.StreamDecorator import StreamDecorator
 
-        shutil.copy(fullpath, this_dest)
+    regexes = []
 
+    for exclude in (excludes or []):
+        exclude = exclude.replace(os.path.sep, '/')
+        if exclude.startswith('/'):
+            exclude = RemoveTrailingSep(source) + exclude
+
+        parts = exclude.rsplit('/', 1)
+        
+        if len(parts) == 1:
+            regexes.append(RegularExpression.WildcardSearchToRegularExpression(parts[-1].replace('/', os.path.sep)))
+        else:
+            regexes.append(( RegularExpression.WildcardSearchToRegularExpression(parts[0].replace('/', os.path.sep)),
+                             RegularExpression.WildcardSearchToRegularExpression(parts[1].replace('/', os.path.sep)),
+                           ))
+
+    to_ignore = {}
+    num_roots = 0
+
+    for root, dirs, items in os.walk(source):
+        this_to_ignore = set()
+
+        for collection in [ dirs, items ]:
+            index = 0
+            while index < len(collection):
+                item = collection[index]
+
+                for regex in regexes:
+                    if ( (isinstance(regex, tuple) and regex[0].match(root) and regex[1].match(item)) or 
+                         (not isinstance(regex, tuple) and regex.match(item))
+                       ):
+                        this_to_ignore.add(item)
+                        item = None
+
+                        break
+
+                if item is None:
+                    del collection[index]
+                else:
+                    index += 1
+
+        if this_to_ignore:
+            to_ignore[root] = this_to_ignore
+
+        if dirs or items:
+            num_roots += 1
+
+    with tqdm.tqdm( total=num_roots,
+                    file=StreamDecorator(output_stream),
+                    ncols=120,
+                    unit=" directories",
+                  ) as progress:
+        # ----------------------------------------------------------------------
+        def IgnoreFunc(root, items):
+            if root in to_ignore:
+                this_to_ignore = to_ignore[root]
+                
+                index = 0
+                while index < len(items):
+                    if items[index] in this_to_ignore:
+                        del items[index]
+                    else:
+                        index += 1
+
+            if items:
+                progress.update(1)
+
+            return root, items
+
+        # ----------------------------------------------------------------------
+
+        shutil.copytree(source, dest, ignore=IgnoreFunc)
+    
 # ----------------------------------------------------------------------
 def RemoveTree( path,
                 optional_retry_iterations=5,
