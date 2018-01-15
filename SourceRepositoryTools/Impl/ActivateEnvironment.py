@@ -18,6 +18,7 @@ import copy
 import itertools
 import json
 import os
+import shutil
 import sys
 import textwrap
 
@@ -331,22 +332,31 @@ def IsToolRepository( repository_root,
 
 # ----------------------------------------------------------------------
 @CommonEnvironmentImports.CommandLine.EntryPoint
-@CommonEnvironmentImports.CommandLine.FunctionConstraints( output_stream=None,
+@CommonEnvironmentImports.CommandLine.FunctionConstraints( output_dir=CommonEnvironmentImports.CommandLine.DirectoryTypeInfo(ensure_exists=False),
+                                                           output_stream=None,
                                                          )
-def EnvironmentDiffs( output_stream=sys.stdout,
+def EnvironmentDiffs( output_dir,
+                      output_stream=sys.stdout,
                     ):
+    if not os.path.isdir(output_dir):
+        os.makedirs(output_dir)
+
     original_env = LoadOriginalEnvironment()
     this_env = dict(os.environ)
 
     differences = {}
-
+    
     for k, v in six.iteritems(this_env):
         if ( k not in original_env or
              original_env[k] != v
            ):
             differences[k] = v
+
+            if v.endswith(Constants.TEMPORARY_FILE_EXTENSION):
+                shutil.copy2(v, os.path.join(output_dir, os.path.basename(v)))
         
-    output_stream.write(json.dumps(differences))
+    with open(os.path.join(output_dir, "environment.json"), 'w') as f:
+        json.dump(differences, f)
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
