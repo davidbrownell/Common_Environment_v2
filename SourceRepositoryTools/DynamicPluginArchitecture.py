@@ -110,7 +110,9 @@ def _DelayInit(environment_beacon_name, filenames):
 
     source_filename = os.getenv(environment_beacon_name)
     if not source_filename:
-        source_filename = Shell.GetEnvironment().CreateTempFilename(".DPA{}".format(Constants.TEMPORARY_FILE_EXTENSION))
+        source_filename = Shell.GetEnvironment().CreateTempFilename("{}{}".format( Constants.DYNAMIC_PLUGIN_ARCHITECTURE_FILE_EXTENSION,
+                                                                                   Constants.TEMPORARY_FILE_EXTENSION,
+                                                                                 ))
 
         commands.append(Shell.Set(environment_beacon_name, source_filename, preserve_original=False))
         os.environ[environment_beacon_name] = source_filename
