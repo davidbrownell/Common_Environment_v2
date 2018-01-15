@@ -353,7 +353,7 @@ def EnvironmentDiffs( output_dir,
             differences[k] = v
 
             if v.endswith(Constants.TEMPORARY_FILE_EXTENSION):
-                shutil.copy(v, os.path.join(output_dir, os.path.basename(v)))
+                shutil.copyfile(v, os.path.join(output_dir, os.path.basename(v)))
         
     with open(os.path.join(output_dir, "environment.json"), 'w') as f:
         json.dump(differences, f)
