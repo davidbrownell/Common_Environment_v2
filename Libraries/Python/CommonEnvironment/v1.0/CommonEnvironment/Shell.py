@@ -343,7 +343,7 @@ class Environment(Interface):
         return '\n'.join(results)
         
     # ----------------------------------------------------------------------
-    def ExecuteCommands(self, commands):
+    def ExecuteCommands(self, commands, output_stream=None):
         """\
         Creates a temporary script file, writes the commands to that file,
         and then executes it. Returns the result and output generated during 
@@ -362,7 +362,7 @@ class Environment(Interface):
         with CallOnExit(lambda: FileSystem.RemoveFile(temp_filename)):
             self.MakeFileExecutable(temp_filename)
 
-            return Process.Execute(temp_filename)
+            return Process.Execute(temp_filename, output_stream)
 
     # ---------------------------------------------------------------------------
     @classmethod
