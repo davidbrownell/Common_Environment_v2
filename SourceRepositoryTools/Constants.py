@@ -21,6 +21,8 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 TEMPORARY_FILE_EXTENSION                    = ".SourceRepositoryTools"
+REPO_DATA_FILE_EXTENSION                    = ".RepoData"
+DYNAMIC_PLUGIN_ARCHITECTURE_FILE_EXTENSION  = ".DPA"
 
 SETUP_ENVIRONMENT_NAME                      = "SetupEnvironment"
 ACTIVATE_ENVIRONMENT_NAME                   = "ActivateEnvironment"
