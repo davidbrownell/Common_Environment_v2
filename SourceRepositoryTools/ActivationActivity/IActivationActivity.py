@@ -128,21 +128,15 @@ class IActivationActivity(Interface):
                  output_stream,
                  process_lines=True,
                ):
-        temp_filename = environment.CreateTempFilename(environment.ScriptExtension)
-
-        with open(temp_filename, 'w') as f:
-            f.write(environment.GenerateCommands(cls._CreateCommandsImpl( constants,
-                                                                          environment,
-                                                                          configuration,
-                                                                          repositories,
-                                                                          version_specs,
-                                                                          generated_dir,
-                                                                        )))
-
-        with CallOnExit(lambda: os.remove(temp_filename)):
-            environment.MakeFileExecutable(temp_filename)
-
-            return Process.Execute(temp_filename, output_stream.write)
+        return environment.ExecuteCommands( cls._CreateCommandsImpl( constants,
+                                                                     environment,
+                                                                     configuration,
+                                                                     repositories,
+                                                                     version_specs,
+                                                                     generated_dir,
+                                                                   ),
+                                            output_stream=output_stream,
+                                          )
 
     # ----------------------------------------------------------------------
     @staticmethod
