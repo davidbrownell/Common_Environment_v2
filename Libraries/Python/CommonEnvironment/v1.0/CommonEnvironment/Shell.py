@@ -627,12 +627,12 @@ def GetEnvironment():
 
         result = platform.dist()
         if result[0]:
-            result = result[0]
+            result = result[0].lower()
 
             # TODO: Keeping Debian distinct from Ubuntu is causing problems; treat
             #       everything as Ubuntu for now.
-            if result == "Debian":
-                result = "Ubuntu"
+            if result == "debian":
+                result = "ubuntu"
 
             return result
 
