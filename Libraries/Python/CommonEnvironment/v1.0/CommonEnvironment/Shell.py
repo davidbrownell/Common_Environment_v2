@@ -354,7 +354,7 @@ class Environment(Interface):
         from CommonEnvironment import FileSystem
         from CommonEnvironment import Process
 
-        temp_filename = self.CreateScriptName(self.ScriptExtension)
+        temp_filename = self.CreateTempFilename(self.ScriptExtension)
 
         with open(temp_filename, 'w') as f:
             f.write(self.GenerateCommands(commands))
