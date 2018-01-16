@@ -549,6 +549,21 @@ def GetSCM(repo_root, throw_on_error=True):
                      potential="    NONE" if not potential else '\n'.join([ "    - {}".format(scm.Name) for scm in potential ]),
                    ))
     
+# ----------------------------------------------------------------------
+def GetSCMEx(dir, throw_on_error=True):
+    while True:
+        try:
+            return GetSCM(dir, throw_on_error=True)
+        except:
+            potential_dir = os.path.dirname(dir)
+            if potential_dir == dir:
+                if throw_on_error:
+                    raise
+
+                return
+
+            dir = potential_dir
+
 # ---------------------------------------------------------------------------
 def EnumSCMDirectories(root):
     assert os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL")

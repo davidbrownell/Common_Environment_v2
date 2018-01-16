@@ -218,4 +218,11 @@ class LinuxEnvironmentImpl(Environment):
         return 'cp "{source}" "{dest}"'.format( source=source,
                                                 dest=dest,
                                               )
+
+    # ----------------------------------------------------------------------
+    @staticmethod
+    def _GenerateMoveCommand(source, dest):
+        return 'mv "{source}" "{dest}"'.format( source=source,
+                                                dest=dest,
+                                              )
         

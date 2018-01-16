@@ -184,6 +184,10 @@ class StreamDecorator(object):
                      done_result=True,                  # Display the result
                      done_time=True,                    # Display the time delta
 
+                     display=True,                      # Display status results when complete. In most cases, this will remain True. It is useful to set this to False
+                                                        # for DoneManagers that create children DoneManagers and error percolation is used to return the result via the
+                                                        # non-displayed parent.
+
                      display_exceptions=True,           # Will display the exception if True
                      display_exception_callstack=True,  # Will display the exception with a callstack if True
                      suppress_exceptions=False,         # Will not propigate the exception if True
@@ -223,6 +227,9 @@ class StreamDecorator(object):
                                                         #     
                                                         #     sys.stdout.write("\n**\n{}\n**\n".format(sink.getvalue()))
                    ):
+        if not display:
+            line_prefix = ''
+
         done_suffix_functors = done_suffix_functor if isinstance(done_suffix_functor, list) else [ done_suffix_functor, ]
 
         start_time = TimeDelta()
@@ -273,11 +280,12 @@ class StreamDecorator(object):
             else:
                 content = ''
 
-            self.write("{prefix}{content}{suffix}\n" \
-                            .format( prefix=done_prefix[0],
-                                     content=content,
-                                     suffix=done_suffix[0],
-                                   ))
+            if display:
+                self.write("{prefix}{content}{suffix}\n" \
+                                .format( prefix=done_prefix[0],
+                                         content=content,
+                                         suffix=done_suffix[0],
+                                       ))
             self.flush()
 
             # Propagate the result

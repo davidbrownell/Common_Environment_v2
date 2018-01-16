@@ -8,4 +8,8 @@ except ImportError:
         
 import platform
 
-print_(platform.linux_distribution()[0])
+result = platform.dist()[0]
+if result == "Debian":
+    result = "Ubuntu"
+
+print_(result)
