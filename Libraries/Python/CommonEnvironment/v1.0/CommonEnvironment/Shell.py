@@ -627,7 +627,14 @@ def GetEnvironment():
 
         result = platform.dist()
         if result[0]:
-            return result[0].lower()
+            result = result[0]
+
+            # TODO: Keeping Debian distinct from Ubuntu is causing problems; treat
+            #       everything as Ubuntu for now.
+            if result == "Debian":
+                result = "Ubuntu"
+
+            return result
 
         try:
             platform_info = os.uname()                      # <Has no member> pylint: disable = E1101
