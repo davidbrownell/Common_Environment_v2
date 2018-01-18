@@ -550,16 +550,16 @@ def GetSCM(repo_root, throw_on_error=True):
                    ))
     
 # ----------------------------------------------------------------------
-def GetSCMEx(dir, throw_on_error=True):
+def GetSCMEx(path, throw_on_error=True):
     sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
     with CallOnExit(lambda: sys.path.pop(0)):
-        import SourceRepositoryTools
+        import SourceRepositoryTools        # <Unable to import> pylint: disable = F0401
 
-    root = SourceRepositoryTools.GetRepositoryRootForFile(os.path.join(dir, "Placeholder"))
+    root = SourceRepositoryTools.GetRepositoryRootForFile(os.path.join(path, "Placeholder"))
     return GetSCM(root, throw_on_error=throw_on_error)
 
 # ---------------------------------------------------------------------------
-def EnumSCMDirectories(root):
+def EnumSCMDirectories(path):
     assert os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL")
     sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
     with CallOnExit(lambda: sys.path.pop(0)):
@@ -567,7 +567,7 @@ def EnumSCMDirectories(root):
 
     scms = GetPotentialSCMs()
 
-    for root, directories, _ in os.walk(root):
+    for root, directories, _ in os.walk(path):
         for scm in scms:
             if scm.IsRootDir(root):
                 yield scm, root
