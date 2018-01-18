@@ -249,12 +249,10 @@ def CreateRepositoryBuildFunc( repository_name,
                no_squash=False,
                keep_temp_image=False,
                username="user",
-               groupname="codegroup",
+               groupname="code_group",
                output_stream=sys.stdout,
                verbose=False,
              ):
-        # TODO: Runas user
-
         with StreamDecorator(output_stream).DoneManager( line_prefix='',
                                                          done_prefix="\nResults: ",
                                                          done_suffix='\n',
@@ -305,8 +303,8 @@ def CreateRepositoryBuildFunc( repository_name,
                             update_dm.stream.write(output)
                             return update_dm.result
 
+                        # TODO: This only works for Mercurial; Git has different output
                         if "no changes found" in output:
-                            # TODO: This only works for Mercurial
                             has_changes = False
                         else:
                             update_dm.result, output = scm.Update(source_dir, SourceControlManagement.EmptyUpdateMergeArg())
