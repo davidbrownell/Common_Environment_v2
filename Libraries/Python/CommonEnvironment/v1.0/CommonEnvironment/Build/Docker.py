@@ -191,6 +191,12 @@ def CreateDockerBuild( name,
                                                          done_prefix="\nResults: ",
                                                          done_suffix='\n',
                                                        ) as dm:
+            if not _VerifyDocker():
+                dm.stream.write("ERROR: Ensure that docker is installed and available within this environment.\n")
+                dm.result = -1
+
+                return dm.result
+            
             output_dir = _GetOutputDir(calling_dir, configuration)
 
             return _DockerBuildImpl( name,
@@ -240,13 +246,25 @@ def CreateRepositoryBuildFunc( repository_name,
     @CommandLine.FunctionConstraints( output_stream=None,
                                     )
     def Build( force=False,
+               no_squash=False,
+               keep_temp_image=False,
+               username="user",
+               groupname="codegroup",
                output_stream=sys.stdout,
                verbose=False,
              ):
+        # TODO: Runas user
+
         with StreamDecorator(output_stream).DoneManager( line_prefix='',
                                                          done_prefix="\nResults: ",
                                                          done_suffix='\n',
                                                        ) as dm:
+            if not _VerifyDocker():
+                dm.stream.write("ERROR: Ensure that docker is installed and available within this environment.\n")
+                dm.result = -1
+
+                return dm.result
+
             output_dir = os.path.join(calling_dir, "Generated")
             
             source_dir = os.path.join(output_dir, "Source")
@@ -267,10 +285,17 @@ def CreateRepositoryBuildFunc( repository_name,
             dm.stream.write("Creating base image...")
             with dm.stream.DoneManager( done_suffix='\n',
                                       ) as this_dm:
+                # Verify that base image exists
+                this_dm.result, output = Process.Execute('docker image history "{}"'.format(base_docker_image))
+                if this_dm.result != 0:
+                    this_dm.stream.write("ERROR: The image '{}' doesn't exist.\n".format(base_docker_image))
+                    return this_dm.result
+
                 FileSystem.MakeDirs(base_dir)
 
                 # Get the full source code
                 scm = SourceControlManagement.GetSCMEx(calling_dir)
+                has_changes = True
 
                 if os.path.isdir(source_dir):
                     this_dm.stream.write("Updating source...")
@@ -280,11 +305,15 @@ def CreateRepositoryBuildFunc( repository_name,
                             update_dm.stream.write(output)
                             return update_dm.result
 
-                        update_dm.result, output = scm.Update(source_dir, SourceControlManagement.EmptyUpdateMergeArg())
-                        if update_dm.result != 0:
-                            update_dm.stream.write(output)
-                            return update_dm.result
-
+                        if "no changes found" in output:
+                            # TODO: This only works for Mercurial
+                            has_changes = False
+                        else:
+                            update_dm.result, output = scm.Update(source_dir, SourceControlManagement.EmptyUpdateMergeArg())
+                            if update_dm.result != 0:
+                                update_dm.stream.write(output)
+                                return update_dm.result
+                        
                 else:
                     if not os.path.isdir(os.path.dirname(source_dir)):
                         os.makedirs(os.path.dirname(source_dir))
@@ -301,34 +330,38 @@ def CreateRepositoryBuildFunc( repository_name,
                         os.rename(temp_dir, source_dir)
 
                 # Filter the source
-                with this_dm.stream.SingleLineDoneManager( "Filtering source...",
-                                                         ) as copy_dm:
-                    temp_dir = environment.CreateTempDirectory()
-                    FileSystem.RemoveTree(temp_dir)
-                    
-                    FileSystem.CopyTree( source_dir,
-                                         temp_dir,
-                                         excludes=[ "/.git",
-                                                    "/.gitignore",
-                                                    "/.hg",
-                                                    "/.hgignore",
-                    
-                                                    "*/Generated",
-                                                    "*/__pycache__",
-                                                    "*/Windows",
-                                                    "/*/src",
-                    
-                                                    "*.cmd",
-                                                    "*.pyc",
-                                                    "*.pyo",
-                                                  ] + (repository_source_excludes or []),
-                                         output_stream=copy_dm.stream,
-                                       )
-                    
-                    filtered_dir = os.path.join(base_dir, "Filtered")
-                    FileSystem.RemoveTree(filtered_dir)
-                    
-                    os.rename(temp_dir, filtered_dir)
+                filtered_dir = os.path.join(base_dir, "Filtered")
+                        
+                if os.path.isdir(filtered_dir) and not force and not has_changes:
+                    this_dm.stream.write("No changes were detected.\n")
+                else:
+                    with this_dm.stream.SingleLineDoneManager( "Filtering source...",
+                                                             ) as copy_dm:
+                        temp_dir = environment.CreateTempDirectory()
+                        FileSystem.RemoveTree(temp_dir)
+                        
+                        FileSystem.CopyTree( source_dir,
+                                             temp_dir,
+                                             excludes=[ "/.git",
+                                                        "/.gitignore",
+                                                        "/.hg",
+                                                        "/.hgignore",
+                        
+                                                        "*/Generated",
+                                                        "*/__pycache__",
+                                                        "*/Windows",
+                                                        "/*/src",
+                        
+                                                        "*.cmd",
+                                                        "*.pyc",
+                                                        "*.pyo",
+                                                      ] + (repository_source_excludes or []),
+                                             output_stream=copy_dm.stream,
+                                           )
+                        
+                        FileSystem.RemoveTree(filtered_dir)
+                        
+                        os.rename(temp_dir, filtered_dir)
 
                 # Create the dockerfile
                 this_dm.stream.write("Creating dockerfile...")
@@ -337,7 +370,6 @@ def CreateRepositoryBuildFunc( repository_name,
                         foundation_commands = textwrap.dedent(
                             """\
                             RUN link /usr/bin/python3 /usr/bin/python
-                            ENV DEVELOPMENT_ENVIRONMENT_LINUX_OVERRIDE Ubuntu
                             """)
                     else:
                         foundation_commands = ''
@@ -373,11 +405,12 @@ def CreateRepositoryBuildFunc( repository_name,
                                                                   docker_image_name,
                                                                 )
 
-                    command_line = 'docker build "{dir}" --tag "{name}:latest" --tag "{name}:{now_tag}"{force}' \
+                    command_line = 'docker build "{dir}" --tag "{name}:latest" --tag "{name}:{now_tag}"{squash}{force}' \
                                         .format( dir=base_dir,
                                                  name=base_docker_image_name,
                                                  now_tag=now_tag,
-                                                 force=" /force" if force else '',
+                                                 squash='' if no_squash else " --squash",
+                                                 force=" --no-cache" if force else '',
                                                )
 
                     docker_dm.result = Process.Execute(command_line, docker_dm.stream)
@@ -395,10 +428,13 @@ def CreateRepositoryBuildFunc( repository_name,
                                               ) as this_dm:
                         this_activated_dir = os.path.join(activated_dir, configuration or "Default")
                         FileSystem.MakeDirs(this_activated_dir)
-                
+
+                        unique_id = str(uuid.uuid4())
+
+                        temp_image_name = "{}_image".format(unique_id)
+                        temp_container_name = "{}_container".format(unique_id)
+
                         # Activate the image
-                        temp_container_name = str(uuid.uuid4())
-                
                         this_dm.stream.write("Activating...")
                         with this_dm.stream.DoneManager() as extract_dm:
                             command_line = 'docker run -it --name "{container_name}" "{docker_account_name}/{image_name}_base:latest" bash -c "cd {image_code_dir} && . ./ActivateEnvironment.sh {configuration} && python {image_code_base}/Common/Environment/SourceRepositoryTools/Impl/ActivateEnvironment.py EnvironmentDiffs"' \
@@ -441,8 +477,6 @@ def CreateRepositoryBuildFunc( repository_name,
                 
                         with CallOnExit(RemoveTempContainer):
                             # Commit the activate image
-                            temp_image_name = "{}_image".format(temp_container_name)                    
-                
                             this_dm.stream.write("Committing...")
                             with this_dm.stream.DoneManager() as commit_dm:
                                 command_line = 'docker commit {container_name} {image_name}' \
@@ -458,7 +492,10 @@ def CreateRepositoryBuildFunc( repository_name,
                 
                             # ----------------------------------------------------------------------
                             def RemoveTempImage():
-                                this_dm.stream.write("Removing temp image...")
+                                if keep_temp_image:
+                                    return
+
+                                this_dm.stream.write("Removing temp activated image...")
                                 with this_dm.stream.DoneManager() as remove_dm:
                                     remove_dm.result, output = Process.Execute('docker rmi "{}"'.format(temp_image_name))
                                     if remove_dm.result != 0:
@@ -474,21 +511,32 @@ def CreateRepositoryBuildFunc( repository_name,
                                         f.write(textwrap.dedent(
                                             """\
                                             FROM {temp_image_name}
-                                
-                                            CMD [ "/sbin/my_init" ]
+                                            
+                                            # Restrict access to files
+                                            RUN adduser --disabled-password --disabled-login --gecos "" "{username}" \\
+                                             && addgroup "{groupname}" \\
+                                             && adduser "{username}" "{groupname}" \\
+                                             && chown -R "{username}:{groupname}" "{image_code_base}" \\
+                                             && chmod -R o-rwx "{image_code_base}"
 
                                             ENV {env}
 
-                                            WORKDIR {image_code_dir}
-                                
                                             LABEL maintainer="{maintainer}"
+
+                                            # The following code ensures that the user is logged in as the appropriate 
+                                            # user in a bash prompt as the default behavior.
+                                            CMD [ "/sbin/my_init", "/sbin/setuser", "{username}", "bash" ]
+                                            WORKDIR {image_code_dir}
+                                            
                                             """).format( temp_image_name=temp_image_name,
                                                          env='\\\n'.join([ '  {}={} '.format(k, v) for k, v in six.iteritems(environment_diffs) ]),
+                                                         image_code_base=image_code_base,
                                                          image_code_dir=image_code_dir,                             
                                                          maintainer=maintainer,
+                                                         username=username,
+                                                         groupname=groupname,
                                                        ))
                                 
-                                # Build the image
                                 this_dm.stream.write("\nBuilding Docker image...")
                                 with this_dm.stream.DoneManager() as docker_dm:
                                     name = "{}/{}".format( docker_account_name,
@@ -497,11 +545,12 @@ def CreateRepositoryBuildFunc( repository_name,
                                     if configuration:
                                         name += "_{}".format(configuration)
                                 
-                                    command_line = 'docker build "{dir}" --tag "{name}:latest" --tag "{name}:{now_tag}"{force}' \
+                                    command_line = 'docker build "{dir}" --tag "{name}:latest" --tag "{name}:{now_tag}"{squash}{force}' \
                                                         .format( dir=this_activated_dir,
                                                                  name=name,
                                                                  now_tag=now_tag,
-                                                                 force=" /force" if force else '',
+                                                                 squash='' if no_squash else " --squash",
+                                                                 force=" --no-cache" if force else '',
                                                                )
                                 
                                     docker_dm.result = Process.Execute(command_line, docker_dm.stream)
@@ -529,6 +578,11 @@ def _GetCallingDir():
 # ----------------------------------------------------------------------
 def _GetOutputDir(calling_dir, configuration):
     return os.path.join(calling_dir, "GeneratedCode", configuration)
+
+# ----------------------------------------------------------------------
+def _VerifyDocker():
+    result, output = Process.Execute("docker version")
+    return "Client:" in output and "Server:" in output
 
 # ----------------------------------------------------------------------
 def _DockerBuildImpl( name,
