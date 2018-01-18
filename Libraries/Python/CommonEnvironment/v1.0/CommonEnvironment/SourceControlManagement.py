@@ -529,7 +529,7 @@ def GetSCM(repo_root, throw_on_error=True):
     for scm in potential:
         if scm.IsAvailable():
             available.append(scm)
-            if scm.IsActive(repo_root):
+            if repo_root is not None and scm.IsActive(repo_root):
                 return scm
 
     if not throw_on_error:
@@ -550,22 +550,16 @@ def GetSCM(repo_root, throw_on_error=True):
                    ))
     
 # ----------------------------------------------------------------------
-def GetSCMEx(dir, throw_on_error=True):
-    while True:
-        try:
-            return GetSCM(dir, throw_on_error=True)
-        except:
-            potential_dir = os.path.dirname(dir)
-            if potential_dir == dir:
-                if throw_on_error:
-                    raise
+def GetSCMEx(path, throw_on_error=True):
+    sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
+    with CallOnExit(lambda: sys.path.pop(0)):
+        import SourceRepositoryTools        # <Unable to import> pylint: disable = F0401
 
-                return
-
-            dir = potential_dir
+    root = SourceRepositoryTools.GetRepositoryRootForFile(os.path.join(path, "Placeholder"))
+    return GetSCM(root, throw_on_error=throw_on_error)
 
 # ---------------------------------------------------------------------------
-def EnumSCMDirectories(root):
+def EnumSCMDirectories(path):
     assert os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL")
     sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
     with CallOnExit(lambda: sys.path.pop(0)):
@@ -573,7 +567,7 @@ def EnumSCMDirectories(root):
 
     scms = GetPotentialSCMs()
 
-    for root, directories, _ in os.walk(root):
+    for root, directories, _ in os.walk(path):
         for scm in scms:
             if scm.IsRootDir(root):
                 yield scm, root
@@ -581,4 +575,4 @@ def EnumSCMDirectories(root):
                 continue
 
         if Constants.GENERATED_DIRECTORY_NAME in directories:
-            directories.erase(Constants.GENERATED_DIRECTORY_NAME)
+            directories.remove(Constants.GENERATED_DIRECTORY_NAME)

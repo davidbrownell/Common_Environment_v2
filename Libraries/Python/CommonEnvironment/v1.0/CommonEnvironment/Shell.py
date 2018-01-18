@@ -619,7 +619,7 @@ def GetPotentialEnvironments():
 def GetEnvironment():
     # ----------------------------------------------------------------------
     def GetPlatform():
-        result = os.getenv("DEVELOPMENT_ENVIRONMENT_LINUX_OVERRIDE")
+        result = os.getenv("DEVELOPMENT_ENVIRONMENT_LINUX_NAME_OVERRIDE")
         if result:
             return result.lower()
 
