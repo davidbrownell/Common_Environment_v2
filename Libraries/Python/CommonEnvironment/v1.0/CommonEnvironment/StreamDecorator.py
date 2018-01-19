@@ -87,9 +87,13 @@ class StreamDecorator(object):
         encoding = None
 
         if self._streams:
-            encoding = self._streams[0].encoding
             for stream in self._streams:
-                assert stream.encoding == encoding, (stream.encoding, encoding)
+                this_encoding = getattr(stream, "encoding", None)
+                if this_encoding is not None:
+                    if encoding is None:
+                        encoding = this_encoding
+                    else:
+                        assert this_encoding == encoding, (this_encoding, encoding)
             
         self.encoding                       = encoding
         
