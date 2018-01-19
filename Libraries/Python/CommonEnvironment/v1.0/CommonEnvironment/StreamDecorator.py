@@ -84,6 +84,19 @@ class StreamDecorator(object):
         self.IsSet                          = Any(self._streams, lambda stream: stream and getattr(stream, "IsSet", True))
         self.IsAssociatedStream             = is_associated_stream or Any(self._streams, lambda stream: stream and getattr(stream, "IsAssociatedStream", False))
 
+        encoding = None
+
+        if self._streams:
+            for stream in self._streams:
+                this_encoding = getattr(stream, "encoding", None)
+                if this_encoding is not None:
+                    if encoding is None:
+                        encoding = this_encoding
+                    else:
+                        assert this_encoding == encoding, (this_encoding, encoding)
+            
+        self.encoding                       = encoding
+        
     # ---------------------------------------------------------------------------
     def write(self, content, custom_line_prefix=''):
         if not self._streams or not content:
