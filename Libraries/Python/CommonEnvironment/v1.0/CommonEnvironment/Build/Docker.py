@@ -214,7 +214,7 @@ def CreateDockerBuild( name,
 # ----------------------------------------------------------------------
 def CreateRepositoryBuildFunc( repository_name,
                                repository_uri,
-                               docker_account_name,
+                               docker_username,
                                docker_image_name,
                                base_docker_image,
                                maintainer,
@@ -241,6 +241,9 @@ def CreateRepositoryBuildFunc( repository_name,
     calling_dir = _GetCallingDir()
     repository_activation_configurations = repository_activation_configurations or [ None, ]
 
+    username = "source_user"
+    groupname = "source_users"
+
     # ----------------------------------------------------------------------
     @CommandLine.EntryPoint
     @CommandLine.FunctionConstraints( output_stream=None,
@@ -248,8 +251,6 @@ def CreateRepositoryBuildFunc( repository_name,
     def Build( force=False,
                no_squash=False,
                keep_temp_image=False,
-               username="user",
-               groupname="code_group",
                output_stream=sys.stdout,
                verbose=False,
              ):
@@ -368,38 +369,55 @@ def CreateRepositoryBuildFunc( repository_name,
                         foundation_commands = textwrap.dedent(
                             """\
                             RUN link /usr/bin/python3 /usr/bin/python
-                            """)
+                            
+                            RUN adduser --disabled-password --disabled-login --gecos "" "{username}" \\
+                             && addgroup "{groupname}" \\
+                             && adduser "{username}" "{groupname}"
+                            """).format( username=username,
+                                         groupname=groupname,
+                                       )
                     else:
-                        foundation_commands = ''
+                        foundation_commands = "# Foundation commands were executed in the baseimage"
 
                     with open(os.path.join(base_dir, "Dockerfile"), 'w') as f:
                         f.write(textwrap.dedent(
                             """\
                             FROM {base_image}
 
-                            CMD [ "/sbin/my_init" ]
-
                             {foundation_commands}
 
                             COPY Filtered {image_code_dir}
 
                             RUN cd {image_code_dir} \\
-                             && ./SetupEnvironment.sh {configurations}
+                             && ./SetupEnvironment.sh
+
+                            RUN chown -R {username}:{groupname} {image_code_dir} \\
+                             && chmod g-s {image_code_dir}/Generated/Linux \\
+                             && chmod 0750 {image_code_dir}/Generated/Linux \\
+                             && chmod -R o-rwx {image_code_dir}
+
+                            # Cleanup
+                            RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
                             LABEL maintainer="{maintainer}"
 
-                            RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+                            # By default, run as bash prompt as the source code user
+                            WORKDIR {image_code_dir}
+                            CMD [ "/sbin/my_init", "/sbin/setuser", "{username}", "bash" ]
+                            
                             """).format( base_image=base_docker_image,
                                          foundation_commands=foundation_commands,
                                          image_code_dir=image_code_dir,
-                                         configurations='' if not repository_setup_configurations else ' '.join([ '"/configuration={}"'.format(config) for config in repository_setup_configurations ]),
+                                         configurations='' if not repository_setup_configurations else ' '.join([ '\\"/configuration={}\\"'.format(config) for config in repository_setup_configurations ]),
+                                         username=username,
+                                         groupname=groupname,
                                          maintainer=maintainer,
                                        ))
 
                 # Build the image
                 this_dm.stream.write("\nBuilding Docker image...")
                 with this_dm.stream.DoneManager() as docker_dm:
-                    base_docker_image_name = "{}/{}_base".format( docker_account_name,
+                    base_docker_image_name = "{}/{}_base".format( docker_username,
                                                                   docker_image_name,
                                                                 )
 
@@ -435,11 +453,12 @@ def CreateRepositoryBuildFunc( repository_name,
                         # Activate the image
                         this_dm.stream.write("Activating...")
                         with this_dm.stream.DoneManager() as extract_dm:
-                            command_line = 'docker run -it --name "{container_name}" "{docker_account_name}/{image_name}_base:latest" bash -c "cd {image_code_dir} && . ./ActivateEnvironment.sh {configuration} && python {image_code_base}/Common/Environment/SourceRepositoryTools/Impl/ActivateEnvironment.py EnvironmentDiffs"' \
+                            command_line = 'docker run -it --name "{container_name}" "{docker_username}/{image_name}_base:latest" /sbin/my_init -- /sbin/setuser "{username}" bash -c "cd {image_code_dir} && . ./ActivateEnvironment.sh {configuration} && python {image_code_base}/Common/Environment/SourceRepositoryTools/Impl/ActivateEnvironment.py EnvironmentDiffs"' \
                                                 .format( container_name=temp_container_name,
-                                                         docker_account_name=docker_account_name,
+                                                         docker_username=docker_username,
                                                          image_name=docker_image_name,
                                                          configuration=configuration or '',
+                                                         username=username,
                                                          image_code_dir=image_code_dir,
                                                          image_code_base=image_code_base,
                                                        )
@@ -510,44 +529,37 @@ def CreateRepositoryBuildFunc( repository_name,
                                             """\
                                             FROM {temp_image_name}
                                             
-                                            # Restrict access to files
-                                            RUN adduser --disabled-password --disabled-login --gecos "" "{username}" \\
-                                             && addgroup "{groupname}" \\
-                                             && adduser "{username}" "{groupname}" \\
-                                             && chown -R "{username}:{groupname}" "{image_code_base}" \\
-                                             && chmod -R o-rwx "{image_code_base}"
-
                                             ENV {env}
 
+                                            # By default, run as a bash prompt as the source code user
+                                            CMD [ "/sbin/my_init", "/sbin/setuser", "{username}", "bash" ]
+                                            
                                             LABEL maintainer="{maintainer}"
 
-                                            # The following code ensures that the user is logged in as the appropriate 
-                                            # user in a bash prompt as the default behavior.
-                                            CMD [ "/sbin/my_init", "/sbin/setuser", "{username}", "bash" ]
-                                            WORKDIR {image_code_dir}
-                                            
                                             """).format( temp_image_name=temp_image_name,
                                                          env='\\\n'.join([ '  {}={} '.format(k, v) for k, v in six.iteritems(environment_diffs) ]),
-                                                         image_code_base=image_code_base,
                                                          image_code_dir=image_code_dir,                             
                                                          maintainer=maintainer,
                                                          username=username,
-                                                         groupname=groupname,
                                                        ))
                                 
                                 this_dm.stream.write("\nBuilding Docker image...")
                                 with this_dm.stream.DoneManager() as docker_dm:
-                                    name = "{}/{}".format( docker_account_name,
+                                    name = "{}/{}".format( docker_username,
                                                            docker_image_name,
                                                          )
+                                    
                                     if configuration:
-                                        name += "_{}".format(configuration)
+                                        tag_suffix = "_{}".format(configuration)
+                                    else:
+                                        tag_suffix = ''
                                 
-                                    command_line = 'docker build "{dir}" --tag "{name}:latest" --tag "{name}:{now_tag}"{squash}{force}' \
+                                    command_line = 'docker build "{dir}" --tag "{name}:latest{tag_suffix}" --tag "{name}:{now_tag}{tag_suffix}"{squash}{force}' \
                                                         .format( dir=this_activated_dir,
                                                                  name=name,
+                                                                 tag_suffix=tag_suffix,
                                                                  now_tag=now_tag,
-                                                                 squash='' if no_squash else " --squash",
+                                                                 squash='', # Squash isn't supported for this layer...     if no_squash else " --squash",
                                                                  force=" --no-cache" if force else '',
                                                                )
                                 
