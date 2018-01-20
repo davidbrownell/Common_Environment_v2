@@ -365,31 +365,59 @@ def CreateRepositoryBuildFunc( repository_name,
                 # Create the dockerfile
                 this_dm.stream.write("Creating dockerfile...")
                 with this_dm.stream.DoneManager():
+                    setup_statement = "./SetupEnvironment.sh{}".format('' if not repository_activation_configurations else ' {}'.format(' '.join([ '"/configuration={}"'.format(config) for config in (repository_setup_configurations or []) ])))
+
                     if "baseimage" in base_docker_image:
-                        foundation_commands = textwrap.dedent(
+                        commands = textwrap.dedent(
                             """\
                             RUN link /usr/bin/python3 /usr/bin/python
                             
                             RUN adduser --disabled-password --disabled-login --gecos "" "{username}" \\
                              && addgroup "{groupname}" \\
                              && adduser "{username}" "{groupname}"
+
+                            RUN cd {image_code_dir} \\
+                             && {setup_statement}
+
                             """).format( username=username,
                                          groupname=groupname,
+                                         image_code_dir=image_code_dir,
+                                         setup_statement=setup_statement,
                                        )
                     else:
-                        foundation_commands = "# Foundation commands were executed in the baseimage"
+                        import io
+
+                        with io.open( os.path.join(base_dir, "ActivateEnvironmentImpl.sh"),
+                                      'w',
+                                      newline='\n',
+                                    ) as f:
+                            f.write(textwrap.dedent(
+                                """\
+                                #!/bin/bash
+                                . {image_code_base}/Common/Environment/ActivateEnvironment.sh
+                                cd {image_code_dir}
+                                {setup_statement}
+                                """).format( image_code_base=image_code_base,
+                                             image_code_dir=image_code_dir,
+                                             setup_statement=setup_statement,
+                                           ))
+
+                        commands = textwrap.dedent(
+                            """\
+                            COPY ActivateEnvironmentImpl.sh /tmp/ActivateEnvironmentImpl.sh
+                            
+                            RUN chmod a+x /tmp/ActivateEnvironmentImpl.sh \\
+                             && /tmp/ActivateEnvironmentImpl.sh
+                            """)
 
                     with open(os.path.join(base_dir, "Dockerfile"), 'w') as f:
                         f.write(textwrap.dedent(
                             """\
                             FROM {base_image}
 
-                            {foundation_commands}
-
                             COPY Filtered {image_code_dir}
 
-                            RUN cd {image_code_dir} \\
-                             && ./SetupEnvironment.sh
+                            {commands}
 
                             RUN chown -R {username}:{groupname} {image_code_dir} \\
                              && chmod g-s {image_code_dir}/Generated/Linux \\
@@ -406,7 +434,7 @@ def CreateRepositoryBuildFunc( repository_name,
                             CMD [ "/sbin/my_init", "/sbin/setuser", "{username}", "bash" ]
                             
                             """).format( base_image=base_docker_image,
-                                         foundation_commands=foundation_commands,
+                                         commands=commands,
                                          image_code_dir=image_code_dir,
                                          configurations='' if not repository_setup_configurations else ' '.join([ '\\"/configuration={}\\"'.format(config) for config in repository_setup_configurations ]),
                                          username=username,
@@ -549,7 +577,7 @@ def CreateRepositoryBuildFunc( repository_name,
                                                            docker_image_name,
                                                          )
                                     
-                                    if configuration:
+                                    if len(repository_activation_configurations) > 1:
                                         tag_suffix = "_{}".format(configuration)
                                     else:
                                         tag_suffix = ''
@@ -572,6 +600,30 @@ def CreateRepositoryBuildFunc( repository_name,
     # ----------------------------------------------------------------------
 
     return Build
+
+# ----------------------------------------------------------------------
+def CreateRepositoryCleanFunc():
+    calling_dir = _GetCallingDir()
+
+    # ----------------------------------------------------------------------
+    @CommandLine.EntryPoint
+    @CommandLine.FunctionConstraints( output_stream=None,
+                                    )
+    def Clean( output_stream=sys.stdout,
+             ):
+        potential_dir = os.path.join(calling_dir, "Generated")
+
+        if not os.path.isdir(potential_dir):
+            output_stream.write("'{}' does not exist.\n".format(potential_dir))
+        else:
+            FileSystem.RemoveTree(potential_dir)
+            output_stream.write("'{}' has been removed.\n".format(potential_dir))
+
+        return 0
+
+    # ----------------------------------------------------------------------
+
+    return Clean
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------

@@ -15,29 +15,20 @@
 """Builds this Docker image"""
 
 import os
-import shutil
 import sys
 
-from collections import OrderedDict
-
-from CommonEnvironment import ToSnakeCase
 from CommonEnvironment import Build as BuildImpl
 from CommonEnvironment.Build import Docker as DockerImpl
-
-from CommonEnvironment import CommandLine
-from CommonEnvironment import FileSystem
-from CommonEnvironment import Shell
-from CommonEnvironment import SourceControlManagement
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
-APPLICATION_NAME                            = "PythonCommonEnvironment"
+APPLICATION_NAME                            = "Docker_CommonEnvironment"
 
 Build                                       = DockerImpl.CreateRepositoryBuildFunc( "Common_Environment",
-                                                                                    FileSystem.RemoveTrailingSep(os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL")),
+                                                                                    os.path.join(_script_dir, "..", ".."),
                                                                                     "dbrownell",
                                                                                     "common_environment",
                                                                                     "phusion/baseimage:latest",
@@ -45,11 +36,7 @@ Build                                       = DockerImpl.CreateRepositoryBuildFu
                                                                                     repository_source_excludes=[ "/Tools/Python/v2.7.10",
                                                                                                                ],
                                                                                   )
-
-# ----------------------------------------------------------------------
-@CommandLine.EntryPoint
-def Clean():
-    FileSystem.RemoveTree(os.path.join(_script_dir, "Generated"))
+Clean                                       = DockerImpl.CreateRepositoryCleanFunc()
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
