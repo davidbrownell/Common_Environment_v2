@@ -15,6 +15,7 @@
 import os
 import re
 import sys
+import uuid
 
 from .LinuxEnvironmentImpl import LinuxEnvironmentImpl
 
@@ -31,11 +32,12 @@ class DebianEnvironment(LinuxEnvironmentImpl):
     def __init__(self):
         super(DebianEnvironment, self).__init__()
         
-        output_filename = "/tmp/Shell.Impl.Environment"
+        output_filename = "/tmp/{}".format(uuid.uuid4())
         
         # Version
         os.system('cat /etc/lsb-release > "{}"'.format(output_filename))
-        with open(output_filename) as f: content = f.read()
+        with open(output_filename) as f: 
+            content = f.read()
         os.remove(output_filename)
         
         match = re.search(r"DISTRIB_RELEASE=(?P<version>[\d\.]+)", content)
