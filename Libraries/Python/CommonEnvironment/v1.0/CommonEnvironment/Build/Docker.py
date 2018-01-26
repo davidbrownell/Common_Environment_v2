@@ -127,8 +127,8 @@ def CreateBuildFunc( name,
                                                        output_dir,
                                                        latest=False,
                                                        force=force,
+                                                       no_squash=True,
                                                        output_stream=this_dm.stream,
-                                                       verbose=verbose,
                                                      )
                     if this_dm.result != 0:
                         return this_dm.result
@@ -151,7 +151,6 @@ def CreateCleanFunc( configurations,
                                     )
     def Clean( configuration,
                output_stream=sys.stdout,
-               verbose=False,
              ):
         with StreamDecorator(output_stream).DoneManager( line_prefix='',
                                                          done_prefix="\nResults: ",
@@ -172,42 +171,74 @@ def CreateCleanFunc( configurations,
 
 # ----------------------------------------------------------------------
 def CreateDockerBuild( name,
-                       configurations,
+                       optional_configurations,
                      ):
     calling_dir = _GetCallingDir()
 
-    # ----------------------------------------------------------------------
-    @CommandLine.EntryPoint
-    @CommandLine.FunctionConstraints( configuration=CommandLine.EnumTypeInfo(configurations.keys()),
-                                      output_stream=None,
-                                    )
-    def DockerBuild( configuration,
-                     latest=False,
-                     force=False,
-                     output_stream=sys.stdout,
-                     verbose=False,
-                   ):
-        with StreamDecorator(output_stream).DoneManager( line_prefix='',
-                                                         done_prefix="\nResults: ",
-                                                         done_suffix='\n',
-                                                       ) as dm:
-            if not _VerifyDocker():
-                dm.stream.write("ERROR: Ensure that docker is installed and available within this environment.\n")
-                dm.result = -1
+    if optional_configurations:
+        # ----------------------------------------------------------------------
+        @CommandLine.EntryPoint
+        @CommandLine.FunctionConstraints( configuration=CommandLine.EnumTypeInfo(optional_configurations.keys()),
+                                          output_stream=None,
+                                        )
+        def DockerBuild( configuration,
+                         latest=False,
+                         force=False,
+                         no_squash=False,
+                         output_stream=sys.stdout,
+                       ):
+            with StreamDecorator(output_stream).DoneManager( line_prefix='',
+                                                             done_prefix="\nResults: ",
+                                                             done_suffix='\n',
+                                                           ) as dm:
+                if not _VerifyDocker():
+                    dm.stream.write("ERROR: Ensure that docker is installed and available within this environment.\n")
+                    dm.result = -1
 
-                return dm.result
-            
-            output_dir = _GetOutputDir(calling_dir, configuration)
+                    return dm.result
+                
+                output_dir = _GetOutputDir(calling_dir, configuration)
 
-            return _DockerBuildImpl( name,
-                                     output_dir,
-                                     latest=latest,
-                                     force=force,
-                                     output_stream=dm.stream,
-                                     verbose=verbose,
-                                   )
+                return _DockerBuildImpl( name,
+                                         output_dir,
+                                         latest=latest,
+                                         force=force,
+                                         no_squash=no_squash,
+                                         output_stream=dm.stream,
+                                       )
 
-    # ----------------------------------------------------------------------
+        # ----------------------------------------------------------------------
+
+    else:
+        # ----------------------------------------------------------------------
+        @CommandLine.EntryPoint
+        @CommandLine.FunctionConstraints( output_stream=None,
+                                        )
+        def DockerBuild( latest=False,
+                         force=False,
+                         no_squash=False,
+                         output_stream=sys.stdout,
+                       ):
+            with StreamDecorator(output_stream).DoneManager( line_prefix='',
+                                                             done_prefix="\nResults: ",
+                                                             done_suffix='\n',
+                                                           ) as dm:
+                if not _VerifyDocker():
+                    dm.stream.write("ERROR: Ensure that docker is installed and available within this environment.\n")
+                    dm.result = -1
+
+                    return dm.result
+
+                return _DockerBuildImpl( name,
+                                         calling_dir,
+                                         latest=latest,
+                                         force=force,
+                                         no_squash=no_squash,
+                                         output_stream=dm.stream,
+                                         has_configurations=False,
+                                       )
+
+        # ----------------------------------------------------------------------
 
     return DockerBuild
 
@@ -252,7 +283,6 @@ def CreateRepositoryBuildFunc( repository_name,
                no_squash=False,
                keep_temp_image=False,
                output_stream=sys.stdout,
-               verbose=False,
              ):
         with StreamDecorator(output_stream).DoneManager( line_prefix='',
                                                          done_prefix="\nResults: ",
@@ -639,7 +669,7 @@ def _GetCallingDir():
 
 # ----------------------------------------------------------------------
 def _GetOutputDir(calling_dir, configuration):
-    return os.path.join(calling_dir, "GeneratedCode", configuration)
+    return os.path.join(calling_dir, "Generated", configuration)
 
 # ----------------------------------------------------------------------
 def _VerifyDocker():
@@ -651,19 +681,32 @@ def _DockerBuildImpl( name,
                       output_dir,
                       latest,
                       force,
+                      no_squash,
                       output_stream,
-                      verbose,
+                      has_configurations=True,
                     ):
-    tags = [ os.path.basename(output_dir),
-           ]
+    tags = []
 
+    if has_configurations:
+        basename = os.path.basename(output_dir)
+
+        tags += [ basename,
+                  "{}_latest".format(basename),
+                ]
+    
     if latest:
         tags.append("latest")
 
-    command_line = 'docker build "{output}" {tags}{force}' \
-                        .format( output=output_dir,
-                                 tags=' '.join([ '--tag {}:{}'.format(name, tag) for tag in tags ]),
-                                 force=" --no-cache" if force else '',
-                               )
+    if not tags:
+        tags = [ "--tag {}".format(name),
+               ]
+    else:
+        tags = [ "--tag {}:{}".format(name, tag) for tag in tags ]
 
+    command_line = 'docker build "{output}" {tags}{force}{squash}' \
+                        .format( output=output_dir,
+                                 tags=' '.join(tags),
+                                 force=" --no-cache" if force else '',
+                                 squash='' if no_squash else " --squash",
+                               )
     return Process.Execute(command_line, output_stream)
