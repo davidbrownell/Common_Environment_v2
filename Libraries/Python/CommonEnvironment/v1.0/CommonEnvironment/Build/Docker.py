@@ -127,7 +127,7 @@ def CreateBuildFunc( name,
                                                        output_dir,
                                                        latest=False,
                                                        force=force,
-                                                       no_squash=True,
+                                                       no_squash=False,
                                                        output_stream=this_dm.stream,
                                                      )
                     if this_dm.result != 0:
