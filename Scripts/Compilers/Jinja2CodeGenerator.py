@@ -12,6 +12,7 @@
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 # |  
 # ----------------------------------------------------------------------
+import hashlib
 import itertools
 import os
 import sys
@@ -129,6 +130,19 @@ class CodeGenerator( AtomicInputProcessingMixin,
                 jinja2_context[k] = v
 
         context.jinja2_context = jinja2_context
+
+        # Calculate the hashes. We won't use this is the code below, but it
+        # will be used during comparison to determine if an input file has
+        # changed.
+
+        # ----------------------------------------------------------------------
+        def CalculateHash(input_filename):
+            with open(input_filename, 'rb') as f:
+                return hashlib.sha256(f.read()).digest()
+
+        # ----------------------------------------------------------------------
+
+        context.hashes = [ CalculateHash(input_filename) for input_filename in context.input_filenames ]
 
         # Get the output filenames
         if not context.preserve_dir_structure:
