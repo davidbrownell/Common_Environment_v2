@@ -968,29 +968,30 @@ def _GetFileInfo( desc,
                                     )
 
                 # ----------------------------------------------------------------------
+                def CreateFileInfoWithHash(filename, info=None):
+                    if info is None:
+                        info = CreateFileInfo(filename)
+
+                    sha = hashlib.sha256()
+
+                    with open(filename, 'rb') as f:
+                        while True:
+                            data = f.read(hash_block_size)
+                            if not data:
+                                break
+
+                            sha.update(data)
+
+                    info.Hash = sha.hexdigest()
+
+                    return info
+
+                # ----------------------------------------------------------------------
 
                 if ssd:
                     # If we are working with a SSD drive, read and calculate within
                     # the same thread (but files will be run concurrently across many
                     # threads).
-
-                    # ----------------------------------------------------------------------
-                    def CreateFileInfoWithHash(filename):
-                        info = CreateFileInfo(filename)
-
-                        sha = hashlib.sha256()
-
-                        with open(filename, 'rb') as f:
-                            while True:
-                                data = f.read(hash_block_size)
-                                if not data:
-                                    break
-
-                                sha.update(data)
-
-                        info.Hash = sha.hexdigest()
-
-                        return info
 
                     # ----------------------------------------------------------------------
                     def Cleanup():
@@ -1001,7 +1002,8 @@ def _GetFileInfo( desc,
                 else:
                     # Read and caclualte in different threads, but only run one file
                     # at a time.
-
+                    CreateFileInfoWithHashNoWorkerThread = CreateFileInfoWithHash
+                    
                     block_queue = six.moves.queue.Queue(100)
                     quit_event = threading.Event()
 
@@ -1038,6 +1040,10 @@ def _GetFileInfo( desc,
                     def CreateFileInfoWithHash(filename):
                         info = CreateFileInfo(filename)
 
+                        # Don't execute via multiple threads if the filesize is small
+                        if info.Size <= hash_block_size * 5:
+                            return CreateFileInfoWithHashNoWorkerThread(filename, info=info)
+
                         sha.value = hashlib.sha256()
 
                         with open(filename, 'rb') as f:
@@ -1057,17 +1063,19 @@ def _GetFileInfo( desc,
                     # ----------------------------------------------------------------------
 
                 with CallOnExit(Cleanup):
+                    func = CreateFileInfo if simple_compare else CreateFileInfoWithHash
+
                     # ----------------------------------------------------------------------
                     def CalculateHash(filename, on_status_update):
                         if not disable_progress_status:
                             on_status_update(FileSystem.GetSizeDisplay(os.path.getsize(filename)))
 
-                        return CreateInfo(filename)
+                        return func(filename)
 
                     # ----------------------------------------------------------------------
 
                     file_info += TaskPool.Transform( input_files,
-                                                     CreateFileInfo if simple_compare else CreateFileInfoWithHash,
+                                                     func,
                                                      this_dm.stream,
                                                      num_concurrent_tasks=None if ssd else 1,
                                                      name_functor=lambda index, item: item,
