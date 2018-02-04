@@ -23,6 +23,7 @@ import re
 import shutil
 import sys
 import textwrap
+import threading
 
 from collections import OrderedDict
 
@@ -98,8 +99,8 @@ def Offsite( backup_name,
              traverse_exclude=None,
              display_only=False,
              working_dir=None,
-             disable_progress_status=False,
              hash_block_size=None,
+             disable_progress_status=False,
              output_stream=sys.stdout,
              verbose=False,
              preserve_ansi_escape_sequences=False,
@@ -875,7 +876,7 @@ def _GetFileInfo( desc,
                   disable_progress_status,
                   hash_block_size=None,
                 ):
-    hash_block_size = hash_block_size or 4096
+    hash_block_size = hash_block_size or 65536
 
     output_stream.write("Processing '{}'...".format(desc))
     with output_stream.DoneManager() as dm:
@@ -967,35 +968,111 @@ def _GetFileInfo( desc,
                                     )
 
                 # ----------------------------------------------------------------------
-                def CreateFileInfoWithHash(filename, on_status_update):
-                    info = CreateFileInfo(filename)
 
-                    if not disable_progress_status:
-                        on_status_update(FileSystem.GetSizeDisplay(info.Size))
+                if ssd:
+                    # If we are working with a SSD drive, read and calculate within
+                    # the same thread (but files will be run concurrently across many
+                    # threads).
 
-                    sha = hashlib.sha256()
+                    # ----------------------------------------------------------------------
+                    def CreateFileInfoWithHash(filename):
+                        info = CreateFileInfo(filename)
 
-                    with open(filename, 'rb') as f:
+                        sha = hashlib.sha256()
+
+                        with open(filename, 'rb') as f:
+                            while True:
+                                data = f.read(hash_block_size)
+                                if not data:
+                                    break
+
+                                sha.update(data)
+
+                        info.Hash = sha.hexdigest()
+
+                        return info
+
+                    # ----------------------------------------------------------------------
+                    def Cleanup():
+                        pass
+
+                    # ----------------------------------------------------------------------
+
+                else:
+                    # Read and caclualte in different threads, but only run one file
+                    # at a time.
+
+                    block_queue = six.moves.queue.Queue(100)
+                    quit_event = threading.Event()
+
+                    sha = ModifiableValue(None)
+
+                    # ----------------------------------------------------------------------
+                    def WorkerProc():
                         while True:
-                            data = f.read(hash_block_size)
-                            if not data:
+                            if quit_event.is_set():
                                 break
 
-                            sha.update(data)
+                            try:
+                                block = block_queue.get(True, 0.25) # Seconds
 
-                    info.Hash = sha.hexdigest()
+                                assert sha.value
+                                sha.value.update(block)
 
-                    return info
+                                block_queue.task_done()
 
-                # ----------------------------------------------------------------------
+                            except six.moves.queue.Empty:
+                                pass
 
-                file_info += TaskPool.Transform( input_files,
-                                                 CreateFileInfo if simple_compare else CreateFileInfoWithHash,
-                                                 this_dm.stream,
-                                                 num_concurrent_tasks=None if ssd else 1,
-                                                 name_functor=lambda index, item: item,
-                                               )
-        
+                    # ----------------------------------------------------------------------
+
+                    worker_thread = threading.Thread(target=WorkerProc)
+                    worker_thread.start()
+
+                    # ----------------------------------------------------------------------
+                    def Cleanup():
+                        quit_event.set()
+                        worker_thread.join()
+
+                    # ----------------------------------------------------------------------
+                    def CreateFileInfoWithHash(filename):
+                        info = CreateFileInfo(filename)
+
+                        sha.value = hashlib.sha256()
+
+                        with open(filename, 'rb') as f:
+                            while True:
+                                block = f.read(hash_block_size)
+                                if not block:
+                                    break
+
+                                block_queue.put(block)
+
+                        block_queue.join()
+
+                        info.Hash = sha.value.hexdigest()
+
+                        return info
+
+                    # ----------------------------------------------------------------------
+
+                with CallOnExit(Cleanup):
+                    # ----------------------------------------------------------------------
+                    def CalculateHash(filename, on_status_update):
+                        if not disable_progress_status:
+                            on_status_update(FileSystem.GetSizeDisplay(os.path.getsize(filename)))
+
+                        return CreateInfo(filename)
+
+                    # ----------------------------------------------------------------------
+
+                    file_info += TaskPool.Transform( input_files,
+                                                     CreateFileInfo if simple_compare else CreateFileInfoWithHash,
+                                                     this_dm.stream,
+                                                     num_concurrent_tasks=None if ssd else 1,
+                                                     name_functor=lambda index, item: item,
+                                                   )
+
         return file_info
 
 # ----------------------------------------------------------------------
