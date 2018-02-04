@@ -232,8 +232,7 @@ class PythonActivationActivity(IActivationActivity):
                                           ]:
                         del libraries[library_key]
 
-            if is_python_version2:
-                global_actions.append(Shell.AugmentSet("PYTHONUNBUFFERED", "1"))
+            global_actions.append(Shell.AugmentSet("PYTHONUNBUFFERED", "1"))
 
             if not os.path.isdir(dest_dir):
                 os.makedirs(dest_dir)
