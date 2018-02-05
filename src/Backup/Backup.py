@@ -23,6 +23,7 @@ import re
 import shutil
 import sys
 import textwrap
+import threading
 
 from collections import OrderedDict
 
@@ -98,8 +99,8 @@ def Offsite( backup_name,
              traverse_exclude=None,
              display_only=False,
              working_dir=None,
-             disable_progress_status=False,
              hash_block_size=None,
+             disable_progress_status=False,
              output_stream=sys.stdout,
              verbose=False,
              preserve_ansi_escape_sequences=False,
@@ -875,7 +876,7 @@ def _GetFileInfo( desc,
                   disable_progress_status,
                   hash_block_size=None,
                 ):
-    hash_block_size = hash_block_size or 4096
+    hash_block_size = hash_block_size or 65536
 
     output_stream.write("Processing '{}'...".format(desc))
     with output_stream.DoneManager() as dm:
@@ -967,11 +968,9 @@ def _GetFileInfo( desc,
                                     )
 
                 # ----------------------------------------------------------------------
-                def CreateFileInfoWithHash(filename, on_status_update):
-                    info = CreateFileInfo(filename)
-
-                    if not disable_progress_status:
-                        on_status_update(FileSystem.GetSizeDisplay(info.Size))
+                def CreateFileInfoWithHash(filename, info=None):
+                    if info is None:
+                        info = CreateFileInfo(filename)
 
                     sha = hashlib.sha256()
 
@@ -989,13 +988,99 @@ def _GetFileInfo( desc,
 
                 # ----------------------------------------------------------------------
 
-                file_info += TaskPool.Transform( input_files,
-                                                 CreateFileInfo if simple_compare else CreateFileInfoWithHash,
-                                                 this_dm.stream,
-                                                 num_concurrent_tasks=None if ssd else 1,
-                                                 name_functor=lambda index, item: item,
-                                               )
-        
+                if ssd:
+                    # If we are working with a SSD drive, read and calculate within
+                    # the same thread (but files will be run concurrently across many
+                    # threads).
+
+                    # ----------------------------------------------------------------------
+                    def Cleanup():
+                        pass
+
+                    # ----------------------------------------------------------------------
+
+                else:
+                    # Read and caclualte in different threads, but only run one file
+                    # at a time.
+                    CreateFileInfoWithHashNoWorkerThread = CreateFileInfoWithHash
+                    
+                    block_queue = six.moves.queue.Queue(100)
+                    quit_event = threading.Event()
+
+                    sha = ModifiableValue(None)
+
+                    # ----------------------------------------------------------------------
+                    def WorkerProc():
+                        while True:
+                            if quit_event.is_set():
+                                break
+
+                            try:
+                                block = block_queue.get(True, 0.25) # Seconds
+
+                                assert sha.value
+                                sha.value.update(block)
+
+                                block_queue.task_done()
+
+                            except six.moves.queue.Empty:
+                                pass
+
+                    # ----------------------------------------------------------------------
+
+                    worker_thread = threading.Thread(target=WorkerProc)
+                    worker_thread.start()
+
+                    # ----------------------------------------------------------------------
+                    def Cleanup():
+                        quit_event.set()
+                        worker_thread.join()
+
+                    # ----------------------------------------------------------------------
+                    def CreateFileInfoWithHash(filename):
+                        info = CreateFileInfo(filename)
+
+                        # Don't execute via multiple threads if the filesize is small
+                        if info.Size <= hash_block_size * 5:
+                            return CreateFileInfoWithHashNoWorkerThread(filename, info=info)
+
+                        sha.value = hashlib.sha256()
+
+                        with open(filename, 'rb') as f:
+                            while True:
+                                block = f.read(hash_block_size)
+                                if not block:
+                                    break
+
+                                block_queue.put(block)
+
+                        block_queue.join()
+
+                        info.Hash = sha.value.hexdigest()
+
+                        return info
+
+                    # ----------------------------------------------------------------------
+
+                with CallOnExit(Cleanup):
+                    func = CreateFileInfo if simple_compare else CreateFileInfoWithHash
+
+                    # ----------------------------------------------------------------------
+                    def CalculateHash(filename, on_status_update):
+                        if not disable_progress_status:
+                            on_status_update(FileSystem.GetSizeDisplay(os.path.getsize(filename)))
+
+                        return func(filename)
+
+                    # ----------------------------------------------------------------------
+
+                    file_info += TaskPool.Transform( input_files,
+                                                     func,
+                                                     this_dm.stream,
+                                                     num_concurrent_tasks=None if ssd else 1,
+                                                     name_functor=lambda index, item: item,
+                                                   )
+
         return file_info
 
 # ----------------------------------------------------------------------
