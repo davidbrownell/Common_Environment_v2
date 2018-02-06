@@ -252,6 +252,7 @@ def CreateRepositoryBuildFunc( repository_name,
                                docker_image_name,
                                base_docker_image,
                                maintainer,
+                               no_now_tag=False,
                                no_activation=False,
                                repository_setup_configurations=None,
                                repository_activation_configurations=None,
@@ -313,8 +314,11 @@ def CreateRepositoryBuildFunc( repository_name,
                                                  repository_name.replace('_', '/'),
                                                )
             
-                now = time.localtime()
-                now_tag = "{0}.{1:02d}.{2:02d}".format(now[0], now[1], now[2])
+                if no_now_tag:
+                    now_tag = None
+                else:
+                    now = time.localtime()
+                    now_tag = "{0}.{1:02d}.{2:02d}".format(now[0], now[1], now[2])
             
                 environment = Shell.GetEnvironment()
             
@@ -488,10 +492,10 @@ def CreateRepositoryBuildFunc( repository_name,
                                                                      docker_image_name,
                                                                    )
             
-                        command_line = 'docker build "{dir}" --tag "{name}:latest" --tag "{name}:{now_tag}"{squash}{force}' \
+                        command_line = 'docker build "{dir}" --tag "{name}:latest"{now_tag}{squash}{force}' \
                                             .format( dir=base_dir,
                                                      name=base_docker_image_name,
-                                                     now_tag=now_tag,
+                                                     now_tag='' if now_tag is None else ' --tag "{}:{}"'.format(base_docker_image_name, now_tag),
                                                      squash='' if no_squash else " --squash",
                                                      force=" --no-cache" if force else '',
                                                    )
@@ -621,12 +625,12 @@ def CreateRepositoryBuildFunc( repository_name,
                                         else:
                                             tag_suffix = ''
                                     
-                                        command_line = 'docker build "{dir}" --tag "{name}:latest{tag_suffix}" --tag "{name}:{now_tag}{tag_suffix}"{squash}{force}' \
+                                        command_line = 'docker build "{dir}" --tag "{name}:latest{tag_suffix}"{now_tag}{squash}{force}' \
                                                             .format( dir=this_activated_dir,
                                                                      name=name,
                                                                      tag_suffix=tag_suffix,
-                                                                     now_tag=now_tag,
-                                                                     squash='', # Squash isn't supported for this layer...     if no_squash else " --squash",
+                                                                     now_tag='' if now_tag is None else ' --tag "{}:{}{}"'.format(name, now_tag, tag_suffix),
+                                                                     squash='', # Squash isn't supported for this layer...     '' if no_squash else " --squash",
                                                                      force=" --no-cache" if force else '',
                                                                    )
                                     
