@@ -125,41 +125,83 @@ def ToPlural(s):
     return s
 
 # ----------------------------------------------------------------------
-def Describe( o,
+def Describe( item,                         # str, dict, iterable, obj 
               output_stream=sys.stdout,
             ):
     from CommonEnvironment.StreamDecorator import StreamDecorator
 
-    output_stream.write(textwrap.dedent(
-        """\
-        Type
-        ----
-            {}
+    # ----------------------------------------------------------------------
+    def OutputDict(item, indentation_str):
+        keys = list(item.keys())
+        keys.sort(key=str.lower)
 
-        str(<value>)
-        ------------
-            {}
+        max_length = 0
+        for key in keys:
+            max_length = max(max_length, len(key))
 
-        """).format(type(o), str(o)))
-        
-    keys = [ item for item in dir(o) if not item.startswith("__") ]
-    keys.sort()
+        item_indentation_str = indentation_str + (' ' * (max_length + len(" : ") + 2))
 
-    for k in keys:
-        value = getattr(o, k)
-        
-        output_stream.write(textwrap.dedent(
-            """\
-            {}
-            {}
-                [{}]
-                {}
+        for key in keys:
+            output_stream.write("{0}{1:<{2}} : ".format(indentation_str, key, max_length))
+            Impl(item[key], item_indentation_str)
 
-            """).format( k,
-                         '-' * len(k),
-                         type(value),
-                         StreamDecorator.LeftJustify(str(value), 4).rstrip(),
-                       ))
+    # ----------------------------------------------------------------------
+    def OutputList(item, indentation_str):
+        item_indentation_str = indentation_str + (' ' * 7)
+
+        for index, i in enumerate(item):
+            output_stream.write("{0}{1:<5}".format(indentation_str, "{})".format(index)))
+            Impl(i, item_indentation_str)
+
+    # ----------------------------------------------------------------------
+    def Impl(item, indentation_str):
+
+        if isinstance(item, six.string_types):
+            output_stream.write("{}\n".format(item))
+        elif isinstance(item, dict):
+            if indentation_str:
+                output_stream.write("{}\n".format(type(item)))
+
+            OutputDict(item, indentation_str)
+        elif isinstance(item, (list, tuple)):
+            if indentation_str:
+                output_stream.write("{}\n".format(type(item)))
+
+            OutputList(item, indentation_str)
+        else:
+            # ----------------------------------------------------------------------
+            def Display():
+                try:
+                    potential_attribute_name = next(iter(item))
+                    
+                    output_stream.write("{}\n".format(type(item)))
+
+                    # Is the item dict-like?
+                    try:
+                        item[potential_attribute_name]
+                        OutputDict(item, indentation_str)
+                    except TypeError:
+                        OutputList(item, indentation_str)
+
+                    return True
+
+                except (TypeError, StopIteration):
+                    return False
+
+            # ----------------------------------------------------------------------
+
+            if not Display():
+                output_stream.write("{} {}\n".format(item, type(item)))
+
+    # ----------------------------------------------------------------------
+
+    Impl(item, '')
+    output_stream.write('\n\n')
+
+# ----------------------------------------------------------------------
+def ObjectToDict(obj):
+    keys = [ k for k in dir(obj) if not k.startswith("__") ]
+    return { k : getattr(obj, k) for k in keys }
 
 # ----------------------------------------------------------------------
 def Listify( item_or_items_or_none,
