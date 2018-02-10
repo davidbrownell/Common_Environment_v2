@@ -97,10 +97,15 @@ class Dependency(object):
 
 # ---------------------------------------------------------------------------
 class Configuration(object):
-    def __init__(self, dependencies=None, version_specs=None):
+    def __init__( self, 
+                  dependencies=None, 
+                  version_specs=None,
+                  description=None,
+                ):
         self.Dependencies                   = dependencies or []
         self.VersionSpecs                   = version_specs or VersionSpecs([], {})
-        
+        self.Description                    = description
+
 # ---------------------------------------------------------------------------
 @wrapt.decorator
 def ToolRepository(wrapped, instance, args, kwargs):
