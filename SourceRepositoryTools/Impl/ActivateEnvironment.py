@@ -87,21 +87,19 @@ def LoadRepoData():
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
-@CommonEnvironmentImports.CommandLine.EntryPoint( output_filename_or_stdout=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo(description="Created file containing the generated content or stdout of the value is 'stdout'"),
-                                                  repository_root=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo(description="Root of the repository"),
-                                                  configuration=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo(description="Configuration value to setup; all configurations will be setup if no configurations are provided"),
-                                                  debug=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo(description="Displays additional debug information if provided"),
-                                                  set_dependency_environment_flag=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo(description="If provided, will set the dependency flag within the environment"),
-                                                  version_spec=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo(description="Overrides version specifications for tools and/or libraries. Example: '/version_spec=Tools/Python:v3.6.0'."),
-                                                  no_python_libraries=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo(description="Disables the import of python libraries, which can be useful when pip installing python libraries for Library inclusion."),
-                                                  no_clean=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo(description="Disables the cleaning of generated content; the default behavior is to clean as a part of every environment activiation."),
+@CommonEnvironmentImports.CommandLine.EntryPoint( output_filename_or_stdout=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo("Created file containing the generated content or stdout of the value is 'stdout'"),
+                                                  repository_root=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo("Root of the repository"),
+                                                  configuration=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo("Configuration value to setup; all configurations will be setup if no configurations are provided"),
+                                                  debug=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo("Displays additional debug information if provided"),
+                                                  set_dependency_environment_flag=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo("If provided, will set the dependency flag within the environment"),
+                                                  version_spec=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo("Overrides version specifications for tools and/or libraries. Example: '/version_spec=Tools/Python:v3.6.0'."),
+                                                  no_python_libraries=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo("Disables the import of python libraries, which can be useful when pip installing python libraries for Library inclusion."),
+                                                  no_clean=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo("Disables the cleaning of generated content; the default behavior is to clean as a part of every environment activiation."),
                                                 )
 @CommonEnvironmentImports.CommandLine.FunctionConstraints( output_filename_or_stdout=CommonEnvironmentImports.CommandLine.StringTypeInfo(),
                                                            repository_root=CommonEnvironmentImports.CommandLine.DirectoryTypeInfo(),
                                                            configuration=CommonEnvironmentImports.CommandLine.StringTypeInfo(),
-                                                           version_spec=CommonEnvironmentImports.CommandLine.DictTypeInfo( arity='?',
-                                                                                                                           require_exact_match=False,
-                                                                                                                         ),
+                                                           version_spec=CommonEnvironmentImports.CommandLine.DictTypeInfo(require_exact_match=False, arity='?'),
                                                          )
 def Activate( output_filename_or_stdout,
               repository_root,
@@ -112,6 +110,10 @@ def Activate( output_filename_or_stdout,
               no_python_libraries=False,
               no_clean=False,
             ):
+    """\
+    Activates this respository for development activities.
+    """
+
     configuration = configuration if configuration.lower() != "none" else None
     cl_version_specs = version_spec or {}
 
@@ -283,8 +285,8 @@ def Activate( output_filename_or_stdout,
 # ---------------------------------------------------------------------------
 _ListConfiguration_DisplayFormats = [ "standard", "indented", ]
 
-@CommonEnvironmentImports.CommandLine.EntryPoint( repository_root=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo(description="Root of the repository"),
-                                                  display_format=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo(description="Controls how the output is displayed"),
+@CommonEnvironmentImports.CommandLine.EntryPoint( repository_root=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo("Root of the repository"),
+                                                  display_format=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo("Controls how the output is displayed"),
                                                 )
 @CommonEnvironmentImports.CommandLine.FunctionConstraints( repository_root=CommonEnvironmentImports.CommandLine.DirectoryTypeInfo(),
                                                            display_format=CommonEnvironmentImports.CommandLine.EnumTypeInfo(_ListConfiguration_DisplayFormats),
@@ -292,10 +294,34 @@ _ListConfiguration_DisplayFormats = [ "standard", "indented", ]
 def ListConfigurations( repository_root, 
                         display_format=_ListConfiguration_DisplayFormats[0],
                       ):
+    """\
+    Lists all configurations available for activation by this repository.
+    """
+
     display_format = display_format.lower()
     assert display_format in _ListConfiguration_DisplayFormats, display_format
 
     repo_info = Impl.RepositoryInformation.Load(repository_root)
+
+    max_length = 0
+    descriptions = []
+
+    for config_name, config_info in six.iteritems(repo_info.configurations):
+        if config_name is None:
+            continue
+
+        max_length = max(max_length, len(config_name))
+
+        descriptions.append(( config_name, getattr(config_info, "Description", None) ))
+
+    lines = [ "{0:<{1}}{2}".format( config_name,
+                                    max_length,
+                                    " : {}".format(description) if description else '',
+                                  )
+              for config_name, description in descriptions
+            ]
+
+    configuration_keys = repo_info.configurations
     configurations = repo_info.Configurations
     
     if display_format == "standard":
@@ -305,20 +331,24 @@ def ListConfigurations( repository_root,
             Available configurations:
             {}
 
-            """).format('\n'.join([ "    - {}".format(config) for config in configurations ]) if configurations else "None"))
+            """).format('\n'.join([ "    - {}".format(line) for line in lines ]) if lines else "None"))
     
     elif display_format == "indented":
-        sys.stdout.write('\n'.join([ "        - {}".format(config) for config in configurations ]) if configurations else "None")
+        sys.stdout.write('\n'.join([ "        - {}".format(line) for line in lines ]) if lines else "None")
 
     else:
         assert False, display_format
 
 # ---------------------------------------------------------------------------
-@CommonEnvironmentImports.CommandLine.EntryPoint(repository_root=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo(description="Root of the repository"))
+@CommonEnvironmentImports.CommandLine.EntryPoint(repository_root=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo("Root of the repository"))
 @CommonEnvironmentImports.CommandLine.FunctionConstraints(repository_root=CommonEnvironmentImports.CommandLine.DirectoryTypeInfo())
 def IsToolRepository( repository_root,
                       json=False,
                     ):
+    """\
+    Displays tool repository information.
+    """
+
     repo_info = Impl.RepositoryInformation.Load(repository_root)
     
     if json:
@@ -336,6 +366,10 @@ def IsToolRepository( repository_root,
                                                          )
 def EnvironmentDiffs( output_stream=sys.stdout,
                     ):
+    """\
+    Outputs environment differences produced when activating an environment.
+    """
+
     original_env = LoadOriginalEnvironment()
     this_env = dict(os.environ)
 
@@ -449,7 +483,7 @@ def _ActivateNames(repositories):
                      sep=display_template.format(**{ k : v for k, v in six.moves.zip( [ "name", "guid", "data", ],
                                                                                       [ '-' * col_size for col_size in col_sizes ],
                                                                                     ) }),
-                     values=StreamDecorator.LeftJustify( '\n'.join([ display_template.format( name=name,
+                     values=StreamDecorator.LeftJustify( '\n'.join([ display_template.format( name="{}{}".format(name, " [Tool]" if repo.is_tool_repository else ''),
                                                                                               guid=repo.id,
                                                                                               data=repo.root,
                                                                                             )

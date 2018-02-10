@@ -151,10 +151,12 @@ class _EnhancedConfiguration(object):
                   dependencies,
                   version_specs,
                   fingerprint,
+                  description,
                 ):
         self.Dependencies                   = dependencies
         self.VersionSpecs                   = version_specs
         self.Fingerprint                    = fingerprint
+        self.Description                    = description
 
 # ---------------------------------------------------------------------------
 class _EnhancedDependency(SourceRepositoryTools.Dependency):
@@ -410,16 +412,16 @@ def _SetupBootstrap( environment,
         raise Exception("A tool repository cannot have any configurations, dependencies, or version specs")
 
     # Calculate all of the repositories that we need to find
-    fundamental_name, fundamental_guid = Impl.GetRepositoryUniqueId(Constants.DE_FUNDAMENTAL)
-    
-    id_lookup = OrderedDict([ ( fundamental_guid, CreateGuidLookupObject(fundamental_name) ),
-                            ])
-                  
     if optional_configuration_names:
         for configuration_name in list(six.iterkeys(configurations)):
             if configuration_name not in optional_configuration_names:
                 del configurations[configuration_name]
 
+    fundamental_name, fundamental_guid = Impl.GetRepositoryUniqueId(Constants.DE_FUNDAMENTAL)
+    
+    id_lookup = OrderedDict([ ( fundamental_guid, CreateGuidLookupObject(fundamental_name) ),
+                            ])
+                  
     for configuration_name, configuration_info in six.iteritems(configurations):
         for dependency_info in configuration_info.Dependencies:
             if dependency_info.Id not in id_lookup:
@@ -427,8 +429,18 @@ def _SetupBootstrap( environment,
 
             id_lookup[dependency_info.Id].dependent_configurations.append(configuration_name)
 
+    # Display status
     col_sizes = [ 40, 32, 100, ]
     display_template = "{{name:<{0}}}  {{guid:<{1}}}  {{data:<{2}}}".format(*col_sizes)
+
+    # Get the configurations that will be processed
+    max_config_name_length = 0
+    config_descriptions = []
+
+    for config_name, config_info in six.iteritems(configurations):
+        max_config_name_length = max(max_config_name_length, len(config_name))
+
+        config_descriptions.append(( config_name, getattr(config_info, "Description", None) ))
 
     sys.stdout.write(textwrap.dedent(
         """\
@@ -462,7 +474,14 @@ def _SetupBootstrap( environment,
                                     
                                                                           {}
                                                                           {}
-                                                                      """).format( StreamDecorator.LeftJustify('\n'.join([ "- {}".format(configuration) for configuration in six.iterkeys(configurations) ]), 4),
+                                                                      """).format( StreamDecorator.LeftJustify( '\n'.join([ "- {0:{1}}{2}".format( config_name,
+                                                                                                                                                   max_config_name_length,
+                                                                                                                                                   " : {}".format(description) if description else '',
+                                                                                                                                                 )
+                                                                                                                            for config_name, description in config_descriptions
+                                                                                                                          ]),
+                                                                                                                4,
+                                                                                                              ),
                                                                                    StreamDecorator.LeftJustify( '' if optional_configuration_names else textwrap.dedent(
                                                                                                                      """\
                                     
@@ -580,6 +599,7 @@ def _SetupBootstrap( environment,
                                                                               Impl.RepositoryInformation.CalculateFingerprint( [ repository_root, ] + [ di.RepositoryRoot for di in enhanced_dependencies ],
                                                                                                                                repository_root,
                                                                                                                              ),
+                                                                              configuration.Description,
                                                                             )
 
     # Get the python binary. Note that we can't use the binary that invoked this
