@@ -207,38 +207,40 @@ then
     # work around differences between the 64-bit command prompt and the 32-bit python version currently in
     # use.
     temp_script_name=`mktemp`
-    
+    rm $temp_script_name
+
+    should_continue=0
+
     # Generate...
     $PYTHON_BINARY "$DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL/SourceRepositoryTools/Impl/ActivateEnvironment.py" Activate "$temp_script_name" "`pwd`" $cla1 $cla2 $cla3 $cla4 $cla5
     script_generation_error=$?
-    chmod u+x $temp_script_name
-    
-    # Invoke...
-    . $temp_script_name
-    script_execution_error=$?
-    
-    if [ $script_generation_error != 0 ];
+    if [ -f $temp_script_name ]; 
     then
-        echo ""
-        echo "ERROR: Errors were encountered and the environment has not been successfully"
-        echo "       activated for development."
-        echo ""
-        echo "       [$DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL/SourceRepositoryTools/Impl/ActivateEnvironment.py failed]"
-        echo ""
-    
-        should_continue=0
-    fi
-    
-    if [ $script_execution_error != 0 ];
-    then
-        echo ""
-        echo "ERROR: Errors were encountered and the environment has not been successfully"
-        echo "       activated for development."
-        echo ""
-        echo "       [$temp_script_name failed]"
-        echo ""
+        chmod u+x $temp_script_name
         
-        should_continue=0
+        # Invoke...
+        . $temp_script_name
+        script_execution_error=$?
+        
+        if [ $script_generation_error != 0 ];
+        then
+            echo ""
+            echo "ERROR: Errors were encountered and the environment has not been successfully"
+            echo "       activated for development."
+            echo ""
+            echo "       [$DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL/SourceRepositoryTools/Impl/ActivateEnvironment.py failed]"
+            echo ""
+        elif [ $script_execution_error != 0 ];
+        then
+            echo ""
+            echo "ERROR: Errors were encountered and the environment has not been successfully"
+            echo "       activated for development."
+            echo ""
+            echo "       [$temp_script_name failed]"
+            echo ""
+        else
+            should_continue=1
+        fi
     fi
 fi
 
