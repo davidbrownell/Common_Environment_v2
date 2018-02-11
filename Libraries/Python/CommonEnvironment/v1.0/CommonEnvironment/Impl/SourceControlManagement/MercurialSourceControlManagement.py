@@ -244,8 +244,8 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
                     d[key] = line[len(key) + 1:].strip()
                     break
 
-        for value in d.values():
-            assert value
+        for key, value in d.items():
+            assert value, key
 
         d["files"] = cls.GetChangedFiles(repo_root, revision)
 

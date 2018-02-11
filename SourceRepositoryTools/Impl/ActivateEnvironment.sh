@@ -113,7 +113,7 @@ fi
 # List configurations if requested
 if [ "$1" == "ListConfigurations" ];
 then
-    $PYTHON_BINARY "$DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL/SourceRepositoryTools/Impl/ActivateEnvironment.py" ListConfigurations "`pwd`" standard
+    $PYTHON_BINARY "$DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL/SourceRepositoryTools/Impl/ActivateEnvironment.py" ListConfigurations "`pwd`" $cla2 $cla3
     should_continue=0
 fi
 

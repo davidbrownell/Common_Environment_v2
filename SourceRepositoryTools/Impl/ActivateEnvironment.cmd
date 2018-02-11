@@ -42,7 +42,7 @@ for /f "tokens=1,2 delims==" %%a in (%~dp0Generated\Windows\EnvironmentBootstrap
 
 REM List configurations if requested
 if "%1" == "ListConfigurations" (
-    %PYTHON_BINARY% "%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\SourceRepositoryTools\Impl\ActivateEnvironment.py" ListConfigurations %~dp0 standard
+    %PYTHON_BINARY% "%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\SourceRepositoryTools\Impl\ActivateEnvironment.py" ListConfigurations %~dp0 %2 %3
     goto end
 )
 
