@@ -283,7 +283,7 @@ def Activate( output_filename_or_stdout,
     return rval
 
 # ---------------------------------------------------------------------------
-_ListConfiguration_DisplayFormats = [ "standard", "indented", ]
+_ListConfiguration_DisplayFormats = [ "standard", "indented", "json", ]
 
 @CommonEnvironmentImports.CommandLine.EntryPoint( repository_root=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo("Root of the repository"),
                                                   display_format=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo("Controls how the output is displayed"),
@@ -303,41 +303,54 @@ def ListConfigurations( repository_root,
 
     repo_info = Impl.RepositoryInformation.Load(repository_root)
 
-    max_length = 0
-    descriptions = []
-
-    for config_name, config_info in six.iteritems(repo_info.configurations):
-        if config_name is None:
-            continue
-
-        max_length = max(max_length, len(config_name))
-
-        descriptions.append(( config_name, getattr(config_info, "Description", None) ))
-
-    lines = [ "{0:<{1}}{2}".format( config_name,
-                                    max_length,
-                                    " : {}".format(description) if description else '',
-                                  )
-              for config_name, description in descriptions
-            ]
-
-    configuration_keys = repo_info.configurations
-    configurations = repo_info.Configurations
+    if display_format == "json":
+        items = {}
+        
+        for config_name, config_info in six.iteritems(repo_info.configurations):
+            # This is a bare-minimum representation of the data for specific scenarios. Additional
+            # scenarios should add data as necessary.
+            items[config_name] = { "description" : getattr(config_info, "Description", None),
+                                 }
     
-    if display_format == "standard":
-        sys.stdout.write(textwrap.dedent(
-            """\
-
-            Available configurations:
-            {}
-
-            """).format('\n'.join([ "    - {}".format(line) for line in lines ]) if lines else "None"))
-    
-    elif display_format == "indented":
-        sys.stdout.write('\n'.join([ "        - {}".format(line) for line in lines ]) if lines else "None")
-
+        import json
+        
+        sys.stdout.write(json.dumps(items))
     else:
-        assert False, display_format
+        max_length = 0
+        descriptions = []
+        
+        for config_name, config_info in six.iteritems(repo_info.configurations):
+            if config_name is None:
+                continue
+        
+            max_length = max(max_length, len(config_name))
+        
+            descriptions.append(( config_name, getattr(config_info, "Description", None) ))
+        
+        lines = [ "{0:<{1}}{2}".format( config_name,
+                                        max_length,
+                                        " : {}".format(description) if description else '',
+                                      )
+                  for config_name, description in descriptions
+                ]
+        
+        configuration_keys = repo_info.configurations
+        configurations = repo_info.Configurations
+        
+        if display_format == "standard":
+            sys.stdout.write(textwrap.dedent(
+                """\
+        
+                Available configurations:
+                {}
+        
+                """).format('\n'.join([ "    - {}".format(line) for line in lines ]) if lines else "None"))
+        
+        elif display_format == "indented":
+            sys.stdout.write('\n'.join([ "        - {}".format(line) for line in lines ]) if lines else "None")
+        
+        else:
+            assert False, display_format
 
 # ---------------------------------------------------------------------------
 @CommonEnvironmentImports.CommandLine.EntryPoint(repository_root=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo("Root of the repository"))

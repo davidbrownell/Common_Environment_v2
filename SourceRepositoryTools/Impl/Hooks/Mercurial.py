@@ -209,13 +209,10 @@ def _Impl(ui, verb, json_content, is_debug):
         if not os.path.isfile(activation_script):
             return 0
 
-        rval, output = CommonEnvironmentImports.Process.Execute("{} ListConfigurations".format(activation_script))
+        rval, output = CommonEnvironmentImports.Process.Execute("{} ListConfigurations json".format(activation_script))
+        data = json.loads(output)
         
-        configurations = [ line.strip() for line in output.split('\n') if line.strip() ]
-        assert configurations
-        assert configurations[0] == "Available Configurations:", configurations[0]
-        
-        configurations = configurations[1:]
+        configurations = list(six.iterkeys(data))
 
     output_stream.write("Processing configurations...")
     with output_stream.DoneManager( done_suffix='\n',
