@@ -39,7 +39,6 @@ del sys.path[0]
 # they aren't otherwise available.
 try:
     import inflect
-    import semantic_version
     import six
     import wrapt
 
@@ -61,7 +60,6 @@ except ImportError:
 
     # Try it agian
     import inflect
-    import semantic_version
     import six
     import wrapt
     
