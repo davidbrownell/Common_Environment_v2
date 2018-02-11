@@ -24,7 +24,15 @@ _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
-# Get the CommonEnvironment dir
+try:
+    import mercurial.demandimport
+
+    mercurial.demandimport.disable()
+except:
+    pass
+
+# ----------------------------------------------------------------------
+# |  Get the CommonEnvironment dir
 def GetCommonEnvironment():
     generated_dir = os.path.join(os.getcwd(), "Generated")
     if not os.path.isdir(generated_dir):
@@ -200,22 +208,20 @@ def _Impl(ui, verb, json_content, is_debug):
     del sys.path[0]
 
     environment = CommonEnvironmentImports.Shell.GetEnvironment()
-
     output_stream = CommonEnvironmentImports.StreamDecorator(ui)
-
+    
     output_stream.write("Getting configurations...")
     with output_stream.DoneManager() as dm:
         activation_script = os.path.join(os.getcwd(), Constants.ACTIVATE_ENVIRONMENT_NAME) + environment.ScriptExtension
         if not os.path.isfile(activation_script):
             return 0
 
-        rval, output = CommonEnvironmentImports.Process.Execute("{} ListConfigurations".format(activation_script))
+        rval, output = CommonEnvironmentImports.Process.Execute("{} ListConfigurations json".format(activation_script))
+        data = json.loads(output)
         
-        configurations = [ line.strip() for line in output.split('\n') if line.strip() ]
-        assert configurations
-        assert configurations[0] == "Available Configurations:", configurations[0]
-        
-        configurations = configurations[1:]
+        configurations = list(data.keys())
+        if not configurations:
+            configurations = [ "None", ]
 
     output_stream.write("Processing configurations...")
     with output_stream.DoneManager( done_suffix='\n',
@@ -263,7 +269,7 @@ def _Impl(ui, verb, json_content, is_debug):
                                                                                      first=" /first" if index == 0 else '',
                                                                                    )),
                                    ]
-            
+        
                         script_filename = environment.CreateTempFilename(environment.ScriptExtension)
                         with open(script_filename, 'w') as f:
                             f.write(environment.GenerateCommands(commands))
