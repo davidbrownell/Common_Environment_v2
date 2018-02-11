@@ -24,7 +24,15 @@ _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
-# Get the CommonEnvironment dir
+try:
+    import mercurial.demandimport
+
+    mercurial.demandimport.disable()
+except:
+    pass
+
+# ----------------------------------------------------------------------
+# |  Get the CommonEnvironment dir
 def GetCommonEnvironment():
     generated_dir = os.path.join(os.getcwd(), "Generated")
     if not os.path.isdir(generated_dir):
@@ -191,40 +199,29 @@ def PreTxnChangeGroup(ui, repo, source, node, node_last, *args, **kwargs):
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 def _Impl(ui, verb, json_content, is_debug):
-    ui.write("BugBug0")
-
     sys.path.insert(0, os.path.join(_common_environment, "SourceRepositoryTools"))
     import Constants    # Proactively import Constants, as it will fail if imported from CommonEnvironmentImports. By doing it here, it will already be in sys.modules and not imported again.
     del sys.path[0]
     
-    ui.write("BugBug1")
-
     sys.path.insert(0, os.path.join(_common_environment, "SourceRepositoryTools", "Impl"))
     import CommonEnvironmentImports
     del sys.path[0]
 
-    ui.write("BugBug2")
     environment = CommonEnvironmentImports.Shell.GetEnvironment()
-    ui.write("BugBug3")
     output_stream = CommonEnvironmentImports.StreamDecorator(ui)
-    ui.write("BugBug4")
-
+    
     output_stream.write("Getting configurations...")
     with output_stream.DoneManager() as dm:
         activation_script = os.path.join(os.getcwd(), Constants.ACTIVATE_ENVIRONMENT_NAME) + environment.ScriptExtension
         if not os.path.isfile(activation_script):
             return 0
 
-        ui.write("BugBug5")
         rval, output = CommonEnvironmentImports.Process.Execute("{} ListConfigurations json".format(activation_script))
         data = json.loads(output)
         
-        ui.write("BugBug6")
         configurations = list(data.keys())
         if not configurations:
             configurations = [ "None", ]
-
-        ui.write("BugBug7")
 
     output_stream.write("Processing configurations...")
     with output_stream.DoneManager( done_suffix='\n',
@@ -273,12 +270,10 @@ def _Impl(ui, verb, json_content, is_debug):
                                                                                    )),
                                    ]
         
-                        ui.write("BugBug8")
                         script_filename = environment.CreateTempFilename(environment.ScriptExtension)
                         with open(script_filename, 'w') as f:
                             f.write(environment.GenerateCommands(commands))
             
-                        ui.write("BugBug9")
                         with CommonEnvironmentImports.CallOnExit(lambda: CommonEnvironmentImports.FileSystem.RemoveFile(script_filename)):
                             environment.MakeFileExecutable(script_filename)
             
@@ -295,7 +290,6 @@ def _Impl(ui, verb, json_content, is_debug):
             
                             # ----------------------------------------------------------------------
             
-                            ui.write("BugBug10")
                             this_dm.result = CommonEnvironmentImports.Process.Execute( script_filename, 
                                                                                        Display,
                                                                                        line_delimited_output=True,

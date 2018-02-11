@@ -38,14 +38,12 @@ del sys.path[0]
 # in all scenarios. As a fail safe, hard code a path for some of these libraries if
 # they aren't otherwise available.
 try:
-    print("BugBug___0")
     import six
-    print("BugBug___1")
 except ImportError:
     # At this point, use a python dir that represents the lowest common denominator.
     # These libraries are so fundamental that they won't be doing anything OS-
     # specific, so any path will do.
-    python_root = os.path.realpath(os.path.join(_script_dir, "..", "..", "Tools", "Python", "v2.7.10"))
+    python_root = os.path.realpath(os.path.join(Constants.DE_FUNDAMENTAL, "Tools", "Python", "v2.7.10"))
     assert os.path.isdir(python_root), python_root
 
     for potential_suffix in [ os.path.join("Windows", "Lib", "site-packages"),
@@ -53,20 +51,14 @@ except ImportError:
                             ]:
         potential_path = os.path.join(python_root, potential_suffix)
         if os.path.isdir(potential_path):
-            print("BugBug___2", potential_path)
             sys.path.insert(0, potential_path)
             break
 
     # Try it agian
-    print("BugBug___3")
     import inflect
-    print("BugBug___4")
-    import semantic_version
-    print("BugBug___5")
     import six
-    print("BugBug___6")
     import wrapt
-    print("BugBug___7")
+    
     del sys.path[0]
 
 # ----------------------------------------------------------------------
