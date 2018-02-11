@@ -202,24 +202,13 @@ def _Impl(ui, verb, json_content, is_debug):
     except:
         pass
 
-    ui.write("BugBug0\n")
-    
     sys.path.insert(0, os.path.join(_common_environment, "SourceRepositoryTools"))
     import Constants    # Proactively import Constants, as it will fail if imported from CommonEnvironmentImports. By doing it here, it will already be in sys.modules and not imported again.
     del sys.path[0]
     
-    ui.write("BugBug1\n")
-    
-    try:
-        sys.path.insert(0, os.path.join(_common_environment, "SourceRepositoryTools", "Impl"))
-        import CommonEnvironmentImports
-        del sys.path[0]
-    except:
-        import traceback
-
-        ui.write("BugBug\n", traceback.format_exc())
-        raise
-    ui.write("BugBug2\n")
+    sys.path.insert(0, os.path.join(_common_environment, "SourceRepositoryTools", "Impl"))
+    import CommonEnvironmentImports
+    del sys.path[0]
     
     environment = CommonEnvironmentImports.Shell.GetEnvironment()
     output_stream = CommonEnvironmentImports.StreamDecorator(ui)

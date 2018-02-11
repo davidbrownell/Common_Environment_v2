@@ -39,8 +39,10 @@ del sys.path[0]
 # they aren't otherwise available.
 try:
     import inflect
+    import semantic_version
     import six
     import wrapt
+
 except ImportError:
     
     # At this point, use a python dir that represents the lowest common denominator.
@@ -59,12 +61,7 @@ except ImportError:
 
     # Try it agian
     import inflect
-    
-    try:
-        import semantic_version
-    except ImportError:
-        pass
-
+    import semantic_version
     import six
     import wrapt
     
