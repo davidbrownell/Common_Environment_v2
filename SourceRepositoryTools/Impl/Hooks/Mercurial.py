@@ -15,7 +15,6 @@
 import datetime
 import json
 import os
-import six
 import sys
 import textwrap
 import time
@@ -213,7 +212,7 @@ def _Impl(ui, verb, json_content, is_debug):
         rval, output = CommonEnvironmentImports.Process.Execute("{} ListConfigurations json".format(activation_script))
         data = json.loads(output)
         
-        configurations = list(six.iterkeys(data))
+        configurations = list(data.keys())
         if not configurations:
             configurations = [ "None", ]
 
