@@ -15,6 +15,7 @@
 import datetime
 import json
 import os
+import six
 import sys
 import textwrap
 import time
@@ -213,6 +214,8 @@ def _Impl(ui, verb, json_content, is_debug):
         data = json.loads(output)
         
         configurations = list(six.iterkeys(data))
+        if not configurations:
+            configurations = [ "None", ]
 
     output_stream.write("Processing configurations...")
     with output_stream.DoneManager( done_suffix='\n',
