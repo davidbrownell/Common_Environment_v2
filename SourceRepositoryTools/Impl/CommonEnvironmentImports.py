@@ -38,8 +38,12 @@ del sys.path[0]
 # in all scenarios. As a fail safe, hard code a path for some of these libraries if
 # they aren't otherwise available.
 try:
+    import inflect
     import six
+    import wrapt
+
 except ImportError:
+    
     # At this point, use a python dir that represents the lowest common denominator.
     # These libraries are so fundamental that they won't be doing anything OS-
     # specific, so any path will do.

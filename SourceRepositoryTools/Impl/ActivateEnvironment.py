@@ -54,7 +54,7 @@ StreamDecorator                             = CommonEnvironmentImports.StreamDec
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
-GENERATED_ORIGINAL_ENVIRONMENT_FILENAME     = "OriginalEnvironment.json"
+GENERATED_ORIGINAL_ENVIRONMENT_FILENAME     = "OriginalEnvironment.json"    # Note that this value is hard-coded in some SCM hook logic - do not change.
 CUSTOM_ACTIONS_METHOD_NAME                  = "CustomActions"
 
 # ---------------------------------------------------------------------------
@@ -63,6 +63,8 @@ CUSTOM_ACTIONS_METHOD_NAME                  = "CustomActions"
 # |
 # ---------------------------------------------------------------------------
 def LoadOriginalEnvironment():
+    # Note that this logic is hard-coded in some SCM hook logic - do not change.
+
     generated_dir = os.getenv(Constants.DE_REPO_GENERATED_NAME)
     assert os.path.isdir(generated_dir), generated_dir
 

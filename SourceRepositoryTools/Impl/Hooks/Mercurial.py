@@ -24,16 +24,12 @@ _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
-try:
-    import mercurial.demandimport
-
-    mercurial.demandimport.disable()
-except:
-    pass
-
 # ----------------------------------------------------------------------
 # |  Get the CommonEnvironment dir
 def GetCommonEnvironment():
+    if os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"):
+        return os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL")
+        
     generated_dir = os.path.join(os.getcwd(), "Generated")
     if not os.path.isdir(generated_dir):
         raise Exception("'{}' is not a valid directory".format(generated_dir))
@@ -199,6 +195,13 @@ def PreTxnChangeGroup(ui, repo, source, node, node_last, *args, **kwargs):
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 def _Impl(ui, verb, json_content, is_debug):
+    try:
+        import mercurial.demandimport
+
+        mercurial.demandimport.disable()
+    except:
+        pass
+
     sys.path.insert(0, os.path.join(_common_environment, "SourceRepositoryTools"))
     import Constants    # Proactively import Constants, as it will fail if imported from CommonEnvironmentImports. By doing it here, it will already be in sys.modules and not imported again.
     del sys.path[0]
@@ -206,7 +209,7 @@ def _Impl(ui, verb, json_content, is_debug):
     sys.path.insert(0, os.path.join(_common_environment, "SourceRepositoryTools", "Impl"))
     import CommonEnvironmentImports
     del sys.path[0]
-
+    
     environment = CommonEnvironmentImports.Shell.GetEnvironment()
     output_stream = CommonEnvironmentImports.StreamDecorator(ui)
     
@@ -237,6 +240,18 @@ def _Impl(ui, verb, json_content, is_debug):
         skip = False
 
         with CommonEnvironmentImports.CallOnExit(lambda: os.remove(json_filename)):
+            original_environment = None
+            
+            if os.getenv(Constants.DE_REPO_GENERATED_NAME):
+                # This code sucks because it is hard coding names and duplicating logic in ActivateEnvironment. However, importing
+                # ActivateEnvironment here is causing problems, as the Mercurial version of python is different enough from our
+                # version that some imports don't work between python 2 and python 3.
+                original_data_filename = os.path.join(os.getenv(Constants.DE_REPO_GENERATED_NAME), "OriginalEnvironment.json")
+                assert os.path.isfile(original_data_filename), original_data_filename
+                
+                with open(original_data_filename) as f:
+                    original_environment = json.load(f)
+                
             for index, configuration in enumerate(configurations):
                 dm.stream.write("Configuration '{}' ({} of {})...".format( configuration if configuration != "None" else "<default>",
                                                                            index + 1,
@@ -289,10 +304,11 @@ def _Impl(ui, verb, json_content, is_debug):
                                 content.append(s)
             
                             # ----------------------------------------------------------------------
-            
+
                             this_dm.result = CommonEnvironmentImports.Process.Execute( script_filename, 
                                                                                        Display,
                                                                                        line_delimited_output=True,
+                                                                                       environment=original_environment,
                                                                                      )
 
                             if is_debug:
