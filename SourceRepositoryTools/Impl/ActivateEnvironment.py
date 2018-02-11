@@ -307,6 +307,9 @@ def ListConfigurations( repository_root,
         items = {}
         
         for config_name, config_info in six.iteritems(repo_info.configurations):
+            if config_name is None:
+                continue
+                
             # This is a bare-minimum representation of the data for specific scenarios. Additional
             # scenarios should add data as necessary.
             items[config_name] = { "description" : getattr(config_info, "Description", None),

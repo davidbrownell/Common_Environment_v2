@@ -39,6 +39,8 @@ with CallOnExit(lambda: sys.path.pop(0)):
 
 # ----------------------------------------------------------------------
 def Commit(data):
+    raise Exception("BugBug")
+    
     # Check for valid descriptions
     if not data.description.strip():
         raise Exception("Descriptions must not be empty")
