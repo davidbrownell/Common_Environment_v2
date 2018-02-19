@@ -214,7 +214,7 @@ def ActivateLibraryScripts( dest_dir,
             if item in all_scripts:
                 # ----------------------------------------------------------------------
                 def GenerateNewName(repository):
-                    filename, ext = os.path.splititem(item)
+                    filename, ext = os.path.splitext(item)
 
                     new_name = "{}.{}{}".format( filename,
                                                  repository.Name,
@@ -288,7 +288,7 @@ def ActivateLibraryComponents( dest_dir,
     return actions
 
 # ----------------------------------------------------------------------
-def CreateCleanSymLinkStatements(environmnet, path):
+def CreateCleanSymLinkStatements(environment, path):
     if not os.path.isdir(path):
         return []
 
@@ -352,4 +352,3 @@ def WriteLibraryInfo(generated_dir, name, libraries):
 
     with open(os.path.join(generated_dir, "{}.pickle".format(name)), 'wb') as f:
         pickle.dump(libraries, f)
-

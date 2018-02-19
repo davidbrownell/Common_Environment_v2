@@ -24,7 +24,6 @@ from six.moves import cPickle as pickle
 
 from SourceRepositoryTools.Impl import CommonEnvironmentImports
 from SourceRepositoryTools.Impl import Constants
-from SourceRepositoryTools.Impl import Utilities
 
 from SourceRepositoryTools.Impl.ActivationActivity import IActivationActivity
 
@@ -33,8 +32,10 @@ _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
+# <Wrong hanging indentation> pylint: disable = C0330
+
 # ----------------------------------------------------------------------
-CommonEnvironmentImports.Interface.staticderived
+@CommonEnvironmentImports.Interface.staticderived
 class ScriptsActivationActivity(IActivationActivity.IActivationActivity):
 
     # ----------------------------------------------------------------------
@@ -123,7 +124,7 @@ class ScriptsActivationActivity(IActivationActivity.IActivationActivity):
                 if isinstance(result, tuple):
                     these_extractors, these_generators = result
 
-                    if not isinstance(this_generators, list):
+                    if not isinstance(these_generators, list):
                         these_generators = [ these_generators, ]
 
                     dir_generators += these_generators

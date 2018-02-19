@@ -58,7 +58,7 @@ class IActivationActivity(CommonEnvironmentImports.Interface.Interface):
         raise Exception("Abstract property")
 
     @CommonEnvironmentImports.Interface.abstractproperty
-    def DelayExecue(self):
+    def DelayExecute(self):
         """\
         True if the commands should be executed via DelayExecute.
         """
