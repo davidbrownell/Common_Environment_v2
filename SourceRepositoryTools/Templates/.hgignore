@@ -6,5 +6,5 @@ Generated/*
 ActivateEnvironment.cmd
 ActivateEnvironment.sh
 .coverage
-
+*.ipynb
 .git/*

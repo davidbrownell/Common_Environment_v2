@@ -22,17 +22,18 @@ import os
 import sys
 import textwrap
 
+from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CommandLine
 from CommonEnvironment import FileSystem
 from CommonEnvironment.StreamDecorator import StreamDecorator
 from CommonEnvironment import Process
 
+from SourceRepositoryTools.Impl import Constants
+
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
-
-import Constants
 
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint
@@ -118,7 +119,7 @@ def Instructions( filename,
 
         1) Deconstruct the large file:                  
                 
-                python "{script}" Deconstruct "{filename}"
+                python -m SourceRepositoryTools.{script} Deconstruct "{filename}"
 
         2) Ignore the large file in your SCM.
         3) Add the deconstructed parts in your SCM.
@@ -130,17 +131,21 @@ def Instructions( filename,
                     ...
 
                     actions += [ Shell.Message(r"Restoring '{filename}'..."),
-                                 Shell.Execute(r'python "{{}}" Construct "{filename}" /quiet' \\
-                                                    .format(os.path.join( os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"), 
-                                                                          "SourceRepositoryTools", 
-                                                                          "LargeFileSupport.py",
-                                                                        ))),
+                                 Shell.Set( "PYTHONPATH",
+                                            os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"),
+                                            preserve_original=False,
+                                          ),
+                                 Shell.Execute(r'python -m SourceRepositoryTools.{script} Construct "{filename}" /quiet'),
+                                 Shell.Set( "PYTHONPATH",
+                                            None,
+                                            preserve_original=False,
+                                          ),
                                  Shell.Message("DONE!\\n\\n"),
                                ]
 
                     return actions
 
-        """).format( script=_script_fullpath,
+        """).format( script=os.path.splitext(_script_name)[0],
                      filename=filename,
                      setup_environment=os.path.join( os.getenv("DEVELOPMENT_ENVIRONMENT_REPOSITORY"),
                                                      Constants.SETUP_ENVIRONMENT_CUSTOMIZATION_FILENAME,

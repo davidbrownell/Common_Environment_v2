@@ -293,6 +293,9 @@ class WindowsEnvironment(Environment):
     # ---------------------------------------------------------------------------
     @classmethod
     def _GenerateSetCommand(cls, name, values, preserve_original):
+        if len(values) == 1 and values[0] is None:
+            return "SET {}=".format(name)
+
         return "SET {name}={values}{preserve}".format( name=name,
                                                        values=cls.EnvironmentVariableDelimiter.join(values),
                                                        preserve=";%{}%".format(name) if preserve_original and os.getenv(name) else '',

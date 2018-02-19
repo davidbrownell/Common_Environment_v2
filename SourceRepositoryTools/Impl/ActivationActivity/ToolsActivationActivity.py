@@ -1,50 +1,41 @@
-﻿# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # |  
 # |  ToolsActivationActivity.py
 # |  
-# |  David Brownell (db@DavidBrownell.com)
+# |  David Brownell <db@DavidBrownell.com>
+# |      2018-02-16 21:24:07
 # |  
-# |  08/24/2015 07:03:29 PM
+# ----------------------------------------------------------------------
 # |  
-# ---------------------------------------------------------------------------
-# |  
-# |  Copyright David Brownell 2015-18.
-# |          
+# |  Copyright David Brownell 2018.
 # |  Distributed under the Boost Software License, Version 1.0.
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 # |  
-# ---------------------------------------------------------------------------
-from __future__ import absolute_import 
-
+# ----------------------------------------------------------------------
 import os
 import sys
 
-from CommonEnvironment.Interface import staticderived
-from CommonEnvironment import Package, ModifiableValue
-
-with Package.NameInfo(__package__) as ni:
-    __package__ = ni.created
-    
-    import SourceRepositoryTools
-    from .IActivationActivity import IActivationActivity
-
-    __package__ = ni.original
-    
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
 _script_dir, _script_name = os.path.split(_script_fullpath)
-# ---------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
-@staticderived
-class ToolsActivationActivity(IActivationActivity):
+from SourceRepositoryTools.Impl import CommonEnvironmentImports
+from SourceRepositoryTools.Impl import Utilities
 
-    # ---------------------------------------------------------------------------
+from SourceRepositoryTools.Impl.ActivationActivity import IActivationActivity
+
+# ----------------------------------------------------------------------
+CommonEnvironmentImports.Interface.staticderived
+class ToolsActivationActivity(IActivationActivity.IActivationActivity):
+    
+    # ----------------------------------------------------------------------
     Name                                    = "Tools"
     DelayExecute                            = True
 
     IgnoreAsToolsDirFilename                = "IgnoreAsTool"
 
-    # ---------------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     @classmethod
     def _CreateCommandsImpl( cls,
                              constants,
@@ -61,7 +52,7 @@ class ToolsActivationActivity(IActivationActivity):
         paths = []
 
         for repository in repositories:
-            tools_fullpath = os.path.join(repository.root, constants.ToolsDir)
+            tools_fullpath = os.path.join(repository.Root, constants.ToolsDir)
             if not os.path.isdir(tools_fullpath):
                 continue
 
@@ -73,11 +64,11 @@ class ToolsActivationActivity(IActivationActivity):
                 if os.path.exists(os.path.join(fullpath, cls.IgnoreAsToolsDirFilename)):
                     continue
 
-                fullpath = SourceRepositoryTools.GetVersionedDirectory(version_info, fullpath)
+                fullpath = Utilities.GetVersionedDirectory(version_info, fullpath)
 
                 actual_paths = []
 
-                # Add well-known suffixes to the path if the exist
+                # Add well-known suffixes to the path if they exist
                 for potential_suffix in [ "bin",
                                           "sbin",
                                           os.path.join("usr", "bin"),

@@ -150,6 +150,9 @@ class LinuxEnvironmentImpl(Environment):
     # ---------------------------------------------------------------------------
     @classmethod
     def _GenerateSetCommand(cls, name, values, preserve_original):
+        if len(values) == 1 and values[0] is None:
+            return "export {}=".format(name)
+
         return "export {name}={values}{preserve}".format( name=name,
                                                           values=cls.EnvironmentVariableDelimiter.join(values),
                                                           preserve=":${}".format(name) if preserve_original else '',
