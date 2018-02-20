@@ -226,7 +226,8 @@ def _Impl(ui, verb, json_content, is_debug):
             return 0
 
         rval, output = CommonEnvironmentImports.Process.Execute("{} ListConfigurations json".format(activation_script))
-        
+        assert rval == 0
+
         data = json.loads(output)
         
         configurations = list(data.keys())

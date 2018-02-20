@@ -16,19 +16,14 @@
 Hook implementation called within an activated environment window.
 """
 
-import inspect
-import json
 import os
 import sys
-
-from collections import OrderedDict
 
 import six
 
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CommandLine
 from CommonEnvironment import Interface
-from CommonEnvironment import Package
 from CommonEnvironment.StreamDecorator import StreamDecorator
 
 # ----------------------------------------------------------------------
@@ -154,7 +149,7 @@ def _Impl( display_sentinel,
                 func_code = six.get_function_code(method)
 
                 if "configuration" in func_code.co_varnames[:func_code.co_argcount]:
-                    args["configuration"] = configuration
+                    args["configuration"] = repository_info.Configuration
                     has_config_specific = True
                 elif not first:
                     # Don't call a config-agnostic method again if we aren't
