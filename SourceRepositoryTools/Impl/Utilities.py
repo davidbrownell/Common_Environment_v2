@@ -207,6 +207,7 @@ _GetRepositoryUniqueId_regex                = None
 def GetRepositoryUniqueId( repo_root,
                            scm=None,
                            throw_on_error=True,
+                           find_by_scm=True,
                          ):
     global _GetRepositoryUniqueId_regex
 
@@ -222,7 +223,7 @@ def GetRepositoryUniqueId( repo_root,
         name = match.group("name")
         unique_id = match.group("guid").upper()
 
-    else:
+    elif find_by_scm:
         if scm is None:
             scm = CommonEnvironmentImports.SourceControlManagement.GetSCM(repo_root, throw_on_error=False)
             if scm is None:
@@ -233,6 +234,12 @@ def GetRepositoryUniqueId( repo_root,
 
         unique_id = scm.GetUniqueName(repo_root)
         name = unique_id
+
+    else:
+        if throw_on_error:
+            raise Exception("Unable to find repository information for '{}'".format(repo_root))
+
+        return None
 
     return name, unique_id
 

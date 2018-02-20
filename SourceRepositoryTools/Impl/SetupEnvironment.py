@@ -124,7 +124,7 @@ def _SetupBootstrap( environment,
                      customization_mod,
                      debug,
                      configurations_to_setup,
-                     search_depth=3,
+                     search_depth=5,
                    ):
     # Look for all dependencies by intelligently enumerating through the file system
 
@@ -404,7 +404,10 @@ def _SetupBootstrap( environment,
         if debug:
             sys.stdout.write("Searching in '{}'\n".format(directory))
 
-        result = Utilities.GetRepositoryUniqueId(directory, throw_on_error=False)
+        result = Utilities.GetRepositoryUniqueId( directory, 
+                                                  find_by_scm=False,
+                                                  throw_on_error=False,
+                                                )
         if result is None:
             continue
 
