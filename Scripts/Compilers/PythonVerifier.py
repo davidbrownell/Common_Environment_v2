@@ -150,6 +150,9 @@ class Verifier( CustomInvocationMixin,
         filename = cls.GetSystemUnderTest(context.input_filename)
         assert os.path.isfile(filename), filename
 
+        if os.path.basename(filename) == "__init__.py" and os.path.getsize(filename) == 0:
+            return 0
+
         # Create the lint file
         configuration_file = os.getenv(cls.CONFIGURATION_ENVIRONMENT_VAR_NAME) or os.path.join(_script_dir, "PythonVerifier.default_configuration")
         assert os.path.isfile(configuration_file), configuration_file

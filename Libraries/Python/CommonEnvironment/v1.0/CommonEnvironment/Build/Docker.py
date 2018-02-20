@@ -524,7 +524,7 @@ def CreateRepositoryBuildFunc( repository_name,
                             # Activate the image
                             this_dm.stream.write("Activating...")
                             with this_dm.stream.DoneManager() as extract_dm:
-                                command_line = 'docker run -it --name "{container_name}" "{docker_username}{image_name}_base:latest" /sbin/my_init -- /sbin/setuser "{username}" bash -c "cd {image_code_dir} && . ./ActivateEnvironment.sh {configuration} && python {image_code_base}/Common/Environment/SourceRepositoryTools/Impl/ActivateEnvironment.py EnvironmentDiffs"' \
+                                command_line = 'docker run -it --name "{container_name}" "{docker_username}{image_name}_base:latest" /sbin/my_init -- /sbin/setuser "{username}" bash -c "cd {image_code_dir} && . ./ActivateEnvironment.sh {configuration} && pushd {image_code_base}/Common/Environment && python -m SourceRepositoryTools.EnvironmentDiffs' \
                                                     .format( container_name=temp_container_name,
                                                              docker_username="{}/".format(docker_username) if docker_username else '',
                                                              image_name=docker_image_name,
@@ -541,17 +541,7 @@ def CreateRepositoryBuildFunc( repository_name,
                                     return extract_dm.result
                     
                                 # Get the environment diffs
-                                match = re.search( textwrap.dedent(
-                                                        """\
-                                                        ////////////////////////////////////////////////////////////////////////////////
-                                                        (?P<content>.+?)
-                                                        ////////////////////////////////////////////////////////////////////////////////
-                                                        """),
-                                                   output,
-                                                   re.MULTILINE | re.DOTALL,
-                                                 )
-                                assert match, output
-                                environment_diffs = json.loads(match.group("content"))
+                                environment_diffs = json.loads(output)
                                           
                             # ----------------------------------------------------------------------
                             def RemoveTempContainer():

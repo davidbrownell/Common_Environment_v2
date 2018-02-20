@@ -555,8 +555,16 @@ def GetSCMEx(path, throw_on_error=True):
     with CallOnExit(lambda: sys.path.pop(0)):
         import SourceRepositoryTools        # <Unable to import> pylint: disable = F0401
 
-    root = SourceRepositoryTools.GetRepositoryRootForFile(os.path.join(path, "Placeholder"))
-    return GetSCM(root, throw_on_error=throw_on_error)
+    root = path
+    while True:
+        if os.path.isfile(os.path.join(root, SourceRepositoryTools.Constants.REPOSITORY_ID_FILENAME)):
+            return GetSCM(root, throw_on_error=throw_on_error)
+
+        potential_root = os.path.dirname(root)
+        if potential_root == root:
+            break
+
+    raise Exception("No repository found in the ancestors of '{}'".format(path))
 
 # ---------------------------------------------------------------------------
 def EnumSCMDirectories(path):

@@ -32,7 +32,10 @@ then
     temp_script_name=`mktemp`
 
     # Generate
-    $PYTHON_BINARY $DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL/SourceRepositoryTools/Impl/SetupEnvironment.py $temp_script_name "$@"
+    export PYTHONPATH=$DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL
+    $PYTHON_BINARY -m SourceRepositoryTools.Impl.SetupEnvironment $temp_script_name "$@"
+    export PYTHONPATH=
+
     script_generation_error=$?
     chmod u+x $temp_script_name
     

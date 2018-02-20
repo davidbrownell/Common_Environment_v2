@@ -47,8 +47,8 @@ def GetCommonEnvironment():
     development_root = None
 
     for line in open(fullpath).readlines():
-        if line.startswith("fundamental_development_root="):
-            development_root = line[len("fundamental_development_root="):].strip()
+        if line.startswith("fundamental_repo="):
+            development_root = line[len("fundamental_repo="):].strip()
             break
 
     if development_root is None:
@@ -62,7 +62,7 @@ def GetCommonEnvironment():
  
 _common_environment = GetCommonEnvironment()
 del GetCommonEnvironment
-        
+                
 # ----------------------------------------------------------------------
 def PreTxnCommit(ui, repo, node, parent1, parent2, *args, **kwargs):
     is_debug = _IsDebug(ui)
@@ -196,19 +196,25 @@ def PreTxnChangeGroup(ui, repo, source, node, node_last, *args, **kwargs):
 # ----------------------------------------------------------------------
 def _Impl(ui, verb, json_content, is_debug):
     try:
-        import mercurial.demandimport
+        import mercurial
 
         mercurial.demandimport.disable()
     except:
         pass
 
-    sys.path.insert(0, os.path.join(_common_environment, "SourceRepositoryTools"))
-    import Constants    # Proactively import Constants, as it will fail if imported from CommonEnvironmentImports. By doing it here, it will already be in sys.modules and not imported again.
-    del sys.path[0]
-    
-    sys.path.insert(0, os.path.join(_common_environment, "SourceRepositoryTools", "Impl"))
-    import CommonEnvironmentImports
-    del sys.path[0]
+    # Imports here can be tricky
+    try:
+        sys.path.insert(0, os.path.join(_common_environment))
+
+        from SourceRepositoryTools.Impl import CommonEnvironmentImports
+        from SourceRepositoryTools.Impl import Constants
+
+        del sys.path[0]
+    except:
+        import traceback
+
+        ui.write(traceback.format_exc())
+        raise
     
     environment = CommonEnvironmentImports.Shell.GetEnvironment()
     output_stream = CommonEnvironmentImports.StreamDecorator(ui)
@@ -220,6 +226,8 @@ def _Impl(ui, verb, json_content, is_debug):
             return 0
 
         rval, output = CommonEnvironmentImports.Process.Execute("{} ListConfigurations json".format(activation_script))
+        assert rval == 0
+
         data = json.loads(output)
         
         configurations = list(data.keys())
@@ -275,14 +283,21 @@ def _Impl(ui, verb, json_content, is_debug):
                                      CommonEnvironmentImports.Shell.Raw('cd "{}"'.format(os.path.dirname(activation_script))),
                                      CommonEnvironmentImports.Shell.Call("{} {}".format(os.path.basename(activation_script), configuration if configuration != "None" else '')),
                                      CommonEnvironmentImports.Shell.ExitOnError(-1),
-                                     CommonEnvironmentImports.Shell.Raw('python "{script}" "{verb}" "{sentinel}" "{json_filename}" "{result_filename}"{first}' \
-                                                                            .format( script=os.path.join(_common_environment, "SourceRepositoryTools", "Impl", "Hooks", "HookImpl.py"),
-                                                                                     verb=verb,
+                                     CommonEnvironmentImports.Shell.Set( "PYTHONPATH",
+                                                                         _common_environment,
+                                                                         preserve_original=False,
+                                                                       ),
+                                     CommonEnvironmentImports.Shell.Raw('python -m SourceRepositoryTools.Impl.Hooks.HookImpl "{verb}" "{sentinel}" "{json_filename}" "{result_filename}"{first}' \
+                                                                            .format( verb=verb,
                                                                                      sentinel=display_sentinel,
                                                                                      json_filename=json_filename,
                                                                                      result_filename=result_filename,
                                                                                      first=" /first" if index == 0 else '',
                                                                                    )),
+                                     CommonEnvironmentImports.Shell.Set( "PYTHONPATH",
+                                                                         None,
+                                                                         preserve_original=False,
+                                                                       ),
                                    ]
         
                         script_filename = environment.CreateTempFilename(environment.ScriptExtension)

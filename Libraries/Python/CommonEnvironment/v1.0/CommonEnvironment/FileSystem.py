@@ -277,7 +277,6 @@ def GetRelativePath(source, dest):
     dest = RemoveTrailingSep(dest)
 
     common_prefix = GetCommonPath(source, dest)
-
     if not common_prefix:
         return dest
 
@@ -286,12 +285,15 @@ def GetRelativePath(source, dest):
         dest = dest[len(os.path.sep):]
 
     source = source[len(common_prefix):]
-
+    
     seps = 0
     for part in os.path.splitdrive(source)[1].split(os.path.sep):
         if part: seps += 1
 
     if not seps:
+        if not dest:
+            return '.'
+
         return os.path.join(".", dest)
 
     return "{}{}".format((("..{}".format(os.path.sep)) * seps), dest)
