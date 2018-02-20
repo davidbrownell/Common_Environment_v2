@@ -128,7 +128,12 @@ def _SetupBootstrap( environment,
                    ):
     # Look for all dependencies by intelligently enumerating through the file system
 
-    search_depth = CommonEnvironmentImports.CommonEnvironment.ModifiableValue(search_depth)
+    search_depth += repository_root.count(os.path.sep)
+    if environment.CategoryName == "Windows":
+        # Remove the slash associated with the drive name
+        assert search_depth
+        search_depth -= 1
+
     repository_root_dirname = os.path.dirname(repository_root)
     len_repository_root_dirname = len(repository_root_dirname)
 
@@ -141,8 +146,6 @@ def _SetupBootstrap( environment,
 
     # ----------------------------------------------------------------------
     def EnumerateDirectories():
-        search_depth.value += repository_root.count(os.path.sep)
-
         search_items = []
         searched_items = set()
 
@@ -161,7 +164,7 @@ def _SetupBootstrap( environment,
             item = os.path.realpath(os.path.normpath(item))
 
             parts = item.split(os.path.sep)
-            if len(parts) > search_depth.value:
+            if len(parts) > search_depth:
                 return
 
             parts_lower = set([ part.lower() for part in parts ])
@@ -241,10 +244,6 @@ def _SetupBootstrap( environment,
         PushSearchItem(repository_root)
 
         if environment.CategoryName == "Windows":
-            # Account for the slash immediately following the drive letter
-            assert search_depth.value
-            search_depth.value -= 1
-
             # ----------------------------------------------------------------------
             def ItemPreprocessor(item):
                 drive, remainder = os.path.splitdrive(item)
