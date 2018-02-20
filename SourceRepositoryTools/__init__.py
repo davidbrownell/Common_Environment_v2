@@ -19,7 +19,6 @@ import textwrap
 from collections import OrderedDict
 
 import six
-import wrapt 
 
 # Backwards compatibility
 from SourceRepositoryTools.Impl.Configuration import *
@@ -34,14 +33,22 @@ _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower
 _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
-@wrapt.decorator
-def ToolRepository(wrapped, instance, args, kwargs):
-    """\
-    Signals that a repository is a tool repository (a repository that contains
-    items that help in the development process but doesn't contain primitives
-    used by other dependent repositories during the build process.
-    """
-    return wrapped(*args, **kwargs)
+try:
+    # Wrapt isn't available in all environments, so make its inclusion optional.
+
+    import wrapt
+
+    @wrapt.decorator
+    def ToolRepository(wrapped, instance, args, kwargs):
+        """\
+        Signals that a repository is a tool repository (a repository that contains
+        items that help in the development process but doesn't contain primitives
+        used by other dependent repositories during the build process.
+        """
+        return wrapped(*args, **kwargs)
+
+except ImportError:
+    pass
 
 # ----------------------------------------------------------------------
 def CreateDependencyMap(root_dir):
@@ -211,3 +218,12 @@ def DisplayDependencyMap( dependency_map,
                                                                      skip_first_line=False,
                                                                    ),
                        ))
+
+# ----------------------------------------------------------------------
+def EnumRepositories():
+    from SourceRepositoryTools.Impl.ActivationData import ActivationData
+
+    # ----------------------------------------------------------------------
+
+    for repo in ActivationData.Load(None, None).PrioritizedRepos:
+        yield repo

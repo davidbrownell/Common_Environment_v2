@@ -202,7 +202,7 @@ def Activate( output_filename_or_stdout,
     return result
 
 # ----------------------------------------------------------------------
-_ListConfigurations_DisplayFormats          = [ "standard", "indented", ]
+_ListConfigurations_DisplayFormats          = [ "standard", "indented", "json" ]
 
 @CommonEnvironmentImports.CommandLine.EntryPoint( repository_root=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo("Root of the repository"),
                                                   display_format=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo("Controls how the output is displayed"),
@@ -219,6 +219,21 @@ def ListConfigurations( repository_root,
 
     repo_info = EnvironmentBootstrap.Load(repository_root)
     
+    if display_format == "json":
+        items = {}
+
+        for config_name, config_info in six.iteritems(repo_info.Configurations):
+            if config_name is None:
+                continue
+
+            # This is a bare-bones representation of the data for specific scenarios. Additional
+            # scenarios should add data as necessary.
+            items[config_name] = { "description" : config_info.Description,
+                                 }
+
+        sys.stdout.write(json.dumps(items))
+        return 0
+
     config_names = [ config_name for config_name in six.iterkeys(repo_info.Configurations) if config_name ]
 
     max_length = 30

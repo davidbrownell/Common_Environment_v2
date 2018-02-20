@@ -174,7 +174,6 @@ def _Impl( display_sentinel,
         with open(result_filename, 'w') as f:
             f.write('1' if has_config_specific else '0')
         
-        dm.result = -1 # BugBug
         return dm.result 
 
 # ----------------------------------------------------------------------

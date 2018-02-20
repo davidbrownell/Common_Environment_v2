@@ -248,9 +248,8 @@ def ActivateLibraryScripts( dest_dir,
                                                  info.Repo,
                                                )
 
-    CommonEnvironmentImports.FileSystem.RemoveTree(dest_dir)
-    os.makedirs(dest_dir)
-
+    CommonEnvironmentImports.FileSystem.MakeDirs(dest_dir)
+    
     if all_scripts:
         for script_name, script_info in six.iteritems(all_scripts):
             if script_info is None:
@@ -312,7 +311,7 @@ def CreateCleanSymLinkStatements(environment, path):
 
         for filename in filenames:
             fullpath = os.path.join(root, filename)
-
+            
             if environment.IsSymLink(fullpath):
                 statement = environment.DeleteSymLink(fullpath, command_only=True)
                 if statement:

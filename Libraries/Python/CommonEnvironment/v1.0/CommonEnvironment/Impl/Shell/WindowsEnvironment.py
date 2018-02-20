@@ -192,9 +192,11 @@ class WindowsEnvironment(Environment):
         
         if os.path.isdir(filename):
             command_line = 'rmdir "{}"'.format(filename)
-        else:
+        elif os.path.isfile(filename):
             command_line = 'del /Q "{}"'.format(filename)
-        
+        else:
+            assert False, filename
+
         if command_only:
             return command_line
             
