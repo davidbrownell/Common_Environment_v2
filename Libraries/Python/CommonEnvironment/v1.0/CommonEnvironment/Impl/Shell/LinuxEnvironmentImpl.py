@@ -119,7 +119,7 @@ class LinuxEnvironmentImpl(Environment):
                 output.append('echo ""')
             else:
                 for old_char, new_char in replacement_chars:
-                    link = line.replace(old_char, new_char)
+                    line = line.replace(old_char, new_char)
                     
                 output.append('echo "{}"'.format(line))
                 
