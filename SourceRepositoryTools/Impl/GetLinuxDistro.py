@@ -6,4 +6,4 @@ result = platform.dist()[0]
 if result == "Debian":
     result = "Ubuntu"
 
-print_(result)
+print(result)
