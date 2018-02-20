@@ -20,6 +20,7 @@ import sys
 import textwrap
 
 import six
+from six.moves import StringIO
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -132,6 +133,13 @@ def Describe( item,                         # str, dict, iterable, obj
 
     # ----------------------------------------------------------------------
     def OutputDict(item, indentation_str):
+        if not item:
+            output_stream.write("-- empty --\n")
+            return
+
+        if hasattr(item, "_asdict"):
+            item = item._asdict()
+
         keys = list(item.keys())
         keys.sort(key=str.lower)
 
@@ -139,34 +147,36 @@ def Describe( item,                         # str, dict, iterable, obj
         for key in keys:
             max_length = max(max_length, len(key))
 
-        item_indentation_str = indentation_str + (' ' * (max_length + len(" : ") + 2))
+        item_indentation_str = indentation_str + (' ' * (max_length + len(" : ")))
 
-        for key in keys:
-            output_stream.write("{0}{1:<{2}} : ".format(indentation_str, key, max_length))
+        for index, key in enumerate(keys):
+            output_stream.write("{0}{1:<{2}} : ".format( indentation_str if index else '', 
+                                                         key, 
+                                                         max_length,
+                                                       ))
             Impl(item[key], item_indentation_str)
 
     # ----------------------------------------------------------------------
     def OutputList(item, indentation_str):
-        item_indentation_str = indentation_str + (' ' * 7)
+        if not item:
+            output_stream.write("-- empty --\n")
+            return
+
+        item_indentation_str = indentation_str + (' ' * 5)
 
         for index, i in enumerate(item):
-            output_stream.write("{0}{1:<5}".format(indentation_str, "{})".format(index)))
+            output_stream.write("{0}{1:<5}".format( indentation_str if index else '', 
+                                                    "{})".format(index),
+                                                  ))
             Impl(i, item_indentation_str)
 
     # ----------------------------------------------------------------------
     def Impl(item, indentation_str):
-
         if isinstance(item, six.string_types):
             output_stream.write("{}\n".format(item))
         elif isinstance(item, dict):
-            if indentation_str:
-                output_stream.write("{}\n".format(type(item)))
-
             OutputDict(item, indentation_str)
-        elif isinstance(item, (list, tuple)):
-            if indentation_str:
-                output_stream.write("{}\n".format(type(item)))
-
+        elif isinstance(item, list):
             OutputList(item, indentation_str)
         else:
             # ----------------------------------------------------------------------
@@ -174,11 +184,9 @@ def Describe( item,                         # str, dict, iterable, obj
                 try:
                     potential_attribute_name = next(iter(item))
                     
-                    output_stream.write("{}\n".format(type(item)))
-
                     # Is the item dict-like?
                     try:
-                        item[potential_attribute_name]
+                        ignore_me = item[potential_attribute_name]
                         OutputDict(item, indentation_str)
                     except TypeError:
                         OutputList(item, indentation_str)
@@ -191,7 +199,14 @@ def Describe( item,                         # str, dict, iterable, obj
             # ----------------------------------------------------------------------
 
             if not Display():
-                output_stream.write("{} {}\n".format(item, type(item)))
+                content = str(item).strip()
+
+                if "<class" not in content:
+                    content += "{}{}".format( '\n' if content.count('\n') > 1 else ' ',
+                                              type(item),
+                                              )
+
+                output_stream.write("{}\n".format(StreamDecorator.LeftJustify(content, len(indentation_str))))
 
     # ----------------------------------------------------------------------
 
@@ -202,6 +217,24 @@ def Describe( item,                         # str, dict, iterable, obj
 def ObjectToDict(obj):
     keys = [ k for k in dir(obj) if not k.startswith("__") ]
     return { k : getattr(obj, k) for k in keys }
+
+# ----------------------------------------------------------------------
+def ObjStrImpl(obj, include_methods=False):
+    """\
+    def __str__(self):
+        return CommonEnvironment.ObjStrImpl(self)
+    """
+    d = ObjectToDict(obj)
+
+    if not include_methods:
+        for k in list(six.iterkeys(d)):
+            if callable(d[k]):
+                del d[k]
+
+    sink = StringIO()
+    Describe(d, sink)
+    
+    return "{}\n{}\n".format(type(obj), sink.getvalue())
 
 # ----------------------------------------------------------------------
 def Listify( item_or_items_or_none,

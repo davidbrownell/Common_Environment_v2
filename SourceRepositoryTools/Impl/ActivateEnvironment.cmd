@@ -35,24 +35,59 @@ set _ACTIVATE_ENVIRONMENT_PREVIOUS_FUNDAMENTAL=%DEVELOPMENT_ENVIRONMENT_FUNDAMEN
 REM Parse the bootstrap info, extracting the python binary and fundamental root
 for /f "tokens=1,2 delims==" %%a in (%~dp0Generated\Windows\EnvironmentBootstrap.data) do (
     if "%%a"=="python_binary" set PYTHON_BINARY=%%~fb
-    if "%%a"=="fundamental_development_root" set DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=%%~fb
-    if "%%a"=="is_tool_repository" set _ACTIVATE_ENVIRONMENT_IS_TOOL_REPOSITORY=%%b
-    if "%%a"=="is_configurable_repository" set _ACTIVATE_ENVIRONMENT_IS_CONFIGURABLE_REPOSITORY=%%b
+    if "%%a"=="fundamental_repo" set DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=%%~fb
+    if "%%a"=="is_tool_repo" set _ACTIVATE_ENVIRONMENT_IS_TOOL_REPOSITORY=%%b
+    if "%%a"=="is_configurable" set _ACTIVATE_ENVIRONMENT_IS_CONFIGURABLE_REPOSITORY=%%b
 )
 
-REM List configurations if requested
-if "%1" == "ListConfigurations" (
-    %PYTHON_BINARY% "%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\SourceRepositoryTools\Impl\ActivateEnvironment.py" ListConfigurations %~dp0 %2 %3
-    goto end
+set PYTHONPATH=%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%
+
+@REM ----------------------------------------------------------------------
+@REM |  List configurations if requested
+if "%1" NEQ "ListConfigurations" goto :NotListConfiguration
+
+REM Get the remaining args
+set _ACTIVATE_ENVIRONMENT_WORKING_DIR=%~dp0
+set _ACTIVATE_ENVIRONMENT_CLA=
+
+shift
+
+:GetRemainingArgs_ListConfigurations
+if "%1" NEQ "" (
+    set _ACTIVATE_ENVIRONMENT_CLA=%_ACTIVATE_ENVIRONMENT_CLA% %1
+    shift
+    goto :GetRemainingArgs_ListConfigurations
 )
 
-REM Indicate if this is a tool repository if requested
-if "%1" == "IsToolRepository" (
-    %PYTHON_BINARY% "%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\SourceRepositoryTools\Impl\ActivateEnvironment.py" IsToolRepository %~dp0 %2
-    goto end
-)
+%PYTHON_BINARY% -m SourceRepositoryTools.Impl.ActivateEnvironment ListConfigurations %_ACTIVATE_ENVIRONMENT_WORKING_DIR% %_ACTIVATE_ENVIRONMENT_CLA%
+goto end
 
-REM Only allow one activated environment at a time (unless we are activating a tool repository).
+:NotListConfiguration
+
+@REM ----------------------------------------------------------------------
+@REM |  Indicate if this is a tool repo if requested
+if "%1" NEQ "IsToolRepository" goto :NotIsToolRepository
+
+REM Get the remaining args
+set _ACTIVATE_ENVIRONMENT_WORKING_DIR=%~dp0
+set _ACTIVATE_ENVIRONMENT_CLA=
+
+shift
+
+:GetRemainingArgs_IsToolRepository
+if "%1" NEQ "" (
+    set _ACTIVATE_ENVIRONMENT_CLA=%_ACTIVATE_ENVIRONMENT_CLA% %1 
+    shift 
+    goto :GetRemainingArgs_IsToolRepository
+)
+    
+%PYTHON_BINARY% -m SourceRepositoryTools.Impl.ActivateEnvironment IsToolRepository %_ACTIVATE_ENVIRONMENT_WORKING_DIR% %_ACTIVATE_ENVIRONMENT_CLA%
+goto end
+
+:NotIsToolRepository
+
+@REM ----------------------------------------------------------------------
+@REM |  Only allow one activated environment at a time (unless we are activating a tool repository).
 if "%_ACTIVATE_ENVIRONMENT_IS_TOOL_REPOSITORY%" NEQ "1" if "%DEVELOPMENT_ENVIRONMENT_REPOSITORY%" NEQ "" if /i "%DEVELOPMENT_ENVIRONMENT_REPOSITORY%\" NEQ "%~dp0" (
     @echo.
     @echo ERROR: Only one environment can be activated at a time, and it appears as
@@ -65,14 +100,19 @@ if "%_ACTIVATE_ENVIRONMENT_IS_TOOL_REPOSITORY%" NEQ "1" if "%DEVELOPMENT_ENVIRON
     goto error_end
 )
 
-REM If we are working with a repository that requires a configuration name, extract the value. If
-REM the value doesn't exist, display an error message.
-REM 
-REM NOTE THAT THE FOLLOWING CODE WILL NEED TO CHANGE IF THE ARGUMENTS TO ActivateEnvironment.py INCREASE
-REM BEYOND THE NUMBER CURRENTLY SUPPORTED.
-REM 
-REM Note that all of this is required because the "shift" command doesn't modify %*
+@REM ----------------------------------------------------------------------
+@REM |  A tool repository can't be activated in isolation
+if "%_ACTIVATE_ENVIRONMENT_IS_TOOL_REPOSITORY%"=="1" if "%DEVELOPMENT_ENVIRONMENT_REPOSITORY_ACTIVATED_FLAG%" NEQ "1" (
+    @echo.
+    @echo ERROR: A tool repository cannot be activated in isolation. Activate another repository before
+    @echo        activating this one.
+    @echo.
+    
+    goto reset_and_error_end
+)
 
+@REM ----------------------------------------------------------------------
+@REM |  Prepare the args
 if "%_ACTIVATE_ENVIRONMENT_IS_CONFIGURABLE_REPOSITORY%" NEQ "0" (
     if "%1" == "" (
         @echo.
@@ -82,7 +122,7 @@ if "%_ACTIVATE_ENVIRONMENT_IS_CONFIGURABLE_REPOSITORY%" NEQ "0" (
         @echo        command line.
         @echo.
         @echo        Available configuration names are:
-        %PYTHON_BINARY% "%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\SourceRepositoryTools\Impl\ActivateEnvironment.py" ListConfigurations %~dp0 indented
+        %PYTHON_BINARY% -m SourceRepositoryTools.Impl.ActivateEnvironment ListConfigurations %~dp0 indented
         @echo.
 
         goto reset_and_error_end
@@ -102,20 +142,12 @@ if "%_ACTIVATE_ENVIRONMENT_IS_CONFIGURABLE_REPOSITORY%" NEQ "0" (
         )
     )
 
-    set _ACTIVATE_ENVIRONMENT_CLA1=%1
-    set _ACTIVATE_ENVIRONMENT_CLA2=%2
-    set _ACTIVATE_ENVIRONMENT_CLA3=%3
-    set _ACTIVATE_ENVIRONMENT_CLA4=%4
-    set _ACTIVATE_ENVIRONMENT_CLA5=%5
+    set _ACTIVATE_ENVIRONMENT_CLA=%*
 
     goto cla_args_set
 )
 
-set _ACTIVATE_ENVIRONMENT_CLA1=None
-set _ACTIVATE_ENVIRONMENT_CLA2=%1
-set _ACTIVATE_ENVIRONMENT_CLA3=%2
-set _ACTIVATE_ENVIRONMENT_CLA4=%3
-set _ACTIVATE_ENVIRONMENT_CLA5=%4
+set _ACTIVATE_ENVIRONMENT_CLA=None %*
 
 :cla_args_set
 
@@ -125,7 +157,7 @@ REM use.
 call :create_temp_script_name
 
 REM Generate...
-%PYTHON_BINARY% "%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\SourceRepositoryTools\Impl\ActivateEnvironment.py" Activate "%_ACTIVATE_ENVIRONMENT_TEMP_SCRIPT_NAME%" %~dp0 %_ACTIVATE_ENVIRONMENT_CLA1% %_ACTIVATE_ENVIRONMENT_CLA2% %_ACTIVATE_ENVIRONMENT_CLA3% %_ACTIVATE_ENVIRONMENT_CLA4% %_ACTIVATE_ENVIRONMENT_CLA5%
+%PYTHON_BINARY% -m SourceRepositoryTools.Impl.ActivateEnvironment Activate "%_ACTIVATE_ENVIRONMENT_TEMP_SCRIPT_NAME%" %~dp0 %_ACTIVATE_ENVIRONMENT_CLA%
 set _ACTIVATE_ENVIRONMENT_SCRIPT_GENERATION_ERROR_LEVEL=%ERRORLEVEL%
 if not exist "%_ACTIVATE_ENVIRONMENT_TEMP_SCRIPT_NAME%" goto :reset_and_error_end
 
@@ -179,15 +211,13 @@ goto end
 :end
 set _ACTIVATE_ENVIRONMENT_SCRIPT_EXECUTION_ERROR_LEVEL=
 set _ACTIVATE_ENVIRONMENT_SCRIPT_GENERATION_ERROR_LEVEL=
-set _ACTIVATE_ENVIRONMENT_CLA5=
-set _ACTIVATE_ENVIRONMENT_CLA4=
-set _ACTIVATE_ENVIRONMENT_CLA3=
-set _ACTIVATE_ENVIRONMENT_CLA2=
-set _ACTIVATE_ENVIRONMENT_CLA1=
+set _ACTIVATE_ENVIRONMENT_CLA=
+set _ACTIVATE_ENVIRONMENT_WORKING_DIR=
 set _ACTIVATE_ENVIRONMENT_TEMP_SCRIPT_NAME=
 set _ACTIVATE_ENVIRONMENT_IS_CONFIGURABLE_REPOSITORY=
 set _ACTIVATE_ENVIRONMENT_IS_TOOL_REPOSITORY=
 set _ACTIVATE_ENVIRONMENT_PREVIOUS_FUNDAMENTAL=
+set PYTHONPATH=
 
 popd
 

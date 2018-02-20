@@ -27,7 +27,10 @@ REM use.
 call :create_temp_script_name
 
 REM Generate...
-%PYTHON_BINARY% "%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\SourceRepositoryTools\Impl\SetupEnvironment.py" "%_SETUP_ENVIRONMENT_TEMP_SCRIPT_NAME%" %*
+set PYTHONPATH=%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%
+%PYTHON_BINARY% -m SourceRepositoryTools.Impl.SetupEnvironment "%_SETUP_ENVIRONMENT_TEMP_SCRIPT_NAME%" %*
+set PYTHONPATH=
+
 set _SETUP_ENVIRONMENT_SCRIPT_GENERATION_ERROR_LEVEL=%ERRORLEVEL%
 
 REM Invoke...
@@ -37,24 +40,22 @@ set _SETUP_ENVIRONMENT_SCRIPT_EXECUTION_ERROR_LEVEL=%ERRORLEVEL%
 REM Process errors...
 if %_SETUP_ENVIRONMENT_SCRIPT_GENERATION_ERROR_LEVEL% NEQ 0 (
     @echo.
-    @echo ERROR: Errors were encountered and the environment has not been successfully
-    @echo        setup for development.
+    @echo ERROR: Errors were encountered and the environment has not been successfully setup for development.
     @echo.
     @echo        [%DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL%\SourceRepositoryTools\Impl\SetupEnvironment.py failed]
     @echo.
     
-    goto end
+    goto error_end
 )
 
 if %_SETUP_ENVIRONMENT_SCRIPT_EXECUTION_ERROR_LEVEL% NEQ 0 (
     @echo.
-    @echo ERROR: Errors were encountered and the environment has not been successfully
-    @echo        setup for development.
+    @echo ERROR: Errors were encountered and the environment has not been successfully setup for development.
     @echo.
     @echo        [%_SETUP_ENVIRONMENT_TEMP_SCRIPT_NAME% failed]
     @echo.
     
-    goto end
+    goto error_end
 )
 
 REM Cleanup...
@@ -65,6 +66,12 @@ del "%_SETUP_ENVIRONMENT_TEMP_SCRIPT_NAME%"
 @echo within a new console window to begin development within this environment.
 @echo.
 @echo.
+
+set _SETUP_ENVIRONMENT_ERROR_LEVEL=0
+goto end
+
+:error_end
+set _SETUP_ENVIRONMENT_ERROR_LEVEL=-1
 goto end
 
 @REM ---------------------------------------------------------------------------
@@ -83,3 +90,5 @@ set _SETUP_ENVIRONMENT_SCRIPT_GENERATION_ERROR_LEVEL=
 set _SETUP_ENVIRONMENT_SCRIPT_EXECUTION_ERROR_LEVEL=
 
 popd
+
+exit /B %_SETUP_ENVIRONMENT_ERROR_LEVEL%

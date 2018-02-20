@@ -97,37 +97,43 @@ then
         if [[ $line == python_binary* ]] 
         then
             export PYTHON_BINARY=`readlink -f ${line#python_binary=}`
-        elif [[ $line == fundamental_development_root* ]]
+        elif [[ $line == fundamental_repo* ]]
         then
-            export DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=`readlink -f ${line#fundamental_development_root=}`
-        elif [[ $line == is_development_tool_repository* ]]
+            export DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL=`readlink -f ${line#fundamental_repo=}`
+        elif [[ $line == is_tool_repo* ]]
         then
-            is_tool_repository=${line#is_tool_repository=}
-        elif [[ $line == is_configurable_repository* ]]
+            is_tool_repo=${line#is_tool_repo=}
+        elif [[ $line == is_configurable* ]]
         then
-            is_configurable_repository=${line#is_configurable_repository=}
+            is_configurable=${line#is_configurable=}
         fi
     done < "`pwd`/Generated/Linux/EnvironmentBootstrap.data"
 fi
 
+export PYTHONPATH=$DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL
+
 # List configurations if requested
 if [ "$1" == "ListConfigurations" ];
 then
-    $PYTHON_BINARY "$DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL/SourceRepositoryTools/Impl/ActivateEnvironment.py" ListConfigurations "`pwd`" $cla2 $cla3
+    shift 1
+
+    $PYTHON_BINARY -m SourceRepositoryTools.Impl.ActivateEnvironment ListConfigurations "`pwd`" $@
     should_continue=0
 fi
 
 # Indicate if this is a tool repository if requested
 if [ "$1" == "IsToolRepository" ];
 then
-    $PYTHON_BINARY "$DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL/SourceRepositoryTools/Impl/ActivateEnvironment.py" IsToolRepository "`pwd`" $cla2
+    shift 1
+
+    $PYTHON_BINARY -m SourceRepositoryTools.Impl.ActivateEnvironment IsToolRepository "`pwd`" $@
     should_continue=0
 fi
 
 # Only allow one activated environment at a time (unless we are activating a tool repository).
 if [ $should_continue = 1 ]
 then
-    if [[ "$is_tool_repository" != "1" && "$DEVELOPMENT_ENVIRONMENT_REPOSITORY" != "" && "$DEVELOPMENT_ENVIRONMENT_REPOSITORY" != "`pwd`" ]]
+    if [[ "$is_tool_repo" != "1" && "$DEVELOPMENT_ENVIRONMENT_REPOSITORY" != "" && "$DEVELOPMENT_ENVIRONMENT_REPOSITORY" != "`pwd`" ]]
     then
         echo ""
         echo "ERROR: Only one environment can be activated at a time, and it appears as"
@@ -137,6 +143,20 @@ then
         echo "       [DEVELOPMENT_ENVIRONMENT_REPOSITORY is already defined as \"$DEVELOPMENT_ENVIRONMENT_REPOSITORY\"]"
         echo ""
         
+        should_continue=0
+    fi
+fi
+
+# A tool repository can't be activated in isolation
+if [ $should_continue = 1 ]
+then
+    if [[ "$is_tool_repo" == "1" && "$DEVELOPMENT_ENVIRONMENT_REPOSITORY_ACTIVATED_FLAG" != "1" ]]
+    then
+        echo ""
+        echo "ERROR: A tool repository cannot be activated in isolation. Activate another repository before"
+        echo "       activating this one."
+        echo ""
+
         should_continue=0
     fi
 fi
@@ -154,7 +174,7 @@ fi
 
 if [ $should_continue = 1 ];
 then
-    if [ "$is_configurable_repository" == "1" ];
+    if [ "$is_configurable" == "1" ];
     then
         if [ "$1" == "" ];
         then
@@ -165,7 +185,7 @@ then
             echo "       command line."
             echo ""
             echo "       Available configuration names are:"
-            $PYTHON_BINARY "$DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL/SourceRepositoryTools/Impl/ActivateEnvironment.py" ListConfigurations "`pwd`" indented
+            $PYTHON_BINARY -m SourceRepositoryTools.Impl.ActivateEnvironment ListConfigurations "`pwd`" indented
             echo ""
 
             should_continue=0
@@ -187,17 +207,9 @@ then
             fi
         fi
 
-        cla1=$1
-        cla2=$2
-        cla3=$3
-        cla4=$4
-        cla5=$5
+        export _ACTIVATE_ENVIRONMENT_CLA=$@
     else
-        cla1=None
-        cla2=$1
-        cla3=$2
-        cla4=$3
-        cla5=$4
+        export _ACTIVATE_ENVIRONMENT_CLA=None $@
     fi
 fi
 
@@ -212,7 +224,7 @@ then
     should_continue=0
 
     # Generate...
-    $PYTHON_BINARY "$DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL/SourceRepositoryTools/Impl/ActivateEnvironment.py" Activate "$temp_script_name" "`pwd`" $cla1 $cla2 $cla3 $cla4 $cla5
+    $PYTHON_BINARY -m SourceRepositoryTools.Impl.ActivateEnvironment Activate "$temp_script_name" "`pwd`" $_ACTIVATE_ENVIRONMENT_CLA
     script_generation_error=$?
     if [ -f $temp_script_name ]; 
     then
@@ -243,6 +255,9 @@ then
         fi
     fi
 fi
+
+export _ACTIVATE_ENVIRONMENT_CLA=
+export PYTHONPATH=
 
 if [ $changed_dir = 1 ];
 then        

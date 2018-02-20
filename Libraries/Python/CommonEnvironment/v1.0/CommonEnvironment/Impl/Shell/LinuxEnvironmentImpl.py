@@ -119,9 +119,9 @@ class LinuxEnvironmentImpl(Environment):
                 output.append('echo ""')
             else:
                 for old_char, new_char in replacement_chars:
-                    link = line.replace(old_char, new_char)
+                    line = line.replace(old_char, new_char)
                     
-                output.append('echo "{}"'.format(line))
+                output.append('echo "{}"'.format(line.rstrip()))
                 
         return '\n'.join(output)
         
@@ -150,6 +150,9 @@ class LinuxEnvironmentImpl(Environment):
     # ---------------------------------------------------------------------------
     @classmethod
     def _GenerateSetCommand(cls, name, values, preserve_original):
+        if len(values) == 1 and values[0] is None:
+            return "export {}=".format(name)
+
         return "export {name}={values}{preserve}".format( name=name,
                                                           values=cls.EnvironmentVariableDelimiter.join(values),
                                                           preserve=":${}".format(name) if preserve_original else '',

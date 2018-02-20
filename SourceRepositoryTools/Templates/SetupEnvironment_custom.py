@@ -67,7 +67,7 @@ def Dependencies():
     #                                                                                       "<optional configuration name>",
     #                                                                                     ),
     #                                                   ],
-    #                                                   # Optonal VersionSpecs
+    #                                                   # Optional VersionSpecs
     #                                                   SourceRepositoryTools.VersionSpecs( # Optional Tools
     #                                                                                       [ SourceRepositoryTools.VersionInfo("MyCustomTool1", "v1.0"),
     #                                                                                         SourceRepositoryTools.VersionInfo("MyCustomTool2", "v1.5"),
