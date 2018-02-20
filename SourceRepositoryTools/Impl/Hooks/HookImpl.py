@@ -16,18 +16,14 @@
 Hook implementation called within an activated environment window.
 """
 
-import inspect
-import json
 import os
 import sys
-
-from collections import OrderedDict
 
 import six
 
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CommandLine
-from CommonEnvironment import Package
+from CommonEnvironment import Interface
 from CommonEnvironment.StreamDecorator import StreamDecorator
 
 # ----------------------------------------------------------------------
@@ -37,14 +33,13 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 
 sys.path.insert(0, os.path.join(_script_dir, "GeneratedCode"))
 with CallOnExit(lambda: sys.path.pop(0)):
-    import HooksImplParser
+    import HooksImplParser                                                  # <Unable to import> pylint: disable = F0401
 
-sys.path.insert(0, os.path.join(_script_dir, "..", "..", "ActivationActivity"))
+sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
 with CallOnExit(lambda: sys.path.pop(0)):
-    from IActivationActivity import IActivationActivity
-
-Impl                                        = Package.ImportInit("..")
-Constants                                   = Impl.Constants
+    from SourceRepositoryTools.Impl.ActivationActivity.IActivationActivity import IActivationActivity
+    from SourceRepositoryTools.Impl.ActivationData import ActivationData
+    from SourceRepositoryTools.Impl import Constants
 
 # ----------------------------------------------------------------------
 @CommandLine.EntryPoint
@@ -64,7 +59,7 @@ def Commit( display_sentinel,
                   result_filename,
                   first,
                   output_stream,
-                  Constants.COMMIT_HOOK_EVENT_HANDLER,
+                  Constants.SETUP_ENVIRONMENT_COMMIT_HOOK_EVENT_HANDLER,
                   HooksImplParser.Commit_FromJson,
                 )
 
@@ -86,7 +81,7 @@ def Push( display_sentinel,
                   result_filename,
                   first,
                   output_stream,
-                  Constants.PUSH_HOOK_EVENT_HANDLER,
+                  Constants.SETUP_ENVIRONMENT_PUSH_HOOK_EVENT_HANDLER,
                   HooksImplParser.Push_FromJson,
                 )
 
@@ -108,7 +103,7 @@ def Pushed( display_sentinel,
                   result_filename,
                   first,
                   output_stream,
-                  Constants.PUSHED_HOOK_EVENT_HANDLER,
+                  Constants.SETUP_ENVIRONMENT_PUSHED_HOOK_EVENT_HANDLER,
                   HooksImplParser.Pushed_FromJson,
                 )
 
@@ -134,20 +129,16 @@ def _Impl( display_sentinel,
             output_stream.write("ERORR: {} ({})\n".format(ex, ex.stack))
             return -1
 
-    configuration = os.getenv("DEVELOPMENT_ENVIRONMENT_REPOSITORY_CONFIGURATION")
-
     output_stream.write("Parsing dependencies...")
     with output_stream.DoneManager():
-        dependencies = Impl.TraverseDependencies( os.getenv("DEVELOPMENT_ENVIRONMENT_REPOSITORY"),
-                                                  configuration,
-                                                )
+        dependencies = ActivationData.Load(None, None).PrioritizedRepos
     
     has_config_specific = False
 
     output_stream.write("Validating...")
     with output_stream.DoneManager() as dm:
-        for repository_info in dependencies.prioritized_repositories:
-            with IActivationActivity.CustomMethodManager(os.path.join(repository_info.root, Constants.SETUP_ENVIRONMENT_CUSTOMIZATION_FILENAME), method_name) as method:
+        for repository_info in dependencies:
+            with IActivationActivity.CustomMethodManager(os.path.join(repository_info.Root, Constants.SETUP_ENVIRONMENT_CUSTOMIZATION_FILENAME), method_name) as method:
                 if not method:
                     continue
 
@@ -158,7 +149,7 @@ def _Impl( display_sentinel,
                 func_code = six.get_function_code(method)
 
                 if "configuration" in func_code.co_varnames[:func_code.co_argcount]:
-                    args["configuration"] = configuration
+                    args["configuration"] = repository_info.Configuration
                     has_config_specific = True
                 elif not first:
                     # Don't call a config-agnostic method again if we aren't
@@ -166,7 +157,7 @@ def _Impl( display_sentinel,
                     continue
 
                 try:
-                    IActivationActivity.CallMethod(method, **args)
+                    Interface.CreateCulledCallable(method)(args)
 
                 except Exception as ex:
                     dm.stream.write(StreamDecorator.LeftJustify( "ERROR: {}\n".format(str(ex)),

@@ -21,18 +21,10 @@ import os
 import sys
 import uuid
 
+from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CommandLine
-from CommonEnvironment import Package
 
-with Package.NameInfo(__package__) as ni:
-    __package__ = ni.created
-
-    from . import Constants
-    from . import Impl
-    
-    __package__ = ni.original
-
-import __init__ as SourceRepositoryTools
+from SourceRepositoryTools.Impl import Constants
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -54,9 +46,9 @@ def EntryPoint( output_dir,
     filename = os.path.join(output_dir, Constants.REPOSITORY_ID_FILENAME)
      
     with open(filename, 'w') as f:
-        f.write(Impl.REPOSITORY_ID_CONTENT_TEMPLATE.format( name=name,
-                                                            guid=str(uuid.uuid4()).replace('-', '').upper(),
-                                                          ))
+        f.write(Constants.REPOSITORY_ID_CONTENT_TEMPLATE.format( name=name,
+                                                                 guid=str(uuid.uuid4()).replace('-', '').upper(),
+                                                               ))
 
     output_stream.write("The file '{}' has been written.\n\n".format(filename))
 

@@ -563,7 +563,7 @@ def clsinit(class_obj):
 # |  Public Methods
 # |  
 # ----------------------------------------------------------------------
-def CreateCulledCallable(callable):
+def CreateCulledCallable(func):
     """\
     Returns a method that will be called with a subset of the potential parameters based on its implementation.
 
@@ -576,32 +576,58 @@ def CreateCulledCallable(callable):
     """
 
     if sys.version_info[0] == 2:
-        arg_spec = inspect.getargspec(callable)
+        arg_spec = inspect.getargspec(func)
     else:
-        arg_spec = inspect.getfullargspec(callable)
+        arg_spec = inspect.getfullargspec(func)
     
     arg_names = { arg for arg in arg_spec.args }
     positional_arg_names = arg_spec.args[:len(arg_spec.args) - len(arg_spec.defaults or [])]
-
-    # ----------------------------------------------------------------------
-    def Method(kwargs):
-        potential_positional_args = []
-
-        for k in list(six.iterkeys(kwargs)):
-            if k not in arg_names:
-                potential_positional_args.append(kwargs[k])
-                del kwargs[k]
-
-        for name in positional_arg_names:
-            if name not in kwargs:
-                assert potential_positional_args
-                kwargs[name] = potential_positional_args.pop(0)
-
-        return callable(**kwargs)
-
-    # ----------------------------------------------------------------------
     
-    return Method
+    # Handle perfect forwarding scenarios
+    if not arg_names and not positional_arg_names:
+        if arg_spec.varkw is not None:
+            # ----------------------------------------------------------------------
+            def Invoke(kwargs):
+                return func(**kwargs)
+
+            # ----------------------------------------------------------------------
+
+        elif arg_spec.varargs is not None:
+            # ----------------------------------------------------------------------
+            def Invoke(kwargs):
+                return func(*tuple(six.itervalues(kwargs)))
+
+            # ----------------------------------------------------------------------
+
+        else:
+            # ----------------------------------------------------------------------
+            def Invoke(kwargs):
+                return func()
+
+            # ----------------------------------------------------------------------
+
+    else:
+        # ----------------------------------------------------------------------
+        def Invoke(kwargs):
+            potential_positional_args = []
+
+            invoke_kwargs = {}
+
+            for k in list(six.iterkeys(kwargs)):
+                if k in arg_names:
+                    invoke_kwargs[k] = kwargs[k]
+                else:
+                    potential_positional_args.append(kwargs[k])
+
+            for name in positional_arg_names:
+                if name not in kwargs and potential_positional_args:
+                    invoke_kwargs[name] = potential_positional_args.pop(0)
+
+            return func(**invoke_kwargs)
+
+        # ----------------------------------------------------------------------
+    
+    return Invoke
 
 # ----------------------------------------------------------------------
 if sys.version_info[0] == 2:

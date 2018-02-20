@@ -33,7 +33,8 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 
 sys.path.insert(0, _script_dir)
 with CallOnExit(lambda: sys.path.pop(0)):
-    from SourceRepositoryTools import DynamicPluginArchitecture, DelayExecute
+    from SourceRepositoryTools import DelayExecute
+    from SourceRepositoryTools import DynamicPluginArchitecture
 
 # ---------------------------------------------------------------------------
 def CustomActions():

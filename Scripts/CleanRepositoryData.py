@@ -44,7 +44,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 assert os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL")
 sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
 with CallOnExit(lambda: sys.path.pop(0)):
-    from SourceRepositoryTools import Constants
+    from SourceRepositoryTools.Impl import Constants
 
 # ---------------------------------------------------------------------------
 @CommandLine.EntryPoint(delete_days=CommandLine.EntryPoint.ArgumentInfo(description="Delete files that are older than the specified number of days"))
