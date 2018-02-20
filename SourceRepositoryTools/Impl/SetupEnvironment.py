@@ -124,7 +124,7 @@ def _SetupBootstrap( environment,
                      customization_mod,
                      debug,
                      configurations_to_setup,
-                     search_depth=3,
+                     search_depth=5,
                    ):
     # Look for all dependencies by intelligently enumerating through the file system
 
