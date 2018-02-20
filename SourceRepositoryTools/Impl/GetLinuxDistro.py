@@ -1,10 +1,4 @@
-try:
-    # Python 2
-    import __builtin__
-    print_ = getattr(__builtin__, "print")
-except ImportError:
-    # Python 3
-    print_ = print
+from __future__ import print_function
         
 import platform
 
