@@ -110,7 +110,7 @@ then
     done < "`pwd`/Generated/Linux/EnvironmentBootstrap.data"
 fi
 
-export PYTHON_PATH=$DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL
+export PYTHONPATH=$DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL
 
 # List configurations if requested
 if [ "$1" == "ListConfigurations" ];
@@ -257,7 +257,7 @@ then
 fi
 
 export _ACTIVATE_ENVIRONMENT_CLA=
-export PYTHON_PATH=
+export PYTHONPATH=
 
 if [ $changed_dir = 1 ];
 then        
