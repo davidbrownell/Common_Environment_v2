@@ -404,7 +404,10 @@ def _SetupBootstrap( environment,
         if debug:
             sys.stdout.write("Searching in '{}'\n".format(directory))
 
-        result = Utilities.GetRepositoryUniqueId(directory, throw_on_error=False)
+        result = Utilities.GetRepositoryUniqueId( directory, 
+                                                  find_by_scm=False,
+                                                  throw_on_error=False,
+                                                )
         if result is None:
             continue
 
