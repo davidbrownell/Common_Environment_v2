@@ -18,8 +18,6 @@ import textwrap
 
 from collections import OrderedDict
 
-import six
-
 # Backwards compatibility
 from SourceRepositoryTools.Impl.Configuration import *
 from SourceRepositoryTools.Impl import Constants
@@ -34,8 +32,13 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 # ----------------------------------------------------------------------
 
 try:
-    # Wrapt isn't available in all environments, so make its inclusion optional.
+    # six isn't available in all environments, so make its inclusion optional.
+    import six
+except ImportError:
+    pass
 
+try:
+    # Wrapt isn't available in all environments, so make its inclusion optional.
     import wrapt
 
     @wrapt.decorator
