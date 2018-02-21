@@ -564,6 +564,8 @@ def GetSCMEx(path, throw_on_error=True):
         if potential_root == root:
             break
 
+        root = potential_root
+
     raise Exception("No repository found in the ancestors of '{}'".format(path))
 
 # ---------------------------------------------------------------------------
