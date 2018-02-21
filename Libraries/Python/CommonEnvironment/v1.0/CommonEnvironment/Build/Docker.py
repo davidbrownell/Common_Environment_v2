@@ -552,9 +552,6 @@ def CreateRepositoryBuildFunc( repository_name,
                                                  )
                                 assert match, output
 
-                                print("BugBug\n", output, "\n\n")
-                                print("BugBug\n", match.group("content"))
-
                                 environment_diffs = json.loads(match.group("content"))
                                           
                             # ----------------------------------------------------------------------
