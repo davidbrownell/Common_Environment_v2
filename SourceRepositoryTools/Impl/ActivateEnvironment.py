@@ -293,7 +293,7 @@ def _ActivateMasterRepoData(environment, generated_dir, configuration):
 
 # ----------------------------------------------------------------------
 def _ActivateNames(environment, repositories):
-    col_sizes = [ 40, 32, 100, ]
+    col_sizes = [ 45, 32, 100, ]
     
     names = []
     max_length = col_sizes[0] / 2

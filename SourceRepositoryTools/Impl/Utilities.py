@@ -23,6 +23,7 @@ from collections import OrderedDict
 import six
 import six.moves.cPickle as pickle
 
+import SourceRepositoryTools
 from SourceRepositoryTools.Impl import CommonEnvironmentImports
 from SourceRepositoryTools.Impl import Constants
 
@@ -179,7 +180,7 @@ def DelayExecute(method, *args, **kwargs):
             
             environment.MakeFileExecutable(r"{script_tempfile}")
             
-            """).format( common_environment_path=os.path.join(CommonEnvironmentImports.fundamental_repo, Constants.LIBRARIES_SUBDIR, "Python", "CommonEnvironment", "v1.0"),
+            """).format( common_environment_path=os.path.join(SourceRepositoryTools.GetFundamentalRepository(), Constants.LIBRARIES_SUBDIR, "Python", "CommonEnvironment", "v1.0"),
                          file_path=file_path,
                          file_name=file_name,
                          method_name=method.__name__,

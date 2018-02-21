@@ -245,7 +245,7 @@ def _Impl(ui, verb, json_content, is_debug):
         with open(json_filename, 'w') as f:
             json.dump(json_content, f)
 
-        skip = False
+        terminate = False
 
         with CommonEnvironmentImports.CallOnExit(lambda: os.remove(json_filename)):
             original_environment = None
@@ -266,7 +266,7 @@ def _Impl(ui, verb, json_content, is_debug):
                                                                            len(configurations),
                                                                          ))
                 with dm.stream.DoneManager() as this_dm:
-                    if skip:
+                    if terminate:
                         continue
 
                     result_filename = environment.CreateTempFilename()
@@ -298,6 +298,7 @@ def _Impl(ui, verb, json_content, is_debug):
                                                                          None,
                                                                          preserve_original=False,
                                                                        ),
+                                     CommonEnvironmentImports.Shell.ExitOnError(-1),
                                    ]
         
                         script_filename = environment.CreateTempFilename(environment.ScriptExtension)
@@ -333,12 +334,16 @@ def _Impl(ui, verb, json_content, is_debug):
                                 return this_dm.result
                             
                             assert os.path.isfile(result_filename), result_filename
-                            result = open(result_filename).read()
-                            
-                            if result == "1":
-                                skip = True
-                            elif result == "0":
-                                pass
+                            result = open(result_filename).read().strip()
+
+                            if result == '-1':
+                                this_dm.result = -1
+                                return this_dm.result
+
+                            elif result == '1':
+                                pass                    # 1 is returned if a configuration was used
+                            elif result == '0':         
+                                terminate = True        # 0 is returned if a configuration was not used
                             else:
                                 assert False, result
 

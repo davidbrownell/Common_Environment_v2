@@ -23,6 +23,7 @@ from collections import OrderedDict
 
 import six
 
+import SourceRepositoryTools
 from SourceRepositoryTools.Impl import CommonEnvironmentImports
 from SourceRepositoryTools.Impl.Configuration import Configuration, Dependency
 from SourceRepositoryTools.Impl import Constants
@@ -133,6 +134,8 @@ def _SetupBootstrap( environment,
         # Remove the slash associated with the drive name
         assert search_depth
         search_depth -= 1
+
+    fundamental_repo = SourceRepositoryTools.GetFundamentalRepository()
 
     repository_root_dirname = os.path.dirname(repository_root)
     len_repository_root_dirname = len(repository_root_dirname)
@@ -316,7 +319,7 @@ def _SetupBootstrap( environment,
                 del configurations[config_name]
 
     # Create a repo lookup list
-    fundamental_name, fundamental_guid = Utilities.GetRepositoryUniqueId(CommonEnvironmentImports.fundamental_repo)
+    fundamental_name, fundamental_guid = Utilities.GetRepositoryUniqueId(fundamental_repo)
 
     id_lookup = OrderedDict([ ( fundamental_guid, LookupObject(fundamental_name) ),
                             ])
@@ -489,7 +492,7 @@ def _SetupBootstrap( environment,
              not is_tool_repository
            ):
             config_info.Dependencies.append(Dependency(fundamental_guid, fundamental_name))
-            config_info.Dependencies[-1].RepositoryRoot = CommonEnvironmentImports.fundamental_repo
+            config_info.Dependencies[-1].RepositoryRoot = fundamental_repo
 
         config_info.Fingerprint = Utilities.CalculateFingerprint( [ repository_root, ] + [ dependency.RepositoryRoot for dependency in config_info.Dependencies ],
                                                                   repository_root,
@@ -498,7 +501,7 @@ def _SetupBootstrap( environment,
     # Get the latest python binary, which may be different than the binary used to launch
     # this process.
     python_binary = Utilities.GetVersionedDirectory( [], # Always get the latest
-                                                     CommonEnvironmentImports.fundamental_repo,
+                                                     fundamental_repo,
                                                      Constants.TOOLS_SUBDIR,
                                                      "Python",
                                                    )
@@ -517,7 +520,7 @@ def _SetupBootstrap( environment,
 
     # Write the bootstrap files
     EnvironmentBootstrap( python_binary,
-                          CommonEnvironmentImports.fundamental_repo,
+                          fundamental_repo,
                           is_tool_repository,
                           has_configurations,
                           configurations,
@@ -550,7 +553,7 @@ def _SetupShortcuts( environment,
                    ):
     activate_script = environment.CreateScriptName(Constants.ACTIVATE_ENVIRONMENT_NAME)
 
-    shortcut_dest = os.path.join(CommonEnvironmentImports.fundamental_repo, "SourceRepositoryTools", "Impl", activate_script)
+    shortcut_dest = os.path.join(SourceRepositoryTools.GetFundamentalRepository(), "SourceRepositoryTools", "Impl", activate_script)
     assert os.path.isfile(shortcut_dest), shortcut_dest
 
     return [ environment.SymbolicLink(os.path.join(repository_root, activate_script), shortcut_dest),
