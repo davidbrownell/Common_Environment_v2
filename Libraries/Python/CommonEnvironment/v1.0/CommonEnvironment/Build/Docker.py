@@ -543,14 +543,18 @@ def CreateRepositoryBuildFunc( repository_name,
                                 # Get the environment diffs
                                 match = re.search( textwrap.dedent(
                                                         """\
-                                                        --------------------------------------------------------------------------------
+                                                        //--//--//--//--//--//--//--//--//--//--//--//--//--//--//--//
                                                         (?P<content>.+?)
-                                                        --------------------------------------------------------------------------------
+                                                        //--//--//--//--//--//--//--//--//--//--//--//--//--//--//--//
                                                         """),
                                                    output,
                                                    re.MULTILINE | re.DOTALL,
                                                  )
                                 assert match, output
+
+                                print("BugBug\n", output, "\n\n")
+                                print("BugBug\n", match.group("content"))
+
                                 environment_diffs = json.loads(match.group("content"))
                                           
                             # ----------------------------------------------------------------------
