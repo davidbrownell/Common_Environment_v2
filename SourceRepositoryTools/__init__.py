@@ -18,6 +18,77 @@ import textwrap
 
 from collections import OrderedDict
 
+# ----------------------------------------------------------------------
+_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
+_script_dir, _script_name = os.path.split(_script_fullpath)
+# ----------------------------------------------------------------------
+
+# ----------------------------------------------------------------------
+def GetFundamentalRepository():
+    # Get the location of the fundamental dir. This is "../" when invoked from
+    # a python script, but more complicated when invoked as part of a frozen 
+    # binary.
+
+    # Don't import Constants here, as Constants relies on this for initialization
+    value = os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL")
+    if value is None:
+        # If here, we are't running in a standard environment are are likely running
+        # as part of a frozen exe. See if we are running on a file system that is
+        # similar to Common_Environment.
+        assert "python" not in sys.executable.lower(), sys.executable
+
+        potential_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
+        if os.path.isdir(potential_dir):
+            value = potential_dir
+
+    if value is not None and value.endswith(os.path.sep):
+        value = value[:-len(os.path.sep)]
+
+    return value
+
+# ----------------------------------------------------------------------
+
+# This file may be invoked by our included version of python - all imports will
+# work as expected. But sometimes, this file may be invoked by embedded versions
+# of python (for example, when used as part of a Mercurial plugin). At that point,
+# we need to go through a bit more work to ensure that module-level imports work
+# as expected.
+try:
+    import inflect
+    import six
+    import wrapt
+
+    # If here, everything was found and all is good
+
+except ImportError:
+
+    # If here, we are in a foreign python environment. Hard-code an import path
+    # to a known location of these base-level libraries. Because the libraries are
+    # so basic, it doesn't matter which one we use; therefore pick the lowest common
+    # denominator.
+
+    fundamental_repo = GetFundamentalRepository()
+    
+    python_root = os.path.join(fundamental_repo, "Tools", "Python", "v2.7.10")
+    assert os.path.isdir(python_root), python_root
+
+    for suffix in [ os.path.join("Windows", "Lib", "site-packages"),
+                    os.path.join("Ubuntu", "lib", "python2.7", "site-packages"),
+                  ]:
+        potential_dir = os.path.join(python_root, suffix)
+        if os.path.isdir(potential_dir):
+            sys.path.insert(0, potential_dir)
+            break
+
+    # Try it again
+    import inflect
+    import six
+    import wrapt
+
+    del sys.path[0]
+
+# ----------------------------------------------------------------------
+
 # Backwards compatibility
 from SourceRepositoryTools.Impl.Configuration import *
 from SourceRepositoryTools.Impl import Constants
@@ -27,31 +98,14 @@ from SourceRepositoryTools.Impl.Utilities import DelayExecute, \
                                                  GetVersionedDirectory
 
 # ----------------------------------------------------------------------
-_script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
-_script_dir, _script_name = os.path.split(_script_fullpath)
-# ----------------------------------------------------------------------
-
-try:
-    # six isn't available in all environments, so make its inclusion optional.
-    import six
-except ImportError:
-    pass
-
-try:
-    # Wrapt isn't available in all environments, so make its inclusion optional.
-    import wrapt
-
-    @wrapt.decorator
-    def ToolRepository(wrapped, instance, args, kwargs):
-        """\
-        Signals that a repository is a tool repository (a repository that contains
-        items that help in the development process but doesn't contain primitives
-        used by other dependent repositories during the build process.
-        """
-        return wrapped(*args, **kwargs)
-
-except ImportError:
-    pass
+@wrapt.decorator
+def ToolRepository(wrapped, instance, args, kwargs):
+    """\
+    Signals that a repository is a tool repository (a repository that contains
+    items that help in the development process but doesn't contain primitives
+    used by other dependent repositories during the build process.
+    """
+    return wrapped(*args, **kwargs)
 
 # ----------------------------------------------------------------------
 def CreateDependencyMap(root_dir):

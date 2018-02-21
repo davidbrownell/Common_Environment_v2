@@ -164,10 +164,9 @@ def _Impl( display_sentinel,
                                                                  len("ERROR: "),
                                                                ))
                     dm.result = -1
-                    return dm.result
         
         with open(result_filename, 'w') as f:
-            f.write('1' if has_config_specific else '0')
+            f.write('-1' if dm.result != 0 else '1' if has_config_specific else '0')
         
         return dm.result 
 
