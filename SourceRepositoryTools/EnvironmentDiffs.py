@@ -19,6 +19,7 @@ Displays differenced between this activated environment and the original environ
 import json
 import os
 import sys
+import textwrap
 
 import six
 
@@ -36,6 +37,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 @CommandLine.FunctionConstraints( output_stream=None,
                                 )
 def EntryPoint( output_stream=sys.stdout,
+                decorate=False,
               ):
     original_env = ActivationData.Load(None, None).OriginalEnvironment
     this_env = dict(os.environ)
@@ -48,7 +50,15 @@ def EntryPoint( output_stream=sys.stdout,
            ):
             differences[k] = v
 
-    json.dump(differences, output_stream)
+    if decorate:
+        output_stream.write(textwrap.dedent(
+            """\
+            --------------------------------------------------------------------------------
+            {}
+            --------------------------------------------------------------------------------
+            """).format(json.dumps(differences)))
+    else:
+        json.dump(differences, output_stream)
 
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
