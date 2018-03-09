@@ -345,64 +345,43 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
     # ---------------------------------------------------------------------------
     @classmethod
     def GetRevisionsSinceLastMerge(cls, repo_root, dest_branch, source_update_merge_arg):
-        if isinstance(source_update_merge_arg, (BranchUpdateMergeArg, BranchAndDateUpdateMergeArg)):
-            
-            current_branch = cls.GetCurrentBranch(repo_root)
-            
-            if source_update_merge_arg.Branch != current_branch:
-                raise Exception("No support for filtering changes across branches (current: {}, source: {}, dest: {})".format(current_branch, source_update_merge_arg.Branch, dest_branch))
-                
-            if isinstance(source_update_merge_arg, BranchUpdateMergeArg):
-                source_update_merge_arg = EmptyUpdateMergeArg()
-            elif isinstance(source_update_merge_arg, BranchAndDateUpdateMergeArg):
-                source_update_merge_arg = DateUpdateMergeArg(source_update_merge_arg.Date)
-            else:
-                assert False
+        source_branch = None
+        additional_filters = []
 
         if isinstance(source_update_merge_arg, EmptyUpdateMergeArg):
-            source_update_merge_arg = RevisionUpdateMergeArg("-1")
+            source_branch = cls.GetCurrentBranch(repo_root)
 
-        # Get the revision associated with the last promotion to the dest_branch
-        command_line = '''hg log --rev "sort(branch('{branch}'), -date)" -l 1 --template "{rev}"'''.format( branch=dest_branch,
-                                                                                                            rev="{rev}",
-                                                                                                          )
-        result, output = cls.Execute(repo_root, command_line)
-        assert result == 0, (result, output)
+        elif isinstance(source_update_merge_arg, RevisionUpdateMergeArg):
+            source_branch = cls._GetBranchAssociatedWithRevision(repo_root, source_update_merge_arg.Revision)
+            additional_filters.append("{}::".format(source_update_merge_arg.Revision))
 
-        min_revision = output.strip()
+        elif isinstance(source_update_merge_arg, DateUpdateMergeArg):
+            source_branch = cls.GetCurrentBranch(repo_root)
+            additional_filters.append("date('>{}')".format(StringSerialization.SerializeItem(DateTimeTypeInfo(), source_update_merge_arg.Date)))
 
-        # Get the revision associated with the source
-        max_revision = cls._UpdateMergeArgToString(repo_root, source_update_merge_arg)
+        elif isinstance(source_update_merge_arg, BranchUpdateMergeArg):
+            source_branch = source_update_merge_arg.Branch
 
-        # See if we are looking at a valid range
+        elif isinstance(source_update_merge_arg, BranchAndDateUpdateMergeArg):
+            source_branch = source_update_merge_arg.Branch
+            additional_filters.append("date('>{}')".format(StringSerialization.SerializeItem(DateTimeTypeInfo(), source_update_merge_arg.Date)))
 
-        # ---------------------------------------------------------------------------
-        regex = re.compile(r"(?P<id>\d+)(?:\:\S+)?")
+        else:
+            assert False, type(source_update_merge_arg)
 
-        def GetMatchVersion(value):
-            match = regex.match(value)
-            assert match, value
+        filter = "::{} and not ::{}".format(source_branch, dest_branch)
+        if additional_filters:
+            filter += " and {}".format(' and '.join(additional_filters))
 
-            return int(match.group("id"))
-
-        # ---------------------------------------------------------------------------
-        
-        if GetMatchVersion(min_revision) > GetMatchVersion(max_revision):
-            return []
-
-        # Get all non-merge changes between these 2 revisions. Note that we don't
-        # need to isolate changes to a specific branch, as eliminating the merge
-        # changes from the list ensures that only code changes are included.
-        command_line = r'hg log --rev "{min}:{max}" -M --template "{rev}\n"'.format( min=min_revision,
-                                                                                     max=max_revision,
-                                                                                     rev="{rev}",
-                                                                                   )
+        command_line = r'hg log --rev "{filter}" --template "{rev}\n"'.format( filter=filter,
+                                                                               rev="{rev}",
+                                                                             )
 
         result, output = cls.Execute(repo_root, command_line)
         assert result == 0, (result, output)
 
         return [ line.strip() for line in output.split('\n') if line.strip() ]
-
+    
     # ---------------------------------------------------------------------------
     @classmethod
     def GetChangedFiles(cls, repo_root, revision_or_revisions_or_none):

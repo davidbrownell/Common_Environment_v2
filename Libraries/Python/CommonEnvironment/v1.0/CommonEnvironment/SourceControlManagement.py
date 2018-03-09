@@ -57,7 +57,7 @@ class UpdateMergeArg(object):
             return BranchUpdateMergeArg(branch)
 
         if date:
-            return DateUpdateMergeArg(branch)
+            return DateUpdateMergeArg(date)
 
         return EmptyUpdateMergeArg()
 

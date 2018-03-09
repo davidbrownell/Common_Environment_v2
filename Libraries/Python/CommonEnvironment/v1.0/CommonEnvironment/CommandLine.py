@@ -403,8 +403,14 @@ class Executor(object):
                     result = 0
 
             except UsageException as ex:
+                if allow_exceptions:
+                    raise
+
                 result = self.Usage(error=str(ex))
             except TypeInfo.ValidationException as ex:
+                if allow_exceptions:
+                    raise
+
                 result = self.Usage(error=str(ex))
             except KeyboardInterrupt:
                 result = -1
