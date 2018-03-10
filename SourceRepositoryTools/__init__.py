@@ -284,3 +284,20 @@ def EnumRepositories():
 
     for repo in ActivationData.Load(None, None).PrioritizedRepos:
         yield repo
+
+# ----------------------------------------------------------------------
+def GetRepositoryRootForFile(filename):
+
+    dirname = os.path.dirname(filename)
+    while True:
+        if os.path.isfile(os.path.join(dirname, Constants.REPOSITORY_ID_FILENAME)):
+            return dirname
+
+        potential_dirname = os.path.dirname(dirname)
+        if potential_dirname == dirname:
+            break
+
+        dirname = potential_dirname
+
+    raise Exception("Unable to find the repository root for '{}'".format(filename))
+
