@@ -47,11 +47,13 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
                                                   version_spec=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo("Overrides version specifications for tools and/or libraries. Example: '/version_spec=Tools/Python:v3.6.0'."),
                                                   no_python_libraries=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo("Disables the import of python libraries, which can be useful when pip installing python libraries for Library inclusion."),
                                                   no_clean=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo("Disables the cleaning of generated content; the default behavior is to clean as a part of every environment activiation."),
+                                                  tool=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo("Activate a tool library at the specified folder location along with this library"),
                                                 )
 @CommonEnvironmentImports.CommandLine.FunctionConstraints( output_filename_or_stdout=CommonEnvironmentImports.CommandLine.StringTypeInfo(),
                                                            repository_root=CommonEnvironmentImports.CommandLine.DirectoryTypeInfo(),
                                                            configuration=CommonEnvironmentImports.CommandLine.StringTypeInfo(),
                                                            version_spec=CommonEnvironmentImports.CommandLine.DictTypeInfo(require_exact_match=False, arity='?'),
+                                                           tool=CommonEnvironmentImports.CommandLine.DirectoryTypeInfo(arity='*'),
                                                          )
 def Activate( output_filename_or_stdout,
               repository_root,
@@ -62,6 +64,7 @@ def Activate( output_filename_or_stdout,
               no_python_libraries=False,
               no_clean=False,
               force=False,
+              tool=None,
             ):
     """\
     Activates this repository for development activities.
@@ -69,6 +72,7 @@ def Activate( output_filename_or_stdout,
 
     configuration = configuration if configuration.lower() != "none" else None
     version_specs = version_spec or {}; del version_spec
+    tools = tool or []; del tool
 
     environment = CommonEnvironmentImports.Shell.GetEnvironment()
 
@@ -118,28 +122,40 @@ def Activate( output_filename_or_stdout,
             if not found:
                 version_infos.append(configuration.VersionInfo(name, v))
 
-        # Are we activating a tool repository?
-        is_tool_repo = EnvironmentBootstrap.Load(repository_root, environment=environment).IsToolRepo
-        
-        if is_tool_repo:
-            this_activation_data = ActivationData.Load( repository_root, 
+        # ----------------------------------------------------------------------
+        def LoadToolLibrary(tool_path):
+            tool_activation_data = ActivationData.Load( tool_path,
                                                         configuration=None,
                                                         environment=environment,
                                                         force=True,
                                                       )
-            assert not this_activation_data.VersionSpecs.Tools
-            assert not this_activation_data.VersionSpecs.Libraries
-            assert len(this_activation_data.PrioritizedRepos) == 1
+            if not tool_activation_data.IsToolRepo:
+                raise Exception("The repository at '{}' is not a tool repository".format(tool_path))
 
+            assert not tool_activation_data.VersionSpecs.Tools
+            assert not tool_activation_data.VersionSpecs.Libraries
+            assert len(tool_activation_data.PrioritizedRepos) == 1
+            
+            tool_repo = tool_activation_data.PrioritizedRepos[0]
+            tool_repo.IsToolRepo = True
+
+            # Add this repo as a repo to be activated if it isn't already in the list
+            if not any(r.Id == tool_repo.Id for r in activation_data.PrioritizedRepos):
+                activation_data.PrioritizedRepos.append(tool_repo)
+
+        # ----------------------------------------------------------------------
+
+        # Are we activating a tool repository?
+        is_tool_repo = EnvironmentBootstrap.Load(repository_root, environment=environment).IsToolRepo
+        
+        if is_tool_repo:
             if force:
                 raise Exception("'force' cannot be used with tool repositories")
 
-            this_repo = this_activation_data.PrioritizedRepos[0]
-            this_repo.IsToolRepo = True
+            LoadToolLibrary(repository_root)
 
-            # Activate the repository if it hasn't been activated already
-            if not any(r.Id == this_repo.Id for r in activation_data.PrioritizedRepos):
-                activation_data.PrioritizedRepos.append(this_repo)
+        for tool in tools:
+            LoadToolLibrary(tool)
 
         # Create the methods to invoke and the args used during invocation
         methods = [ _ActivateActivationData,
