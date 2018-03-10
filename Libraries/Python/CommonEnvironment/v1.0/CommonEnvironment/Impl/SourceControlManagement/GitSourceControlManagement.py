@@ -397,7 +397,7 @@ class GitSourceControlManagement(DistributedSourceControlManagementBase):
         elif isinstance(update_merge_arg, BranchUpdateMergeArg):
             commands.insert(0, 'git checkout "{}"'.format(update_merge_arg.Branch))
         else:
-            revision = cls._UpdateMergeArg_ToString(repo_root, update_merge_arg)
+            revision = cls._UpdateMergeArgToString(repo_root, update_merge_arg)
 
             # Updating to a specific revision within Git is interesting, as one will find
             # themselves in a "DETACHED HEAD" state. While this makes a lot of sense from
@@ -426,33 +426,73 @@ class GitSourceControlManagement(DistributedSourceControlManagementBase):
     # ---------------------------------------------------------------------------
     @classmethod
     def Merge(cls, repo_root, update_merge_arg):
-        return cls.Execute(repo_root, "git merge --no-commit --no-ff {}".format(cls._UpdateMergeArg_ToString(repo_dir, update_merge_arg)))
+        return cls.Execute(repo_root, "git merge --no-commit --no-ff {}".format(cls._UpdateMergeArgToString(repo_dir, update_merge_arg)))
 
 
     # ---------------------------------------------------------------------------
     @classmethod
     def GetRevisionsSinceLastMerge(cls, repo_root, dest_branch, source_update_merge_arg):
+        # Git is really screwed up. After a 30 minute search, I couldn't find a way to
+        # specify a branch and beginning revision in a single command. Therefore, I am
+        # resorting to do it manually.
+
+        source_branch = None
+        additional_filters = []
+        post_decorator_func = None
+
         if isinstance(source_update_merge_arg, EmptyUpdateMergeArg):
-            source_update_merge_arg = RevisionUpdateMergeArg("-1")
+            source_branch = cls.GetCurrentBranch(repo_root)
 
-        # Get the revision associated with the last promotion to the dest branch
-        command_line = 'git --no-pager log -n 1 "{}" --format=%H'.format(dest_branch)
-        
-        result, output = cls.Execute(repo_root, command_line, append_newline_to_output=False)
+        elif isinstance(source_update_merge_arg, RevisionUpdateMergeArg):
+            source_branch = cls._GetBranchAssociateWithRevision(source_update_merge_arg.Revision)
+
+            # ----------------------------------------------------------------------
+            def AfterRevisionDecorator(changes):
+                starting_index = None
+
+                for index, change in enumerate(changes):
+                    if change == source_update_merge_arg.Revision:
+                        starting_index = index          # Start after the found item
+                        break
+
+                if starting_index is None:
+                    return []
+
+                return changes[starting_index:]
+
+            # ----------------------------------------------------------------------
+
+            post_decorator_func = AfterRevisionDecorator
+
+        elif isinstance(source_update_merge_arg, DateUpdateMergeArg):
+            source_branch = cls.GetCurrentBranch(repo_root)
+            additional_filters.append('--since="{}"'.format(StringSerialization.SerializeItem(DateTimeTypeInfo(), source_update_merge_arg.Date)))
+
+        elif isinstance(source_update_merge_arg, BranchUpdateMergeArg):
+            source_branch = source_update_merge_arg.Branch
+
+        elif isinstance(source_update_merge_arg, BranchAndDateUpdateMergeArg):
+            source_branch = source_update_merge_arg.Branch
+            additional_filters.append('--since="{}"'.format(StringSerialization.SerializeItem(DateTimeTypeInfo(), source_update_merge_arg.Date)))
+
+        else:
+            assert False, type(source_update_merge_arg)
+
+        command_line = r'git --no-pager log "{source_branch}" --not "{dest_branch}" --format=%H --no-merges{additional_filters}' \
+                            .format( source_branch=source_branch,
+                                     dest_branch=dest_branch,
+                                     additional_filters='' if not additional_filters else " {}".format(' '.join(additional_filters)),
+                                   )
+
+        result, output = cls.Execute(repo_root, command_line)
         assert result == 0, (result, output)
 
-        min_revision = output
+        changes = [ line.strip() for line in output.split('\n') if line.strip() ]
 
-        # Get the revision associated with the source
-        max_revision = cls._UpdateMergeArg_ToString(repo_root, source_update_merge_arg)
+        if post_decorator_func is not None:
+            changes = post_decorator_func(changes)
 
-        # Get all non-merge changes between these two revisions
-        command_line = 'git --no-pager log {}..{} --format=%H --no-merges'.format(min_revision, max_revision)
-
-        result, output = cls.Execute(repo_root, command_line, append_newline_to_output=False)
-        assert result == 0, (result, output)
-
-        return [ line.strip() for line in output.split('\n') if line.strip() ]
+        return changes
 
     # ---------------------------------------------------------------------------
     _GetChangedFiles_regex                  = None
@@ -657,8 +697,24 @@ class GitSourceControlManagement(DistributedSourceControlManagementBase):
         return cls.Execute(repo_root, 'git add {}'.format(' '.join([ '"{}"'.format(filename) for filename in filenames ])))
 
     # ----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     @classmethod
-    def _UpdateMergeArg_ToString(cls, repo_root, arg):
+    def _GetBranchAssociatedWithRevision(cls, repo_root, revision):
+        result, output = cls.Execute( repo_root,
+                                      'git branch --contains {}'.format(revision),
+                                    )
+        assert result == 0, (result, output)
+
+        output = output.strip()
+        if output.startswith("* "):
+            output = output[len("* "):]
+
+        return output
+
+    # ----------------------------------------------------------------------
+    @classmethod
+    def _UpdateMergeArgToString(cls, repo_root, arg):
 
         # ----------------------------------------------------------------------
         def NormalizeRevision(revision):
