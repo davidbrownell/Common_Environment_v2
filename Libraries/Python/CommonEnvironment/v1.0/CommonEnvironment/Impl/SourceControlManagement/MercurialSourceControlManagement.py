@@ -229,7 +229,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
     # ---------------------------------------------------------------------------
     @classmethod
     def GetRevisionInfo(cls, repo_root, revision):
-        result, output = cls.Execute(repo_root, 'hg log -r "{}"'.format(revision))
+        result, output = cls.Execute(repo_root, 'hg log --rev "{}"'.format(revision))
         assert result == 0, (result, output)
 
         d = { "user" : None,
@@ -265,7 +265,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
             """)):
             return 0, ''
 
-        commands = [ "hg update -C",
+        commands = [ "hg update --clean",
                      "hg purge",
                    ]
 
@@ -307,12 +307,12 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
                      end_change=None,
                    ):
         if not start_change or not end_change:
-            command_line = 'hg diff -g > "{}"'.format(patch_filename)
+            command_line = 'hg diff --git > "{}"'.format(patch_filename)
         else:
-            command_line = 'hg export -g -r "{start}:{end}" > "{filename}"'.format( start=start_change,
-                                                                                    end=end_change,
-                                                                                    filename=patch_filename,
-                                                                                  )
+            command_line = 'hg export --git --rev "{start}:{end}" > "{filename}"'.format( start=start_change,
+                                                                                          end=end_change,
+                                                                                          filename=patch_filename,
+                                                                                        )
 
         return cls.Execute(repo_root, command_line)
 
@@ -327,9 +327,9 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
     @classmethod
     def Commit(cls, repo_root, description, username=None):
         return cls.Execute( repo_root,
-                            'hg commit -m "{desc}"{user}'.format( desc=description.replace('"', '\\"'),
-                                                                  user=' -u "{}"'.format(username) if username else '',
-                                                                ),
+                            'hg commit --message "{desc}"{user}'.format( desc=description.replace('"', '\\"'),
+                                                                         user=' --user "{}"'.format(username) if username else '',
+                                                                       ),
                           )
 
     # ---------------------------------------------------------------------------
@@ -373,9 +373,11 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
         if additional_filters:
             filter += " and {}".format(' and '.join(additional_filters))
 
-        command_line = r'hg log --rev "{filter}" --template "{rev}\n"'.format( filter=filter,
-                                                                               rev="{rev}",
-                                                                             )
+        command_line = r'hg log --branch "{source_branch}" --rev "{filter}" --template "{rev}\n"' \
+                            .format( source_branch=source_branch,
+                                     filter=filter,
+                                     rev="{rev}",
+                                   )
 
         result, output = cls.Execute(repo_root, command_line)
         assert result == 0, (result, output)
@@ -456,7 +458,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
             """)):
             return 0, ''
 
-        commands = [ 'hg update -C',
+        commands = [ 'hg update --clean',
                      'hg purge',
                      'hg strip{backup} "roots(outgoing())"'.format(backup=" --no-backup" if no_backup else ''),
                    ]
@@ -500,9 +502,9 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
             return []
         
         # Get the changes themselves
-        result, output = cls.Execute(repo_root, r'hg log -l {changes} --template "{node}\n"'.format( changes=changes,
-                                                                                                     node="{node}",
-                                                                                                   ))
+        result, output = cls.Execute(repo_root, r'hg log --limit {changes} --template "{node}\n"'.format( changes=changes,
+                                                                                                          node="{node}",
+                                                                                                        ))
         assert result == 0, (result, output)
         
         return [ line.strip() for line in output.split('\n') if line.strip() ]    
@@ -556,7 +558,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
     # ---------------------------------------------------------------------------
     @classmethod
     def _GetBranchAssociatedWithRevision(cls, repo_root, revision=None):
-        command_line = 'hg log {revision} --template "{branch}"'.format( revision="-r {}".format(revision) if revision else "-l 1",
+        command_line = 'hg log {revision} --template "{branch}"'.format( revision="--rev {}".format(revision) if revision else "-l 1",
                                                                          branch="{branch}",
                                                                        )
 
@@ -604,10 +606,10 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
             errors = OrderedDict()
 
             for branch in BranchGenerator():
-                command_line = '''hg log -b "{branch}" -r "sort(date('<{date}'), -date)" -l 1 --template "{rev}"'''.format( branch=branch,
-                                                                                                                            date=StringSerialization.SerializeItem(DateTimeTypeInfo(), date),
-                                                                                                                            rev="{rev}",
-                                                                                                                          )
+                command_line = '''hg log --branch "{branch}" --rev "sort(date('<{date}'), -date)" --limit 1 --template "{rev}"'''.format( branch=branch,
+                                                                                                                                          date=StringSerialization.SerializeItem(DateTimeTypeInfo(), date),
+                                                                                                                                          rev="{rev}",
+                                                                                                                                        )
 
                 result, output = cls.Execute(repo_root, command_line)
                 output = output.strip()
