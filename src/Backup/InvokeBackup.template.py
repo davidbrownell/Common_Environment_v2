@@ -19,6 +19,7 @@ import sys
 
 from CommonEnvironment import CommandLine
 from CommonEnvironment import Process
+from CommonEnvironment.StreamDecorator import StreamDecorator
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -79,7 +80,7 @@ def EntryPoint( print_command_line=False,
                         .format( script=backup_script,
                                  output_dir=OUTPUT_DIR,
                                  input=' '.join([ '"/input={}"'.format(input) for input in inputs ]),
-                                 display='' if not display else " /display",
+                                 display='' if display else " /disable_progress_status",
                                  force='' if not force else " /force",
                                  verbose='' if not verbose else " /verbose",
                                )
