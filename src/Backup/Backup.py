@@ -1075,7 +1075,7 @@ def _GetFileInfo( desc,
                     # ----------------------------------------------------------------------
 
                     file_info += TaskPool.Transform( input_files,
-                                                     func,
+                                                     CalculateHash,
                                                      this_dm.stream,
                                                      num_concurrent_tasks=None if ssd else 1,
                                                      name_functor=lambda index, item: item,
