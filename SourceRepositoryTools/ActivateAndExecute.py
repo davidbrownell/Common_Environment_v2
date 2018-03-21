@@ -77,7 +77,7 @@ def ActivateAndExecute( environment,
                                                 activation_configuration,
                                               )
     original_environment_filename = os.path.join(generated_dir, Constants.GENERATED_ACTIVATION_ORIGINAL_ENVIRONMENT_FILENAME)
-    assert os.path.isfile(original_environment_filename)
+    assert os.path.isfile(original_environment_filename), original_environment_filename
 
     with open(original_environment_filename) as f:
         env_vars = json.load(f)
