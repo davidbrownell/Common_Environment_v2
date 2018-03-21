@@ -221,7 +221,19 @@ def _Impl(ui, verb, json_content, is_debug):
     
     output_stream.write("Getting configurations...")
     with output_stream.DoneManager() as dm:
-        activation_script = os.path.join(os.getcwd(), Constants.ACTIVATE_ENVIRONMENT_NAME) + environment.ScriptExtension
+        activation_root = os.getcwd()
+
+        # Is the repo a tool repo?
+        bootstrap_filename = os.path.join(activation_root, Constants.GENERATED_DIRECTORY_NAME, environment.CategoryName, Constants.GENERATED_BOOTSTRAP_JSON_FILENAME)
+        if os.path.isfile(bootstrap_filename):
+            with open(bootstrap_filename) as f:
+                bootstrap_data = json.load(f)
+
+            if bootstrap_data["is_tool_repo"]:
+                # Set the root to the fundamental repo
+                activation_root = os.path.realpath(os.path.join(activation_root, bootstrap_data["fundamental_repo"]))
+        
+        activation_script = os.path.join(activation_root, Constants.ACTIVATE_ENVIRONMENT_NAME) + environment.ScriptExtension
         if not os.path.isfile(activation_script):
             return 0
 
@@ -254,7 +266,7 @@ def _Impl(ui, verb, json_content, is_debug):
                 # This code sucks because it is hard coding names and duplicating logic in ActivateEnvironment. However, importing
                 # ActivateEnvironment here is causing problems, as the Mercurial version of python is different enough from our
                 # version that some imports don't work between python 2 and python 3.
-                original_data_filename = os.path.join(os.getenv(Constants.DE_REPO_GENERATED_NAME), "OriginalEnvironment.json")
+                original_data_filename = os.path.join(os.getenv(Constants.DE_REPO_GENERATED_NAME), "EnvironmentActivation.OriginalEnvironment.json")
                 assert os.path.isfile(original_data_filename), original_data_filename
                 
                 with open(original_data_filename) as f:
