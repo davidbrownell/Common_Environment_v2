@@ -157,6 +157,11 @@ def Activate( output_filename_or_stdout,
         for tool in tools:
             LoadToolLibrary(tool)
 
+        # Ensure that the generated dir exists
+        generated_dir = Utilities.GetActivationDir(environment, repository_root, configuration)
+        
+        CommonEnvironmentImports.FileSystem.MakeDirs(generated_dir)
+        
         # Create the methods to invoke and the args used during invocation
         methods = [ _ActivateActivationData,
                     _ActivateNames,
@@ -168,7 +173,8 @@ def Activate( output_filename_or_stdout,
                   ]
 
         if not is_tool_repo:
-            methods = [ _ActivateMasterRepoData,
+            methods = [ _ActivateOriginalEnvironment,
+                        _ActivateMasterRepoData,
                       ] + methods
 
         args = OrderedDict([ ( "constants", ConstantsObject( Constants.LIBRARIES_SUBDIR,
@@ -180,7 +186,7 @@ def Activate( output_filename_or_stdout,
                              ( "configuration", configuration ),
                              ( "activation_data", activation_data ),
                              ( "version_specs", activation_data.VersionSpecs ),
-                             ( "generated_dir", Utilities.GetActivationDir(environment, repository_root, configuration) ),
+                             ( "generated_dir", generated_dir ),
                              ( "debug", debug ),
                              ( "no_python_libraries", no_python_libraries ),
                              ( "no_clean", no_clean ),
@@ -280,10 +286,27 @@ def ListConfigurations( repository_root,
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
-def _ActivateActivationData(activation_data, generated_dir):
-    CommonEnvironmentImports.FileSystem.MakeDirs(generated_dir)
+def _ActivateActivationData(activation_data):
     activation_data.Save()
 
+# ----------------------------------------------------------------------
+def _ActivateOriginalEnvironment(environment, generated_dir, configuration):
+    original_environment = dict(os.environ)
+
+    elimination_funcs = [ lambda value: value.startswith("PYTHON"),
+                          lambda value: value.startswith("_ACTIVATE_ENVIRONMENT"),
+                          lambda value: value.startswith("DEVELOPMENT_ENVIRONMENT"),
+                        ]
+
+    for k in list(six.iterkeys(original_environment)):
+        for elimination_func in elimination_funcs:
+            if elimination_func(k):
+                del original_environment[k]
+                break
+    
+    with open(os.path.join(generated_dir, Constants.GENERATED_ACTIVATION_ORIGINAL_ENVIRONMENT_FILENAME), 'w') as f:
+        json.dump(original_environment, f)
+        
 # ----------------------------------------------------------------------
 def _ActivateMasterRepoData(environment, generated_dir, configuration):
     commands = [ environment.Set( Constants.DE_REPO_ACTIVATED_FLAG, 

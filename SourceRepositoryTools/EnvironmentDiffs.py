@@ -24,8 +24,10 @@ import textwrap
 import six
 
 from CommonEnvironment import CommandLine
+from CommonEnvironment import Shell
 
-from SourceRepositoryTools.Impl.ActivationData import ActivationData
+from SourceRepositoryTools.Impl import Constants
+from SourceRepositoryTools.Impl import Utilities
 
 # ----------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -39,7 +41,18 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 def EntryPoint( output_stream=sys.stdout,
                 decorate=False,
               ):
-    original_env = ActivationData.Load(None, None).OriginalEnvironment
+    # Get the original environment
+    generated_dir = Utilities.GetActivationDir( Shell.GetEnvironment(),
+                                                os.getenv(Constants.DE_REPO_ROOT_NAME),
+                                                os.getenv(Constants.DE_REPO_CONFIGURATION_NAME),
+                                              )
+    original_environment_filename = os.path.join(generated_dir, Constants.GENERATED_ACTIVATION_ORIGINAL_ENVIRONMENT_FILENAME)
+    assert os.path.isfile(original_environment_filename), original_environment_filename
+
+    with open(original_environment_filename) as f:
+        original_env = json.load(f)
+
+    # Compare it to the current environment
     this_env = dict(os.environ)
 
     differences = {}

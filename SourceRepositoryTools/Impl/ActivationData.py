@@ -304,20 +304,6 @@ class ActivationData(object):
                              status=CommonEnvironmentImports.StreamDecorator.LeftJustify('\n'.join(lines), 4),
                            ))
         
-        # Calculate the original environment
-        original_environment = dict(os.environ)
-
-        elimination_funcs = [ lambda value: value.startswith("PYTHON"),
-                              lambda value: value.startswith("_ACTIVATE_ENVIRONMENT"),
-                              lambda value: value.startswith("DEVELOPMENT_ENVIRONMENT"),
-                            ]
-
-        for k in list(six.iterkeys(original_environment)):
-            for elimination_func in elimination_funcs:
-                if elimination_func(k):
-                    del original_environment[k]
-                    break
-
         # Create the object
         return cls( this_repository.Id, 
                     repository_root,
@@ -325,7 +311,6 @@ class ActivationData(object):
                     configuration,
                     [ repositories[id].Repo for id, _ in priority_values ],
                     Configuration.VersionSpecs(tool_version_info, library_version_info),
-                    original_environment,
                   )
 
     # ----------------------------------------------------------------------
@@ -336,7 +321,6 @@ class ActivationData(object):
                   configuration,
                   prioritized_repositories,
                   version_specs,
-                  original_environment,
                 ):
         self.Id                             = id
         self.Root                           = repository_root
@@ -344,7 +328,6 @@ class ActivationData(object):
         self.IsToolRepo                     = is_tool_repo
         self.PrioritizedRepos               = prioritized_repositories
         self.VersionSpecs                   = version_specs
-        self.OriginalEnvironment            = original_environment
 
     # ----------------------------------------------------------------------
     def Save(self):
