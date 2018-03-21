@@ -55,7 +55,6 @@ def ActivateAndExecute( environment,
     activation_script = os.path.join(activation_repo_dir, activate_environment_script_name)
     assert os.path.isfile(activation_script), activation_script
 
-
     # Generate the command
     commands = [ environment.Call("{script}{config}{dependency_environment_flag}" \
                                        .format( script=activation_script,
@@ -73,8 +72,8 @@ def ActivateAndExecute( environment,
 
     # Get the original environment vars
     generated_dir = Utilities.GetActivationDir( environment,
-                                                activation_repo_dir,
-                                                activation_configuration,
+                                                bootstrap_data.FundamentalRepo,
+                                                None,
                                               )
     original_environment_filename = os.path.join(generated_dir, Constants.GENERATED_ACTIVATION_ORIGINAL_ENVIRONMENT_FILENAME)
     assert os.path.isfile(original_environment_filename), original_environment_filename
