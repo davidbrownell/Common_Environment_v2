@@ -35,7 +35,8 @@ AGNOSTIC_OS_NAME                                        = "Agnostic"
 GENERATED_DIRECTORY_NAME                                = "Generated"
 GENERATED_BOOTSTRAP_JSON_FILENAME                       = "EnvironmentBootstrap.json"
 GENERATED_BOOTSTRAP_DATA_FILENAME                       = "EnvironmentBootstrap.data"
-GENERATED_ACTIVATION_FILENAME                           = "EnvironmentActivaton.pickle"
+GENERATED_ACTIVATION_FILENAME                           = "EnvironmentActivation.pickle"
+GENERATED_ACTIVATION_ORIGINAL_ENVIRONMENT_FILENAME      = "EnvironmentActivation.OriginalEnvironment.json"
 
 REPOSITORY_ID_FILENAME                                  = "__RepositoryID__"
 

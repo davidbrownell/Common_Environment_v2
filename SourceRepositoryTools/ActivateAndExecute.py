@@ -12,12 +12,13 @@
 # |  (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 # |  
 # ----------------------------------------------------------------------
+import json
 import os
 import sys
 
 import six
 
-from SourceRepositoryTools.Impl.ActivationData import ActivationData
+from SourceRepositoryTools.Impl import Utilities
 from SourceRepositoryTools.Impl import Constants
 from SourceRepositoryTools.Impl.EnvironmentBootstrap import EnvironmentBootstrap
 
@@ -40,6 +41,8 @@ def ActivateAndExecute( environment,
     assert os.path.isdir(activation_repo_dir), activation_repo_dir
     assert command
     assert output_stream
+
+    cl_env_vars = env_vars or {}
 
     bootstrap_data = EnvironmentBootstrap.Load(activation_repo_dir, environment=environment)
 
@@ -68,9 +71,18 @@ def ActivateAndExecute( environment,
 
         commands.insert(0, environment.Call(fundamental_activate_script))
 
-    cl_env_vars = env_vars or {}
+    # Get the original environment vars
+    generated_dir = Utilities.GetActivationDir( environment,
+                                                activation_repo_dir,
+                                                activation_configuration,
+                                              )
+    original_environment_filename = os.path.join(generated_dir, Constants.GENERATED_ACTIVATION_ORIGINAL_ENVIRONMENT_FILENAME)
+    assert os.path.isfile(original_environment_filename)
 
-    env_vars = ActivationData.Load(None, None, environment=environment).OriginalEnvironment
+    with open(original_environment_filename) as f:
+        env_vars = json.load(f)
+
+    # Augment the original environment with values provided on the command line
     for k, v in six.iteritems(cl_env_vars):
         env_vars[k] = v
 
