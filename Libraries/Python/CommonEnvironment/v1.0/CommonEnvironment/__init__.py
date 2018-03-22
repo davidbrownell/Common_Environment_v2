@@ -193,7 +193,7 @@ def Describe( item,                         # str, dict, iterable, obj
 
                     return True
 
-                except (TypeError, StopIteration):
+                except (TypeError, IndexError, StopIteration):
                     return False
 
             # ----------------------------------------------------------------------
