@@ -43,6 +43,7 @@ from CommonEnvironment.QuickObject import QuickObject
 from CommonEnvironment import Shell
 from CommonEnvironment.StreamDecorator import StreamDecorator
 from CommonEnvironment import TaskPool
+from CommonEnvironment.TestTypeMetadata import TEST_TYPES
 from CommonEnvironment.TimeDelta import TimeDelta
 
 from Impl.CompleteResults import CompleteResults
@@ -799,20 +800,19 @@ def ExecuteTree( input_dir,
         output_stream.write("No tests were found.\n")
         return
 
+    if execute_in_parallel is None:
+        for ttmd in TEST_TYPES:
+            if ttmd.Name == test_type:
+                execute_in_parallel = ttmd.ExecuteInParallel
+                break
+
     complete_results = Test( test_items,
                              output_dir,
                              compiler,
                              test_parser,
                              code_coverage_extractor,
                              code_coverage_validator,
-                                                               # This list is based on test type names defined in 
-                                                               # <Common_ContinuousIntegration>/Libraries/Python/CommonContinuousIntegration/v1.0/CommonContinuousIntegration/BuildmasterConfig.py
-                                                               #
-                             execute_in_parallel=(test_type in [ "UnitTests",
-                                                                 "FunctionalTests",
-                                                                 "IntegrationTests",
-                                                                 "EndToEndTests",
-                                                               ]) if execute_in_parallel is None else execute_in_parallel,
+                             execute_in_parallel=execute_in_parallel,
                              iterations=iterations,
                              debug_on_error=debug_on_error,
                              continue_iterations_on_error=continue_iterations_on_error,
@@ -1031,6 +1031,9 @@ def CommandLineSuffix():
         """\
         Where...
 
+            Common values for 'test_type' are (although these are not required):
+        {test_types}
+
             Available values for 'compiler' are:
         {compilers}
 
@@ -1043,12 +1046,18 @@ def CommandLineSuffix():
             Available values for 'code_coverage_validator' are:
         {code_coverage_validators}
 
-        In all cases, the item index or name may be used.
+
+        An item index or name may be used for these command line arguments:
+            - 'compiler'
+            - 'test_parser'
+            - 'code_coverage_extractor'
+            - 'code_coverage_validator'
 
         """).format( compilers='\n'.join([ "        {index}) {name:<20} {desc}".format(index=index + 1, name=compiler.Name, desc=compiler.Description) for index, compiler in enumerate(COMPILERS) ]),
                      test_parsers='\n'.join([ "        {index}) {name:<20} {desc}".format(index=index + 1, name=compiler.Name, desc=compiler.Description) for index, compiler in enumerate(TEST_PARSERS) ]),
                      code_coverage_extractors='\n'.join([ "        {index}) {name:<20} {desc}".format(index=index + 1, name=compiler.Name, desc=compiler.Description) for index, compiler in enumerate(CODE_COVERAGE_EXTRACTORS) ]),
                      code_coverage_validators='\n'.join([ "        {index}) {name:<20} {desc}".format(index=index + 1, name=compiler.Name, desc=compiler.Description) for index, compiler in enumerate(CODE_COVERAGE_VALIDATORS) ]),
+                     test_types='\n'.join([ "      - {name:<30} {desc}".format(name=ttmd.Name, desc=ttmd.Description) for ttmd in TEST_TYPES ]),
                    )
 
 # ---------------------------------------------------------------------------

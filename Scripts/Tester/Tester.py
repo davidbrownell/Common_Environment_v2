@@ -35,6 +35,7 @@ from CommonEnvironment import Process
 from CommonEnvironment.QuickObject import QuickObject
 from CommonEnvironment import Shell
 from CommonEnvironment.StreamDecorator import StreamDecorator
+from CommonEnvironment.TestTypeMetadata import TEST_TYPES
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -457,10 +458,17 @@ def MatchAllTests( input_dir,
 def CommandLineSuffix():
     return StreamDecorator.LeftJustify( textwrap.dedent(
                                             """\
-                                            Where <configuration> can be:
+                                            Where...
+                                           
+                                                <configuration> can be:
                                             {}
 
-                                            """).format('\n'.join([ "    - {}".format(config) for config in six.iterkeys(CONFIGURATIONS) ])),
+                                                Common values for <test_type> are (although these are not required):
+                                            {}
+
+                                            """).format( '\n'.join([ "      - {}".format(config) for config in six.iterkeys(CONFIGURATIONS) ]),
+                                                         '\n'.join([ "      - {name:<30} {desc}".format(name=ttmd.Name, desc=ttmd.Description) for ttmd in TEST_TYPES ]),
+                                                       ),
                                         4,
                                         skip_first_line=False,
                                       )
