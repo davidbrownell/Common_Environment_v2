@@ -43,6 +43,7 @@ from CommonEnvironment.QuickObject import QuickObject
 from CommonEnvironment import Shell
 from CommonEnvironment.StreamDecorator import StreamDecorator
 from CommonEnvironment import TaskPool
+from CommonEnvironment.TestTypeMetadata import TEST_TYPES
 from CommonEnvironment.TimeDelta import TimeDelta
 
 from Impl.CompleteResults import CompleteResults
@@ -799,20 +800,19 @@ def ExecuteTree( input_dir,
         output_stream.write("No tests were found.\n")
         return
 
+    if execute_in_parallel is None:
+        for ttmd in TEST_TYPES:
+            if ttmd.Name == test_type:
+                execute_in_parallel = ttmd.ExecuteInParallel
+                break
+
     complete_results = Test( test_items,
                              output_dir,
                              compiler,
                              test_parser,
                              code_coverage_extractor,
                              code_coverage_validator,
-                                                               # This list is based on test type names defined in 
-                                                               # <Common_ContinuousIntegration>/Libraries/Python/CommonContinuousIntegration/v1.0/CommonContinuousIntegration/BuildmasterConfig.py
-                                                               #
-                             execute_in_parallel=(test_type in [ "UnitTests",
-                                                                 "FunctionalTests",
-                                                                 "IntegrationTests",
-                                                                 "EndToEndTests",
-                                                               ]) if execute_in_parallel is None else execute_in_parallel,
+                             execute_in_parallel=execute_in_parallel,
                              iterations=iterations,
                              debug_on_error=debug_on_error,
                              continue_iterations_on_error=continue_iterations_on_error,
