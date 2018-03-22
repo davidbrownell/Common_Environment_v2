@@ -531,6 +531,20 @@ class Executor(object):
                                  standard=standard,
                                ))
 
+        if self.ScriptDescriptionSuffix:
+            error_stream.write("{}\n".format(self.ScriptDescriptionSuffix.strip()))
+
+        if not verbose:
+            error_stream.write(textwrap.dedent(
+                """\
+
+
+                    Run "{script_name} {prefix}?" for additional information.
+                    
+                """).format( script_name=self.ScriptName,
+                             prefix=self.CommandLineArgPrefix,
+                           ))
+                           
         if error:
             error = "\n\nERROR: {}\n".format(StreamDecorator.LeftJustify(error, len("ERROR: ")))
 
