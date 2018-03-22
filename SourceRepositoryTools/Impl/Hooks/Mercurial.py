@@ -137,7 +137,7 @@ def PreOutgoing(ui, repo, source, *args, **kwargs):
                 )
 
 # ----------------------------------------------------------------------
-def PreTxnChangeGroup(ui, repo, source, node, node_last, *args, **kwargs):
+def PreTxnChangeGroup(ui, repo, source, node, node_last=None, *args, **kwargs):
     return 0 # Disabling hooks for now
 
     if source != "serve":
