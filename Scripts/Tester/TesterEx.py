@@ -1031,6 +1031,9 @@ def CommandLineSuffix():
         """\
         Where...
 
+            Common values for 'test_type' are (although these are not required):
+        {test_types}
+
             Available values for 'compiler' are:
         {compilers}
 
@@ -1043,12 +1046,18 @@ def CommandLineSuffix():
             Available values for 'code_coverage_validator' are:
         {code_coverage_validators}
 
-        In all cases, the item index or name may be used.
+
+        An item index or name may be used for these command line arguments:
+            - 'compiler'
+            - 'test_parser'
+            - 'code_coverage_extractor'
+            - 'code_coverage_validator'
 
         """).format( compilers='\n'.join([ "        {index}) {name:<20} {desc}".format(index=index + 1, name=compiler.Name, desc=compiler.Description) for index, compiler in enumerate(COMPILERS) ]),
                      test_parsers='\n'.join([ "        {index}) {name:<20} {desc}".format(index=index + 1, name=compiler.Name, desc=compiler.Description) for index, compiler in enumerate(TEST_PARSERS) ]),
                      code_coverage_extractors='\n'.join([ "        {index}) {name:<20} {desc}".format(index=index + 1, name=compiler.Name, desc=compiler.Description) for index, compiler in enumerate(CODE_COVERAGE_EXTRACTORS) ]),
                      code_coverage_validators='\n'.join([ "        {index}) {name:<20} {desc}".format(index=index + 1, name=compiler.Name, desc=compiler.Description) for index, compiler in enumerate(CODE_COVERAGE_VALIDATORS) ]),
+                     test_types='\n'.join([ "      - {name:<30} {desc}".format(name=ttmd.Name, desc=ttmd.Description) for ttmd in TEST_TYPES ]),
                    )
 
 # ---------------------------------------------------------------------------
