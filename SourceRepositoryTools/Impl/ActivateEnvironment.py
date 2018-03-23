@@ -204,10 +204,8 @@ def Activate( output_filename_or_stdout,
             result = method(args)
 
             if isinstance(result, list):
-                # BugBug commands.append(environment.Message("BugBug: {}".format(original_method)))
                 commands += result
             elif result is not None:
-                # BugBug commands.append(environment.Message("BugBug: {}".format(original_method)))
                 commands.append(result)
 
         return commands
