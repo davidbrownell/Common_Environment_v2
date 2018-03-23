@@ -357,14 +357,14 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
 
         elif isinstance(source_update_merge_arg, DateUpdateMergeArg):
             source_branch = cls.GetCurrentBranch(repo_root)
-            additional_filters.append("date('>{}')".format(StringSerialization.SerializeItem(DateTimeTypeInfo(), source_update_merge_arg.Date)))
+            additional_filters.append("date('>{}')".format(StringSerialization.SerializeItem(DateTimeTypeInfo(), source_update_merge_arg.Date, microseconds=False)))
 
         elif isinstance(source_update_merge_arg, BranchUpdateMergeArg):
             source_branch = source_update_merge_arg.Branch
 
         elif isinstance(source_update_merge_arg, BranchAndDateUpdateMergeArg):
             source_branch = source_update_merge_arg.Branch
-            additional_filters.append("date('>{}')".format(StringSerialization.SerializeItem(DateTimeTypeInfo(), source_update_merge_arg.Date)))
+            additional_filters.append("date('>{}')".format(StringSerialization.SerializeItem(DateTimeTypeInfo(), source_update_merge_arg.Date, microseconds=False)))
 
         else:
             assert False, type(source_update_merge_arg)
@@ -607,7 +607,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
 
             for branch in BranchGenerator():
                 command_line = '''hg log --branch "{branch}" --rev "sort(date('<{date}'), -date)" --limit 1 --template "{rev}"'''.format( branch=branch,
-                                                                                                                                          date=StringSerialization.SerializeItem(DateTimeTypeInfo(), date),
+                                                                                                                                          date=StringSerialization.SerializeItem(DateTimeTypeInfo(), date, microseconds=False),
                                                                                                                                           rev="{rev}",
                                                                                                                                         )
 
