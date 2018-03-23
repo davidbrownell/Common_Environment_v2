@@ -240,11 +240,13 @@ class StringSerialization(Serialization):
             # ----------------------------------------------------------------------
             @staticmethod
             def OnDateTime(type_info):
+                this_item = item
+
                 microseconds = custom_kwargs.get("microseconds", True)
                 if not microseconds:
-                    item = item.replace(microsecond=0)
+                    this_item = this_item.replace(microsecond=0)
 
-                return item.isoformat(sep=custom_kwargs.get("sep", ' '))
+                return this_item.isoformat(sep=custom_kwargs.get("sep", ' '))
         
             # ----------------------------------------------------------------------
             @staticmethod
