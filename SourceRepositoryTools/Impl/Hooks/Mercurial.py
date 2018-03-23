@@ -293,7 +293,7 @@ def _Impl(ui, verb, json_content, is_debug):
                     with CommonEnvironmentImports.CallOnExit(RemoveResultFilename):
                         commands = [ CommonEnvironmentImports.Shell.EchoOff(),
                                      CommonEnvironmentImports.Shell.Raw('cd "{}"'.format(os.path.dirname(activation_script))),
-                                     CommonEnvironmentImports.Shell.Call("{} {}".format(os.path.basename(activation_script), configuration if configuration != "None" else '')),
+                                     CommonEnvironmentImports.Shell.Call("{} {} /fast".format(os.path.basename(activation_script), configuration if configuration != "None" else '')),
                                      CommonEnvironmentImports.Shell.ExitOnError(-1),
                                      CommonEnvironmentImports.Shell.Set( "PYTHONPATH",
                                                                          _common_environment,
