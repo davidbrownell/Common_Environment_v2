@@ -47,6 +47,7 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
                                                   version_spec=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo("Overrides version specifications for tools and/or libraries. Example: '/version_spec=Tools/Python:v3.6.0'."),
                                                   no_python_libraries=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo("Disables the import of python libraries, which can be useful when pip installing python libraries for Library inclusion."),
                                                   no_clean=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo("Disables the cleaning of generated content; the default behavior is to clean as a part of every environment activiation."),
+                                                  fast=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo("Activate the environment as quickly as possible; in some cases, the environment activated may not have all functionality enabled as a result."),
                                                   tool=CommonEnvironmentImports.CommandLine.EntryPoint.ArgumentInfo("Activate a tool library at the specified folder location along with this library"),
                                                 )
 @CommonEnvironmentImports.CommandLine.FunctionConstraints( output_filename_or_stdout=CommonEnvironmentImports.CommandLine.StringTypeInfo(),
@@ -64,6 +65,7 @@ def Activate( output_filename_or_stdout,
               no_python_libraries=False,
               no_clean=False,
               force=False,
+              fast=False,
               tool=None,
             ):
     """\
@@ -190,19 +192,22 @@ def Activate( output_filename_or_stdout,
                              ( "debug", debug ),
                              ( "no_python_libraries", no_python_libraries ),
                              ( "no_clean", no_clean ),
+                             ( "fast", fast ),
                              ( "repositories", activation_data.PrioritizedRepos ),
                              ( "is_tool_repo", is_tool_repo ),
                            ])
 
         # Invoke the methods
-        for method in methods:
-            method = CommonEnvironmentImports.Interface.CreateCulledCallable(method)
+        for original_method in methods:
+            method = CommonEnvironmentImports.Interface.CreateCulledCallable(original_method)
 
             result = method(args)
 
             if isinstance(result, list):
+                # BugBug commands.append(environment.Message("BugBug: {}".format(original_method)))
                 commands += result
             elif result is not None:
+                # BugBug commands.append(environment.Message("BugBug: {}".format(original_method)))
                 commands.append(result)
 
         return commands
@@ -374,17 +379,27 @@ def _ActivateNames(environment, repositories):
            ]
 
 # ----------------------------------------------------------------------
-def _ActivatePython(constants, environment, configuration, repositories, version_specs, generated_dir, no_python_libraries, no_clean):
-    return PythonActivationActivity.CreateCommands( constants,
-                                                    environment,
-                                                    configuration,
-                                                    repositories,
-                                                    version_specs,
-                                                    generated_dir,
-                                                    context={ "ProcessLibraries" : not no_python_libraries,
-                                                              "Clean" : not no_clean,
-                                                            },
-                                                  )
+def _ActivatePython(constants, environment, configuration, repositories, version_specs, generated_dir, no_python_libraries, no_clean, fast):
+    actions = []
+
+    if fast:
+        actions.append(environment.Message("** FAST: Activating python without clean or libraries. ({}) **\n".format(_script_fullpath)))
+        
+        no_clean = True
+        no_python_libraries = True
+
+    actions += PythonActivationActivity.CreateCommands( constants,
+                                                        environment,
+                                                        configuration,
+                                                        repositories,
+                                                        version_specs,
+                                                        generated_dir,
+                                                        context={ "ProcessLibraries" : not no_python_libraries,
+                                                                  "Clean" : not no_clean,
+                                                                },
+                                                      )
+
+    return actions
 
 # ----------------------------------------------------------------------
 def _ActivateTools(constants, environment, configuration, repositories, version_specs, generated_dir):
@@ -397,16 +412,29 @@ def _ActivateTools(constants, environment, configuration, repositories, version_
                                                  )
 
 # ----------------------------------------------------------------------
-def _ActivateScripts(constants, environment, configuration, repositories, version_specs, generated_dir, no_clean):
-    return ScriptsActivationActivity.CreateCommands( constants,
-                                                     environment,
-                                                     configuration,
-                                                     repositories,
-                                                     version_specs,
-                                                     generated_dir,
-                                                     context={ "Clean" : not no_clean,
-                                                             },
-                                                   )
+def _ActivateScripts(constants, environment, configuration, repositories, version_specs, generated_dir, no_clean, fast):
+    actions = []
+
+    if fast:
+        actions.append(environment.Message("\n** FAST: Activating scripts without clean. ({}) **\n".format(_script_fullpath)))
+
+        no_clean = True
+        no_display = True
+    else:
+        no_display = False
+
+    actions += ScriptsActivationActivity.CreateCommands( constants,
+                                                         environment,
+                                                         configuration,
+                                                         repositories,
+                                                         version_specs,
+                                                         generated_dir,
+                                                         context={ "Clean" : not no_clean,
+                                                                   "Display" : not no_display,
+                                                                 },
+                                                       )
+
+    return actions
 
 # ----------------------------------------------------------------------
 def _ActivateCustom(**kwargs):
@@ -425,7 +453,7 @@ def _ActivateCustom(**kwargs):
     return commands
 
 # ----------------------------------------------------------------------
-def _ActivatePrompt(environment, repositories, configuration, is_tool_repo):
+def _ActivatePrompt(environment, repositories, configuration, is_tool_repo, fast):
     if is_tool_repo and os.getenv(Constants.DE_REPO_CONFIGURATION_NAME):
         assert configuration == None, configuration
         configuration = os.getenv(Constants.DE_REPO_CONFIGURATION_NAME)
@@ -443,6 +471,9 @@ def _ActivatePrompt(environment, repositories, configuration, is_tool_repo):
 
     if tool_names:
         prompt += " [{}]".format(', '.join(tool_names))
+
+    if fast:
+        prompt += " ** FAST **"
 
     return environment.SetCommandPrompt(prompt)
 
