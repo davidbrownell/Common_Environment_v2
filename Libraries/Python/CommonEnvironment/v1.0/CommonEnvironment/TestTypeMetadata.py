@@ -58,12 +58,16 @@ class TestTypeMetadata(object):
         return CommonEnvironment.ObjStrImpl(self)
 
 # ----------------------------------------------------------------------
+
+# The following test types are ordered from the smallest- to largest-
+# system under test.
 TEST_TYPES                                  = [                   # Name                        Code Coverage   Execute in Parallel     Deployment                                          Description
-                                                TestTypeMetadata( "UnitTests",                  True,           True,                   None,                                               "Tests that exercise a single function or method"   ),
+                                                TestTypeMetadata( "UnitTests",                  True,           True,                   None,                                               "Tests that exercise a single function or method" ),
                                                 TestTypeMetadata( "FunctionalTests",            True,           True,                   None,                                               "Tests that exercise multiple functions or methods" ),
-                                                TestTypeMetadata( "IntegrationTests",           False,          True,                   TestTypeMetadata.DeploymentType.Local,              "Tests that exercise 1-2 components with local setup requirements"  ),
-                                                TestTypeMetadata( "SystemTests",                False,          False,                  TestTypeMetadata.DeploymentType.ProductionLike,     "Tests that exercise 1-2 components with production-like setup requirements"    ),
-                                                TestTypeMetadata( "EndToEndTests",              False,          True,                   TestTypeMetadata.DeploymentType.Production,         "Tests that exercise 2+ components with production setup requirements"  ),
-                                                TestTypeMetadata( "BuildVerificationTests",     False,          False,                  TestTypeMetadata.DeploymentType.Production,         "Tests intended to determine at a high level if a build/deployment is working as expected"  ),
-                                                TestTypeMetadata( "PerformanceTests",           False,          False,                  TestTypeMetadata.DeploymentType.Production,         "Tests measuring performance across a variety of dimensions"    ),
+                                                TestTypeMetadata( "IntegrationTests",           False,          True,                   TestTypeMetadata.DeploymentType.Local,              "Tests that exercise 1-2 components with local setup requirements" ),
+                                                TestTypeMetadata( "SystemTests",                False,          False,                  TestTypeMetadata.DeploymentType.ProductionLike,     "Tests that exercise 1-2 components with production-like setup requirements" ),
+                                                TestTypeMetadata( "LocalEndToEndTests",         False,          False,                  TestTypeMetadata.DeploymentType.Local,              "Tests that exercise 2+ components with local setup requirements" ),
+                                                TestTypeMetadata( "EndToEndTests",              False,          True,                   TestTypeMetadata.DeploymentType.Production,         "Tests that exercise 2+ components with production setup requirements" ),
+                                                TestTypeMetadata( "BuildVerificationTests",     False,          False,                  TestTypeMetadata.DeploymentType.Production,         "Tests intended to determine at a high level if a build/deployment is working as expected" ),
+                                                TestTypeMetadata( "PerformanceTests",           False,          False,                  TestTypeMetadata.DeploymentType.Production,         "Tests measuring performance across a variety of dimensions" ),
                                               ]
