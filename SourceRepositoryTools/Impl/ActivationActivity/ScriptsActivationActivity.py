@@ -42,6 +42,7 @@ class ScriptsActivationActivity(IActivationActivity.IActivationActivity):
     Name                                    = "Scripts"
     DelayExecute                            = True
     Clean                                   = True
+    Display                                 = True
 
     # ----------------------------------------------------------------------
     @classmethod
@@ -255,7 +256,7 @@ class ScriptsActivationActivity(IActivationActivity.IActivationActivity):
                 if not os.path.isfile(potential_filename):
                     output_filename = potential_filename
 
-                    if conflicts:
+                    if conflicts and cls.Display:
                         commands.append(environment.Message(CommonEnvironmentImports.StreamDecorator.LeftJustify( textwrap.dedent(
                                                                                                                     """\
                                                                                                                     The wrapper script for '{original_name}' has been renamed '{new_name}' to avoid naming conflicts with:

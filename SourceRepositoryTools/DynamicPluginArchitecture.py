@@ -100,7 +100,7 @@ def CreateRegistrationStatements( environment_beacon_name,
 # ----------------------------------------------------------------------
 def _DelayInit(environment_beacon_name, filenames):
     commands = []
-    new_filenames = []
+    new_filenames = set()
 
     source_filename = os.getenv(environment_beacon_name)
     if not source_filename:
@@ -113,11 +113,11 @@ def _DelayInit(environment_beacon_name, filenames):
     elif os.path.isfile(source_filename):
         for line in [ line.strip() for line in open(source_filename).readlines() if line.strip() ]:
             if os.path.isfile(line):
-                new_filenames.append(line)
+                new_filenames.add(line)
 
     for filename in filenames:
         if filename not in new_filenames:
-            new_filenames.append(filename)
+            new_filenames.add(filename)
 
     with open(source_filename, 'w') as f:
         f.write("{}\n".format('\n'.join(sorted(new_filenames))))
