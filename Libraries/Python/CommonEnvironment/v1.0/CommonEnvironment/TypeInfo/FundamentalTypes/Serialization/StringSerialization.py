@@ -223,10 +223,11 @@ class StringSerialization(Serialization):
     @staticmethod
     def _SerializeItemImpl(type_info, item, **custom_kwargs):
         # custom_kwargs:
-        #   type_info type      Key         Value       Default             Desc
-        #   ------------------  ----------  ----------  ------------------  ----------------
-        #   DateTimeTypeInfo    sep         string      ' '                 String that separates dates and times (' ' or 'T')
-        #   DurationTypeInfo    sep         string      '.'                 String that separates days and hours ('.' or ':')
+        #   type_info type      Key                 Value       Default             Desc
+        #   ------------------  ------------------  ----------  ------------------  ----------------
+        #   DateTimeTypeInfo    sep                 string      ' '                 String that separates dates and times (' ' or 'T')
+        #   DateTimeTypeInfo    microseconds        bool        True                Disables the display of microseconds during serialization if the value is False
+        #   DurationTypeInfo    sep                 string      '.'                 String that separates days and hours ('.' or ':')
 
         # ----------------------------------------------------------------------
         @staticderived
@@ -239,6 +240,10 @@ class StringSerialization(Serialization):
             # ----------------------------------------------------------------------
             @staticmethod
             def OnDateTime(type_info):
+                microseconds = custom_kwargs.get("microseconds", True)
+                if not microseconds:
+                    item = item.replace(microsecond=0)
+
                 return item.isoformat(sep=custom_kwargs.get("sep", ' '))
         
             # ----------------------------------------------------------------------
