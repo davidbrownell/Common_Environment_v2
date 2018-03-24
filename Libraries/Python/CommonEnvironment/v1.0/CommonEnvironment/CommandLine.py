@@ -455,12 +455,23 @@ class Executor(object):
                error_stream=sys.stderr,
                verbose=False,
              ):
+        error_stream.write(textwrap.dedent(
+            """\
+            {desc}{prefix}
+
+                Usage:
+            """).format( desc=StreamDecorator.Wrap(self.ScriptDescription, MAX_COLUMN_WIDTH),
+                         prefix='' if not self.ScriptDescriptionPrefix else "\n\n{}".format(self.ScriptDescriptionPrefix),
+                       ))
+
+        indented_error_stream = StreamDecorator(error_stream, line_prefix="    ")
+
         if len(self.EntryPoints) == 1:
             standard, verbose_desc = self._GenerateUsageInformation(self.EntryPoints[0])
             if verbose:
                 standard = "{}\n\n{}".format(standard, verbose_desc)
 
-            output = "        {} {}".format(self.ScriptName, standard)
+            indented_error_stream.write("    {} {}".format(self.ScriptName, standard))
         else:
             # ---------------------------------------------------------------------------
             def FormatInlineFuncDesc(content):
@@ -473,22 +484,21 @@ class Executor(object):
 
             # ---------------------------------------------------------------------------
             
-            output = [ textwrap.dedent(
+            indented_error_stream.write(textwrap.dedent(
                 """\
-                        {script_name} <command> [args]
+                    {script_name} <command> [args]
 
                 Where <command> can be one of the following:
                 --------------------------------------------
-                {commands}
-
                 """).format( script_name=self.ScriptName,
-                             commands='\n'.join([ "    - {name:<30} {desc}".format( name=ep.Name,
-                                                                                    desc=FormatInlineFuncDesc(ep.Description),
-                                                                                  )
-                                                  for ep in self.EntryPoints
-                                                ]),
-                           ),
-                     ]
+                           ))
+
+            for ep in self.EntryPoints:
+                indented_error_stream.write("    - {name:<30} {desc}\n".format( name=ep.Name,
+                                                                                desc=FormatInlineFuncDesc(ep.Description),
+                                                                              ))
+
+            indented_error_stream.write("\n")
 
             for ep in self.EntryPoints:
                 intro = "When <command> is '{}':".format(ep.Name)
@@ -508,7 +518,7 @@ class Executor(object):
                                                   StreamDecorator.LeftJustify(verbose_desc, 4, skip_first_line=False),
                                                 )
 
-                output.append(textwrap.dedent(
+                indented_error_stream.write(textwrap.dedent(
                     """\
                     {intro}
                     {sep}
@@ -521,25 +531,20 @@ class Executor(object):
                                  standard=standard,
                                ))
 
-            output = '\n'.join(output).rstrip()
+        if self.ScriptDescriptionSuffix:
+            error_stream.write("{}\n".format(self.ScriptDescriptionSuffix.strip()))
 
-        error_stream.write(textwrap.dedent(
-            """\
-            {desc}{prefix}
+        if not verbose:
+            error_stream.write(textwrap.dedent(
+                """\
 
-                Usage:
-            {output}
 
-            {suffix}{additional_info}
-            """).format( desc=StreamDecorator.Wrap(self.ScriptDescription, MAX_COLUMN_WIDTH),
-                         prefix='' if not self.ScriptDescriptionPrefix else "\n\n{}".format(self.ScriptDescriptionPrefix),
-                         output=StreamDecorator.LeftJustify(output, 4),
-                         suffix='' if not self.ScriptDescriptionSuffix else "\n{}".format(self.ScriptDescriptionSuffix),
-                         additional_info='' if verbose else '\n\n    Run "{script_name} {prefix}?" for additional information.\n\n'.format( script_name=self.ScriptName,
-                                                                                                                                            prefix=self.CommandLineArgPrefix,
-                                                                                                                                          ),
-                       ))
-
+                    Run "{script_name} {prefix}?" for additional information.
+                    
+                """).format( script_name=self.ScriptName,
+                             prefix=self.CommandLineArgPrefix,
+                           ))
+                           
         if error:
             error = "\n\nERROR: {}\n".format(StreamDecorator.LeftJustify(error, len("ERROR: ")))
 

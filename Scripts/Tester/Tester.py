@@ -35,6 +35,7 @@ from CommonEnvironment import Process
 from CommonEnvironment.QuickObject import QuickObject
 from CommonEnvironment import Shell
 from CommonEnvironment.StreamDecorator import StreamDecorator
+from CommonEnvironment.TestTypeMetadata import TEST_TYPES
 
 # ---------------------------------------------------------------------------
 _script_fullpath = os.path.abspath(__file__) if "python" in sys.executable.lower() else sys.executable
@@ -133,6 +134,7 @@ _UNIVERSAL_CODE_COVERAGE_FLAGS = [ "/code_coverage_validator=Standard", ]
                                   filename_or_dir=CommandLine.FilenameTypeInfo(match_any=True),
                                   test_type=CommandLine.StringTypeInfo(min_length=0),
                                   output_dir=CommandLine.StringTypeInfo(min_length=0),
+                                  execute_in_parallel=CommandLine.BoolTypeInfo(arity='?'),
                                   iterations=CommandLine.IntTypeInfo(min=1),
                                   output_stream=None,
                                 )
@@ -140,6 +142,7 @@ def Test( configuration,
           filename_or_dir,
           test_type='',
           output_dir='',
+          execute_in_parallel=None,
           iterations=1,
           debug_on_error=False,
           continue_iterations_on_error=False,
@@ -202,6 +205,9 @@ def Test( configuration,
     if debug_on_error:                      command_line.append("/debug_on_error")
     if continue_iterations_on_error:        command_line.append("/continue_iterations_on_error")
     if no_status:                           command_line.append("/no_status")
+
+    if execute_in_parallel is not None:
+        command_line.append("/execute_in_parallel={}".format("true" if execute_in_parallel else "false"))
 
     command_line.append("/preserve_ansi_escape_sequences")
     
@@ -287,13 +293,15 @@ def TestFile( input,
                                   input_dir=CommandLine.DirectoryTypeInfo(),
                                   test_type=CommandLine.StringTypeInfo(),
                                   output_dir=CommandLine.StringTypeInfo(),
-                                  iterations=CommandLine.IntTypeInfo(min=1),
+                                  execute_in_parallel=CommandLine.BoolTypeInfo(arity='?'),
+                                  iterations=CommandLine.IntTypeInfo(min=1, arity='?'),
                                   output_stream=None,
                                 )
 def TestType( configuration,
               input_dir,
               test_type,
               output_dir,
+              execute_in_parallel=None,
               iterations=1,
               debug_on_error=False,
               continue_iterations_on_error=False,
@@ -315,6 +323,7 @@ def TestType( configuration,
                  input_dir,
                  test_type=test_type,
                  output_dir=output_dir,
+                 execute_in_parallel=execute_in_parallel,
                  iterations=iterations,
                  debug_on_error=debug_on_error,
                  continue_iterations_on_error=continue_iterations_on_error,
@@ -334,12 +343,14 @@ def TestType( configuration,
 @CommandLine.FunctionConstraints( input_dir=CommandLine.DirectoryTypeInfo(),
                                   test_type=CommandLine.StringTypeInfo(),
                                   output_dir=CommandLine.FilenameTypeInfo(ensure_exists=False),
+                                  execute_in_parallel=CommandLine.BoolTypeInfo(arity='?'),
                                   iterations=CommandLine.IntTypeInfo(min=1),
                                   output_stream=None,
                                 )
 def TestAll( input_dir,
              test_type,
              output_dir,
+             execute_in_parallel=None,
              iterations=1,
              debug_on_error=False,
              continue_iterations_on_error=False,
@@ -374,6 +385,7 @@ def TestAll( input_dir,
                                            input_dir,
                                            test_type,
                                            output_dir,
+                                           execute_in_parallel=execute_in_parallel,
                                            iterations=iterations,
                                            debug_on_error=debug_on_error,
                                            continue_iterations_on_error=continue_iterations_on_error,
@@ -446,10 +458,17 @@ def MatchAllTests( input_dir,
 def CommandLineSuffix():
     return StreamDecorator.LeftJustify( textwrap.dedent(
                                             """\
-                                            Where <configuration> can be:
+                                            Where...
+                                           
+                                                <configuration> can be:
                                             {}
 
-                                            """).format('\n'.join([ "    - {}".format(config) for config in six.iterkeys(CONFIGURATIONS) ])),
+                                                Common values for <test_type> are (although these are not required):
+                                            {}
+
+                                            """).format( '\n'.join([ "      - {}".format(config) for config in six.iterkeys(CONFIGURATIONS) ]),
+                                                         '\n'.join([ "      - {name:<30} {desc}".format(name=ttmd.Name, desc=ttmd.Description) for ttmd in TEST_TYPES ]),
+                                                       ),
                                         4,
                                         skip_first_line=False,
                                       )

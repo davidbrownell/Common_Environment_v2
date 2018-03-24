@@ -37,30 +37,33 @@ with CallOnExit(lambda: sys.path.pop(0)):
     from SourceRepositoryTools import DynamicPluginArchitecture
 
 # ---------------------------------------------------------------------------
-def CustomActions():
+def CustomActions(fast):
     commands = []
 
-    commands += DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_COMPILERS",
-                                                                        os.path.join(_script_dir, "Scripts", "Compilers"),
-                                                                        lambda fullpath, name, ext: ext == ".py" and (name.endswith("Compiler") or name.endswith("CodeGenerator") or name.endswith("Verifier")),
-                                                                      )
-    
-    commands += DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_TEST_PARSERS",
-                                                                        os.path.join(_script_dir, "Scripts", "TestParsers"),
-                                                                        lambda fullpath, name, ext: ext == ".py" and name.endswith("TestParser"),
-                                                                      )
-
-    commands += DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_EXTRACTORS",
-                                                                        os.path.join(_script_dir, "Scripts", "CodeCoverageExtractors"),
-                                                                        lambda fullpath, name, ext: ext == ".py" and name.endswith("CodeCoverageExtractor"),
-                                                                      )
-
-    commands += DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_VALIDATORS",
-                                                                        os.path.join(_script_dir, "Scripts", "CodeCoverageValidators"),
-                                                                        lambda fullpath, name, ext: ext == ".py" and name.endswith("CodeCoverageValidator"),
-                                                                      )
-
-    commands += DelayExecute(_DelayExecute)
+    if fast:
+        commands.append(Shell.Message("** FAST: Dynamic tester information has not been activated. ({}) **".format(_script_fullpath)))
+    else:
+        commands += DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_COMPILERS",
+                                                                            os.path.join(_script_dir, "Scripts", "Compilers"),
+                                                                            lambda fullpath, name, ext: ext == ".py" and (name.endswith("Compiler") or name.endswith("CodeGenerator") or name.endswith("Verifier")),
+                                                                          )
+        
+        commands += DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_TEST_PARSERS",
+                                                                            os.path.join(_script_dir, "Scripts", "TestParsers"),
+                                                                            lambda fullpath, name, ext: ext == ".py" and name.endswith("TestParser"),
+                                                                          )
+        
+        commands += DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_EXTRACTORS",
+                                                                            os.path.join(_script_dir, "Scripts", "CodeCoverageExtractors"),
+                                                                            lambda fullpath, name, ext: ext == ".py" and name.endswith("CodeCoverageExtractor"),
+                                                                          )
+        
+        commands += DynamicPluginArchitecture.CreateRegistrationStatements( "DEVELOPMENT_ENVIRONMENT_CODE_COVERAGE_VALIDATORS",
+                                                                            os.path.join(_script_dir, "Scripts", "CodeCoverageValidators"),
+                                                                            lambda fullpath, name, ext: ext == ".py" and name.endswith("CodeCoverageValidator"),
+                                                                          )
+        
+        commands += DelayExecute(_DelayExecute)
     
     return commands
 
