@@ -46,18 +46,19 @@ class UpdateMergeArg(object):
     def FromCommandLine( revision=None,
                          branch=None,
                          date=None,
+                         date_greater=None,
                        ):
         if revision:
             return RevisionUpdateMergeArg(revision)
 
         if branch and date:
-            return BranchAndDateUpdateMergeArg(branch, date)
+            return BranchAndDateUpdateMergeArg(branch, date, greater=date_greater)
 
         if branch:
             return BranchUpdateMergeArg(branch)
 
         if date:
-            return DateUpdateMergeArg(date)
+            return DateUpdateMergeArg(date, greater=date_greater)
 
         return EmptyUpdateMergeArg()
 
@@ -88,11 +89,16 @@ class DateUpdateMergeArg(UpdateMergeArg):
     """\
     Change nearest to the date on any branch.
     """
-    def __init__(self, date):
+    def __init__(self, date, greater=None):
         self.Date = date
+        self.Greater = greater
 
     def __str__(self):
-        return self.Date
+        operator = ''
+        if self.Greater is not None:
+            operator = '>' if self.Greater else '<'
+
+        return "{}{}".format(operator, self.Date)
 
 # ---------------------------------------------------------------------------
 class BranchUpdateMergeArg(UpdateMergeArg):
@@ -106,16 +112,18 @@ class BranchUpdateMergeArg(UpdateMergeArg):
         return self.Branch
 
 # ---------------------------------------------------------------------------
-class BranchAndDateUpdateMergeArg(UpdateMergeArg):
+class BranchAndDateUpdateMergeArg(DateUpdateMergeArg):
     """\
     Change nearest to the date on the specified branch.
     """
-    def __init__(self, branch, date):
+    def __init__(self, branch, date, greater=None):
         self.Branch = branch
-        self.Date = date
+        super(BranchAndDateUpdateMergeArg, self).__init__(date, greater=greater)
 
     def __str__(self):
-        return "{} ({})".format(self.Branch, self.Date)
+        return "{} ({})".format( self.Branch, 
+                                 super(BranchAndDateUpdateMergeArg, self).__str__(),
+                               )
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
