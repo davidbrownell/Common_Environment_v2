@@ -22,13 +22,16 @@ import textwrap
 
 from collections import OrderedDict
 
+import inflect as inflect_mod
 import six
 
 from CommonEnvironment.CallOnExit import CallOnExit
 from CommonEnvironment import CommandLine
+from CommonEnvironment import FileSystem
 from CommonEnvironment.NamedTuple import NamedTuple
 from CommonEnvironment.QuickObject import QuickObject
 from CommonEnvironment import Process
+from CommonEnvironment import TaskPool
 from CommonEnvironment import Shell
 from CommonEnvironment import SourceControlManagement
 from CommonEnvironment.StreamDecorator import StreamDecorator
@@ -41,8 +44,13 @@ _script_dir, _script_name = os.path.split(_script_fullpath)
 assert os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL")
 sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
 with CallOnExit(lambda: sys.path.pop(0)):
-    import SourceRepositoryTools
-    from SourceRepositoryTools import Constants
+    import SourceRepositoryTools                        # <Unable to import> pylint: disable = F0401
+    from SourceRepositoryTools import Constants         # <Unable to import> pylint: disable = F0401
+
+# ----------------------------------------------------------------------
+# <Too many local variables> pylint: disable = R0914
+
+inflect                                     = inflect_mod.engine()
 
 # ---------------------------------------------------------------------------
 def NormalizeRepoTemplates(code_root, *repo_templates_params):
@@ -137,7 +145,7 @@ def ListFunctionFactory( repo_templates,
     # ---------------------------------------------------------------------------
     def Impl( no_populate,
               verbose,
-              **vars
+              **kwargs
             ):
         output_stream.write('\n')
 
@@ -149,7 +157,7 @@ def ListFunctionFactory( repo_templates,
                                             for repo in repo_templates
                                           ]))
         else:
-            output_stream.write('\n'.join([ (repo.uri if no_populate else repo.uri.format(**vars))
+            output_stream.write('\n'.join([ (repo.uri if no_populate else repo.uri.format(**kwargs))
                                             for repo in repo_templates
                                           ]))
 
@@ -159,7 +167,6 @@ def ListFunctionFactory( repo_templates,
     
     return _DefineDynamicFunction( "List",
                                    config_params,
-                                   output_stream,
                                    Impl,
                                    suffix_args=[ ( "no_populate", False ),
                                                  ( "verbose", False ),
@@ -172,16 +179,16 @@ def MatchFunctionFactory( repo_templates,
                           output_stream=sys.stdout,
                         ):
     repo_templates = _NormalizeRepoTemplates(repo_templates)
-
+    
     # ---------------------------------------------------------------------------
     def Impl( code_root,
-              **vars
+              **kwargs
             ):
         output_stream.write("Searching for repositories in '{}'...".format(code_root))
         with StreamDecorator(output_stream).DoneManager(done_suffix='\n'):
             diff = _CalculateRepoDiff( code_root,
                                        repo_templates,
-                                       vars,
+                                       kwargs,
                                      )
 
         if not diff.local_only and not diff.reference_only:
@@ -225,7 +232,10 @@ def MatchFunctionFactory( repo_templates,
         incorrect_branches = []
 
         for repo in diff.matches:
-            expected_branch_name = repo.branch if repo.branch else scm.DefaultBranch
+            if not repo.branch:
+                continue
+
+            expected_branch_name = repo.branch
             actual_branch_name = repo.scm.GetCurrentBranch(repo.path)
 
             if actual_branch_name != expected_branch_name:
@@ -243,19 +253,17 @@ def MatchFunctionFactory( repo_templates,
     
     return _DefineDynamicFunction( "Match",
                                    config_params,
-                                   output_stream,
                                    Impl,
                                    prefix_args=[ ( "code_root", _NoDefault, CommandLine.DirectoryTypeInfo() ),
                                                ],
-                                  )
+                                 )
 
 # ---------------------------------------------------------------------------
 def EnlistFunctionFactory( repo_templates,
                            config_params,
-                           output_stream=sys.stdout,
+                           output_stream_param=sys.stdout,
                          ):
     repo_templates = _NormalizeRepoTemplates(repo_templates)
-    
     potential_scms = SourceControlManagement.GetPotentialSCMs()
 
     # ---------------------------------------------------------------------------
@@ -265,118 +273,178 @@ def EnlistFunctionFactory( repo_templates,
               remove_extra_repos=False,
               preserve_branches=False,
               flat=False,
-              **vars
+              no_status=False,
+              preserve_ansi_escape_sequences=False,
+              **kwargs
             ):
-        scm = next(obj for obj in potential_scms if obj.Name == scm)
-        
-        output_stream.write("Searching for repositories in '{}'...".format(code_root))
-        with StreamDecorator(output_stream).DoneManager(done_suffix='\n'):
-            diff = _CalculateRepoDiff( code_root,
-                                       repo_templates,
-                                       vars,
-                                     )
+        with StreamDecorator.GenerateAnsiSequenceStream( output_stream_param,
+                                                         preserve_ansi_escape_sequences=preserve_ansi_escape_sequences,
+                                                       ) as output_stream:
+            with output_stream.DoneManager( line_prefix='',
+                                            done_prefix="\nResults: ",
+                                            done_suffix='\n',
+                                          ) as dm:
+                scm = next(obj for obj in potential_scms if obj.Name == scm)
 
-        branches_to_restore = OrderedDict()
+                dm.stream.write("Searching for repositories in '{}'...".format(code_root))
+                with dm.stream.DoneManager( done_suffix_functor=lambda: "{} found".format(inflect.no("repository", len(diff.matches) + len(diff.local_only) + len(diff.reference_only))),
+                                          ):
+                    diff = _CalculateRepoDiff( code_root,
+                                               repo_templates,
+                                               kwargs,
+                                             )
 
-        with StreamDecorator(output_stream).DoneManager( line_prefix='', 
-                                                         done_prefix='\n\nComposite Results: ', 
-                                                         done_suffix='\n',
-                                                       ) as dm:
-            
-            # Update
-            for index, repo in enumerate(diff.matches):
-                current_branch_name = repo.scm.GetCurrentBranch(repo.path)
-                repo_branch_name = branch_name or repo.branch or (current_branch_name if preserve_branches else repo.scm.DefaultBranch)
-                
-                title = "Updating '{}' [{}] ({} of {})...".format( repo.path,
-                                                                   repo_branch_name,
-                                                                   index + 1,
-                                                                   len(diff.matches),
-                                                                 )
-                dm.stream.write("\n{}\n{}\n".format(title, '=' * len(title)))
-                with dm.stream.DoneManager() as update_dm:
-                    if preserve_branches:
-                        if current_branch_name != repo_branch_name:
-                            branches_to_restore[repo.path] = current_branch_name
-
-                    # Note that some SCMs will only pull according to the currently set
-                    # branch.
-                    title = "Setting Branch ({})...".format(repo_branch_name)
-                    update_dm.stream.write("{}\n{}".format(title, '-' * len(title)))
-                    with update_dm.stream.DoneManager(done_suffix='\n') as set_branch_dm:
-                        set_branch_dm.result, output = repo.scm.SetBranch(repo.path, repo_branch_name)
-                        set_branch_dm.stream.write(output)
-
-                    if repo.scm.IsDistributed:
-                        title = "Pulling Changes..."
-                        update_dm.stream.write("{}\n{}".format(title, '-' * len(title)))
-                        with update_dm.stream.DoneManager(done_suffix='\n') as pull_dm:
-                            pull_dm.result, output = repo.scm.Pull(repo.path)
-                            pull_dm.stream.write(output)
-
-                    title = "Updating to '{}'...".format(repo.scm.Tip)
-                    update_dm.stream.write("{}\n{}".format(title, '-' * len(title)))
-                    with update_dm.stream.DoneManager(done_suffix='\n') as this_update_dm:
-                        this_update_dm.result, output = repo.scm.Update(repo.path, SourceControlManagement.EmptyUpdateMergeArg())
-                        this_update_dm.stream.write(output)
-
-            # Remove any local repos that shouldn't be here
-            if remove_extra_repos:
-                for index, repo in enumerate(diff.local_only):
-                    dm.stream.write("Removing '{}' ({} of {})...".format( repo.path,
-                                                                          index + 1,
-                                                                          len(diff.local_only),
-                                                                        ))
-                    with dm.stream.DoneManager() as this_dm:
-                        shutil.rmtree(repo.path)
-
-            # Clone
-            for index, (uri, branch) in enumerate(diff.reference_only):
-                name = uri[uri.rfind('/') + 1:]
-                
-                if flat:
-                    output_dir = os.path.join(code_root, name)
-                else:
-                    output_dir = os.path.join(code_root, *name.split('_'))
-
-                title = "Enlisting in '{}' ['{}'] -> '{}' ({} of {})...".format( uri,
-                                                                                 branch,
-                                                                                 output_dir,
-                                                                                 index + 1,
-                                                                                 len(diff.reference_only),
-                                                                               )
-                dm.stream.write("\n{}\n{}".format(title, '-' * len(title)))
-                with dm.stream.DoneManager() as this_dm:
-                    this_dm.result, output = scm.Clone(uri, output_dir, branch=branch)
-                    this_dm.stream.write(output)
+                if diff.matches:
+                    with dm.stream.SingleLineDoneManager( "Updating {}...".format(inflect.no("repository", len(diff.matches))),
+                                                        ) as update_dm:
+                        # ----------------------------------------------------------------------
+                        def Invoke(task_index, output_stream, on_status_update):
+                            on_status_update = (lambda value: None) if no_status else on_status_update
                     
-                    if branch:
-                        title = "Setting Branch ({})...".format(branch)
-                        
-                        this_dm.stream.write("\n{}\n{}".format(title, '-' * len(title)))
-                        with this_dm.stream.DoneManager(done_suffix='\n') as set_branch_dm:
-                            set_branch_dm.result, output = scm.SetBranch(output_dir, branch)
-                            set_branch_dm.stream.write(output)
-
-            # Resore any branches
-            for index, (repo_path, repo_branch_name) in enumerate(six.iteritems(branches_to_restore)):
-                title = "Restoring branch '{}' in '{}' ({} of {})...".format( repo_branch_name,
-                                                                              repo_path,
-                                                                              index + 1,
-                                                                              len(branches_to_restore),
+                            repo = diff.matches[task_index]
+                    
+                            current_branch_name = repo.scm.GetCurrentBranch(repo.path)
+                            repo_branch_name = branch_name or repo.branch or (current_branch_name if preserve_branches else repo.scm.DefaultBranch)
+                    
+                            if preserve_branches and current_branch_name != repo_branch_name:
+                                restore_branch_name = current_branch_name
+                            else:
+                                restore_branch_name = None
+                    
+                            # Set the branch
+                            on_status_update("Setting branch to '{}'".format(repo_branch_name))
+                    
+                            result, output = repo.scm.SetBranch(repo.path, repo_branch_name)
+                            output_stream.write(output)
+                            if result != 0:
+                                return result
+                    
+                            # Pull changes
+                            if repo.scm.IsDistributed:
+                                on_status_update("Pulling changes")
+                    
+                                result, output = repo.scm.Pull(repo.path)
+                                output_stream.write(output)
+                                if result != 0:
+                                    return result
+                    
+                            # Update
+                            on_status_update("Updating")
+                    
+                            result, output = repo.scm.Update(repo.path, SourceControlManagement.EmptyUpdateMergeArg())
+                            output_stream.write(output)
+                            if result != 0:
+                                return result
+                    
+                            # Restore
+                            if restore_branch_name is not None:
+                                on_status_update("Restoring branch to '{}'".format(restore_branch_name))
+                    
+                                result, output = repo.scm.SetBranch(repo.path, restore_branch_name)
+                                output_stream.write(output)
+                                if result != 0:
+                                    return result
+                    
+                            return 0
+                    
+                        # ----------------------------------------------------------------------
+                    
+                        update_dm.result = TaskPool.Execute( [ TaskPool.Task( repo.path,
+                                                                              "Processing '{}'".format(repo.path),
+                                                                              Invoke,
                                                                             )
-                dm.stream.write("\n{}\n{}".format(title, '-' * len(title)))
-                with dm.stream.DoneManager() as this_dm:
-                    this_dm.result, output = scm.SetBranch(repo_path, repo_branch_name)
-                    this_dm.stream.write(output)
+                                                               for repo in diff.matches
+                                                             ],
+                                                             output_stream=update_dm.stream,
+                                                             progress_bar=True,
+                                                           )
+                        if update_dm.result != 0:
+                            return update_dm.result
 
-            return dm.result
+                # Remove extra repos
+                if remove_extra_repos and diff.local_only:
+                    with dm.stream.SingleLineDoneManager( "Removing {}...".format(inflect.no("repository", len(diff.local_only))),
+                                                        ) as remove_dm:
+                        # ----------------------------------------------------------------------
+                        def Invoke(task_index, on_status_update):
+                            repo = diff.local_only[task_index]
 
+                            if not no_status:
+                                on_status_update(repo.path)
+
+                            FileSystem.RemoveTree(repo.path)
+
+                        # ----------------------------------------------------------------------
+
+                        remove_dm.result = TaskPool.Execute( [ TaskPool.Task( repo.path,
+                                                                              "Processing '{}'".format(repo.path),
+                                                                              Invoke,
+                                                                            )
+                                                               for repo in diff.local_only
+                                                             ],
+                                                             num_concurrent_tasks=1,            # Only 1 thread as the activity invokes the disk
+                                                             output_stream=remove_dm.stream,
+                                                             progress_bar=True,
+                                                           )
+                        if remove_dm.result != 0:
+                            return remove_dm.result
+
+                # Clone
+                if diff.reference_only:
+                    with dm.stream.SingleLineDoneManager( "Cloning {}...".format(inflect.no("repository", len(diff.reference_only))),
+                                                        ) as clone_dm:
+                        # ----------------------------------------------------------------------
+                        def Invoke(task_index, output_stream, on_status_update):
+                            on_status_update = (lambda value: None) if no_status else on_status_update
+
+                            uri, branch = diff.reference_only[task_index]
+
+                            name = uri[uri.rfind('/') + 1:]
+
+                            if flat:
+                                output_dir = os.path.join(code_root, name)
+                            else:
+                                output_dir = os.path.join(code_root, *name.split('_'))
+
+                            # Clone
+                            on_status_update("Cloning '{}'".format(name))
+
+                            result, output = scm.Clone(uri, output_dir, branch=branch)
+                            output_stream.write(output)
+                            if result != 0:
+                                return result
+
+                            if branch:
+                                on_status_update("Setting branch to '{}'".format(branch))
+
+                                result, output = scm.SetBranch(output_dir, branch)
+                                output_stream.write(output)
+                                if result != 0:
+                                    return result
+
+                            return 0
+
+                        # ----------------------------------------------------------------------
+
+                        clone_dm.result = TaskPool.Execute( [ TaskPool.Task( uri,
+                                                                             "Processing '{}'".format(uri),
+                                                                             Invoke,
+                                                                           )
+                                                              for uri, branch in diff.reference_only
+                                                            ],
+                                                            num_concurrent_tasks=1,             # Only 1 thread as the activity invokes the disk
+                                                            output_stream=clone_dm.stream,
+                                                            progress_bar=True,
+                                                          )
+                        if clone_dm.result != 0:
+                            return clone_dm.result
+
+                return dm.result
+    
     # ---------------------------------------------------------------------------
     
     return _DefineDynamicFunction( "Enlist",
                                    config_params,
-                                   output_stream,
                                    Impl,
                                    prefix_args=[ ( "code_root", _NoDefault, CommandLine.DirectoryTypeInfo() ),
                                                  ( "scm", '"{}"'.format(potential_scms[0].Name), CommandLine.EnumTypeInfo(values=[ scm.Name for scm in potential_scms ], arity='?') ),
@@ -385,6 +453,8 @@ def EnlistFunctionFactory( repo_templates,
                                    suffix_args=[ ( "remove_extra_repos", False ),
                                                  ( "preserve_branches", False ),
                                                  ( "flat", False ),
+                                                 ( "no_status", False ),
+                                                 ( "preserve_ansi_escape_sequences", False ),
                                                ],
                                  )
               
@@ -400,13 +470,13 @@ def SetupFunctionFactory( repo_templates,
 
     # ---------------------------------------------------------------------------
     def Impl( code_root,
-              **vars
+              **kwargs
             ):
         output_stream.write("Searching for repositories in '{}'...".format(code_root))
         with StreamDecorator(output_stream).DoneManager(done_suffix='\n'):
             diff = _CalculateRepoDiff( code_root,
                                        repo_templates,
-                                       vars,
+                                       kwargs,
                                      )
 
         if not diff.matches:
@@ -438,7 +508,6 @@ def SetupFunctionFactory( repo_templates,
     
     return _DefineDynamicFunction( "Setup",
                                    config_params,
-                                   output_stream,
                                    Impl,
                                    prefix_args=[ ( "code_root", _NoDefault, CommandLine.DirectoryTypeInfo() ),
                                                ],
@@ -453,7 +522,6 @@ class _NoDefault(object):
 # ---------------------------------------------------------------------------
 def _DefineDynamicFunction( func_name,
                             config_params,
-                            output_stream,
                             impl_func,
                             prefix_args=None,
                             suffix_args=None,
@@ -514,11 +582,11 @@ def _NormalizeRepoTemplates(repo_templates):
             repo_templates[index] = NormalizeRepoTemplates(repo_template)[0]
             repo_template = repo_templates[index]
 
-        if repo_template.uri in lookup and lookup[repo_template.uri].branch != branch:
+        if repo_template.uri in lookup and lookup[repo_template.uri].branch != repo_template.branch:
             raise Exception("The repository '{}' has been requested more than once with different branches ({}, {})".format( repo_template.uri,
                                                                                                                              lookup[repo_template.uri].branch,
                                                                                                                              repo_template.branch,
-                                                                                                                          ))
+                                                                                                                           ))
 
         lookup[repo_template.uri] = repo_template
 
@@ -527,7 +595,7 @@ def _NormalizeRepoTemplates(repo_templates):
 # ---------------------------------------------------------------------------
 def _CalculateRepoDiff( code_root,
                         repo_templates,
-                        vars,
+                        kwargs,
                       ):
     RepoInfo = NamedTuple("RepoInfo", "scm", "uri", "branch", "setup_configurations", path=None)
 
@@ -537,7 +605,7 @@ def _CalculateRepoDiff( code_root,
     repo_uri_lookup = OrderedDict()
     
     for repo_template in repo_templates:
-        uri = repo_template.uri.format(**vars)
+        uri = repo_template.uri.format(**kwargs)
         
         repo_uri_lookup[uri.lower()] = (uri, repo_template)
     

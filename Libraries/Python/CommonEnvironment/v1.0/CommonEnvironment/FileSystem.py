@@ -523,7 +523,7 @@ def _RemoveImpl( func,                          # def Func(renamed_path)
     iteration = 0
 
     while True:
-        potential_renamed_path = "{}{}".format(path, iteration)
+        potential_renamed_path = "{}_ToDelete{}".format(path, iteration)
         if not os.path.exists(potential_renamed_path):
             renamed_path = potential_renamed_path
             break

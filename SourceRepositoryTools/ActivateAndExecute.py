@@ -70,22 +70,44 @@ def ActivateAndExecute( environment,
 
         commands.insert(0, environment.Call(fundamental_activate_script))
 
-    # Get the original environment vars
+    return environment.ExecuteCommands( commands,
+                                        output_stream,
+                                        environment=_GetEnvironmentVars(environment, cl_env_vars),
+                                      )
+
+# ----------------------------------------------------------------------
+# This method was added after ActivateAndExecute was created, and placed
+# here because it shares a lot of common functionality with the ActivateAndExecute
+# method. This is a great candidate for a future refactor.
+def Execute( environment,
+             command,
+             output_stream,
+             env_vars=None,
+           ):
+    from CommonEnvironment import Process
+
+    return Process.Execute( command,
+                            output_stream,
+                            environment=_GetEnvironmentVars(environment, env_vars),
+                         )
+
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+def _GetEnvironmentVars(environment, additional_env_vars):
     generated_dir = Utilities.GetActivationDir( environment,
-                                                bootstrap_data.FundamentalRepo,
+                                                os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"),
                                                 None,
                                               )
+
     original_environment_filename = os.path.join(generated_dir, Constants.GENERATED_ACTIVATION_ORIGINAL_ENVIRONMENT_FILENAME)
     assert os.path.isfile(original_environment_filename), original_environment_filename
 
     with open(original_environment_filename) as f:
         env_vars = json.load(f)
 
-    # Augment the original environment with values provided on the command line
-    for k, v in six.iteritems(cl_env_vars):
+    for k, v in six.iteritems(additional_env_vars or {}):
         env_vars[k] = v
 
-    return environment.ExecuteCommands( commands,
-                                        output_stream,
-                                        environment=env_vars,
-                                      )
+    return env_vars
+
