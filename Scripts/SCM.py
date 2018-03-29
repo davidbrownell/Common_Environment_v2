@@ -469,6 +469,7 @@ def Merge( revision=None,
                                   source_revision=CommandLine.StringTypeInfo(arity='?'),
                                   source_branch=CommandLine.StringTypeInfo(arity='?'),
                                   source_date=CommandLine.DateTimeTypeInfo(arity='?'),
+                                  source_date_greater=CommandLine.BoolTypeInfo(arity='?'),
                                   scm=_SCMOptionalTypeInfo,
                                   directory=CommandLine.DirectoryTypeInfo(arity='?'),
                                   output_stream=None,
@@ -477,12 +478,23 @@ def GetRevisionsSinceLastMerge( dest_branch,
                                 source_revision=None,
                                 source_branch=None,
                                 source_date=None,
+                                source_date_greater=None,
                                 scm=None,
                                 directory=None,
                                 output_stream=sys.stdout,
                               ):
     scm, directory = _GetSCMAndDir(scm, directory)
-    return CommandLine.DisplayOutput(0, scm.GetRevisionsSinceLastMerge(directory, dest_branch, SCMMod.UpdateMergeArg.FromCommandLine(source_revision, source_branch, source_date)), output_stream=output_stream)
+    return CommandLine.DisplayOutput( 0, 
+                                      scm.GetRevisionsSinceLastMerge( directory, 
+                                                                      dest_branch, 
+                                                                      SCMMod.UpdateMergeArg.FromCommandLine( source_revision, 
+                                                                                                             source_branch, 
+                                                                                                             source_date,
+                                                                                                             date_greater=source_date_greater,
+                                                                                                           ),
+                                                                    ), 
+                                      output_stream=output_stream,
+                                    )
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
