@@ -25,7 +25,7 @@ import sys
 import textwrap
 import threading
 
-from _collections import OrderedDict
+from collections import OrderedDict
 
 import inflect
 import six
@@ -50,12 +50,12 @@ sys.path.insert(0, os.getenv("DEVELOPMENT_ENVIRONMENT_FUNDAMENTAL"))
 with CallOnExit(lambda: sys.path.pop(0)):
     from SourceRepositoryTools import Constants
 
-    from SourceRepositoryTools.ActivationActivity.PythonActivationActivity import PythonActivationActivity, \
-                                                                                  EASY_INSTALL_PTH_FILENAME, \
-                                                                                  WRAPPERS_FILENAME, \
-                                                                                  SCRIPTS_DIR_NAME
+    from SourceRepositoryTools.Impl.ActivationActivity.PythonActivationActivity import PythonActivationActivity, \
+                                                                                       EASY_INSTALL_PTH_FILENAME, \
+                                                                                       WRAPPERS_FILENAME, \
+                                                                                       SCRIPTS_DIR_NAME
 
-    from SourceRepositoryTools.ActivationActivity.Impl.LibraryModificationHelpers import GetNewLibraryContent as GetNewLibraryContentBase, \
+    from SourceRepositoryTools.Impl.ActivationActivity.LibraryModificationHelpers import GetNewLibraryContent as GetNewLibraryContentBase, \
                                                                                          DisplayNewLibraryContent, \
                                                                                          ResetLibraryContent
 
@@ -539,16 +539,19 @@ def _GetNewLibraryContent(settings):
     # that should be ignored.
     script_ignore_items = set([ "__pycache__", WRAPPERS_FILENAME, ])
 
-    potential_filename = os.path.join(settings.script_dir, WRAPPERS_FILENAME)
+    potential_filename = os.path.join(settings["script_dir"], WRAPPERS_FILENAME)
     if os.path.isfile(potential_filename):
         for name in [ line.strip() for line in open(potential_filename).readlines() if line.strip() ]:
             script_ignore_items.add(name)
 
-    new_library_content = GetNewLibraryContentBase( settings.library_dir,
-                                                    settings.script_dir,
+    new_library_content = GetNewLibraryContentBase( settings["library_dir"],
+                                                    settings["script_dir"],
                                                     library_ignore_items=set([ "__pycache__", EASY_INSTALL_PTH_FILENAME, ]),
                                                     script_ignore_items=script_ignore_items,
                                                   )
+
+    # Ignore Python 2.7 .pyc files
+    new_library_content.libraries = [ item for item in new_library_content.libraries if not item.endswith(".pyc") ]
 
     # Augment the display with extension and binary info
     environment = Shell.GetEnvironment()

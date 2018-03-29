@@ -363,7 +363,7 @@ class StreamDecorator(object):
     # ----------------------------------------------------------------------
     @contextmanager
     def SingleLineDoneManager( self, 
-                               status,
+                               initial_status,
                                *done_manager_args,
                                **done_manager_kwargs
                              ):
@@ -374,54 +374,73 @@ class StreamDecorator(object):
 
         Only output written via:
             
-            - write_verbose
-            - write_info
-            - write_warning
-            - write_error
-
-        will be preserved.
+            - write_status                  # Will not be preserved, no impact to result code
+            - write_verbose                 # Will be preserved, no impact to result code
+            - write_info                    # Will be preserved, no impact to result code
+            - write_warning                 # Will be preserved, result code = 1
+            - write_error                   # Will be preserved, result code = -1
         """
 
         # <Has no instance of 'member'> pylint: disable = E1101
-        dm_ref = ModifiableValue(None)
-        reset_line = ModifiableValue(True)
+        dm_ref = None
+        
+        reset_content = ModifiableValue(True)
+        status_content = ModifiableValue(None)
+        status_content_prefix = ModifiableValue(None)
+
+        # ----------------------------------------------------------------------
+        def GenerateLinePrefix(skip_current):
+            # Get the whitespace associated with all parents (if any)
+            line_prefix_stack = []
+
+            for index, dm in enumerate(dm_ref.Enumerate()):
+                if skip_current and index == 0:
+                    continue
+
+                line_prefix_stack.append(dm.stream._line_prefix)
+
+            line_prefix = ''
+            while line_prefix_stack:
+                line_prefix += line_prefix_stack.pop()(len(line_prefix))
+
+            return line_prefix
+
+        # ----------------------------------------------------------------------
+        def ClearTempStatus():
+            if status_content.value is None:
+                return
+
+            dm_write_ref("\033[1A\r{}\r".format(' ' * (len(status_content_prefix.value) + len(status_content.value))))
+            status_content.value = None
 
         # ----------------------------------------------------------------------
         def DonePrefix():
-            if not reset_line.value:
+            ClearTempStatus()
+
+            if not reset_content.value:
                 # Don't eliminate any data that was displayed
                 return "DONE! "
             
             # Move up a line and display the original status message
             # along with the done notification.
-
-            # Try to get the whitespace associated with all parents (if any).
-            whitespace_prefix_stack = []
-
-            for index, dm in enumerate(dm_ref.value.Enumerate()):
-                if index == 0:
-                    continue
-
-                whitespace_prefix_stack.append(dm.stream._line_prefix)
-
-            whitespace_prefix = ''
-            while whitespace_prefix_stack:
-                whitespace_prefix += whitespace_prefix_stack.pop()(len(whitespace_prefix))
-
-            return "\033[1A\r{}{}DONE! ".format(whitespace_prefix, status)
+            return "\033[1A\r{}{}DONE! ".format(GenerateLinePrefix(skip_current=True), initial_status)
 
         # ----------------------------------------------------------------------
         
-        self.write(status)
+        self.write(initial_status)
         with self.DoneManager( done_prefix=DonePrefix,
                                *done_manager_args,
                                **done_manager_kwargs
                              ) as dm:
-            dm_ref.value = dm
+            dm_ref = dm
+            dm_write_ref = dm.stream.write
+            
             first_write = ModifiableValue(True)
 
             # ----------------------------------------------------------------------
             def Write(content, prefix, result):
+                ClearTempStatus()
+
                 message = self.LeftJustify( "{}: {}\n".format(prefix, content.strip()),
                                             len(prefix),
                                           )
@@ -430,8 +449,8 @@ class StreamDecorator(object):
                     message = "{}{}".format(dm.stream._line_prefix(0), message)
                     first_write.value = False
 
-                dm.stream.write(message)
-                reset_line.value = False
+                dm_write_ref(message)
+                reset_content.value = False
 
                 if ( result is not None and 
                      (dm.result in [ None, 0, ] or (dm.result > 0 and result < 0))
@@ -439,16 +458,30 @@ class StreamDecorator(object):
                     dm.result = result
 
             # ----------------------------------------------------------------------
-            
+            def WriteTempStatus(content):
+                ClearTempStatus()
+
+                if content:
+                    if status_content_prefix.value is None:
+                        status_content_prefix.value = GenerateLinePrefix(skip_current=False)
+
+                    dm_write_ref("\r{}{}\n".format( status_content_prefix.value,
+                                                    content,
+                                                  ))
+                    status_content.value = content
+
+            # ----------------------------------------------------------------------
+
             dm.stream.write_verbose = lambda content: Write(content, "VERBOSE", None)
             dm.stream.write_info = lambda content: Write(content, "INFO", None)
             dm.stream.write_warning = lambda content: Write(content, "WARNING", 1)
             dm.stream.write_error = lambda content: Write(content, "ERROR", -1)
+            dm.stream.write_status = WriteTempStatus
 
             try:
                 yield dm
             except:
-                reset_line.value = False
+                reset_content.value = False
                 raise
 
     # ---------------------------------------------------------------------------
