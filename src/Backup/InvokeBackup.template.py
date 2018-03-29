@@ -47,7 +47,7 @@ OUTPUT_DIR                                  = os.path.join("Z:\\", "Backup", os.
 @CommandLine.FunctionConstraints( output_stream=None,
                                 )
 def EntryPoint( print_command_line=False,
-                display=False,
+                no_status=False,
                 force=False,
                 output_stream=sys.stdout,
                 verbose=False,
@@ -76,11 +76,11 @@ def EntryPoint( print_command_line=False,
                                 )
     assert os.path.isfile(backup_script), backup_script
 
-    command_line = 'python "{script}" Mirror "{output_dir}" {input}{display}{force}{verbose} /preserve_ansi_escape_sequences' \
+    command_line = 'python "{script}" Mirror "{output_dir}" {input}{no_status}{force}{verbose} /preserve_ansi_escape_sequences' \
                         .format( script=backup_script,
                                  output_dir=OUTPUT_DIR,
                                  input=' '.join([ '"/input={}"'.format(input) for input in inputs ]),
-                                 display='' if display else " /disable_progress_status",
+                                 no_status='' if not no_status else " /no_status",
                                  force='' if not force else " /force",
                                  verbose='' if not verbose else " /verbose",
                                )
