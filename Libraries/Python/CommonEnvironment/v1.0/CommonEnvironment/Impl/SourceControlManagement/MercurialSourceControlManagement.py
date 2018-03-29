@@ -348,6 +348,15 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
         source_branch = None
         additional_filters = []
 
+        # ----------------------------------------------------------------------
+        def GetDateOperator(arg):
+            if arg is None or arg:
+                return '>'
+
+            return '<'
+
+        # ----------------------------------------------------------------------
+
         if isinstance(source_update_merge_arg, EmptyUpdateMergeArg):
             source_branch = cls.GetCurrentBranch(repo_root)
 
@@ -355,16 +364,20 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
             source_branch = cls._GetBranchAssociatedWithRevision(repo_root, source_update_merge_arg.Revision)
             additional_filters.append("{}::".format(source_update_merge_arg.Revision))
 
+        elif isinstance(source_update_merge_arg, BranchAndDateUpdateMergeArg):
+            source_branch = source_update_merge_arg.Branch
+            additional_filters.append("date('{}{}')".format( GetDateOperator(source_update_merge_arg.Greater),
+                                                             StringSerialization.SerializeItem(DateTimeTypeInfo(), source_update_merge_arg.Date, microseconds=False),
+                                                           ))
+
         elif isinstance(source_update_merge_arg, DateUpdateMergeArg):
             source_branch = cls.GetCurrentBranch(repo_root)
-            additional_filters.append("date('>{}')".format(StringSerialization.SerializeItem(DateTimeTypeInfo(), source_update_merge_arg.Date, microseconds=False)))
+            additional_filters.append("date('{}{}')".format( GetDateOperator(source_update_merge_arg.Greater),
+                                                             StringSerialization.SerializeItem(DateTimeTypeInfo(), source_update_merge_arg.Date, microseconds=False),
+                                                           ))
 
         elif isinstance(source_update_merge_arg, BranchUpdateMergeArg):
             source_branch = source_update_merge_arg.Branch
-
-        elif isinstance(source_update_merge_arg, BranchAndDateUpdateMergeArg):
-            source_branch = source_update_merge_arg.Branch
-            additional_filters.append("date('>{}')".format(StringSerialization.SerializeItem(DateTimeTypeInfo(), source_update_merge_arg.Date, microseconds=False)))
 
         else:
             assert False, type(source_update_merge_arg)
@@ -588,7 +601,7 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
             return output.strip()
 
         # ---------------------------------------------------------------------------
-        def DateAndBranch(date, branch):
+        def DateAndBranch(date, branch, operator):
             assert date
 
             if branch:
@@ -603,13 +616,20 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
 
             assert BranchGenerator
 
+            if not operator:
+                operator = '<'
+            else:
+                operator = '>'
+
             errors = OrderedDict()
 
             for branch in BranchGenerator():
-                command_line = '''hg log --branch "{branch}" --rev "sort(date('<{date}'), -date)" --limit 1 --template "{rev}"'''.format( branch=branch,
-                                                                                                                                          date=StringSerialization.SerializeItem(DateTimeTypeInfo(), date, microseconds=False),
-                                                                                                                                          rev="{rev}",
-                                                                                                                                        )
+                command_line = '''hg log --branch "{branch}" --rev "sort(date('{operator}{date}'), -date)" --limit 1 --template "{rev}"''' \
+                                        .format( branch=branch,
+                                                 operator=operator,
+                                                 date=StringSerialization.SerializeItem(DateTimeTypeInfo(), date, microseconds=False),
+                                                 rev="{rev}",
+                                               )
 
                 result, output = cls.Execute(repo_root, command_line)
                 output = output.strip()
@@ -628,9 +648,9 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
         
         dispatch_map = { EmptyUpdateMergeArg :          lambda: "",
                          RevisionUpdateMergeArg :       lambda: NormalizeRevision(arg.Revision),
-                         DateUpdateMergeArg :           lambda: DateAndBranch(arg.Date.replace(microsecond=0), None),
-                         BranchUpdateMergeArg :         lambda: DateAndBranch(DateTimeTypeInfo.Create(microseconds=False), arg.Branch),
-                         BranchAndDateUpdateMergeArg :  lambda: DateAndBranch(arg.Date.replace(microsecond=0), arg.Branch),
+                         DateUpdateMergeArg :           lambda: DateAndBranch(arg.Date.replace(microsecond=0), None, arg.Greater),
+                         BranchUpdateMergeArg :         lambda: DateAndBranch(DateTimeTypeInfo.Create(microseconds=False), arg.Branch, None),
+                         BranchAndDateUpdateMergeArg :  lambda: DateAndBranch(arg.Date.replace(microsecond=0), arg.Branch, arg.Greater),
                        }
 
         assert type(arg) in dispatch_map, type(arg)

@@ -440,6 +440,15 @@ class GitSourceControlManagement(DistributedSourceControlManagementBase):
         additional_filters = []
         post_decorator_func = None
 
+        # ----------------------------------------------------------------------
+        def GetDateOperator(arg):
+            if arg is None or arg:
+                return "since"
+
+            return "until"
+
+        # ----------------------------------------------------------------------
+
         if isinstance(source_update_merge_arg, EmptyUpdateMergeArg):
             source_branch = cls.GetCurrentBranch(repo_root)
 
@@ -464,16 +473,20 @@ class GitSourceControlManagement(DistributedSourceControlManagementBase):
 
             post_decorator_func = AfterRevisionDecorator
 
-        elif isinstance(source_update_merge_arg, DateUpdateMergeArg):
-            source_branch = cls.GetCurrentBranch(repo_root)
-            additional_filters.append('--since="{}"'.format(StringSerialization.SerializeItem(DateTimeTypeInfo(), source_update_merge_arg.Date)))
-
         elif isinstance(source_update_merge_arg, BranchUpdateMergeArg):
             source_branch = source_update_merge_arg.Branch
 
         elif isinstance(source_update_merge_arg, BranchAndDateUpdateMergeArg):
             source_branch = source_update_merge_arg.Branch
-            additional_filters.append('--since="{}"'.format(StringSerialization.SerializeItem(DateTimeTypeInfo(), source_update_merge_arg.Date)))
+            additional_filters.append('--{}="{}"'.format( GetDateOperator(source_update_merge_arg.Greater),
+                                                          StringSerialization.SerializeItem(DateTimeTypeInfo(), source_update_merge_arg.Date),
+                                                        ))
+
+        elif isinstance(source_update_merge_arg, DateUpdateMergeArg):
+            source_branch = cls.GetCurrentBranch(repo_root)
+            additional_filters.append('--{}="{}"'.format( GetDateOperator(source_update_merge_arg.Greater),
+                                                          StringSerialization.SerializeItem(DateTimeTypeInfo(), source_update_merge_arg.Date),
+                                                        ))
 
         else:
             assert False, type(source_update_merge_arg)
@@ -727,7 +740,7 @@ class GitSourceControlManagement(DistributedSourceControlManagementBase):
             return output
 
         # ----------------------------------------------------------------------
-        def DateAndBranch(date, branch):
+        def DateAndBranch(date, branch, operator):
             assert date
 
             if branch:
@@ -748,9 +761,14 @@ class GitSourceControlManagement(DistributedSourceControlManagementBase):
                 
             assert BranchGenerator
 
+            if not operator:
+                operator = "until"
+            else:
+                operator = "since"
+
             for branch in BranchGenerator():
                 result, output = cls.Execute( repo_root, 
-                                              'git --no-pager log "--branches=*{}" --until={} -n 1 --format=%H'.format(branch, date),
+                                              'git --no-pager log "--branches=*{}" --{}={} -n 1 --format=%H'.format(branch, operator, date),
                                               append_newline_to_output=False,
                                             )
 
@@ -763,9 +781,9 @@ class GitSourceControlManagement(DistributedSourceControlManagementBase):
         
         dispatch_map = { EmptyUpdateMergeArg :          lambda: "",
                          RevisionUpdateMergeArg :       lambda: NormalizeRevision(arg.Revision),
-                         DateUpdateMergeArg :           lambda: DateAndBranch(arg.Date, None),
+                         DateUpdateMergeArg :           lambda: DateAndBranch(arg.Date, None, arg.Greater),
                          BranchUpdateMergeArg :         lambda: arg.Branch,
-                         BranchAndDateUpdateMergeArg :  lambda: DateAndBranch(arg.Date, arg.Branch),
+                         BranchAndDateUpdateMergeArg :  lambda: DateAndBranch(arg.Date, arg.Branch, arg.Greater),
                        }
 
         assert type(arg) in dispatch_map, type(arg)
