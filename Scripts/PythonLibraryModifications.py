@@ -222,6 +222,8 @@ def Move( no_move=False,
         dm.stream.write("Moving libraries...")
         with dm.stream.DoneManager( done_suffix='\n',
                                   ) as move_dm:
+            python_version_dir = "v{}".format(os.getenv("DEVELOPMENT_ENVIRONMENT_PYTHON_VERSION").split('.')[0])
+
             for index, (name, lib_info) in enumerate(six.iteritems(libraries)):
                 move_dm.stream.write("Processing '{}' ({} of {})...".format( name,
                                                                              index + 1,
@@ -236,10 +238,10 @@ def Move( no_move=False,
                             continue
 
                     try:
-                        potential_dest_dir = os.path.join(os.getenv("DEVELOPMENT_ENVIRONMENT_REPOSITORY"), Constants.LIBRARIES_SUBDIR, PythonActivationActivity.Name, name, lib_info.version)
-                        
                         if lib_info.Fullpath in new_content.extensions:
-                            potential_dest_dir = os.path.join(potential_dest_dir, environment.CategoryName)
+                            potential_dest_dir = os.path.join(os.getenv("DEVELOPMENT_ENVIRONMENT_REPOSITORY"), Constants.LIBRARIES_SUBDIR, PythonActivationActivity.Name, name, python_version_dir, lib_info.version, environment.CategoryName)
+                        else:
+                            potential_dest_dir = os.path.join(os.getenv("DEVELOPMENT_ENVIRONMENT_REPOSITORY"), Constants.LIBRARIES_SUBDIR, PythonActivationActivity.Name, name, lib_info.version)
 
                         if os.path.isdir(potential_dest_dir):
                             this_dm.result = -1
