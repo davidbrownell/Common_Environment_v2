@@ -746,7 +746,12 @@ def Mirror( destination,
                         if not os.path.isdir(dest_dir):
                             os.makedirs(dest_dir)
 
-                        shutil.copy2(source, dest)
+                        dest_temp = "{}.copying".format(dest)
+                        FileSystem.RemoveFile(dest_temp)
+
+                        shutil.copy2(source, dest_temp)
+                        FileSystem.RemoveFile(dest)
+                        shutil.move(dest_temp, dest)
 
                     except Exception as ex:
                         task_output.write(str(ex))
@@ -1000,7 +1005,7 @@ def _GetFileInfo( desc,
                     # ----------------------------------------------------------------------
 
                 else:
-                    # Read and caclualte in different threads, but only run one file
+                    # Read and caclualte in different threads, but only process one file
                     # at a time.
                     CreateFileInfoWithHashNoWorkerThread = CreateFileInfoWithHash
                     
@@ -1040,7 +1045,7 @@ def _GetFileInfo( desc,
                     def CreateFileInfoWithHash(filename):
                         info = CreateFileInfo(filename)
 
-                        # Don't execute via multiple threads if the filesize is small
+                        # Don't calculate the hash in a different thread if the file size is small
                         if info.Size <= hash_block_size * 5:
                             return CreateFileInfoWithHashNoWorkerThread(filename, info=info)
 
@@ -1143,17 +1148,17 @@ def _CreateWork( source_file_info,
 
         total = added + modified + removed + matched
 
-        dm.stream.write("- {0} to add ({1:.02f}%)\n".format( inflect_engine.no("file", added),
+        dm.stream.write("- {0} to add ({1:.04f}%)\n".format( inflect_engine.no("file", added),
                                                              0.0 if total == 0 else (float(added) / total) * 100,
                                                            ))
 
-        dm.stream.write("- {0} to modify ({1:.02f}%)\n".format( inflect_engine.no("file", modified),
+        dm.stream.write("- {0} to modify ({1:.04f}%)\n".format( inflect_engine.no("file", modified),
                                                                 0.0 if total == 0 else (float(modified) / total) * 100,
                                                               ))
-        dm.stream.write("- {0} to remove ({1:.02f}%)\n".format( inflect_engine.no("file", removed),
+        dm.stream.write("- {0} to remove ({1:.04f}%)\n".format( inflect_engine.no("file", removed),
                                                                 0.0 if total == 0 else (float(removed) / total) * 100,
                                                               ))
-        dm.stream.write("- {0} matched ({1:.02f}%)\n".format( inflect_engine.no("file", matched),
+        dm.stream.write("- {0} matched ({1:.04f}%)\n".format( inflect_engine.no("file", matched),
                                                               0.0 if total == 0 else (float(matched) / total) * 100,
                                                             ))
     
