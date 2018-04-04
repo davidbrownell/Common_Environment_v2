@@ -409,7 +409,7 @@ def CreateRepositoryBuildFunc( repository_name,
                     with this_dm.stream.DoneManager():
                         setup_statement = "./SetupEnvironment.sh{}".format('' if not repository_activation_configurations else ' {}'.format(' '.join([ '"/configuration={}"'.format(config) for config in (repository_setup_configurations or []) ])))
             
-                        if "baseimage" in base_docker_image:
+                        if repository_name == "Common_Environment":
                             commands = textwrap.dedent(
                                 """\
                                 RUN link /usr/bin/python3 /usr/bin/python
