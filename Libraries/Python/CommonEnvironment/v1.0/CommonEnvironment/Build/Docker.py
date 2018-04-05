@@ -130,7 +130,7 @@ def CreateBuildFunc( name,
                                                        output_dir,
                                                        latest=False,
                                                        force=force,
-                                                       no_squash=False if "windows" in configuration else True,
+                                                       no_squash=False,
                                                        output_stream=this_dm.stream,
                                                      )
                     if this_dm.result != 0:
@@ -723,4 +723,5 @@ def _DockerBuildImpl( name,
                                  force=" --no-cache" if force else '',
                                  squash='' if no_squash else " --squash",
                                )
+
     return Process.Execute(command_line, output_stream)
