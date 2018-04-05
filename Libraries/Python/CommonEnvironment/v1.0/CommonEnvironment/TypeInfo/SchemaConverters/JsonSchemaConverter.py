@@ -46,7 +46,10 @@ class JsonSchemaConverter(SchemaConverter):
 
     # ----------------------------------------------------------------------
     @classmethod
-    def Convert(cls, type_info):
+    def Convert( cls, 
+                 type_info, 
+                 arity_override=None,
+               ):
         # ----------------------------------------------------------------------
         @staticderived
         class FundamentalVisitor(VisitorBase):
@@ -202,7 +205,7 @@ class JsonSchemaConverter(SchemaConverter):
         else:
             raise Exception("'{}' is not a supported type".format(type_info))
 
-        return cls.Collectionize(type_info.Arity, schema)
+        return cls.Collectionize(arity_override or type_info.Arity, schema)
 
     # ----------------------------------------------------------------------
     @staticmethod
