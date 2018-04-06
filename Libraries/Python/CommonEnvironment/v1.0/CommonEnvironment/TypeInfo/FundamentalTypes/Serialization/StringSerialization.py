@@ -496,7 +496,7 @@ class StringSerialization(Serialization):
             def OnFilename(type_info):
                 value = item.replace('/', os.path.sep)
 
-                if custom_kwargs.get("normalize", True):
+                if custom_kwargs.get("normalize", True) and not value.startswith('\\\\'):
                     value = os.path.realpath(os.path.normpath(value))
 
                 return value
