@@ -49,6 +49,7 @@ def CreateBuildFunc( name,
                      pre_build_funcs=None,              # def Func(output_dir, output_stream)
                      post_build_funcs=None,             # def Func(output_dir, output_stream)
                      dockerfile="Dockerfile.Jinja2",
+                     disable_docker_build_configurations=False,
                    ):
     calling_dir = _GetCallingDir()
     
@@ -132,6 +133,7 @@ def CreateBuildFunc( name,
                                                        force=force,
                                                        no_squash=False,
                                                        output_stream=this_dm.stream,
+                                                       has_configurations=not disable_docker_build_configurations,
                                                      )
                     if this_dm.result != 0:
                         return this_dm.result
