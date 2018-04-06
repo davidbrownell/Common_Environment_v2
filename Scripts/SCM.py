@@ -34,6 +34,7 @@ from CommonEnvironment import CommandLine
 from CommonEnvironment import FileSystem
 from CommonEnvironment import Interface
 from CommonEnvironment.QuickObject import QuickObject
+from CommonEnvironment import Shell
 from CommonEnvironment import SourceControlManagement as SCMMod
 from CommonEnvironment.StreamDecorator import StreamDecorator
 from CommonEnvironment import TaskPool
@@ -970,9 +971,12 @@ def _GetSCMAndDir(scm_or_none, dir_or_none):
     return SCMMod.GetSCM(dir_or_none), dir_or_none
 
 # ---------------------------------------------------------------------------
-def _GetSCMAndDirs(root_dir):
+def _GetSCMAndDirs(environment, root_dir):
     scm = SCMMod.GetSCM(root_dir, throw_on_error=False)
     if scm:
+        if environment.IsSymLink(root_dir):
+            root_dir = environment.ResolveSymLink(root_dir)
+
         yield scm, root_dir
         return
 
@@ -982,7 +986,7 @@ def _GetSCMAndDirs(root_dir):
             if item in [ "Generated", ]:
                 continue
 
-            for result in _GetSCMAndDirs(fullpath):
+            for result in _GetSCMAndDirs(environment, fullpath):
                 yield result
 
 # ---------------------------------------------------------------------------
@@ -1004,12 +1008,14 @@ def _AllImpl( directory,
     with StreamDecorator(output_stream).DoneManager( line_prefix='',
                                                      done_prefix="\nComposite Results: ",
                                                    ) as si:
+        environment = Shell.GetEnvironment()
+
         items = []
 
         si.stream.write("\nSearching for repositories in '{}'...".format(directory))
         with si.stream.DoneManager( done_suffix_functor=lambda: "{} found".format(inflect_engine.no("repository", len(items))),
                                   ):
-            items.extend(_GetSCMAndDirs(directory))
+            items.extend(_GetSCMAndDirs(environment, directory))
 
         if not items:
             return 0
