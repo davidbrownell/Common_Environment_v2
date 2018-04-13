@@ -386,7 +386,7 @@ def Install( lib_name,
             environment = Shell.GetEnvironment()
             python_settings = PythonActivationActivity.GetEnvironmentSettings()
 
-            lib_dir = os.path.join(os.getenv("DEVELOPMENT_ENVIRONMENT_REPOSITORY_GENERATED"), PythonActivationActivity.Name, python_settings.library_dir)
+            lib_dir = os.path.join(os.getenv("DEVELOPMENT_ENVIRONMENT_REPOSITORY_GENERATED"), PythonActivationActivity.Name, python_settings["library_dir"])
             assert os.path.isdir(lib_dir), lib_dir
 
             library_items = {}
