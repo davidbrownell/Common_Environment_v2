@@ -51,7 +51,7 @@ class GitSourceControlManagement(DistributedSourceControlManagementBase):
     WorkingDirectories                      = [ ".git", ]
     IgnoreFilename                          = ".gitignore"
 
-    DetachedHeadPseudoBranchName            = "__DetachedHeadPseudoBranchName_%(Index)d_%(BranchName)s__"
+    DetachedHeadPseudoBranchName            = "__DetachedHeadPseudoBranchName_{Index}_{BranchName}__"
     _DetachedHeadPseudoBranchName_regex     = RegularExpression.TemplateStringToRegex(DetachedHeadPseudoBranchName)
 
     # ----------------------------------------------------------------------
@@ -81,7 +81,7 @@ class GitSourceControlManagement(DistributedSourceControlManagementBase):
     @classmethod
     def IsAvailable(cls):
         is_available = getattr(cls, "_cached_is_available", None)
-        if is_available == None:
+        if is_available is None:
             result, output = cls.Execute(os.getcwd(), "git")
             is_available = output.find("usage: git") != -1
 
@@ -512,21 +512,21 @@ class GitSourceControlManagement(DistributedSourceControlManagementBase):
 
     @classmethod
     def GetChangedFiles(cls, repo_root, revision_or_revisions_or_none):
-        if revision_or_revisions_or_none == None:
+        if revision_or_revisions_or_none is None:
             result, output = cls.Execute( repo_root,
                                           "git status --short",
                                           append_newline_to_output=False,
                                         )
             assert result == 0, (result, output)
 
-            if cls._GetChangedFiles_regex == None:
-                cls._GetChangedFiles_regex = re.compile(r'^\S\s+"(?P<filename>.+)"$')
+            if cls._GetChangedFiles_regex is None:
+                cls._GetChangedFiles_regex = re.compile(r'^(?:\S|\?\?)\s+"?(?P<filename>.+)"?$')
 
             filenames = []
 
             for line in [ line.strip() for line in output.split('\n') if line.strip() ]:
                 match = cls._GetChangedFiles_regex.match(line)
-                assert match
+                assert match, line
 
                 filenames.append(os.path.join(repo_root, match.group("filename")))
 
@@ -768,7 +768,7 @@ class GitSourceControlManagement(DistributedSourceControlManagementBase):
 
             for branch in BranchGenerator():
                 result, output = cls.Execute( repo_root, 
-                                              'git --no-pager log "--branches=*{}" --{}={} -n 1 --format=%H'.format(branch, operator, date),
+                                              'git --no-pager log "--branches=*{}" "--{}={}" -n 1 --format=%H'.format(branch, operator, date),
                                               append_newline_to_output=False,
                                             )
 
