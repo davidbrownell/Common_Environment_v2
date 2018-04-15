@@ -18,6 +18,7 @@
 Tools for use with SourceControlManagement.
 """
 
+import hashlib
 import os
 import re
 import sys
@@ -28,6 +29,7 @@ from collections import OrderedDict
 from six.moves import StringIO
 
 import inflect
+import six
 
 from CommonEnvironment import ModifiableValue
 from CommonEnvironment import CommandLine
@@ -35,6 +37,7 @@ from CommonEnvironment import FileSystem
 from CommonEnvironment import Interface
 from CommonEnvironment.QuickObject import QuickObject
 from CommonEnvironment import Shell
+from CommonEnvironment import six_plus
 from CommonEnvironment import SourceControlManagement as SCMMod
 from CommonEnvironment.StreamDecorator import StreamDecorator
 from CommonEnvironment import TaskPool
@@ -534,6 +537,32 @@ def EnumBlameInfo( filename,
 
     return CommandLine.DisplayOutput(0, scm.EnumBlameInfo(directory, filename), output_stream=output_stream)
 
+# ----------------------------------------------------------------------
+@CommandLine.EntryPoint
+@CommandLine.FunctionConstraints( scm=_SCMOptionalTypeInfo,
+                                  directory=CommandLine.DirectoryTypeInfo(arity='?'),
+                                  output_stream=None,
+                                )
+def EnumTrackedFiles( scm=None,
+                      directory=None,
+                      no_display=False,
+                      output_stream=sys.stdout,
+                    ):
+    scm, directory = _GetSCMAndDir(scm, directory)
+
+    if no_display:
+        output_filename = lambda filename: None
+    else:
+        output_filename = lambda filename: output_stream.write("{}\n".format(filename))
+
+    num_filenmes = 0
+
+    for filename in scm.EnumTrackedFiles(directory):
+        output_filename(filename)
+        num_filenmes += 1
+
+    output_stream.write("\n{} files.\n".format(num_filenmes))
+
 # ---------------------------------------------------------------------------
 # |  Distributed SCM Methods
 
@@ -700,6 +729,123 @@ def PullAndUpdate( scm=None,
         return result
 
     return 0
+
+# ----------------------------------------------------------------------
+@CommandLine.EntryPoint
+@CommandLine.FunctionConstraints( scm=_SCMOptionalTypeInfo,
+                                  directory=CommandLine.DirectoryTypeInfo(arity='?'),
+                                  output_stream=None,
+                                )
+def PruneDirectories( remove=False,
+                      scm=None,
+                      directory=None,
+                      output_stream=sys.stdout,
+                    ):
+    scm, directory = _GetSCMAndDir(scm, directory)
+
+    with StreamDecorator(output_stream).DoneManager( line_prefix='',
+                                                     done_prefix="\nResults: ",
+                                                     done_suffix='\n',
+                                                   ) as dm:
+        # ----------------------------------------------------------------------
+        def CalculateHash(filename):
+            hash = hashlib.sha512()
+
+            hash.update(six_plus.StringToBytes(filename))
+            return hash.hexdigest()
+
+        # ----------------------------------------------------------------------
+        class DirInfo(object):
+            def __init__(self):
+                self.children               = {}
+                self.has_tracked            = False
+
+        # ----------------------------------------------------------------------
+
+        dm.stream.write("Processing tracked files...")
+
+        num_files = ModifiableValue(0)
+        with dm.stream.DoneManager( done_suffix_functor=lambda: "{} found".format(inflect_engine.no("file", num_files.value)),
+                                  ) as this_dm:
+            tracked = set()
+
+            for filename in scm.EnumTrackedFiles(directory):
+                num_files.value += 1
+                
+                tracked.add(CalculateHash(filename))
+
+        dm.stream.write("Processing local files...")
+
+        num_files = ModifiableValue(0)
+        with dm.stream.DoneManager( done_suffix_functor=lambda: "{} found".format(inflect_engine.no("file", num_files.value)),
+                                  ) as this_dm:
+            all_dirs = DirInfo()
+
+            for filename in FileSystem.WalkFiles(directory):
+                num_files.value += 1
+
+                # Add the file's ancestors to the dir structure
+                dir_stack = [ all_dirs, ]
+
+                for part in os.path.dirname(filename).split(os.path.sep):
+                    if part not in dir_stack[0].children:
+                        dir_stack[0].children[part] = DirInfo()
+
+                    dir_stack.insert(0, dir_stack[0].children[part])
+
+                # Is this a tracked file
+                if CalculateHash(filename) in tracked:
+                    for dir_info in dir_stack:
+                        if dir_info.has_tracked:
+                            break
+
+                        dir_info.has_tracked = True
+                
+        dm.stream.write("Calculating differences...")
+        
+        to_remove = []
+        with dm.stream.DoneManager( done_suffix_functor=lambda: "{} to remove".format(inflect_engine.no("directory", len(to_remove))),
+                                  ) as this_dm:
+            # ----------------------------------------------------------------------
+            def Traverse(dir_info, name_parts):
+                for k, v in six.iteritems(dir_info.children):
+                    name_list = name_parts + [ k, ]
+
+                    if v.has_tracked:
+                        Traverse(v, name_list)
+                    else:
+                        to_remove.append(os.path.sep.join(name_list))
+
+            # ----------------------------------------------------------------------
+
+            Traverse(all_dirs, [])
+
+        if remove:
+            dm.stream.write("Removing directories...")
+            with dm.stream.DoneManager() as this_dm:
+                for index, directory in enumerate(to_remove):
+                    this_dm.stream.write("Removing '{}' ({} of {})...".format( directory,
+                                                                               index + 1,
+                                                                               len(to_remove),
+                                                                             ))
+                    with this_dm.stream.DoneManager():
+                        FileSystem.RemoveTree(directory)
+        else:
+            dm.stream.write(StreamDecorator.LeftJustify( textwrap.dedent(
+                                                            """\
+
+                                                            If '/remove' had been provided on the command line, the following directories
+                                                            would have been removed:
+
+                                                                {}
+
+                                                            """).format(StreamDecorator.LeftJustify( '\n'.join(to_remove),
+                                                                                                     4,
+                                                                                                   )),
+                                                         4,
+                                                       ))
+       
+        return dm.result
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
@@ -968,7 +1114,11 @@ def _GetSCMAndDir(scm_or_none, dir_or_none):
             if scm.Name == scm_or_none:
                 return scm, dir_or_none
 
-    return SCMMod.GetSCM(dir_or_none), dir_or_none
+    scm = SCMMod.GetSCM(dir_or_none)
+    if scm:
+        dir_or_none = scm.GetRoot(dir_or_none)
+
+    return scm, dir_or_none
 
 # ---------------------------------------------------------------------------
 def _GetSCMAndDirs(environment, root_dir):

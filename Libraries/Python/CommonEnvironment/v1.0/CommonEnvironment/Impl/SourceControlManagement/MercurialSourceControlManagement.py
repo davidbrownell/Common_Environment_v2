@@ -29,9 +29,12 @@ from ...SourceControlManagement import DistributedSourceControlManagementBase, \
                                        BranchUpdateMergeArg, \
                                        BranchAndDateUpdateMergeArg
 
+from CommonEnvironment.CallOnExit import CallOnExit
+from CommonEnvironment import FileSystem
 from CommonEnvironment.Interface import staticderived
 from CommonEnvironment import Process
 from CommonEnvironment.QuickObject import QuickObject
+from CommonEnvironment import Shell
 from CommonEnvironment import six_plus
 
 from CommonEnvironment.TypeInfo.FundamentalTypes.DateTimeTypeInfo import DateTimeTypeInfo
@@ -453,6 +456,19 @@ class MercurialSourceControlManagement(DistributedSourceControlManagementBase):
                 assert False, line
 
             yield index + 1, match.group("revision"), match.group("line")
+
+    # ----------------------------------------------------------------------
+    @classmethod
+    def EnumTrackedFiles(cls, repo_root):
+        temp_filename = Shell.GetEnvironment().CreateTempFilename()
+
+        result, content = cls.Execute(repo_root, 'hg status --no-status --clean --added --modified > "{}"'.format(temp_filename))
+        with CallOnExit(lambda: FileSystem.RemoveFile(temp_filename)):
+            with open(temp_filename) as f:
+                for line in f.readlines():
+                    line = line.strip()
+                    if line:
+                        yield os.path.join(repo_root, line)
 
     # ---------------------------------------------------------------------------
     # |  DistributedSourceControlManagement Methods
