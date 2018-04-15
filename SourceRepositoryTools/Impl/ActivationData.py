@@ -243,7 +243,7 @@ class ActivationData(object):
         
                     if existing_version_info is None:
                         library_version_info.setdefault(library_language, []).append(version_info)
-                        verion_info_lookup[version_info] = repo
+                        version_info_lookup[version_info] = repo
         
                     elif version_info.Version != existing_version_info.Version:
                         OnVersionMismatch("{} Libraries".format(library_language), version_info, existing_version_info)

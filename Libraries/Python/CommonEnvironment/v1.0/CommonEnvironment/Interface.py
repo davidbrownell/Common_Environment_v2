@@ -585,7 +585,7 @@ def CreateCulledCallable(func):
     
     # Handle perfect forwarding scenarios
     if not arg_names and not positional_arg_names:
-        if arg_spec.varkw is not None:
+        if getattr(arg_spec, "varkw", None) is not None:
             # ----------------------------------------------------------------------
             def Invoke(kwargs):
                 return func(**kwargs)
