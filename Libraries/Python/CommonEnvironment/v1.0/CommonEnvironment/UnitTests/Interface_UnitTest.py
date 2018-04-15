@@ -269,6 +269,13 @@ class TestCreateCulledCallable(unittest.TestCase):
                                                           ( "bar", 20 ),
                                                           ( "baz", 300 ),
                                                         ])), ( 10, 20, 30, 40 ))
+                                                        
+        no_arg_func = CreateCulledCallable(lambda: 10)
+        
+        self.assertEqual(no_arg_func(OrderedDict()), 10)
+        self.assertEqual(no_arg_func(OrderedDict([ ( "foo", 1 ),
+                                                   ( "bar", 2 ),
+                                                 ])), 10)
 
 # ----------------------------------------------------------------------
 class TestIsMethodsSuite(unittest.TestCase):
