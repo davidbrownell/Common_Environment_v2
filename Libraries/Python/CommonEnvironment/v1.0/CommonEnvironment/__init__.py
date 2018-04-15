@@ -141,17 +141,17 @@ def Describe( item,                         # str, dict, iterable, obj
             item = item._asdict()
 
         keys = list(item.keys())
-        keys.sort(key=str.lower)
+        keys.sort(key=lambda v: str(v).lower())
 
         max_length = 0
         for key in keys:
-            max_length = max(max_length, len(key))
+            max_length = max(max_length, len(str(key)))
 
         item_indentation_str = indentation_str + (' ' * (max_length + len(" : ")))
 
         for index, key in enumerate(keys):
             output_stream.write("{0}{1:<{2}} : ".format( indentation_str if index else '', 
-                                                         key, 
+                                                         str(key), 
                                                          max_length,
                                                        ))
             Impl(item[key], item_indentation_str)
