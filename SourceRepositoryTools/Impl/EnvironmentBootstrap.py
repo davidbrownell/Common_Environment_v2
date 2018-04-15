@@ -97,8 +97,8 @@ class EnvironmentBootstrap(object):
 
             libraries = {}
 
-            for k, v in six.iteritems(config_info["VersionSpecs"]["Libraries"]):
-                libraries[k] = Configuration.VersionInfo(v["Name"], v["Version"])
+            for k, version_infos in six.iteritems(config_info["VersionSpecs"]["Libraries"]):
+                libraries[k] = [ Configuration.VersionInfo(vi["Name"], vi["Version"]) for vi in version_infos ]
 
             # Create the config info
             configurations[config_name] = Configuration.Configuration( dependencies,
