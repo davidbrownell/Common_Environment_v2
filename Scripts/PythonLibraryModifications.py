@@ -238,13 +238,10 @@ def Move( no_move=False,
                             continue
 
                     try:
-                        # TODO: <lib_name>/<category_name>/<lib_version>/<python_version>/
-                        # TODO: Should be <lib_name>/<lib_version>/<category_name>/<python_version>/; need to update existing libs
-                        
+                        potential_dest_dir = os.path.join(os.getenv("DEVELOPMENT_ENVIRONMENT_REPOSITORY"), Constants.LIBRARIES_SUBDIR, PythonActivationActivity.Name, name, lib_info.version)
+
                         if lib_info.Fullpath in new_content.extensions:
-                            potential_dest_dir = os.path.join(os.getenv("DEVELOPMENT_ENVIRONMENT_REPOSITORY"), Constants.LIBRARIES_SUBDIR, PythonActivationActivity.Name, name, python_version_dir, lib_info.version, environment.CategoryName)
-                        else:
-                            potential_dest_dir = os.path.join(os.getenv("DEVELOPMENT_ENVIRONMENT_REPOSITORY"), Constants.LIBRARIES_SUBDIR, PythonActivationActivity.Name, name, lib_info.version)
+                            potential_dest_dir = os.path.join(potential_dest_dir, environment.CategoryName, python_version_dir)
 
                         if os.path.isdir(potential_dest_dir):
                             this_dm.result = -1

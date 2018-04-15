@@ -1,0 +1,1 @@
+This package is only supported with python3.

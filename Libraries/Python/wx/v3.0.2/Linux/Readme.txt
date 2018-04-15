@@ -1,1 +1,0 @@
-Temporary placeholder until wx is compiled for Linux.
