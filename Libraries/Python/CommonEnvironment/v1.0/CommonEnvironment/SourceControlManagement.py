@@ -421,6 +421,15 @@ class SourceControlManagementBase(Interface):
         """
         raise Exception("Abstract method")
 
+    # ----------------------------------------------------------------------
+    @staticmethod
+    @abstractmethod
+    def EnumTrackedFiles(repo_root):
+        """\
+        Enumerates the fullpaths of all files tracked under the current repo.
+        """
+        raise Exception("Abstract method")
+
     # ---------------------------------------------------------------------------
     # |
     # |  Protected Methods

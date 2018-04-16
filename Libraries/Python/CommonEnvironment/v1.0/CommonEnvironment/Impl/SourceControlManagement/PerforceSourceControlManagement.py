@@ -434,6 +434,12 @@ def PerforceSourceControlManagementFactory( raise_on_username_failure,
     
                 yield index + 1, match.group("revision"), match.group("line")
     
+        # ----------------------------------------------------------------------
+        @classmethod
+        def EnumTrackedFiles(cls, repo_root):
+            raise Exception("TODO: Not implemented yet")
+
+    
         # ---------------------------------------------------------------------------
         # |
         # |  Private Methods

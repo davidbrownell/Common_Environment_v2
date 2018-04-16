@@ -577,6 +577,11 @@ class GitSourceControlManagement(DistributedSourceControlManagementBase):
 
             yield int(match.group("line_number")), match.group("revision"), match.group("line")
 
+    # ----------------------------------------------------------------------
+    @classmethod
+    def EnumTrackedFiles(cls, repo_root):
+        raise Exception("TODO: Not implemented yet")
+
     # ---------------------------------------------------------------------------
     # |  DistributedSourceControlManagement Methods
     

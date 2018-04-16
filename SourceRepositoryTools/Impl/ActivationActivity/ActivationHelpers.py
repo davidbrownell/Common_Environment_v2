@@ -113,7 +113,9 @@ def ActivateLibraries( name,
                     prev_fullpath = fullpath
 
                     dirs = [ item for item in os.listdir(fullpath) if os.path.isdir(os.path.join(fullpath, item)) ]
-
+                    if not dirs:
+                        break
+                    
                     for library_versions, this_version in six.iteritems(library_version_dirs):
                         applies = True
 
@@ -126,7 +128,10 @@ def ActivateLibraries( name,
                             continue
 
                         if this_version not in dirs:
-                            return None
+                            raise Exception("Library versions were found in '{}', but no customization was found for '{}' ({} found).".format( fullpath,
+                                                                                                                                               this_version,
+                                                                                                                                               ', '.join([ "'{}'".format(dir) for dir in dirs ]),
+                                                                                                                                             ))
 
                         fullpath = os.path.join(fullpath, this_version)
                         break
@@ -139,24 +144,16 @@ def ActivateLibraries( name,
             # ----------------------------------------------------------------------
 
             try:
-                should_apply = True
-
                 for index, method in enumerate([ Utilities.GetCustomizedPath,
                                                  AugmentLibraryDir,
                                                  GetVersionedDirectoryEx,
                                                  Utilities.GetCustomizedPath,
                                                  AugmentLibraryDir,
                                                ]):
-                    result = method(fullpath)
-                    if result is None:
-                        should_apply = False
-                        break
-
-                    fullpath = result
+                    fullpath = method(fullpath)
                     assert os.path.isdir(fullpath), (index, fullpath)
 
-                if should_apply:
-                    libraries[item] = LibraryInfo(repository, version.value, fullpath)
+                libraries[item] = LibraryInfo(repository, version.value, fullpath)
 
             except Exception as ex:
                 sys.stdout.write("    WARNING: {}\n".format(ex))
